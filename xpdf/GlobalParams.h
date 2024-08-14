@@ -387,7 +387,7 @@ public:
   void setPSOPI(GBool opi);
   void setPSASCIIHex(GBool hex);
   void setTextEncoding(const char *encodingName);
-  GBool setTextEOL(char *s);
+  GBool setTextEOL(const char *s);
   void setTextPageBreaks(GBool pageBreaks);
   void setTextKeepTinyChars(GBool keep);
   void setInitialZoom(char *s);

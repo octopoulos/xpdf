@@ -287,6 +287,30 @@ target_link_libraries(pdfimages goo fofi
 install(TARGETS pdfimages RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES ${PROJECT_SOURCE_DIR}/doc/pdfimages.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
+# -- pdf-extract
+
+add_library(pdf-extract
+	$<TARGET_OBJECTS:goo_objs>
+	$<TARGET_OBJECTS:fofi_objs>
+	$<TARGET_OBJECTS:splash_objs>
+	$<TARGET_OBJECTS:xpdf_objs>
+	pdf-extract.cpp
+	pdf-extract.h
+	ShadingImage.cc
+	SplashOutputDev.cc
+	TextOutputDev.cc
+)
+
+target_link_libraries(pdf-extract
+    ${PAPER_LIBRARY}
+    ${FREETYPE_LIBRARY} ${FREETYPE_OTHER_LIBS}
+    ${DTYPE_LIBRARY}
+    ${LCMS_LIBRARY}
+    ${FONTCONFIG_LIBRARY}
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+install(TARGETS pdf-extract RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
 #--- xpdfrc man page
 
 install(FILES ${PROJECT_SOURCE_DIR}/doc/xpdfrc.5 DESTINATION ${CMAKE_INSTALL_MANDIR}/man5)

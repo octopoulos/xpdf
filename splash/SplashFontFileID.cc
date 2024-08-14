@@ -15,8 +15,10 @@
 // SplashFontFileID
 //------------------------------------------------------------------------
 
-SplashFontFileID::SplashFontFileID() {
+SplashFontFileID::SplashFontFileID()
+{
 }
 
-SplashFontFileID::~SplashFontFileID() {
+SplashFontFileID::~SplashFontFileID()
+{
 }

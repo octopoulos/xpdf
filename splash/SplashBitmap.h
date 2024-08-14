@@ -66,6 +66,7 @@ public:
   // Caller takes ownership of the bitmap data.  The SplashBitmap
   // object is no longer valid -- the next call should be to the
   // destructor.
+  SplashColorPtr takeAlpha();
   SplashColorPtr takeData();
 
 private:

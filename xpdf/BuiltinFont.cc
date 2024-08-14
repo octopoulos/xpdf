@@ -17,47 +17,52 @@
 
 //------------------------------------------------------------------------
 
-BuiltinFontWidths::BuiltinFontWidths(BuiltinFontWidth *widths, int sizeA) {
-  int i, h;
+BuiltinFontWidths::BuiltinFontWidths(BuiltinFontWidth* widths, int sizeA)
+{
+	int i, h;
 
-  size = sizeA;
-  tab = (BuiltinFontWidth **)gmallocn(size, sizeof(BuiltinFontWidth *));
-  for (i = 0; i < size; ++i) {
-    tab[i] = NULL;
-  }
-  for (i = 0; i < sizeA; ++i) {
-    h = hash(widths[i].name);
-    widths[i].next = tab[h];
-    tab[h] = &widths[i];
-  }
+	size = sizeA;
+	tab  = (BuiltinFontWidth**)gmallocn(size, sizeof(BuiltinFontWidth*));
+	for (i = 0; i < size; ++i)
+		tab[i] = NULL;
+	for (i = 0; i < sizeA; ++i)
+	{
+		h              = hash(widths[i].name);
+		widths[i].next = tab[h];
+		tab[h]         = &widths[i];
+	}
 }
 
-BuiltinFontWidths::~BuiltinFontWidths() {
-  gfree(tab);
+BuiltinFontWidths::~BuiltinFontWidths()
+{
+	gfree(tab);
 }
 
-GBool BuiltinFontWidths::getWidth(const char *name, Gushort *width) {
-  int h;
-  BuiltinFontWidth *p;
+GBool BuiltinFontWidths::getWidth(const char* name, Gushort* width)
+{
+	int               h;
+	BuiltinFontWidth* p;
 
-  h = hash(name);
-  for (p = tab[h]; p; p = p->next) {
-    if (!strcmp(p->name, name)) {
-      *width = p->width;
-      return gTrue;
-    }
-  }
-  *width = 0;
-  return gFalse;
+	h = hash(name);
+	for (p = tab[h]; p; p = p->next)
+	{
+		if (!strcmp(p->name, name))
+		{
+			*width = p->width;
+			return gTrue;
+		}
+	}
+	*width = 0;
+	return gFalse;
 }
 
-int BuiltinFontWidths::hash(const char *name) {
-  const char *p;
-  unsigned int h;
+int BuiltinFontWidths::hash(const char* name)
+{
+	const char*  p;
+	unsigned int h;
 
-  h = 0;
-  for (p = name; *p; ++p) {
-    h = 17 * h + (int)(*p & 0xff);
-  }
-  return (int)(h % size);
+	h = 0;
+	for (p = name; *p; ++p)
+		h = 17 * h + (int)(*p & 0xff);
+	return (int)(h % size);
 }
