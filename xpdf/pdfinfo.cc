@@ -71,7 +71,7 @@ static ArgDesc argDesc[] = {
 	{ "-help", argFlag, &printHelp, 0,     "print usage information" },
 	{ "--help", argFlag, &printHelp, 0,     "print usage information" },
 	{ "-?", argFlag, &printHelp, 0,     "print usage information" },
-	{ NULL }
+	{ nullptr }
 };
 
 int main(int argc, char* argv[])
@@ -134,11 +134,11 @@ int main(int argc, char* argv[])
 		if (ownerPassword[0] != '\001')
 			ownerPW = new GString(ownerPassword);
 		else
-			ownerPW = NULL;
+			ownerPW = nullptr;
 		if (userPassword[0] != '\001')
 			userPW = new GString(userPassword);
 		else
-			userPW = NULL;
+			userPW = nullptr;
 		doc = new PDFDoc(fileName, ownerPW, userPW);
 		if (userPW)
 			delete userPW;
@@ -170,13 +170,13 @@ int main(int argc, char* argv[])
 		if ((metadata = doc->readMetadata()))
 			xmp = ZxDoc::loadMem(metadata->getCString(), metadata->getLength());
 		else
-			xmp = NULL;
-		printInfoString(&info, "Title", xmp, "dc:title", NULL, "Title:          ", gFalse, uMap);
-		printInfoString(&info, "Subject", xmp, "dc:description", NULL, "Subject:        ", gFalse, uMap);
-		printInfoString(&info, "Keywords", xmp, "pdf:Keywords", NULL, "Keywords:       ", gFalse, uMap);
-		printInfoString(&info, "Author", xmp, "dc:creator", NULL, "Author:         ", gFalse, uMap);
-		printInfoString(&info, "Creator", xmp, "xmp:CreatorTool", NULL, "Creator:        ", gFalse, uMap);
-		printInfoString(&info, "Producer", xmp, "pdf:Producer", NULL, "Producer:       ", gFalse, uMap);
+			xmp = nullptr;
+		printInfoString(&info, "Title", xmp, "dc:title", nullptr, "Title:          ", gFalse, uMap);
+		printInfoString(&info, "Subject", xmp, "dc:description", nullptr, "Subject:        ", gFalse, uMap);
+		printInfoString(&info, "Keywords", xmp, "pdf:Keywords", nullptr, "Keywords:       ", gFalse, uMap);
+		printInfoString(&info, "Author", xmp, "dc:creator", nullptr, "Author:         ", gFalse, uMap);
+		printInfoString(&info, "Creator", xmp, "xmp:CreatorTool", nullptr, "Creator:        ", gFalse, uMap);
+		printInfoString(&info, "Producer", xmp, "pdf:Producer", nullptr, "Producer:       ", gFalse, uMap);
 		printInfoString(&info, "CreationDate", xmp, "xap:CreateDate", "xmp:CreateDate", "CreationDate:   ", !rawDates, uMap);
 		printInfoString(&info, "ModDate", xmp, "xap:ModifyDate", "xmp:ModifyDate", "ModDate:        ", !rawDates, uMap);
 		if (printCustom)
@@ -351,7 +351,7 @@ static void printInfoString(Object* infoDict, const char* infoKey, ZxDoc* xmp, c
 	ZxNode *    node, *node2;
 	int         i, n;
 
-	value = NULL;
+	value = nullptr;
 
 	//-- check the info dictionary
 	if (infoDict->isDict())
@@ -472,7 +472,7 @@ static GString* parseInfoDate(GString* s)
 	if (p[0] == 'D' && p[1] == ':')
 		p += 2;
 	if ((n = sscanf(p, "%4d%2d%2d%2d%2d%2d", &year, &mon, &day, &hour, &min, &sec)) < 1)
-		return NULL;
+		return nullptr;
 	switch (n)
 	{
 	case 1: mon = 1;
@@ -492,7 +492,7 @@ static GString* parseInfoDate(GString* s)
 	tmStruct.tm_isdst = -1;
 	// compute the tm_wday and tm_yday fields
 	if (!(mktime(&tmStruct) != (time_t)-1 && strftime(buf, sizeof(buf), "%c", &tmStruct)))
-		return NULL;
+		return nullptr;
 	return new GString(buf);
 }
 
@@ -516,7 +516,7 @@ static GString* parseXMPDate(GString* s)
 	}
 	else
 	{
-		return NULL;
+		return nullptr;
 	}
 	mon = day = 1;
 	hour = min = sec = 0;
@@ -585,7 +585,7 @@ static GString* parseXMPDate(GString* s)
 	// compute the tm_wday and tm_yday fields
 	//~ this ignores the timezone
 	if (!(mktime(&tmStruct) != (time_t)-1 && strftime(buf, sizeof(buf), "%c", &tmStruct)))
-		return NULL;
+		return nullptr;
 	return new GString(buf);
 }
 

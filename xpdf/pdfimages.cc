@@ -57,7 +57,7 @@ static ArgDesc argDesc[] = {
 	{ "-help", argFlag, &printHelp, 0,     "print usage information" },
 	{ "--help", argFlag, &printHelp, 0,     "print usage information" },
 	{ "-?", argFlag, &printHelp, 0,     "print usage information" },
-	{ NULL }
+	{ nullptr }
 };
 
 int main(int argc, char* argv[])
@@ -104,11 +104,11 @@ int main(int argc, char* argv[])
 		if (ownerPassword[0] != '\001')
 			ownerPW = new GString(ownerPassword);
 		else
-			ownerPW = NULL;
+			ownerPW = nullptr;
 		if (userPassword[0] != '\001')
 			userPW = new GString(userPassword);
 		else
-			userPW = NULL;
+			userPW = nullptr;
 		doc = new PDFDoc(fileName, ownerPW, userPW);
 		if (userPW)
 			delete userPW;

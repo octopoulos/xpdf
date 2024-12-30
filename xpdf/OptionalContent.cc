@@ -46,7 +46,7 @@ OptionalContent::OptionalContent(PDFDoc* doc)
 
 	xref    = doc->getXRef();
 	ocgs    = new GList();
-	display = NULL;
+	display = nullptr;
 
 	if ((ocProps = doc->getCatalog()->getOCProperties())->isDict())
 	{
@@ -171,7 +171,7 @@ OptionalContentGroup* OptionalContent::findOCG(Ref* ref)
 		if (ocg->matches(ref))
 			return ocg;
 	}
-	return NULL;
+	return nullptr;
 }
 
 GBool OptionalContent::evalOCObject(Object* obj, GBool* visible)
@@ -222,7 +222,7 @@ GBool OptionalContent::evalOCObject(Object* obj, GBool* visible)
 		}
 		obj3.free();
 		obj2.dictLookupNF("OCGs", &obj3);
-		ocg = NULL;
+		ocg = nullptr;
 		if (obj3.isRef())
 		{
 			ref = obj3.getRef();
@@ -369,12 +369,12 @@ OptionalContentGroup* OptionalContentGroup::parse(Ref* refA, Object* obj)
 	OCUsageState viewStateA, printStateA;
 
 	if (!obj->isDict())
-		return NULL;
+		return nullptr;
 	if (!obj->dictLookup("Name", &obj1)->isString())
 	{
 		error(errSyntaxError, -1, "Missing or invalid Name in OCG");
 		obj1.free();
-		return NULL;
+		return nullptr;
 	}
 	nameA = new TextString(obj1.getString());
 	obj1.free();
@@ -455,7 +455,7 @@ OCDisplayNode* OCDisplayNode::parse(Object* obj, OptionalContent* oc, XRef* xref
 	if (recursion > displayNodeRecursionLimit)
 	{
 		error(errSyntaxError, -1, "Loop detected in optional content order");
-		return NULL;
+		return nullptr;
 	}
 	if (obj->isRef())
 	{
@@ -467,7 +467,7 @@ OCDisplayNode* OCDisplayNode::parse(Object* obj, OptionalContent* oc, XRef* xref
 	if (!obj2.isArray())
 	{
 		obj2.free();
-		return NULL;
+		return nullptr;
 	}
 	i = 0;
 	if (obj2.arrayGetLength() >= 1)
@@ -512,23 +512,23 @@ OCDisplayNode* OCDisplayNode::parse(Object* obj, OptionalContent* oc, XRef* xref
 OCDisplayNode::OCDisplayNode()
 {
 	name     = new TextString();
-	ocg      = NULL;
-	parent   = NULL;
-	children = NULL;
+	ocg      = nullptr;
+	parent   = nullptr;
+	children = nullptr;
 }
 
 OCDisplayNode::OCDisplayNode(GString* nameA)
 {
 	name     = new TextString(nameA);
-	ocg      = NULL;
-	children = NULL;
+	ocg      = nullptr;
+	children = nullptr;
 }
 
 OCDisplayNode::OCDisplayNode(OptionalContentGroup* ocgA)
 {
 	name     = new TextString(ocgA->name);
 	ocg      = ocgA;
-	children = NULL;
+	children = nullptr;
 }
 
 void OCDisplayNode::addChild(OCDisplayNode* child)
@@ -557,9 +557,9 @@ GList* OCDisplayNode::takeChildren()
 	int    i;
 
 	childrenA = children;
-	children  = NULL;
+	children  = nullptr;
 	for (i = 0; i < childrenA->getLength(); ++i)
-		((OCDisplayNode*)childrenA->get(i))->parent = NULL;
+		((OCDisplayNode*)childrenA->get(i))->parent = nullptr;
 	return childrenA;
 }
 

@@ -46,7 +46,7 @@ UnicodeMap* UnicodeMap::parse(GString* encodingNameA)
 	if (!(f = globalParams->getUnicodeMapFile(encodingNameA)))
 	{
 		error(errSyntaxError, -1, "Couldn't find unicodeMap file for the '{0:t}' encoding", encodingNameA);
-		return NULL;
+		return nullptr;
 	}
 
 	map = new UnicodeMap(encodingNameA->copy());
@@ -58,9 +58,9 @@ UnicodeMap* UnicodeMap::parse(GString* encodingNameA)
 	line = 1;
 	while (getLine(buf, sizeof(buf), f))
 	{
-		if ((tok1 = strtok(buf, " \t\r\n")) && (tok2 = strtok(NULL, " \t\r\n")))
+		if ((tok1 = strtok(buf, " \t\r\n")) && (tok2 = strtok(nullptr, " \t\r\n")))
 		{
-			if (!(tok3 = strtok(NULL, " \t\r\n")))
+			if (!(tok3 = strtok(nullptr, " \t\r\n")))
 			{
 				tok3 = tok2;
 				tok2 = tok1;
@@ -121,9 +121,9 @@ UnicodeMap::UnicodeMap(GString* encodingNameA)
 	encodingName = encodingNameA;
 	unicodeOut   = gFalse;
 	kind         = unicodeMapUser;
-	ranges       = NULL;
+	ranges       = nullptr;
 	len          = 0;
-	eMaps        = NULL;
+	eMaps        = nullptr;
 	eMapsLen     = 0;
 	refCnt       = 1;
 }
@@ -135,7 +135,7 @@ UnicodeMap::UnicodeMap(const char* encodingNameA, GBool unicodeOutA, UnicodeMapR
 	kind         = unicodeMapResident;
 	ranges       = rangesA;
 	len          = lenA;
-	eMaps        = NULL;
+	eMaps        = nullptr;
 	eMapsLen     = 0;
 	refCnt       = 1;
 }
@@ -146,7 +146,7 @@ UnicodeMap::UnicodeMap(const char* encodingNameA, GBool unicodeOutA, UnicodeMapF
 	unicodeOut   = unicodeOutA;
 	kind         = unicodeMapFunc;
 	func         = funcA;
-	eMaps        = NULL;
+	eMaps        = nullptr;
 	eMapsLen     = 0;
 	refCnt       = 1;
 }
@@ -244,7 +244,7 @@ UnicodeMapCache::UnicodeMapCache()
 	int i;
 
 	for (i = 0; i < unicodeMapCacheSize; ++i)
-		cache[i] = NULL;
+		cache[i] = nullptr;
 }
 
 UnicodeMapCache::~UnicodeMapCache()
@@ -288,5 +288,5 @@ UnicodeMap* UnicodeMapCache::getUnicodeMap(GString* encodingName)
 		map->incRefCnt();
 		return map;
 	}
-	return NULL;
+	return nullptr;
 }

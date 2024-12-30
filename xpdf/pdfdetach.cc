@@ -32,33 +32,20 @@ static GBool printVersion      = gFalse;
 static GBool printHelp         = gFalse;
 
 static ArgDesc argDesc[] = {
-	{ "-list", argFlag, &doList, 0,
-     "list all embedded files" },
-	{ "-save", argInt, &saveNum, 0,
-     "save the specified embedded file" },
-	{ "-saveall", argFlag, &saveAll, 0,
-     "save all embedded files" },
-	{ "-o", argString, savePath, sizeof(savePath),
-     "file name for the saved embedded file" },
-	{ "-enc", argString, textEncName, sizeof(textEncName),
-     "output text encoding name" },
-	{ "-opw", argString, ownerPassword, sizeof(ownerPassword),
-     "owner password (for encrypted files)" },
-	{ "-upw", argString, userPassword, sizeof(userPassword),
-     "user password (for encrypted files)" },
-	{ "-cfg", argString, cfgFileName, sizeof(cfgFileName),
-     "configuration file to use in place of .xpdfrc" },
-	{ "-v", argFlag, &printVersion, 0,
-     "print copyright and version info" },
-	{ "-h", argFlag, &printHelp, 0,
-     "print usage information" },
-	{ "-help", argFlag, &printHelp, 0,
-     "print usage information" },
-	{ "--help", argFlag, &printHelp, 0,
-     "print usage information" },
-	{ "-?", argFlag, &printHelp, 0,
-     "print usage information" },
-	{ NULL }
+	{ "-list", argFlag, &doList, 0, "list all embedded files" },
+	{ "-save", argInt, &saveNum, 0, "save the specified embedded file" },
+	{ "-saveall", argFlag, &saveAll, 0, "save all embedded files" },
+	{ "-o", argString, savePath, sizeof(savePath), "file name for the saved embedded file" },
+	{ "-enc", argString, textEncName, sizeof(textEncName), "output text encoding name" },
+	{ "-opw", argString, ownerPassword, sizeof(ownerPassword), "owner password (for encrypted files)" },
+	{ "-upw", argString, userPassword, sizeof(userPassword), "user password (for encrypted files)" },
+	{ "-cfg", argString, cfgFileName, sizeof(cfgFileName), "configuration file to use in place of .xpdfrc" },
+	{ "-v", argFlag, &printVersion, 0, "print copyright and version info" },
+	{ "-h", argFlag, &printHelp, 0, "print usage information" },
+	{ "-help", argFlag, &printHelp, 0, "print usage information" },
+	{ "--help", argFlag, &printHelp, 0, "print usage information" },
+	{ "-?", argFlag, &printHelp, 0, "print usage information" },
+	{ nullptr }
 };
 
 int main(int argc, char* argv[])
@@ -114,11 +101,11 @@ int main(int argc, char* argv[])
 		if (ownerPassword[0] != '\001')
 			ownerPW = new GString(ownerPassword);
 		else
-			ownerPW = NULL;
+			ownerPW = nullptr;
 		if (userPassword[0] != '\001')
 			userPW = new GString(userPassword);
 		else
-			userPW = NULL;
+			userPW = nullptr;
 		doc = new PDFDoc(fileName, ownerPW, userPW);
 		if (userPW)
 			delete userPW;

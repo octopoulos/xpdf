@@ -15,7 +15,7 @@
 #include <limits.h>
 // older compilers won't define SIZE_MAX in stdint.h without this
 #ifndef __STDC_LIMIT_MACROS
-#  define __STDC_LIMIT_MACROS 1
+#	define __STDC_LIMIT_MACROS 1
 #endif
 #include <stdint.h>
 #include "SplashTypes.h"
@@ -24,72 +24,74 @@
 
 // ssize_t isn't well-defined, so define our own
 #if SIZE_MAX == UINT_MAX
-  typedef int SplashBitmapRowSize;
-# define SplashBitmapRowSizeMax INT_MAX
+typedef int SplashBitmapRowSize;
+#	define SplashBitmapRowSizeMax INT_MAX
 #else
-  typedef long long SplashBitmapRowSize;
-# define SplashBitmapRowSizeMax LLONG_MAX
+typedef long long SplashBitmapRowSize;
+#	define SplashBitmapRowSizeMax LLONG_MAX
 #endif
 
 //------------------------------------------------------------------------
 // SplashBitmap
 //------------------------------------------------------------------------
 
-class SplashBitmap {
+class SplashBitmap
+{
 public:
+	// Create a new bitmap.  It will have <widthA> x <heightA> pixels in
+	// color mode <modeA>.  Rows will be padded out to a multiple of
+	// <rowPad> bytes.  If <topDown> is false, the bitmap will be stored
+	// upside-down, i.e., with the last row first in memory.
+	SplashBitmap(int widthA, int heightA, int rowPad, SplashColorMode modeA, GBool alphaA, GBool topDown, SplashBitmap* parentA);
 
-  // Create a new bitmap.  It will have <widthA> x <heightA> pixels in
-  // color mode <modeA>.  Rows will be padded out to a multiple of
-  // <rowPad> bytes.  If <topDown> is false, the bitmap will be stored
-  // upside-down, i.e., with the last row first in memory.
-  SplashBitmap(int widthA, int heightA, int rowPad,
-	       SplashColorMode modeA, GBool alphaA,
-	       GBool topDown, SplashBitmap *parentA);
+	~SplashBitmap();
 
-  ~SplashBitmap();
+	int getWidth() { return width; }
 
-  int getWidth() { return width; }
-  int getHeight() { return height; }
-  SplashBitmapRowSize getRowSize() { return rowSize; }
-  size_t getAlphaRowSize() { return alphaRowSize; }
-  SplashColorMode getMode() { return mode; }
-  SplashColorPtr getDataPtr() { return data; }
-  Guchar *getAlphaPtr() { return alpha; }
+	int getHeight() { return height; }
 
-  SplashError writePNMFile(char *fileName);
-  SplashError writePNMFile(FILE *f);
-  SplashError writeAlphaPGMFile(char *fileName);
+	SplashBitmapRowSize getRowSize() { return rowSize; }
 
-  void getPixel(int x, int y, SplashColorPtr pixel);
-  Guchar getAlpha(int x, int y);
+	size_t getAlphaRowSize() { return alphaRowSize; }
 
-  // Caller takes ownership of the bitmap data.  The SplashBitmap
-  // object is no longer valid -- the next call should be to the
-  // destructor.
-  SplashColorPtr takeAlpha();
-  SplashColorPtr takeData();
+	SplashColorMode getMode() { return mode; }
+
+	SplashColorPtr getDataPtr() { return data; }
+
+	Guchar* getAlphaPtr() { return alpha; }
+
+	SplashError writePNMFile(char* fileName);
+	SplashError writePNMFile(FILE* f);
+	SplashError writeAlphaPGMFile(char* fileName);
+
+	void   getPixel(int x, int y, SplashColorPtr pixel);
+	Guchar getAlpha(int x, int y);
+
+	// Caller takes ownership of the bitmap data.  The SplashBitmap
+	// object is no longer valid -- the next call should be to the
+	// destructor.
+	SplashColorPtr takeAlpha();
+	SplashColorPtr takeData();
 
 private:
+	int                 width, height; // size of bitmap
+	SplashBitmapRowSize rowSize;       // size of one row of data, in bytes
+	                                   //   - negative for bottom-up bitmaps
+	size_t              alphaRowSize;  // size of one row of alpha, in bytes
+	SplashColorMode     mode;          // color mode
+	SplashColorPtr      data;          // pointer to row zero of the color data
+	Guchar*             alpha;         // pointer to row zero of the alpha data
+	                                   //   (always top-down)
 
-  int width, height;		// size of bitmap
-  SplashBitmapRowSize rowSize;	// size of one row of data, in bytes
-				//   - negative for bottom-up bitmaps
-  size_t alphaRowSize;		// size of one row of alpha, in bytes
-  SplashColorMode mode;		// color mode
-  SplashColorPtr data;		// pointer to row zero of the color data
-  Guchar *alpha;		// pointer to row zero of the alpha data
-				//   (always top-down)
+	// save the last-allocated (large) bitmap data and reuse if possible
+	SplashBitmap*       parent;
+	SplashColorPtr      oldData;
+	Guchar*             oldAlpha;
+	SplashBitmapRowSize oldRowSize;
+	size_t              oldAlphaRowSize;
+	int                 oldHeight;
 
-  // save the last-allocated (large) bitmap data and reuse if possible
-  SplashBitmap *parent;
-  SplashColorPtr oldData;
-  Guchar *oldAlpha;
-  SplashBitmapRowSize oldRowSize;
-  size_t oldAlphaRowSize;
-  int oldHeight;
-
-  friend class Splash;
+	friend class Splash;
 };
-
 
 #endif

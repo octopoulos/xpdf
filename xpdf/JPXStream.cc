@@ -229,26 +229,26 @@ JPXStream::JPXStream(Stream* strA)
 
 	decoded = gFalse;
 	nComps  = 0;
-	bpc     = NULL;
+	bpc     = nullptr;
 	width = height = 0;
 	reduction      = 0;
 	haveCS         = gFalse;
 
-	palette.bpc = NULL;
-	palette.c   = NULL;
+	palette.bpc = nullptr;
+	palette.c   = nullptr;
 	havePalette = gFalse;
 
-	compMap.comp  = NULL;
-	compMap.type  = NULL;
-	compMap.pComp = NULL;
+	compMap.comp  = nullptr;
+	compMap.type  = nullptr;
+	compMap.pComp = nullptr;
 	haveCompMap   = gFalse;
 
-	channelDefn.idx   = NULL;
-	channelDefn.type  = NULL;
-	channelDefn.assoc = NULL;
+	channelDefn.idx   = nullptr;
+	channelDefn.type  = nullptr;
+	channelDefn.assoc = nullptr;
 	haveChannelDefn   = gFalse;
 
-	img.tiles = NULL;
+	img.tiles = nullptr;
 
 	bitBuf     = 0;
 	bitBufLen  = 0;
@@ -285,7 +285,7 @@ void JPXStream::close()
 	Guint         comp, i, k, r, pre, sb;
 
 	gfree(bpc);
-	bpc = NULL;
+	bpc = nullptr;
 	if (havePalette)
 	{
 		gfree(palette.bpc);
@@ -365,7 +365,7 @@ void JPXStream::close()
 			}
 		}
 		gfree(img.tiles);
-		img.tiles = NULL;
+		img.tiles = nullptr;
 	}
 	bufStr->close();
 }
@@ -506,7 +506,7 @@ void JPXStream::fillReadBuf()
 
 GString* JPXStream::getPSFilter(int psLevel, const char* indent, GBool okToReadStream)
 {
-	return NULL;
+	return nullptr;
 }
 
 GBool JPXStream::isBinary(GBool last)
@@ -996,17 +996,17 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 			{
 				img.tiles[i].init         = gFalse;
 				img.tiles[i].nextTilePart = 0;
-				img.tiles[i].tileComps    = NULL;
+				img.tiles[i].tileComps    = nullptr;
 			}
 			for (i = 0; i < img.nXTiles * img.nYTiles; ++i)
 			{
 				img.tiles[i].tileComps = (JPXTileComp*)gmallocn(img.nComps, sizeof(JPXTileComp));
 				for (comp = 0; comp < img.nComps; ++comp)
 				{
-					img.tiles[i].tileComps[comp].quantSteps = NULL;
-					img.tiles[i].tileComps[comp].data       = NULL;
-					img.tiles[i].tileComps[comp].buf        = NULL;
-					img.tiles[i].tileComps[comp].resLevels  = NULL;
+					img.tiles[i].tileComps[comp].quantSteps = nullptr;
+					img.tiles[i].tileComps[comp].data       = nullptr;
+					img.tiles[i].tileComps[comp].buf        = nullptr;
+					img.tiles[i].tileComps[comp].resLevels  = nullptr;
 				}
 			}
 			for (comp = 0; comp < img.nComps; ++comp)
@@ -1065,7 +1065,7 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 					img.tiles[i].tileComps[comp].resLevels =
 					    (JPXResLevel*)gmallocn(nDecompLevels + 1, sizeof(JPXResLevel));
 					for (r = 0; r <= nDecompLevels; ++r)
-						img.tiles[i].tileComps[comp].resLevels[r].precincts = NULL;
+						img.tiles[i].tileComps[comp].resLevels[r].precincts = nullptr;
 				}
 			}
 			for (r = 0; r <= nDecompLevels; ++r)
@@ -1147,7 +1147,7 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 				        nDecompLevels + 1,
 				        sizeof(JPXResLevel));
 				for (r = 0; r <= nDecompLevels; ++r)
-					img.tiles[i].tileComps[comp].resLevels[r].precincts = NULL;
+					img.tiles[i].tileComps[comp].resLevels[r].precincts = nullptr;
 			}
 			for (r = 0; r <= nDecompLevels; ++r)
 			{
@@ -1606,7 +1606,7 @@ GBool JPXStream::readTilePart()
 				        nDecompLevels + 1,
 				        sizeof(JPXResLevel));
 				for (r = 0; r <= nDecompLevels; ++r)
-					img.tiles[tileIdx].tileComps[comp].resLevels[r].precincts = NULL;
+					img.tiles[tileIdx].tileComps[comp].resLevels[r].precincts = nullptr;
 			}
 			for (r = 0; r <= nDecompLevels; ++r)
 			{
@@ -1675,7 +1675,7 @@ GBool JPXStream::readTilePart()
 			        nDecompLevels + 1,
 			        sizeof(JPXResLevel));
 			for (r = 0; r <= nDecompLevels; ++r)
-				img.tiles[tileIdx].tileComps[comp].resLevels[r].precincts = NULL;
+				img.tiles[tileIdx].tileComps[comp].resLevels[r].precincts = nullptr;
 			for (r = 0; r <= nDecompLevels; ++r)
 			{
 				if (style & 0x01)
@@ -2050,7 +2050,7 @@ GBool JPXStream::readTilePart()
 				if (resLevel->nPrecincts > tile->maxNPrecincts)
 					tile->maxNPrecincts = resLevel->nPrecincts;
 				for (pre = 0; pre < resLevel->nPrecincts; ++pre)
-					resLevel->precincts[pre].subbands = NULL;
+					resLevel->precincts[pre].subbands = nullptr;
 				precinct = resLevel->precincts;
 				for (preRow = preRow0; preRow < preRow1; ++preRow)
 				{
@@ -2060,9 +2060,9 @@ GBool JPXStream::readTilePart()
 						    (JPXSubband*)gmallocn(nSBs, sizeof(JPXSubband));
 						for (sb = 0; sb < nSBs; ++sb)
 						{
-							precinct->subbands[sb].inclusion    = NULL;
-							precinct->subbands[sb].zeroBitPlane = NULL;
-							precinct->subbands[sb].cbs          = NULL;
+							precinct->subbands[sb].inclusion    = nullptr;
+							precinct->subbands[sb].zeroBitPlane = nullptr;
+							precinct->subbands[sb].cbs          = nullptr;
 						}
 						for (sb = 0; sb < nSBs; ++sb)
 						{
@@ -2142,10 +2142,10 @@ GBool JPXStream::readTilePart()
 							subband->cbs = (JPXCodeBlock*)gmallocn(subband->nXCBs * subband->nYCBs, sizeof(JPXCodeBlock));
 							for (k = 0; k < subband->nXCBs * subband->nYCBs; ++k)
 							{
-								subband->cbs[k].dataLen      = NULL;
-								subband->cbs[k].touched      = NULL;
-								subband->cbs[k].arithDecoder = NULL;
-								subband->cbs[k].stats        = NULL;
+								subband->cbs[k].dataLen      = nullptr;
+								subband->cbs[k].touched      = nullptr;
+								subband->cbs[k].arithDecoder = nullptr;
+								subband->cbs[k].stats        = nullptr;
 							}
 							cb = subband->cbs;
 							for (cbY = cbRow0; cbY < cbRow1; ++cbY)
@@ -2184,8 +2184,8 @@ GBool JPXStream::readTilePart()
 									}
 									else
 									{
-										cb->coeffs  = NULL;
-										cb->touched = NULL;
+										cb->coeffs  = nullptr;
+										cb->touched = nullptr;
 										cb->len     = 0;
 									}
 									++cb;

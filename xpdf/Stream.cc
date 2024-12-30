@@ -97,7 +97,7 @@ char* Stream::getLine(char* buf, int size)
 	int c;
 
 	if (lookChar() == EOF || size < 0)
-		return NULL;
+		return nullptr;
 	for (i = 0; i < size - 1; ++i)
 	{
 		c = getChar();
@@ -468,7 +468,7 @@ Guchar* ImageStream::getLine()
 	char*  p;
 
 	if (str->getBlock(inputLine, inputLineSize) != inputLineSize)
-		return NULL;
+		return nullptr;
 	if (nBits == 1)
 	{
 		p = inputLine;
@@ -530,7 +530,7 @@ StreamPredictor::StreamPredictor(Stream* strA, int predictorA, int widthA, int n
 	width     = widthA;
 	nComps    = nCompsA;
 	nBits     = nBitsA;
-	predLine  = NULL;
+	predLine  = nullptr;
 	ok        = gFalse;
 
 	nVals    = width * nComps;
@@ -1068,7 +1068,7 @@ Stream* EmbedStream::copy()
 Stream* EmbedStream::makeSubStream(GFileOffset start, GBool limitedA, GFileOffset lengthA, Object* dictA)
 {
 	error(errInternal, -1, "Called makeSubStream() on EmbedStream");
-	return NULL;
+	return nullptr;
 }
 
 int EmbedStream::getChar()
@@ -1222,9 +1222,9 @@ GString* ASCIIHexStream::getPSFilter(int psLevel, const char* indent, GBool okTo
 	GString* s;
 
 	if (psLevel < 2)
-		return NULL;
+		return nullptr;
 	if (!(s = str->getPSFilter(psLevel, indent, okToReadStream)))
-		return NULL;
+		return nullptr;
 	s->append(indent)->append("/ASCIIHexDecode filter\n");
 	return s;
 }
@@ -1323,9 +1323,9 @@ GString* ASCII85Stream::getPSFilter(int psLevel, const char* indent, GBool okToR
 	GString* s;
 
 	if (psLevel < 2)
-		return NULL;
+		return nullptr;
 	if (!(s = str->getPSFilter(psLevel, indent, okToReadStream)))
-		return NULL;
+		return nullptr;
 	s->append(indent)->append("/ASCII85Decode filter\n");
 	return s;
 }
@@ -1348,12 +1348,12 @@ LZWStream::LZWStream(Stream* strA, int predictor, int columns, int colors, int b
 		if (!pred->isOk())
 		{
 			delete pred;
-			pred = NULL;
+			pred = nullptr;
 		}
 	}
 	else
 	{
-		pred = NULL;
+		pred = nullptr;
 	}
 	early     = earlyA;
 	eof       = gFalse;
@@ -1583,9 +1583,9 @@ GString* LZWStream::getPSFilter(int psLevel, const char* indent, GBool okToReadS
 	GString* s;
 
 	if (psLevel < 2 || pred)
-		return NULL;
+		return nullptr;
 	if (!(s = str->getPSFilter(psLevel, indent, okToReadStream)))
-		return NULL;
+		return nullptr;
 	s->append(indent)->append("<< ");
 	if (!early)
 		s->append("/EarlyChange 0 ");
@@ -1653,9 +1653,9 @@ GString* RunLengthStream::getPSFilter(int psLevel, const char* indent, GBool okT
 	GString* s;
 
 	if (psLevel < 2)
-		return NULL;
+		return nullptr;
 	if (!(s = str->getPSFilter(psLevel, indent, okToReadStream)))
-		return NULL;
+		return nullptr;
 	s->append(indent)->append("/RunLengthDecode filter\n");
 	return s;
 }
@@ -2509,9 +2509,9 @@ GString* CCITTFaxStream::getPSFilter(int psLevel, const char* indent, GBool okTo
 	GString* s;
 
 	if (psLevel < 2)
-		return NULL;
+		return nullptr;
 	if (!(s = str->getPSFilter(psLevel, indent, okToReadStream)))
-		return NULL;
+		return nullptr;
 	s->append(indent)->append("<< ");
 	if (encoding != 0)
 		s->appendf("/K {0:d} ", encoding);
@@ -2545,7 +2545,7 @@ DCTStream::DCTStream(Stream* strA, GBool colorXformA)
     : FilterStream(strA)
 {
 	colorXform  = colorXformA;
-	lineBuf     = NULL;
+	lineBuf     = nullptr;
 	inlineImage = str->isEmbedStream();
 }
 
@@ -2563,7 +2563,7 @@ void DCTStream::reset()
 {
 	int i;
 
-	lineBuf = NULL;
+	lineBuf = nullptr;
 	error   = gFalse;
 
 	str->reset();
@@ -2580,7 +2580,7 @@ void DCTStream::reset()
 	jpeg_create_decompress(&decomp);
 
 	// set up the data source manager
-	sourceMgr.src.next_input_byte   = NULL;
+	sourceMgr.src.next_input_byte   = nullptr;
 	sourceMgr.src.bytes_in_buffer   = 0;
 	sourceMgr.src.init_source       = &initSourceCbk;
 	sourceMgr.src.fill_input_buffer = &fillInputBufferCbk;
@@ -2723,7 +2723,7 @@ void DCTStream::initSourceCbk(j_decompress_ptr d)
 {
 	DCTSourceMgr* sourceMgr = (DCTSourceMgr*)d->src;
 
-	sourceMgr->src.next_input_byte = NULL;
+	sourceMgr->src.next_input_byte = nullptr;
 	sourceMgr->src.bytes_in_buffer = 0;
 }
 
@@ -2896,8 +2896,8 @@ DCTStream::DCTStream(Stream* strA, GBool colorXformA)
 	comp                 = 0;
 	x = y = 0;
 	for (i = 0; i < 4; ++i)
-		frameBuf[i] = NULL;
-	rowBuf = NULL;
+		frameBuf[i] = nullptr;
+	rowBuf = nullptr;
 	memset(quantTables, 0, sizeof(quantTables));
 	memset(dcHuffTables, 0, sizeof(dcHuffTables));
 	memset(acHuffTables, 0, sizeof(acHuffTables));
@@ -3013,10 +3013,10 @@ void DCTStream::close()
 	for (i = 0; i < 4; ++i)
 	{
 		gfree(frameBuf[i]);
-		frameBuf[i] = NULL;
+		frameBuf[i] = nullptr;
 	}
 	gfree(rowBuf);
-	rowBuf = NULL;
+	rowBuf = nullptr;
 	FilterStream::close();
 }
 
@@ -4657,14 +4657,14 @@ GString* DCTStream::getPSFilter(int psLevel, const char* indent, GBool okToReadS
 	GString* s;
 
 	if (psLevel < 2)
-		return NULL;
+		return nullptr;
 	if (!(s = str->getPSFilter(psLevel, indent, okToReadStream)))
-		return NULL;
+		return nullptr;
 	if (okToReadStream && !checkSequentialInterleaved())
 	{
 		// PostScript does not allow progressive or interleaved JPEG
 		delete s;
-		return NULL;
+		return nullptr;
 	}
 	s->append(indent)->append("<< >> /DCTDecode filter\n");
 	return s;
@@ -5317,15 +5317,15 @@ FlateStream::FlateStream(Stream* strA, int predictor, int columns, int colors, i
 		if (!pred->isOk())
 		{
 			delete pred;
-			pred = NULL;
+			pred = nullptr;
 		}
 	}
 	else
 	{
-		pred = NULL;
+		pred = nullptr;
 	}
-	litCodeTab.codes  = NULL;
-	distCodeTab.codes = NULL;
+	litCodeTab.codes  = nullptr;
+	distCodeTab.codes = nullptr;
 	memset(buf, 0, flateWindow);
 	checkForDecompressionBombs = gTrue;
 }
@@ -5483,9 +5483,9 @@ GString* FlateStream::getPSFilter(int psLevel, const char* indent, GBool okToRea
 	GString* s;
 
 	if (psLevel < 3 || pred)
-		return NULL;
+		return nullptr;
 	if (!(s = str->getPSFilter(psLevel, indent, okToReadStream)))
-		return NULL;
+		return nullptr;
 	s->append(indent)->append("<< >> /FlateDecode filter\n");
 	return s;
 }
@@ -5653,10 +5653,10 @@ GBool FlateStream::startBlock()
 	// free the code tables from the previous block
 	if (litCodeTab.codes != fixedLitCodeTab.codes)
 		gfree(litCodeTab.codes);
-	litCodeTab.codes = NULL;
+	litCodeTab.codes = nullptr;
 	if (distCodeTab.codes != fixedDistCodeTab.codes)
 		gfree(distCodeTab.codes);
-	distCodeTab.codes = NULL;
+	distCodeTab.codes = nullptr;
 
 	// read block header
 	blockHdr = getCodeWord(3);
@@ -5735,7 +5735,7 @@ GBool FlateStream::readDynamicCodes()
 	int             len, repeat, code;
 	int             i;
 
-	codeLenCodeTab.codes = NULL;
+	codeLenCodeTab.codes = nullptr;
 
 	// read lengths
 	if ((numLitCodes = getCodeWord(5)) == EOF)
@@ -6004,7 +6004,7 @@ FixedLengthEncoder::~FixedLengthEncoder()
 Stream* FixedLengthEncoder::copy()
 {
 	error(errInternal, -1, "Called copy() on FixedLengthEncoder");
-	return NULL;
+	return nullptr;
 }
 
 void FixedLengthEncoder::reset()
@@ -6054,7 +6054,7 @@ ASCIIHexEncoder::~ASCIIHexEncoder()
 Stream* ASCIIHexEncoder::copy()
 {
 	error(errInternal, -1, "Called copy() on ASCIIHexEncoder");
-	return NULL;
+	return nullptr;
 }
 
 void ASCIIHexEncoder::reset()
@@ -6113,7 +6113,7 @@ ASCII85Encoder::~ASCII85Encoder()
 Stream* ASCII85Encoder::copy()
 {
 	error(errInternal, -1, "Called copy() on ASCII85Encoder");
-	return NULL;
+	return nullptr;
 }
 
 void ASCII85Encoder::reset()
@@ -6234,7 +6234,7 @@ RunLengthEncoder::~RunLengthEncoder()
 Stream* RunLengthEncoder::copy()
 {
 	error(errInternal, -1, "Called copy() on RunLengthEncoder");
-	return NULL;
+	return nullptr;
 }
 
 void RunLengthEncoder::reset()
@@ -6371,7 +6371,7 @@ LZWEncoder::~LZWEncoder()
 Stream* LZWEncoder::copy()
 {
 	error(errInternal, -1, "Called copy() on LZWEncoder");
-	return NULL;
+	return nullptr;
 }
 
 void LZWEncoder::reset()
@@ -6384,8 +6384,8 @@ void LZWEncoder::reset()
 	for (i = 0; i < 256; ++i)
 	{
 		table[i].byte     = i;
-		table[i].next     = NULL;
-		table[i].children = NULL;
+		table[i].next     = nullptr;
+		table[i].children = nullptr;
 	}
 	nextSeq = 258;
 	codeLen = 9;
@@ -6470,11 +6470,11 @@ void LZWEncoder::fillBuf()
 
 	// update the table
 	table[nextSeq].byte     = seqLen < inBufLen ? inBuf[inBufStart + seqLen] : 0;
-	table[nextSeq].children = NULL;
+	table[nextSeq].children = nullptr;
 	if (table[code].children)
 		table[nextSeq].next = table[code].children;
 	else
-		table[nextSeq].next = NULL;
+		table[nextSeq].next = nullptr;
 	table[code].children = table + nextSeq;
 	++nextSeq;
 
@@ -6498,8 +6498,8 @@ void LZWEncoder::fillBuf()
 			outBufLen += 12;
 			for (i = 0; i < 256; ++i)
 			{
-				table[i].next     = NULL;
-				table[i].children = NULL;
+				table[i].next     = nullptr;
+				table[i].children = nullptr;
 			}
 			nextSeq = 258;
 			codeLen = 9;

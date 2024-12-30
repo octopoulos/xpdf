@@ -25,7 +25,7 @@ SplashFontFile* SplashFTFontFile::loadType1Font(SplashFTFontEngine* engineA, Spl
 #	if LOAD_FONTS_FROM_MEM
                                                 GString* fontBufA,
 #	else
-                                                 char* fileNameA, GBool deleteFileA,
+                                                char* fileNameA, GBool deleteFileA,
 #	endif
                                                 const char** encA)
 {
@@ -64,7 +64,7 @@ SplashFontFile* SplashFTFontFile::loadCIDFont(SplashFTFontEngine* engineA, Splas
 #	if LOAD_FONTS_FROM_MEM
                                               GString* fontBufA,
 #	else
-                                               char* fileNameA, GBool deleteFileA,
+                                              char* fileNameA, GBool deleteFileA,
 #	endif
                                               int* codeToGIDA, int codeToGIDLenA)
 {
@@ -93,7 +93,7 @@ SplashFontFile* SplashFTFontFile::loadTrueTypeFont(SplashFTFontEngine* engineA, 
 #	if LOAD_FONTS_FROM_MEM
                                                    GString* fontBufA,
 #	else
-                                                    char* fileNameA, GBool deleteFileA,
+                                                   char* fileNameA, GBool deleteFileA,
 #	endif
                                                    int fontNum, int* codeToGIDA, int codeToGIDLenA)
 {

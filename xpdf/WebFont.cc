@@ -22,9 +22,9 @@ WebFont::WebFont(GfxFont* gfxFontA, XRef* xref)
 	Ref         id;
 
 	gfxFont    = gfxFontA;
-	fontBuf    = NULL;
-	ffTrueType = NULL;
-	ffType1C   = NULL;
+	fontBuf    = nullptr;
+	ffTrueType = nullptr;
+	ffType1C   = nullptr;
 	isOpenType = gFalse;
 
 	if (gfxFont->getEmbeddedFontID(&id))
@@ -57,7 +57,7 @@ WebFont::~WebFont()
 
 GBool WebFont::canWriteTTF()
 {
-	return ffTrueType != NULL;
+	return ffTrueType != nullptr;
 }
 
 GBool WebFont::canWriteOTF()
@@ -103,7 +103,7 @@ GBool WebFont::generateTTF(FoFiOutputFunc outFunc, void* stream)
 		gfree(codeToGID);
 	if (!cmapTable)
 		return gFalse;
-	ffTrueType->writeTTF(outFunc, stream, NULL, NULL, cmapTable, cmapTableLength);
+	ffTrueType->writeTTF(outFunc, stream, nullptr, nullptr, cmapTable, cmapTableLength);
 	gfree(cmapTable);
 	return gTrue;
 }
@@ -124,7 +124,7 @@ GString* WebFont::getTTFData()
 	if (!generateTTF(writeToString, s))
 	{
 		delete s;
-		return NULL;
+		return nullptr;
 	}
 	return s;
 }
@@ -192,7 +192,7 @@ GString* WebFont::getOTFData()
 	if (!generateOTF(writeToString, s))
 	{
 		delete s;
-		return NULL;
+		return nullptr;
 	}
 	return s;
 }
@@ -259,7 +259,7 @@ Guchar* WebFont::makeUnicodeCmapTable(int* codeToGID, int nCodes, int* unicodeCm
 	int     start, end, c, i;
 
 	if (!(unicodeToGID = makeUnicodeToGID(codeToGID, nCodes, &unicodeToGIDLength)))
-		return NULL;
+		return nullptr;
 
 	// count the valid code-to-glyph mappings, and the sequences of
 	// consecutive valid mappings
@@ -376,7 +376,7 @@ int* WebFont::makeUnicodeToGID(int* codeToGID, int nCodes, int* unicodeToGIDLeng
 	if (gfxFont->isCIDFont())
 	{
 		if (!(ctu = ((GfxCIDFont*)gfxFont)->getToUnicode()))
-			return NULL;
+			return nullptr;
 	}
 	else
 	{

@@ -35,12 +35,12 @@ TileMap::TileMap(DisplayState* stateA)
 {
 	state = stateA;
 	state->setTileMap(this);
-	pageDPI = NULL;
-	pageW = pageH = NULL;
-	tileW = tileH = NULL;
-	pageBoxW = pageBoxH = NULL;
-	pageX = pageY = NULL;
-	tiles         = NULL;
+	pageDPI = nullptr;
+	pageW = pageH = nullptr;
+	tileW = tileH = nullptr;
+	pageBoxW = pageBoxH = nullptr;
+	pageX = pageY = nullptr;
+	tiles         = nullptr;
 }
 
 TileMap::~TileMap()
@@ -1224,7 +1224,7 @@ void TileMap::docChanged()
 	if (tiles)
 	{
 		deleteGList(tiles, PlacedTileDesc);
-		tiles = NULL;
+		tiles = nullptr;
 	}
 }
 
@@ -1235,7 +1235,7 @@ void TileMap::windowSizeChanged()
 	if (tiles)
 	{
 		deleteGList(tiles, PlacedTileDesc);
-		tiles = NULL;
+		tiles = nullptr;
 	}
 }
 
@@ -1246,7 +1246,7 @@ void TileMap::displayModeChanged()
 	if (tiles)
 	{
 		deleteGList(tiles, PlacedTileDesc);
-		tiles = NULL;
+		tiles = nullptr;
 	}
 }
 
@@ -1257,7 +1257,7 @@ void TileMap::zoomChanged()
 	if (tiles)
 	{
 		deleteGList(tiles, PlacedTileDesc);
-		tiles = NULL;
+		tiles = nullptr;
 	}
 }
 
@@ -1268,7 +1268,7 @@ void TileMap::rotateChanged()
 	if (tiles)
 	{
 		deleteGList(tiles, PlacedTileDesc);
-		tiles = NULL;
+		tiles = nullptr;
 	}
 }
 
@@ -1277,7 +1277,7 @@ void TileMap::scrollPositionChanged()
 	if (tiles)
 	{
 		deleteGList(tiles, PlacedTileDesc);
-		tiles = NULL;
+		tiles = nullptr;
 	}
 }
 
@@ -1288,7 +1288,7 @@ void TileMap::forceRedraw()
 	if (tiles)
 	{
 		deleteGList(tiles, PlacedTileDesc);
-		tiles = NULL;
+		tiles = nullptr;
 	}
 }
 
@@ -1299,9 +1299,9 @@ void TileMap::clearPageParams()
 	gfree(pageH);
 	gfree(tileW);
 	gfree(tileH);
-	pageDPI = NULL;
-	pageW = pageH = NULL;
-	tileW = tileH = NULL;
+	pageDPI = nullptr;
+	pageW = pageH = nullptr;
+	tileW = tileH = nullptr;
 }
 
 void TileMap::updatePageParams()
@@ -1465,7 +1465,7 @@ void TileMap::updatePageParams()
 void TileMap::clearContinuousModeParams()
 {
 	gfree(pageX);
-	pageX = pageY = NULL;
+	pageX = pageY = nullptr;
 }
 
 void TileMap::updateContinuousModeParams()

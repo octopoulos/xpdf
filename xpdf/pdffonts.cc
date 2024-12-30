@@ -72,7 +72,7 @@ static ArgDesc argDesc[] = {
 	{ "-help" , argFlag  , &printHelp    , 0                    , "print usage information"                                        },
 	{ "--help", argFlag  , &printHelp    , 0                    , "print usage information"                                        },
 	{ "-?"    , argFlag  , &printHelp    , 0                    , "print usage information"                                        },
-	{ NULL }
+	{ nullptr }
 };
 // clang-format on
 
@@ -122,17 +122,17 @@ int main(int argc, char* argv[])
 		if (cfgFileName[0] && !pathIsFile(cfgFileName))
 			error(errConfig, -1, "Config file '{0:s}' doesn't exist or isn't a file", cfgFileName);
 		globalParams = new GlobalParams(cfgFileName);
-		globalParams->setupBaseFonts(NULL);
+		globalParams->setupBaseFonts(nullptr);
 
 		// open PDF file
 		if (ownerPassword[0] != '\001')
 			ownerPW = new GString(ownerPassword);
 		else
-			ownerPW = NULL;
+			ownerPW = nullptr;
 		if (userPassword[0] != '\001')
 			userPW = new GString(userPassword);
 		else
-			userPW = NULL;
+			userPW = nullptr;
 		doc = new PDFDoc(fileName, ownerPW, userPW);
 		if (userPW)
 			delete userPW;
@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
 			printf("name                                           type              emb sub uni prob object ID\n");
 			printf("---------------------------------------------- ----------------- --- --- --- ---- ---------\n");
 		}
-		fonts    = NULL;
+		fonts    = nullptr;
 		fontsLen = fontsSize = 0;
 		numObjects           = doc->getXRef()->getNumObjects();
 		seenObjs             = (char*)gmalloc(numObjects);
@@ -253,7 +253,7 @@ static void scanFonts(Dict* resDict, PDFDoc* doc)
 	int          i;
 
 	// scan the fonts in this resource dictionary
-	gfxFontDict = NULL;
+	gfxFontDict = nullptr;
 	resDict->lookupNF("Font", &fontDict1);
 	if (checkObject(&fontDict1, &fontDict2) && fontDict2.isDict())
 	{
@@ -264,7 +264,7 @@ static void scanFonts(Dict* resDict, PDFDoc* doc)
 		}
 		else
 		{
-			gfxFontDict = new GfxFontDict(doc->getXRef(), NULL, fontDict2.getDict());
+			gfxFontDict = new GfxFontDict(doc->getXRef(), nullptr, fontDict2.getDict());
 		}
 		if (gfxFontDict)
 		{

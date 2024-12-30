@@ -74,7 +74,7 @@ static ArgDesc argDesc[] = {
 	{ "-help", argFlag, &printHelp, 0,     "print usage information" },
 	{ "--help", argFlag, &printHelp, 0,     "print usage information" },
 	{ "-?", argFlag, &printHelp, 0,     "print usage information" },
-	{ NULL }
+	{ nullptr }
 };
 
 //------------------------------------------------------------------------
@@ -125,18 +125,18 @@ int main(int argc, char* argv[])
 			globalParams->setPrintStatusInfo(verbose);
 		if (quiet)
 			globalParams->setErrQuiet(quiet);
-		globalParams->setupBaseFonts(NULL);
+		globalParams->setupBaseFonts(nullptr);
 		globalParams->setTextEncoding("UTF-8");
 
 		// open PDF file
 		if (ownerPassword[0] != '\001')
 			ownerPW = new GString(ownerPassword);
 		else
-			ownerPW = NULL;
+			ownerPW = nullptr;
 		if (userPassword[0] != '\001')
 			userPW = new GString(userPassword);
 		else
-			userPW = NULL;
+			userPW = nullptr;
 		doc = new PDFDoc(fileName, ownerPW, userPW);
 		if (userPW)
 			delete userPW;
@@ -220,7 +220,7 @@ int main(int argc, char* argv[])
 			}
 			if (embedBackground)
 			{
-				pngFile = NULL;
+				pngFile = nullptr;
 			}
 			else if (!(pngFile = openFile(pngFileName->getCString(), "wb")))
 			{

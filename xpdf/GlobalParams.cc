@@ -83,21 +83,21 @@ static struct
 	const char* obliqueFont;   // name of font to oblique
 	double      obliqueFactor; // oblique sheer factor
 } displayFontTab[] = {
-	{ "Courier", "n022003l.pfb", "cour.ttf", "Courier", "Courier", NULL, 0 },
-	{ "Courier-Bold", "n022004l.pfb", "courbd.ttf", "Courier", "Courier Bold", NULL, 0 },
+	{ "Courier", "n022003l.pfb", "cour.ttf", "Courier", "Courier", nullptr, 0 },
+	{ "Courier-Bold", "n022004l.pfb", "courbd.ttf", "Courier", "Courier Bold", nullptr, 0 },
 	{ "Courier-BoldOblique", "n022024l.pfb", "courbi.ttf", "Courier", "Courier Bold Oblique", "Courier-Bold", 0.212557 },
 	{ "Courier-Oblique", "n022023l.pfb", "couri.ttf", "Courier", "Courier Oblique", "Courier", 0.212557 },
-	{ "Helvetica", "n019003l.pfb", "arial.ttf", "Helvetica", "Helvetica", NULL, 0 },
-	{ "Helvetica-Bold", "n019004l.pfb", "arialbd.ttf", "Helvetica", "Helvetica Bold", NULL, 0 },
+	{ "Helvetica", "n019003l.pfb", "arial.ttf", "Helvetica", "Helvetica", nullptr, 0 },
+	{ "Helvetica-Bold", "n019004l.pfb", "arialbd.ttf", "Helvetica", "Helvetica Bold", nullptr, 0 },
 	{ "Helvetica-BoldOblique", "n019024l.pfb", "arialbi.ttf", "Helvetica", "Helvetica Bold Oblique", "Helvetica-Bold", 0.212557 },
 	{ "Helvetica-Oblique", "n019023l.pfb", "ariali.ttf", "Helvetica", "Helvetica Oblique", "Helvetica", 0.212557 },
-	{ "Symbol", "s050000l.pfb", NULL, "Symbol", "Symbol", NULL, 0 },
-	{ "Times-Bold", "n021004l.pfb", "timesbd.ttf", "Times", "Times Bold", NULL, 0 },
-	{ "Times-BoldItalic", "n021024l.pfb", "timesbi.ttf", "Times", "Times Bold Italic", NULL, 0 },
-	{ "Times-Italic", "n021023l.pfb", "timesi.ttf", "Times", "Times Italic", NULL, 0 },
-	{ "Times-Roman", "n021003l.pfb", "times.ttf", "Times", "Times Roman", NULL, 0 },
-	{ "ZapfDingbats", "d050000l.pfb", NULL, "ZapfDingbats", "Zapf Dingbats", NULL, 0 },
-	{ NULL }
+	{ "Symbol", "s050000l.pfb", nullptr, "Symbol", "Symbol", nullptr, 0 },
+	{ "Times-Bold", "n021004l.pfb", "timesbd.ttf", "Times", "Times Bold", nullptr, 0 },
+	{ "Times-BoldItalic", "n021024l.pfb", "timesbi.ttf", "Times", "Times Bold Italic", nullptr, 0 },
+	{ "Times-Italic", "n021023l.pfb", "timesi.ttf", "Times", "Times Italic", nullptr, 0 },
+	{ "Times-Roman", "n021003l.pfb", "times.ttf", "Times", "Times Roman", nullptr, 0 },
+	{ "ZapfDingbats", "d050000l.pfb", nullptr, "ZapfDingbats", "Zapf Dingbats", nullptr, 0 },
+	{ nullptr }
 };
 
 static const char* displayFontDirs[] = {
@@ -117,7 +117,7 @@ static const char* displayFontDirs[] = {
 	"/usr/sfw/share/ghostscript/fonts",
 #	endif
 #endif // _WIN32
-	NULL
+	nullptr
 };
 
 #ifdef __APPLE__
@@ -145,7 +145,7 @@ struct Base14FontInfo
 
 //------------------------------------------------------------------------
 
-GlobalParams* globalParams = NULL;
+GlobalParams* globalParams = nullptr;
 
 const char* GlobalParams::defaultTextEncoding = "Latin1";
 
@@ -398,7 +398,7 @@ SysFontList::~SysFontList()
 
 SysFontInfo* SysFontList::find(GString* name)
 {
-	SysFontInfo* match = NULL;
+	SysFontInfo* match = nullptr;
 	int          score = 0;
 	for (int i = 0; i < fonts->getLength(); ++i)
 	{
@@ -438,7 +438,7 @@ void SysFontList::scanWindowsFonts(char* winFontDir)
 		{
 			valNameLen = sizeof(valName) - 1;
 			dataLen    = sizeof(data) - 1;
-			if (RegEnumValueA(regKey, idx, valName, &valNameLen, NULL, &type, (LPBYTE)data, &dataLen) != ERROR_SUCCESS)
+			if (RegEnumValueA(regKey, idx, valName, &valNameLen, nullptr, &type, (LPBYTE)data, &dataLen) != ERROR_SUCCESS)
 				break;
 			if (type == REG_SZ && valNameLen > 0 && valNameLen < sizeof(valName) && dataLen > 0 && dataLen < sizeof(data))
 			{
@@ -514,8 +514,8 @@ void SysFontList::scanFontconfigFonts()
 	if (!(cfg = FcInitLoadConfigAndFonts()))
 		return;
 
-	pattern = FcPatternBuild(NULL, FC_OUTLINE, FcTypeBool, FcTrue, FC_SCALABLE, FcTypeBool, FcTrue, NULL);
-	objSet  = FcObjectSetBuild(FC_FULLNAME, FC_FILE, FC_INDEX, NULL);
+	pattern = FcPatternBuild(nullptr, FC_OUTLINE, FcTypeBool, FcTrue, FC_SCALABLE, FcTypeBool, FcTrue, nullptr);
+	objSet  = FcObjectSetBuild(FC_FULLNAME, FC_FILE, FC_INDEX, nullptr);
 	fontSet = FcFontList(cfg, pattern, objSet);
 	FcPatternDestroy(pattern);
 	FcObjectSetDestroy(objSet);
@@ -772,9 +772,9 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 	selectionColor                = new GString("#8080ff");
 	reverseVideoInvertImages      = gFalse;
 	allowLinksToChangeZoom        = gTrue;
-	launchCommand                 = NULL;
-	movieCommand                  = NULL;
-	defaultPrinter                = NULL;
+	launchCommand                 = nullptr;
+	movieCommand                  = nullptr;
+	defaultPrinter                = nullptr;
 	mapNumericCharNames           = gTrue;
 	mapUnknownCharNames           = gFalse;
 	mapExtTrueTypeFontsViaUnicode = gTrue;
@@ -790,7 +790,7 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 	printCommands     = gFalse;
 	printStatusInfo   = gFalse;
 	errQuiet          = gFalse;
-	debugLogFile      = NULL;
+	debugLogFile      = nullptr;
 
 	cidToUnicodeCache = new CharCodeToUnicodeCache(cidToUnicodeCacheSize);
 	unicodeToUnicodeCache =
@@ -817,8 +817,8 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 	residentUnicodeMaps->add(map->getEncodingName(), map);
 
 	// look for a user config file, then a system-wide config file
-	f        = NULL;
-	fileName = NULL;
+	f        = nullptr;
+	fileName = nullptr;
 	if (cfgFileName && cfgFileName[0])
 	{
 		fileName = new GString(cfgFileName);
@@ -835,7 +835,7 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 	{
 #ifdef _WIN32
 		char buf[512];
-		i = GetModuleFileNameA(NULL, buf, sizeof(buf));
+		i = GetModuleFileNameA(nullptr, buf, sizeof(buf));
 		if (i <= 0 || i >= sizeof(buf))
 		{
 			// error or path too long for buffer - just use the current dir
@@ -865,7 +865,7 @@ void GlobalParams::setDataDirVar()
 	dir = new GString(XPDFRC_DATADIR);
 #elif defined(_WIN32)
 	wchar_t buf[512];
-	DWORD   n = GetModuleFileNameW(NULL, buf, sizeof(buf) / sizeof(wchar_t));
+	DWORD   n = GetModuleFileNameW(nullptr, buf, sizeof(buf) / sizeof(wchar_t));
 	if (n <= 0 || n >= sizeof(buf))
 	{
 		// error or path too long for buffer - just use the current dir
@@ -970,10 +970,10 @@ void GlobalParams::initStateFilePaths()
 {
 #ifdef _WIN32
 	char path[MAX_PATH];
-	if (SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, SHGFP_TYPE_CURRENT, path) != S_OK)
+	if (SHGetFolderPathA(nullptr, CSIDL_APPDATA, nullptr, SHGFP_TYPE_CURRENT, path) != S_OK)
 		return;
 	GString* dir = appendToPath(new GString(path), "xpdf");
-	CreateDirectoryA(dir->getCString(), NULL);
+	CreateDirectoryA(dir->getCString(), nullptr);
 	pagesFile    = appendToPath(dir->copy(), "xpdf.pages");
 	tabStateFile = appendToPath(dir->copy(), "xpdf.tab-state");
 	sessionFile  = appendToPath(dir, "xpdf.session");
@@ -1555,7 +1555,7 @@ void GlobalParams::parseNameToUnicode(GList* tokens, GString* fileName, int line
 	while (getLine(buf, sizeof(buf), f))
 	{
 		tok1 = strtok(buf, " \t\r\n");
-		tok2 = strtok(NULL, " \t\r\n");
+		tok2 = strtok(nullptr, " \t\r\n");
 		if (tok1 && tok2)
 		{
 			sscanf(tok1, "%x", &u);
@@ -1665,6 +1665,7 @@ void GlobalParams::parseFontFile(GList* tokens, GString* fileName, int line)
 		error(errConfig, -1, "Bad 'fontFile' config file command ({0:t}:{1:d})", fileName, line);
 		return;
 	}
+	fprintf(stderr, "parseFontFile: [%s, %s]\n", ((GString*)tokens->get(1))->getCString(), ((GString*)tokens->get(2))->getCString());
 	fontFiles->add(((GString*)tokens->get(1))->copy(), ((GString*)tokens->get(2))->copy());
 }
 
@@ -2431,7 +2432,7 @@ static void getWinFontDir(char* winFontDir)
 		         (BOOL(__stdcall*)(HWND hwndOwner, LPSTR lpszPath, int nFolder, BOOL fCreate))
 		             GetProcAddress(shell32Lib, "SHGetSpecialFolderPathA")))
 		{
-			if (!(*SHGetSpecialFolderPathFunc)(NULL, winFontDir, CSIDL_FONTS, FALSE))
+			if (!(*SHGetSpecialFolderPathFunc)(nullptr, winFontDir, CSIDL_FONTS, FALSE))
 				winFontDir[0] = '\0';
 			// kludge: Terminal Server changes CSIDL_FONTS to something like
 			// "C:\Users\whatever\Windows\Fonts", which doesn't actually
@@ -2521,14 +2522,14 @@ void GlobalParams::setupBaseFonts(const char* dir)
 	getWinFontDir(winFontDir);
 #endif
 #ifdef __APPLE__
-	dfontFontNames = NULL;
+	dfontFontNames = nullptr;
 #endif
 	for (i = 0; displayFontTab[i].name; ++i)
 	{
 		if (fontFiles->lookup(displayFontTab[i].name))
 			continue;
 		fontName = new GString(displayFontTab[i].name);
-		fileName = NULL;
+		fileName = nullptr;
 		fontNum  = 0;
 		if (dir)
 		{
@@ -2540,7 +2541,7 @@ void GlobalParams::setupBaseFonts(const char* dir)
 			else
 			{
 				delete fileName;
-				fileName = NULL;
+				fileName = nullptr;
 			}
 		}
 #ifdef _WIN32
@@ -2554,7 +2555,7 @@ void GlobalParams::setupBaseFonts(const char* dir)
 			else
 			{
 				delete fileName;
-				fileName = NULL;
+				fileName = nullptr;
 			}
 		}
 #endif
@@ -2564,7 +2565,7 @@ void GlobalParams::setupBaseFonts(const char* dir)
 		if (dfontFontNames && i > 0 && (!s || strcmp(s, displayFontTab[i - 1].macFileName)))
 		{
 			deleteGList(dfontFontNames, GString);
-			dfontFontNames = NULL;
+			dfontFontNames = nullptr;
 		}
 		if (!fileName && s)
 		{
@@ -2574,7 +2575,7 @@ void GlobalParams::setupBaseFonts(const char* dir)
 				if (!(f = fopen(fileName->getCString(), "rb")))
 				{
 					delete fileName;
-					fileName = NULL;
+					fileName = nullptr;
 				}
 				else
 				{
@@ -2607,7 +2608,7 @@ void GlobalParams::setupBaseFonts(const char* dir)
 					if (!found)
 					{
 						delete fileName;
-						fileName = NULL;
+						fileName = nullptr;
 					}
 					break;
 				}
@@ -2636,7 +2637,7 @@ void GlobalParams::setupBaseFonts(const char* dir)
 				else
 				{
 					delete fileName;
-					fileName = NULL;
+					fileName = nullptr;
 				}
 			}
 		}
@@ -2719,7 +2720,7 @@ FILE* GlobalParams::getUnicodeMapFile(GString* encodingName)
 	if ((fileName = (GString*)unicodeMaps->lookup(encodingName)))
 		f = openFile(fileName->getCString(), "r");
 	else
-		f = NULL;
+		f = nullptr;
 	unlockGlobalParams;
 	return f;
 }
@@ -2736,7 +2737,7 @@ FILE* GlobalParams::findCMapFile(GString* collection, GString* cMapName)
 	if (!(list = (GList*)cMapDirs->lookup(collection)))
 	{
 		unlockGlobalParams;
-		return NULL;
+		return nullptr;
 	}
 	for (i = 0; i < list->getLength(); ++i)
 	{
@@ -2751,7 +2752,7 @@ FILE* GlobalParams::findCMapFile(GString* collection, GString* cMapName)
 		}
 	}
 	unlockGlobalParams;
-	return NULL;
+	return nullptr;
 }
 
 FILE* GlobalParams::findToUnicodeFile(GString* name)
@@ -2774,7 +2775,7 @@ FILE* GlobalParams::findToUnicodeFile(GString* name)
 		}
 	}
 	unlockGlobalParams;
-	return NULL;
+	return nullptr;
 }
 
 UnicodeRemapping* GlobalParams::getUnicodeRemapping()
@@ -2824,7 +2825,7 @@ GString* GlobalParams::findFontFile(GString* fontName)
 		}
 	}
 	unlockGlobalParams;
-	return NULL;
+	return nullptr;
 }
 
 GString* GlobalParams::findBase14FontFile(GString* fontName, int* fontNum, double* oblique)
@@ -2852,7 +2853,7 @@ GString* GlobalParams::findSystemFontFile(GString* fontName, SysFontType* type, 
 	SysFontInfo* fi;
 	GString*     path;
 
-	path = NULL;
+	path = nullptr;
 	lockGlobalParams;
 	if ((fi = sysFonts->find(fontName)))
 	{
@@ -3008,13 +3009,13 @@ PSFontParam16* GlobalParams::getPSResidentFont16(GString* fontName, int wMode)
 	int            i;
 
 	lockGlobalParams;
-	p = NULL;
+	p = nullptr;
 	for (i = 0; i < psResidentFonts16->getLength(); ++i)
 	{
 		p = (PSFontParam16*)psResidentFonts16->get(i);
 		if (!(p->name->cmp(fontName)) && p->wMode == wMode)
 			break;
-		p = NULL;
+		p = nullptr;
 	}
 	unlockGlobalParams;
 	return p;
@@ -3026,13 +3027,13 @@ PSFontParam16* GlobalParams::getPSResidentFontCC(GString* collection, int wMode)
 	int            i;
 
 	lockGlobalParams;
-	p = NULL;
+	p = nullptr;
 	for (i = 0; i < psResidentFontsCC->getLength(); ++i)
 	{
 		p = (PSFontParam16*)psResidentFontsCC->get(i);
 		if (!(p->name->cmp(collection)) && p->wMode == wMode)
 			break;
-		p = NULL;
+		p = nullptr;
 	}
 	unlockGlobalParams;
 	return p;
@@ -3627,7 +3628,7 @@ GString* GlobalParams::getDefaultPrinter()
 	GString* s;
 
 	lockGlobalParams;
-	s = defaultPrinter ? defaultPrinter->copy() : (GString*)NULL;
+	s = defaultPrinter ? defaultPrinter->copy() : (GString*)nullptr;
 	unlockGlobalParams;
 	return s;
 }
@@ -3710,7 +3711,7 @@ GList* GlobalParams::getKeyBinding(int code, int mods, int context)
 	int         i, j;
 
 	lockGlobalParams;
-	cmds    = NULL;
+	cmds    = nullptr;
 	// for ASCII chars, ignore the shift modifier
 	modMask = (code >= 0x21 && code <= 0xff) ? ~xpdfKeyModShift : ~0;
 	for (i = 0; i < keyBindings->getLength(); ++i)
@@ -3751,7 +3752,7 @@ PopupMenuCmd* GlobalParams::getPopupMenuCmd(int idx)
 	if (idx < popupMenuCmds->getLength())
 		cmd = (PopupMenuCmd*)popupMenuCmds->get(idx);
 	else
-		cmd = NULL;
+		cmd = nullptr;
 	unlockGlobalParams;
 	return cmd;
 }
@@ -3865,7 +3866,7 @@ void GlobalParams::debugLogPrintf(const char* fmt, ...)
 	}
 	if (!f)
 		return;
-	t = time(NULL);
+	t = time(nullptr);
 #ifdef _WIN32
 	localtime_s(&tm, &t);
 #else
@@ -3902,7 +3903,7 @@ CharCodeToUnicode* GlobalParams::getUnicodeToUnicode(GString* fontName)
 	GString *          fontPattern, *fileName;
 
 	lockGlobalParams;
-	fileName = NULL;
+	fileName = nullptr;
 	unicodeToUnicodes->startIter(&iter);
 	while (unicodeToUnicodes->getNext(&iter, &fontPattern, (void**)&fileName))
 	{
@@ -3911,7 +3912,7 @@ CharCodeToUnicode* GlobalParams::getUnicodeToUnicode(GString* fontName)
 			unicodeToUnicodes->killIter(&iter);
 			break;
 		}
-		fileName = NULL;
+		fileName = nullptr;
 	}
 	if (fileName)
 	{
@@ -3923,7 +3924,7 @@ CharCodeToUnicode* GlobalParams::getUnicodeToUnicode(GString* fontName)
 	}
 	else
 	{
-		ctu = NULL;
+		ctu = nullptr;
 	}
 	unlockGlobalParams;
 	return ctu;
@@ -4377,13 +4378,13 @@ XpdfWin32ErrorInfo* GlobalParams::getWin32ErrorInfo()
 	XpdfWin32ErrorInfo* errorInfo;
 
 	if (tlsWin32ErrorInfo == TLS_OUT_OF_INDEXES)
-		return NULL;
+		return nullptr;
 	errorInfo = (XpdfWin32ErrorInfo*)TlsGetValue(tlsWin32ErrorInfo);
 	if (!errorInfo)
 	{
 		errorInfo = new XpdfWin32ErrorInfo();
 		TlsSetValue(tlsWin32ErrorInfo, errorInfo);
-		errorInfo->func = NULL;
+		errorInfo->func = nullptr;
 		errorInfo->code = 0;
 	}
 	return errorInfo;

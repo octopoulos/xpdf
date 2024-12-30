@@ -75,7 +75,7 @@ static FontStyleTagInfo fontStyleTags[] = {
 	{ "Italic",         6,  gFalse, gTrue },
 	{ "Oblique",        7,  gFalse, gTrue },
 	{ "Light",          5,  gFalse, gFalse},
-	{ NULL,	         0,  gFalse, gFalse}
+	{ nullptr,	         0,  gFalse, gFalse}
 };
 
 struct StandardFontInfo
@@ -97,7 +97,7 @@ static StandardFontInfo standardFonts[] = {
 	{ "Times_New",        gFalse, gTrue },
 	{ "Verdana",          gFalse, gFalse},
 	{ "LucidaSans",       gFalse, gFalse},
-	{ NULL,	           gFalse, gFalse}
+	{ nullptr,	           gFalse, gFalse}
 };
 
 struct SubstFontInfo
@@ -203,7 +203,7 @@ public:
 	}
 
 	Ref      fontID;
-	GString* fontFace; // NULL for substituted fonts
+	GString* fontFace; // nullptr for substituted fonts
 	GString* fontSpec;
 	double   scale;
 	GBool    used; // set when used (per page)
@@ -324,7 +324,7 @@ HTMLGen::HTMLGen(double backgroundResolutionA, GBool tableMode)
 	textOutControl.mode              = tableMode ? textOutTableLayout : textOutReadingOrder;
 	textOutControl.html              = gTrue;
 	textOutControl.splitRotatedWords = gTrue;
-	textOut                          = new TextOutputDev(NULL, &textOutControl, gFalse);
+	textOut                          = new TextOutputDev(nullptr, &textOutControl, gFalse);
 	if (!textOut->isOk())
 		ok = gFalse;
 
@@ -332,7 +332,7 @@ HTMLGen::HTMLGen(double backgroundResolutionA, GBool tableMode)
 	paperColor[0] = paperColor[1] = paperColor[2] = 0xff;
 	splashOut                                     = new SplashOutputDev(splashModeRGB8, 1, gFalse, paperColor);
 
-	fontDefns = NULL;
+	fontDefns = nullptr;
 
 	nVisibleChars    = 0;
 	nInvisibleChars  = 0;
@@ -445,8 +445,8 @@ int HTMLGen::convertPage(
 	// insert a special character for each form field;
 	// remove existing characters inside field bboxes;
 	// erase background content inside field bboxes
-	formFieldFont = NULL;
-	formFieldInfo = NULL;
+	formFieldFont = nullptr;
+	formFieldInfo = nullptr;
 	if (convertFormFields)
 	{
 		AcroForm* form = doc->getCatalog()->getForm();
@@ -559,24 +559,24 @@ int HTMLGen::convertPage(
 	{
 		pr(writeHTML, htmlStream, "src=\"data:image/png;base64,\n");
 		writeInfo.base64    = new Base64Encoder(writeHTML, htmlStream);
-		writeInfo.writePNG  = NULL;
-		writeInfo.pngStream = NULL;
+		writeInfo.writePNG  = nullptr;
+		writeInfo.pngStream = nullptr;
 	}
 	else
 	{
 		pf(writeHTML, htmlStream, "src=\"{0:s}\"", pngURL);
-		writeInfo.base64    = NULL;
+		writeInfo.base64    = nullptr;
 		writeInfo.writePNG  = writePNG;
 		writeInfo.pngStream = pngStream;
 	}
 
 	// background image data - writing to a separate file, or embedding
 	// with base64 encoding
-	if (!(png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL)) || !(pngInfo = png_create_info_struct(png)))
+	if (!(png = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr)) || !(pngInfo = png_create_info_struct(png)))
 		return errFileIO;
 	if (setjmp(png_jmpbuf(png)))
 		return errFileIO;
-	png_set_write_fn(png, &writeInfo, pngWriteFunc, NULL);
+	png_set_write_fn(png, &writeInfo, pngWriteFunc, nullptr);
 	png_set_IHDR(png, pngInfo, bitmap->getWidth(), bitmap->getHeight(), 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 	png_write_info(png, pngInfo);
 	p = bitmap->getDataPtr();
@@ -647,12 +647,12 @@ int HTMLGen::convertPage(
 	if (formFieldFont)
 	{
 		delete formFieldFont;
-		formFieldFont = NULL;
+		formFieldFont = nullptr;
 	}
 	if (formFieldInfo)
 	{
 		deleteGList(formFieldInfo, HTMLGenFormFieldInfo);
-		formFieldInfo = NULL;
+		formFieldInfo = nullptr;
 	}
 
 	// HTML trailer
@@ -762,7 +762,7 @@ void HTMLGen::appendSpans(GList* words, int firstWordIdx, int lastWordIdx, int p
 		{
 			double            r0 = 0, g0 = 0, b0 = 0;         // make gcc happy
 			VerticalAlignment vertAlign0 = vertAlignBaseline; // make gcc happy
-			GString*          linkURI0   = NULL;
+			GString*          linkURI0   = nullptr;
 
 			GBool invisible = word0->isInvisible() || word0->isRotated();
 
@@ -974,19 +974,19 @@ HTMLGenFontDefn* HTMLGen::getFontFile(TextFontInfo* font, const char* htmlDir)
 
 	id = font->getFontID();
 	if (id.num < 0)
-		return NULL;
+		return nullptr;
 
 	doc->getXRef()->fetch(id.num, id.gen, &fontObj);
 	if (!fontObj.isDict())
 	{
 		fontObj.free();
-		return NULL;
+		return nullptr;
 	}
 
 	gfxFont  = GfxFont::makeFont(doc->getXRef(), "F", id, fontObj.getDict());
 	webFont  = new WebFont(gfxFont, doc->getXRef());
-	fontDefn = NULL;
-	fontFace = NULL;
+	fontDefn = nullptr;
+	fontFace = nullptr;
 
 	if (webFont->canWriteTTF())
 	{
@@ -1068,7 +1068,7 @@ HTMLGenFontDefn* HTMLGen::getSubstituteFont(TextFontInfo* font)
 
 	getFontDetails(font, &family, &weight, &style, &scale);
 	fontSpec = GString::format("font-family:{0:s}; font-weight:{1:s}; font-style:{2:s};", family, weight, style);
-	return new HTMLGenFontDefn(font->getFontID(), NULL, fontSpec, scale);
+	return new HTMLGenFontDefn(font->getFontID(), nullptr, fontSpec, scale);
 }
 
 void HTMLGen::getFontDetails(TextFontInfo* font, const char** family, const char** weight, const char** style, double* scale)
@@ -1098,7 +1098,7 @@ void HTMLGen::getFontDetails(TextFontInfo* font, const char** family, const char
 	}
 	else
 	{
-		fontName2 = NULL;
+		fontName2 = nullptr;
 		n         = 0;
 	}
 

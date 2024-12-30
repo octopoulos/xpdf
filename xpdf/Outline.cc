@@ -23,13 +23,13 @@ Outline::Outline(Object* outlineObj, XRef* xref)
 {
 	Object first, last;
 
-	items = NULL;
+	items = nullptr;
 	if (!outlineObj->isDict())
 		return;
 	outlineObj->dictLookupNF("First", &first);
 	outlineObj->dictLookupNF("Last", &last);
 	if (first.isRef() && last.isRef())
-		items = OutlineItem::readItemList(&first, &last, NULL, xref);
+		items = OutlineItem::readItemList(&first, &last, nullptr, xref);
 	first.free();
 	last.free();
 }
@@ -47,9 +47,9 @@ OutlineItem::OutlineItem(Object* itemRefA, Dict* dict, OutlineItem* parentA, XRe
 	Object obj1;
 
 	xref   = xrefA;
-	title  = NULL;
-	action = NULL;
-	kids   = NULL;
+	title  = nullptr;
+	action = nullptr;
+	kids   = nullptr;
 	parent = parentA;
 
 	if (dict->lookup("Title", &obj1)->isString())
@@ -172,13 +172,13 @@ void OutlineItem::close()
 	if (kids)
 	{
 		deleteGList(kids, OutlineItem);
-		kids = NULL;
+		kids = nullptr;
 	}
 }
 
 Unicode* OutlineItem::getTitle()
 {
-	return title ? title->getUnicode() : (Unicode*)NULL;
+	return title ? title->getUnicode() : (Unicode*)nullptr;
 }
 
 int OutlineItem::getTitleLength()

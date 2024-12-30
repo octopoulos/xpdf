@@ -48,7 +48,7 @@ public:
 	    : TileDesc(tile->page, tile->rotate, tile->dpi, tile->tx, tile->ty, tile->tw, tile->th)
 	    , state(cachedTileUnstarted)
 	    , active(gTrue)
-	    , bitmap(NULL)
+	    , bitmap(nullptr)
 	    , freeBitmap(gFalse)
 	{
 	}
@@ -84,7 +84,7 @@ typedef DWORD(WINAPI* GThreadFunc)(void*);
 
 static void gCreateThread(GThreadID* thr, GThreadFunc threadFunc, void* data)
 {
-	*thr = CreateThread(NULL, 0, threadFunc, data, 0, NULL);
+	*thr = CreateThread(nullptr, 0, threadFunc, data, 0, nullptr);
 }
 
 static void gJoinThread(GThreadID thr)
@@ -97,7 +97,7 @@ typedef HANDLE GCondition;
 
 static void gInitCondition(GCondition* c)
 {
-	*c = CreateEvent(NULL, TRUE, FALSE, NULL);
+	*c = CreateEvent(nullptr, TRUE, FALSE, nullptr);
 }
 
 static void gDestroyCondition(GCondition* c)
@@ -131,19 +131,19 @@ typedef void*     (*GThreadFunc)(void*);
 
 static void gCreateThread(GThreadID* thr, GThreadFunc threadFunc, void* data)
 {
-	pthread_create(thr, NULL, threadFunc, data);
+	pthread_create(thr, nullptr, threadFunc, data);
 }
 
 static void gJoinThread(GThreadID thr)
 {
-	pthread_join(thr, NULL);
+	pthread_join(thr, nullptr);
 }
 
 typedef pthread_cond_t GCondition;
 
 static void gInitCondition(GCondition* c)
 {
-	pthread_cond_init(c, NULL);
+	pthread_cond_init(c, nullptr);
 }
 
 static void gDestroyCondition(GCondition* c)
@@ -252,7 +252,7 @@ GThreadReturn TileCacheThreadPool::threadFunc(void* arg)
 
 void TileCacheThreadPool::worker()
 {
-	CachedTileDesc* ct = NULL;
+	CachedTileDesc* ct = nullptr;
 
 	while (1)
 	{
@@ -287,8 +287,8 @@ TileCache::TileCache(DisplayState* stateA)
 	state->setTileCache(this);
 	cache           = new GList();
 	threadPool      = new TileCacheThreadPool(this, state->getNWorkerThreads());
-	tileDoneCbk     = NULL;
-	tileDoneCbkData = NULL;
+	tileDoneCbk     = nullptr;
+	tileDoneCbkData = nullptr;
 }
 
 TileCache::~TileCache()
@@ -368,13 +368,13 @@ SplashBitmap* TileCache::getTileBitmap(TileDesc* tile, GBool* finished)
 	if (cacheIdx < 0)
 	{
 		threadPool->unlockMutex();
-		return NULL;
+		return nullptr;
 	}
 	ct = (CachedTileDesc*)cache->get(cacheIdx);
 	if (ct->state != cachedTileCanceled)
 		bitmap = ct->bitmap;
 	else
-		bitmap = NULL;
+		bitmap = nullptr;
 	if (finished)
 		*finished = ct->state == cachedTileFinished;
 	threadPool->unlockMutex();
@@ -531,7 +531,7 @@ GBool TileCache::hasUnstartedTiles()
 }
 
 // Return the next unstarted tile, changing its state to
-// cachedTileStarted.  If there are no unstarted tiles, return NULL.
+// cachedTileStarted.  If there are no unstarted tiles, return nullptr.
 // This will be called with the TileCacheThreadPool mutex locked.
 CachedTileDesc* TileCache::getUnstartedTile()
 {
@@ -547,7 +547,7 @@ CachedTileDesc* TileCache::getUnstartedTile()
 			return ct;
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 struct TileCacheStartPageInfo

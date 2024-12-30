@@ -72,7 +72,7 @@ UnicodeRemapping::UnicodeRemapping()
 {
 	for (int i = 0; i < 256; ++i)
 		page0[i] = (Unicode)i;
-	sMap    = NULL;
+	sMap    = nullptr;
 	sMapLen = sMapSize = 0;
 }
 
@@ -137,7 +137,7 @@ void UnicodeRemapping::parseFile(GString* fileName)
 		n = 0;
 		while (n < maxUnicodeString)
 		{
-			if (!(tok = strtok(NULL, " \t\r\n")))
+			if (!(tok = strtok(nullptr, " \t\r\n")))
 				break;
 			if (!parseHex(tok, (int)strlen(tok), &out[n]))
 			{

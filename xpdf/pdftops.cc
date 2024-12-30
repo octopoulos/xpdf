@@ -111,7 +111,7 @@ static ArgDesc argDesc[] = {
 	{ "-help", argFlag, &printHelp, 0,     "print usage information" },
 	{ "--help", argFlag, &printHelp, 0,     "print usage information" },
 	{ "-?", argFlag, &printHelp, 0,     "print usage information" },
-	{ NULL }
+	{ nullptr }
 };
 
 int main(int argc, char* argv[])
@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
 			error(errConfig, -1, "Config file '{0:s}' doesn't exist or isn't a file", cfgFileName);
 		globalParams = new GlobalParams(cfgFileName);
 #if HAVE_SPLASH
-		globalParams->setupBaseFonts(NULL);
+		globalParams->setupBaseFonts(nullptr);
 #endif
 		if (paperSize[0])
 		{
@@ -255,11 +255,11 @@ int main(int argc, char* argv[])
 		if (ownerPassword[0] != '\001')
 			ownerPW = new GString(ownerPassword);
 		else
-			ownerPW = NULL;
+			ownerPW = nullptr;
 		if (userPassword[0] != '\001')
 			userPW = new GString(userPassword);
 		else
-			userPW = NULL;
+			userPW = nullptr;
 		doc = new PDFDoc(fileName, ownerPW, userPW);
 		if (userPW)
 			delete userPW;
@@ -310,7 +310,7 @@ int main(int argc, char* argv[])
 		}
 
 		// write PostScript file
-		psOut = new PSOutputDev(psFileName->getCString(), doc, firstPage, lastPage, mode, 0, 0, 0, 0, gFalse, NULL, NULL, userUnit, gTrue);
+		psOut = new PSOutputDev(psFileName->getCString(), doc, firstPage, lastPage, mode, 0, 0, 0, 0, gFalse, nullptr, nullptr, userUnit, gTrue);
 		if (!psOut->isOk())
 		{
 			delete psOut;

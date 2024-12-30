@@ -22,59 +22,62 @@ class TextString;
 
 //------------------------------------------------------------------------
 
-class Outline {
+class Outline
+{
 public:
+	Outline(Object* outlineObj, XRef* xref);
+	~Outline();
 
-  Outline(Object *outlineObj, XRef *xref);
-  ~Outline();
-
-  GList *getItems() { return items; }
+	GList* getItems() { return items; }
 
 private:
-
-  GList *items;			// NULL if document has no outline
-				//   [OutlineItem]
+	GList* items; // nullptr if document has no outline
+	              //   [OutlineItem]
 };
 
 //------------------------------------------------------------------------
 
-class OutlineItem {
+class OutlineItem
+{
 public:
+	OutlineItem(Object* itemRefA, Dict* dict, OutlineItem* parentA, XRef* xrefA);
+	~OutlineItem();
 
-  OutlineItem(Object *itemRefA, Dict *dict, OutlineItem *parentA, XRef *xrefA);
-  ~OutlineItem();
+	static GList* readItemList(Object* firstItemRef, Object* lastItemRef, OutlineItem* parentA, XRef* xrefA);
 
-  static GList *readItemList(Object *firstItemRef, Object *lastItemRef,
-			     OutlineItem *parentA, XRef *xrefA);
+	void open();
+	void close();
 
-  void open();
-  void close();
+	Unicode* getTitle();
+	int      getTitleLength();
 
-  Unicode *getTitle();
-  int getTitleLength();
-  TextString *getTitleTextString() { return title; }
-  LinkAction *getAction() { return action; }
-  GBool isOpen() { return startsOpen; }
-  GBool hasKids() { return firstRef.isRef(); }
-  GList *getKids() { return kids; }
-  OutlineItem *getParent() { return parent; }
+	TextString* getTitleTextString() { return title; }
+
+	LinkAction* getAction() { return action; }
+
+	GBool isOpen() { return startsOpen; }
+
+	GBool hasKids() { return firstRef.isRef(); }
+
+	GList* getKids() { return kids; }
+
+	OutlineItem* getParent() { return parent; }
 
 private:
+	friend class PDFDoc;
 
-  friend class PDFDoc;
-
-  XRef *xref;
-  TextString *title;		// may be NULL
-  LinkAction *action;
-  Object itemRef;
-  Object firstRef;
-  Object lastRef;
-  Object nextRef;
-  GBool startsOpen;
-  int pageNum;			// page number (used by
-				//   PDFDoc::getOutlineTargetPage)
-  GList *kids;			// NULL unless this item is open [OutlineItem]
-  OutlineItem *parent;
+	XRef*        xref;
+	TextString*  title; // may be nullptr
+	LinkAction*  action;
+	Object       itemRef;
+	Object       firstRef;
+	Object       lastRef;
+	Object       nextRef;
+	GBool        startsOpen;
+	int          pageNum; // page number (used by
+	                      //   PDFDoc::getOutlineTargetPage)
+	GList*       kids;    // nullptr unless this item is open [OutlineItem]
+	OutlineItem* parent;
 };
 
 #endif

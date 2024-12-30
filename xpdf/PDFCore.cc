@@ -38,16 +38,16 @@ PDFCore::PDFCore(SplashColorMode colorMode, int bitmapRowPad, GBool reverseVideo
 	GString *initialZoom, *initialDisplayMode;
 	int      z, i;
 
-	doc = NULL;
+	doc = nullptr;
 
 	linksPage = 0;
-	links     = NULL;
+	links     = nullptr;
 
 	textPage         = 0;
 	textDPI          = 0;
 	textRotate       = 0;
 	textOutCtrl.mode = textOutPhysLayout;
-	text             = NULL;
+	text             = nullptr;
 
 	state          = new DisplayState(globalParams->getMaxTileWidth(), globalParams->getMaxTileHeight(), globalParams->getTileCacheSize(), globalParams->getWorkerThreads(), colorMode, bitmapRowPad);
 	tileMap        = new TileMap(state);
@@ -95,7 +95,7 @@ PDFCore::PDFCore(SplashColorMode colorMode, int bitmapRowPad, GBool reverseVideo
 	historyBLen = historyFLen = 0;
 	for (i = 0; i < pdfHistorySize; ++i)
 	{
-		history[i].fileName = NULL;
+		history[i].fileName = nullptr;
 		history[i].page     = 0;
 	}
 }
@@ -173,7 +173,7 @@ int PDFCore::reload()
 	if (!doc->getFileName())
 		return errOpenFile;
 	setBusyCursor(gTrue);
-	err = loadFile2(new PDFDoc(doc->getFileName()->copy(), NULL, NULL, this));
+	err = loadFile2(new PDFDoc(doc->getFileName()->copy(), nullptr, nullptr, this));
 	setBusyCursor(gFalse);
 	startUpdate();
 	finishUpdate(gTrue, gFalse);
@@ -219,10 +219,10 @@ void PDFCore::clear()
 
 	// no document
 	// NB: do not delete doc until after DisplayState::setDoc() returns
-	state->setDoc(NULL);
+	state->setDoc(nullptr);
 	aboutToDeleteDoc();
 	delete doc;
-	doc = NULL;
+	doc = nullptr;
 	clearPage();
 
 	// redraw
@@ -236,13 +236,13 @@ PDFDoc* PDFCore::takeDoc(GBool redraw)
 	PDFDoc* docA;
 
 	if (!doc)
-		return NULL;
+		return nullptr;
 
 	// no document
 	// NB: do not delete doc until after DisplayState::setDoc() returns
-	state->setDoc(NULL);
+	state->setDoc(nullptr);
 	docA = doc;
-	doc  = NULL;
+	doc  = nullptr;
 	clearPage();
 
 	// redraw
@@ -451,7 +451,7 @@ void PDFCore::addToHistory()
 
 	cur        = &history[historyCur];
 	h.page     = tileMap->getMidPage();
-	h.fileName = NULL;
+	h.fileName = nullptr;
 #ifdef _WIN32
 	if (doc->getFileNameU())
 	{
@@ -461,14 +461,14 @@ void PDFCore::addToHistory()
 		// size actually used by the second call (it looks like it just
 		// adds the size of the current directory and the sizef of the
 		// input path)
-		DWORD   nChars = GetFullPathNameW(doc->getFileNameU(), 1, &dummy, NULL);
+		DWORD   nChars = GetFullPathNameW(doc->getFileNameU(), 1, &dummy, nullptr);
 		if (nChars > 0)
 		{
 			h.fileName = (wchar_t*)gmallocn(nChars, sizeof(wchar_t));
-			if (GetFullPathNameW(doc->getFileNameU(), nChars, h.fileName, NULL) == 0)
+			if (GetFullPathNameW(doc->getFileNameU(), nChars, h.fileName, nullptr) == 0)
 			{
 				gfree(h.fileName);
-				h.fileName = NULL;
+				h.fileName = nullptr;
 			}
 		}
 	}
@@ -1469,7 +1469,7 @@ void PDFCore::setTextExtractionMode(TextOutputMode mode)
 		if (text)
 		{
 			delete text;
-			text = NULL;
+			text = nullptr;
 		}
 		textPage   = 0;
 		textDPI    = 0;
@@ -1490,7 +1490,7 @@ void PDFCore::setDiscardDiagonalText(GBool discard)
 		if (text)
 		{
 			delete text;
-			text = NULL;
+			text = nullptr;
 		}
 		textPage   = 0;
 		textDPI    = 0;
@@ -1527,7 +1527,7 @@ GString* PDFCore::getSelectedText()
 	int         x0, y0, x1, y1, t, i;
 
 	if (!state->hasSelection())
-		return NULL;
+		return nullptr;
 	ret = new GString();
 	for (i = 0; i < state->getNumSelectRects(); ++i)
 	{
@@ -1589,7 +1589,7 @@ GBool PDFCore::findU(Unicode* u, int len, GBool caseSensitive, GBool next, GBool
 	// search current page starting at previous result, current
 	// selection, or top/bottom of page
 	startAtTop = startAtLast = gFalse;
-	rect                     = NULL;
+	rect                     = nullptr;
 	xMin = yMin = xMax = yMax = 0;
 	topPage                   = tileMap->getFirstPage();
 	pg                        = topPage;
@@ -1633,7 +1633,7 @@ GBool PDFCore::findU(Unicode* u, int len, GBool caseSensitive, GBool next, GBool
 	if (!onePageOnly)
 	{
 		// search following/previous pages
-		textOut = new TextOutputDev(NULL, &textOutCtrl, gFalse);
+		textOut = new TextOutputDev(nullptr, &textOutCtrl, gFalse);
 		if (!textOut->isOk())
 		{
 			delete textOut;
@@ -1713,7 +1713,7 @@ GList* PDFCore::findAll(Unicode* u, int len, GBool caseSensitive, GBool wholeWor
 {
 	GList* results = new GList();
 
-	TextOutputDev* textOut = new TextOutputDev(NULL, &textOutCtrl, gFalse);
+	TextOutputDev* textOut = new TextOutputDev(nullptr, &textOutCtrl, gFalse);
 	if (!textOut->isOk())
 	{
 		delete textOut;
@@ -1758,7 +1758,7 @@ GList* AsyncFindAll::run(PDFDoc* doc, Unicode* u, int len, GBool caseSensitive, 
 {
 	GList* results = new GList();
 
-	TextOutputDev* textOut = new TextOutputDev(NULL, &core->textOutCtrl, gFalse);
+	TextOutputDev* textOut = new TextOutputDev(nullptr, &core->textOutCtrl, gFalse);
 	if (!textOut->isOk())
 	{
 		delete textOut;
@@ -1799,7 +1799,7 @@ GList* AsyncFindAll::run(PDFDoc* doc, Unicode* u, int len, GBool caseSensitive, 
 	if (canceled)
 	{
 		deleteGList(results, FindResult);
-		return NULL;
+		return nullptr;
 	}
 
 	return results;
@@ -1944,7 +1944,7 @@ int PDFCore::findAnnotIdx(int pg, double x, double y)
 AcroFormField* PDFCore::findFormField(int pg, double x, double y)
 {
 	if (!doc->getCatalog()->getForm())
-		return NULL;
+		return nullptr;
 	return doc->getCatalog()->getForm()->findField(pg, x, y);
 }
 
@@ -1958,9 +1958,9 @@ int PDFCore::findFormFieldIdx(int pg, double x, double y)
 AcroFormField* PDFCore::getFormField(int idx)
 {
 	if (!doc->getCatalog()->getForm())
-		return NULL;
+		return nullptr;
 	if (idx < 0 || idx >= doc->getCatalog()->getForm()->getNumFields())
-		return NULL;
+		return nullptr;
 	return doc->getCatalog()->getForm()->getField(idx);
 }
 
@@ -2062,12 +2062,12 @@ void PDFCore::clearPage()
 {
 	if (links)
 		delete links;
-	links     = NULL;
+	links     = nullptr;
 	linksPage = 0;
 
 	if (text)
 		delete text;
-	text       = NULL;
+	text       = nullptr;
 	textPage   = 0;
 	textDPI    = 0;
 	textRotate = 0;
@@ -2097,7 +2097,7 @@ void PDFCore::loadText(int pg)
 		return;
 	if (text)
 		delete text;
-	textOut = new TextOutputDev(NULL, &textOutCtrl, gFalse);
+	textOut = new TextOutputDev(nullptr, &textOutCtrl, gFalse);
 	if (!textOut->isOk())
 	{
 		text = new TextPage(&textOutCtrl);

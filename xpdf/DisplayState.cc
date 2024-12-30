@@ -32,9 +32,9 @@ DisplayState::DisplayState(int maxTileWidthA, int maxTileHeightA, int tileCacheS
 	colorMode      = colorModeA;
 	bitmapRowPad   = bitmapRowPadA;
 
-	tileMap        = NULL;
-	tileCache      = NULL;
-	tileCompositor = NULL;
+	tileMap        = nullptr;
+	tileCache      = nullptr;
+	tileCompositor = nullptr;
 
 	for (i = 0; i < splashColorModeNComps[colorMode]; ++i)
 	{
@@ -54,7 +54,7 @@ DisplayState::DisplayState(int maxTileWidthA, int maxTileHeightA, int tileCacheS
 	}
 	reverseVideo = gFalse;
 
-	doc = NULL;
+	doc = nullptr;
 
 	winW = winH = 100;
 	displayMode = displayContinuous;
@@ -63,7 +63,7 @@ DisplayState::DisplayState(int maxTileWidthA, int maxTileHeightA, int tileCacheS
 	scrollPage  = 0;
 	scrollX = scrollY = 0;
 
-	selectRects = NULL;
+	selectRects = nullptr;
 }
 
 DisplayState::~DisplayState()
@@ -203,7 +203,7 @@ void DisplayState::setSelection(GList* selectRectsA)
 
 void DisplayState::clearSelection()
 {
-	setSelection(NULL);
+	setSelection(nullptr);
 }
 
 int DisplayState::getNumSelectRects()

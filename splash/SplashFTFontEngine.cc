@@ -82,7 +82,7 @@ SplashFontFile* SplashFTFontEngine::loadType1Font(SplashFontFileID* idA,
 #	if LOAD_FONTS_FROM_MEM
                                                   GString* fontBuf,
 #	else
-                                                   char* fileName, GBool deleteFile,
+                                                  char* fileName, GBool deleteFile,
 #	endif
                                                   const char** enc)
 {
@@ -99,7 +99,7 @@ SplashFontFile* SplashFTFontEngine::loadType1CFont(SplashFontFileID* idA,
 #	if LOAD_FONTS_FROM_MEM
                                                    GString* fontBuf,
 #	else
-                                                    char* fileName, GBool deleteFile,
+                                                   char* fileName, GBool deleteFile,
 #	endif
                                                    const char** enc)
 {
@@ -116,7 +116,7 @@ SplashFontFile* SplashFTFontEngine::loadOpenTypeT1CFont(SplashFontFileID* idA,
 #	if LOAD_FONTS_FROM_MEM
                                                         GString* fontBuf,
 #	else
-                                                         char* fileName, GBool deleteFile,
+                                                        char* fileName, GBool deleteFile,
 #	endif
                                                         const char** enc)
 {
@@ -190,7 +190,7 @@ SplashFontFile* SplashFTFontEngine::loadCIDFont(SplashFontFileID* idA,
 #	if LOAD_FONTS_FROM_MEM
                                                 GString* fontBuf,
 #	else
-                                                 char* fileName, GBool deleteFile,
+                                                char* fileName, GBool deleteFile,
 #	endif
                                                 int* codeToGID, int codeToGIDLen)
 {
@@ -242,7 +242,7 @@ SplashFontFile* SplashFTFontEngine::loadOpenTypeCFFFont(SplashFontFileID* idA,
 #	if LOAD_FONTS_FROM_MEM
                                                         GString* fontBuf,
 #	else
-                                                         char* fileName, GBool deleteFile,
+                                                        char* fileName, GBool deleteFile,
 #	endif
                                                         int* codeToGID, int codeToGIDLen)
 {
@@ -329,7 +329,7 @@ SplashFontFile* SplashFTFontEngine::loadTrueTypeFont(SplashFontFileID* idA,
 #	if LOAD_FONTS_FROM_MEM
                                                      GString* fontBuf,
 #	else
-                                                      char* fileName, GBool deleteFile,
+                                                     char* fileName, GBool deleteFile,
 #	endif
                                                      int fontNum, int* codeToGID, int codeToGIDLen)
 {

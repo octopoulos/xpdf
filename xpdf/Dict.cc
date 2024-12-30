@@ -102,7 +102,7 @@ inline DictEntry* Dict::find(const char* key)
 	for (e = hashTab[h]; e; e = e->next)
 		if (!strcmp(key, e->key))
 			return e;
-	return NULL;
+	return nullptr;
 }
 
 int Dict::hash(const char* key)

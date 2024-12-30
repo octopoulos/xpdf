@@ -517,7 +517,7 @@ TextCharLine::TextCharLine(int rotA)
 	chars = new GList();
 	yMin = yMax = 0;
 	rot         = rotA;
-	next = prev = NULL;
+	next = prev = nullptr;
 }
 
 TextCharLine::~TextCharLine()
@@ -607,7 +607,7 @@ SplitLine::SplitLine(int firstCharIdxA, int lastCharIdxA, double yMinA, double y
 	lastCharIdx  = lastCharIdxA;
 	yMin         = yMinA;
 	yMax         = yMaxA;
-	chars        = NULL;
+	chars        = nullptr;
 }
 
 SplitLine::~SplitLine()
@@ -760,7 +760,7 @@ TextFontInfo::TextFontInfo(GfxState* state)
 		descent    = -0.25;
 	}
 	fontName = (gfxFont && gfxFont->getName()) ? gfxFont->getName()->copy()
-	                                           : (GString*)NULL;
+	                                           : (GString*)nullptr;
 	flags    = gfxFont ? gfxFont->getFlags() : 0;
 	mWidth   = 0;
 	if (gfxFont && !gfxFont->isCIDFont())
@@ -782,7 +782,7 @@ TextFontInfo::TextFontInfo()
 {
 	fontID.num = -1;
 	fontID.gen = -1;
-	fontName   = NULL;
+	fontName   = nullptr;
 	flags      = 0;
 	mWidth     = 0;
 	ascent     = 0;
@@ -884,7 +884,7 @@ TextWord::TextWord(GList* chars, int start, int lenA, int rotA, GBool rotatedA, 
 	dir        = (char)dirA;
 	spaceAfter = (char)spaceAfterA;
 	underlined = gFalse;
-	link       = NULL;
+	link       = nullptr;
 	colorR     = ch->colorR;
 	colorG     = ch->colorG;
 	colorB     = ch->colorB;
@@ -999,7 +999,7 @@ double TextWord::getBaseline()
 
 GString* TextWord::getLinkURI()
 {
-	return link ? link->uri : (GString*)NULL;
+	return link ? link->uri : (GString*)nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -1218,7 +1218,7 @@ int TextWordList::getLength()
 TextWord* TextWordList::get(int idx)
 {
 	if (idx < 0 || idx >= words->getLength())
-		return NULL;
+		return nullptr;
 	return (TextWord*)words->get(idx);
 }
 
@@ -1258,13 +1258,13 @@ TextPage::TextPage(TextOutputControl* controlA)
 	uBuf      = (Unicode*)gmallocn(uBufSize, sizeof(Unicode));
 	pageWidth = pageHeight = 0;
 	charPos                = 0;
-	curFont                = NULL;
+	curFont                = nullptr;
 	curFontSize            = 0;
 	curRot                 = 0;
 	diagonal               = gFalse;
 	rotated                = gFalse;
 	nTinyChars             = 0;
-	actualText             = NULL;
+	actualText             = nullptr;
 	actualTextLen          = 0;
 	actualTextX0           = 0;
 	actualTextY0           = 0;
@@ -1279,7 +1279,7 @@ TextPage::TextPage(TextOutputControl* controlA)
 	underlines = new GList();
 	links      = new GList();
 
-	findCols     = NULL;
+	findCols     = nullptr;
 	lastFindXMin = lastFindYMin = 0;
 	haveLastFind                = gFalse;
 
@@ -1323,14 +1323,14 @@ void TextPage::clear()
 {
 	pageWidth = pageHeight = 0;
 	charPos                = 0;
-	curFont                = NULL;
+	curFont                = nullptr;
 	curFontSize            = 0;
 	curRot                 = 0;
 	diagonal               = gFalse;
 	rotated                = gFalse;
 	nTinyChars             = 0;
 	gfree(actualText);
-	actualText       = NULL;
+	actualText       = nullptr;
 	actualTextLen    = 0;
 	actualTextNBytes = 0;
 	deleteGList(chars, TextChar);
@@ -1348,7 +1348,7 @@ void TextPage::clear()
 	if (findCols)
 	{
 		deleteGList(findCols, TextColumn);
-		findCols = NULL;
+		findCols = nullptr;
 	}
 	lastFindXMin = lastFindYMin = 0;
 	haveLastFind                = gFalse;
@@ -1367,13 +1367,13 @@ void TextPage::updateFont(GfxState* state)
 	int      i;
 
 	// get the font info object
-	curFont = NULL;
+	curFont = nullptr;
 	for (i = 0; i < fonts->getLength(); ++i)
 	{
 		curFont = (TextFontInfo*)fonts->get(i);
 		if (curFont->matches(state))
 			break;
-		curFont = NULL;
+		curFont = nullptr;
 	}
 	if (!curFont)
 	{
@@ -1699,7 +1699,7 @@ void TextPage::endActualText(GfxState* state)
 	Unicode* u;
 
 	u          = actualText;
-	actualText = NULL; // so we can call TextPage::addChar()
+	actualText = nullptr; // so we can call TextPage::addChar()
 	if (actualTextNBytes)
 	{
 		// now that we have the position info for all of the text inside
@@ -1708,7 +1708,7 @@ void TextPage::endActualText(GfxState* state)
 		addChar(state, actualTextX0, actualTextY0, actualTextX1 - actualTextX0, actualTextY1 - actualTextY0, 0, actualTextNBytes, u, actualTextLen);
 	}
 	gfree(u);
-	actualText       = NULL;
+	actualText       = nullptr;
 	actualTextLen    = 0;
 	actualTextNBytes = gFalse;
 }
@@ -1809,7 +1809,7 @@ void TextPage::writeReadingOrder(void* outputStream, TextOutputFunc outputFunc, 
 	if (control.overlapHandling != textOutIgnoreOverlaps)
 		overlappingChars = separateOverlappingText(chars);
 	else
-		overlappingChars = NULL;
+		overlappingChars = nullptr;
 	primaryRot = rotateChars(chars);
 	primaryLR  = checkPrimaryLR(chars);
 	tree       = splitChars(chars);
@@ -1888,7 +1888,7 @@ GList* TextPage::makeColumns()
 		if (control.overlapHandling != textOutIgnoreOverlaps)
 			overlappingChars = separateOverlappingText(chars);
 		else
-			overlappingChars = NULL;
+			overlappingChars = nullptr;
 		primaryRot = rotateChars(chars);
 		primaryLR  = checkPrimaryLR(chars);
 		if ((tree = splitChars(chars)))
@@ -1938,7 +1938,7 @@ void TextPage::writePhysLayout(void* outputStream, TextOutputFunc outputFunc, Un
 	if (control.overlapHandling != textOutIgnoreOverlaps)
 		overlappingChars = separateOverlappingText(chars);
 	else
-		overlappingChars = NULL;
+		overlappingChars = nullptr;
 	primaryRot = rotateChars(chars);
 	primaryLR  = checkPrimaryLR(chars);
 	tree       = splitChars(chars);
@@ -1969,7 +1969,7 @@ void TextPage::writePhysLayout(void* outputStream, TextOutputFunc outputFunc, Un
 	outLen = (int*)gmallocn(ph, sizeof(int));
 	for (i = 0; i < ph; ++i)
 	{
-		out[i]    = NULL;
+		out[i]    = nullptr;
 		outLen[i] = 0;
 	}
 
@@ -3449,14 +3449,14 @@ struct TextCharNode
 
 // Separate out any overlapping text.  If handling is
 // textOutAppendOverlaps, return a list of the overlapping chars; else
-// delete them and return NULL.
+// delete them and return nullptr.
 GList* TextPage::separateOverlappingText(GList* charsA)
 {
 	// bin-sort the TextChars
 	TextCharNode* grid[overlapGridHeight][overlapGridWidth];
 	for (int y = 0; y < overlapGridHeight; ++y)
 		for (int x = 0; x < overlapGridWidth; ++x)
-			grid[y][x] = NULL;
+			grid[y][x] = nullptr;
 	for (int i = 0; i < charsA->getLength(); ++i)
 	{
 		TextChar* ch = (TextChar*)charsA->get(i);
@@ -3514,7 +3514,7 @@ GList* TextPage::separateOverlappingText(GList* charsA)
 	}
 
 	// find overlapped strings
-	GList* overlapChars = NULL;
+	GList* overlapChars = nullptr;
 	if (control.overlapHandling == textOutAppendOverlaps)
 		overlapChars = new GList();
 	if (foundOverlaps)
@@ -3589,7 +3589,7 @@ TextColumn* TextPage::buildOverlappingTextColumn(GList* overlappingChars)
 	for (int i = 0; i < overlappingChars->getLength(); ++i)
 	{
 		TextChar* ch     = (TextChar*)overlappingChars->get(i);
-		TextChar* chNext = NULL;
+		TextChar* chNext = nullptr;
 		if (i + 1 < overlappingChars->getLength())
 			chNext = (TextChar*)overlappingChars->get(i + 1);
 		double sp = 0;
@@ -3690,7 +3690,7 @@ TextBlock* TextPage::splitChars(GList* charsA)
 			if (ch->rot == rot && !(control.discardInvisibleText && ch->invisible) && !(control.discardClippedText && ch->clipped))
 				chars2->append(ch);
 		}
-		tree[rot] = NULL;
+		tree[rot] = nullptr;
 		if (chars2->getLength() > 0)
 		{
 			chars2->sort((rot & 1) ? &TextChar::cmpY : &TextChar::cmpX);
@@ -3729,7 +3729,7 @@ TextBlock* TextPage::splitChars(GList* charsA)
 			if (tree[rot])
 				delete tree[rot];
 		delete clippedChars;
-		return NULL;
+		return nullptr;
 	}
 
 	// if the main tree is not a multicolumn node, insert one so that
@@ -3749,7 +3749,7 @@ TextBlock* TextPage::splitChars(GList* charsA)
 		if (tree[rot])
 		{
 			insertIntoTree(tree[rot], tree[0], doReorder);
-			tree[rot] = NULL;
+			tree[rot] = nullptr;
 		}
 	}
 
@@ -4419,8 +4419,8 @@ void TextPage::mergeSplitLines(GList* charsA, int rot, GList* splitLines)
 		for (int i = 0; i < splitLines->getLength(); ++i)
 		{
 			SplitLine* splitLine = (SplitLine*)splitLines->get(i);
-			SplitLine* prevLine  = NULL;
-			SplitLine* nextLine  = NULL;
+			SplitLine* prevLine  = nullptr;
+			SplitLine* nextLine  = nullptr;
 
 			// check for overlapping lines
 			GBool maybeSub = gFalse;
@@ -4538,8 +4538,8 @@ void TextPage::mergeSplitLines(GList* charsA, int rot, GList* splitLines)
 		for (int i = 0; i < splitLines->getLength(); ++i)
 		{
 			SplitLine* splitLine = (SplitLine*)splitLines->get(i);
-			SplitLine* prevLine  = NULL;
-			SplitLine* nextLine  = NULL;
+			SplitLine* prevLine  = nullptr;
+			SplitLine* nextLine  = nullptr;
 
 			// check for overlapping lines
 			GBool maybeSub = gFalse;
@@ -4999,7 +4999,7 @@ void TextPage::insertClippedChars(GList* clippedChars, TextBlock* tree)
 }
 
 // Find the leaf in <tree> to which clipped char <ch> can be appended.
-// Returns NULL if there is no appropriate append point.
+// Returns nullptr if there is no appropriate append point.
 TextBlock* TextPage::findClippedCharLeaf(TextChar* ch, TextBlock* tree)
 {
 	TextBlock *ret, *child;
@@ -5026,7 +5026,7 @@ TextBlock* TextPage::findClippedCharLeaf(TextChar* ch, TextBlock* tree)
 				return ret;
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 // Convert the tree of TextBlocks into a list of TextColumns.
@@ -5299,7 +5299,7 @@ GList* TextPage::buildSimple2Lines(GList* charsA, int rot)
 	double        bestOverlap, overlap, xMin, yMin, xMax, yMax;
 	int           bestLine, i, j, k, m;
 
-	firstCharLine = lastCharLine = NULL;
+	firstCharLine = lastCharLine = nullptr;
 	openCharLines                = new GList();
 	for (i = 0; i < charsA->getLength(); ++i)
 	{
@@ -5497,9 +5497,9 @@ TextLine* TextPage::buildLine(GList* charsA, int rot, double xMin, double yMin, 
 		dir        = getCharDirection(
             (TextChar*)charsA->get(i),
             (i > 0 && !spaceAfter) ? (TextChar*)charsA->get(i - 1)
-		                                  : (TextChar*)NULL,
+		                                  : (TextChar*)nullptr,
             (i < charsA->getLength() - 1) ? (TextChar*)charsA->get(i + 1)
-		                                         : (TextChar*)NULL);
+		                                         : (TextChar*)nullptr);
 		rotated2 = ((TextChar*)charsA->get(i))->rotated;
 		for (j = i + 1; j < charsA->getLength(); ++j)
 		{
@@ -5521,7 +5521,7 @@ TextLine* TextPage::buildLine(GList* charsA, int rot, double xMin, double yMin, 
 			dir2 = getCharDirection(
 			    ch2, ch,
 			    (j < charsA->getLength() - 1) ? (TextChar*)charsA->get(j + 1)
-			                                  : (TextChar*)NULL);
+			                                  : (TextChar*)nullptr);
 			if (ch->font != ch2->font || fabs(ch->fontSize - ch2->fontSize) > 0.01 || (control.splitRotatedWords && ch2->rotated != rotated2) || (dir && dir2 && dir2 != dir) || (control.mode == textOutRawOrder && ch2->charPos != ch->charPos + ch->charLen))
 				break;
 			if (!dir && dir2)
@@ -5695,7 +5695,7 @@ void TextPage::adjustCombiningChars(GList* charsA, int rot)
 		}
 
 		// identify the two previous chars
-		TextChar* prev1 = (i >= 2) ? (TextChar*)charsA->get(i - 2) : NULL;
+		TextChar* prev1 = (i >= 2) ? (TextChar*)charsA->get(i - 2) : nullptr;
 		TextChar* prev2 = (TextChar*)charsA->get(i - 1);
 
 		//~ this code currently makes things worse for RtL scripts, so
@@ -5757,7 +5757,7 @@ int TextPage::getCharDirection(TextChar* ch)
 }
 
 // Check the character's direction, in the context of the left and
-// right neighboring characters (either of which may be NULL).
+// right neighboring characters (either of which may be nullptr).
 // Returns 1 for L or Num; -1 for R; 0 for others.
 int TextPage::getCharDirection(TextChar* ch, TextChar* left, TextChar* right)
 {
@@ -6107,7 +6107,7 @@ GBool TextPage::findText(Unicode* s, int len, GBool startAtTop, GBool stopAtBott
 		s2 = s;
 	}
 
-	txt     = NULL;
+	txt     = nullptr;
 	txtSize = 0;
 
 	xStart = yStart = xStop = yStop = 0;
@@ -6321,7 +6321,7 @@ GString* TextPage::getText(double xMin, double yMin, double xMax, double yMax, G
 
 	// get the output encoding
 	if (!(uMap = globalParams->getTextEncoding()))
-		return NULL;
+		return nullptr;
 	spaceLen = uMap->mapUnicode(0x20, space, sizeof(space));
 	eolLen   = 0; // make gcc happy
 	switch (globalParams->getTextEOL())
@@ -6378,7 +6378,7 @@ GString* TextPage::getText(double xMin, double yMin, double xMax, double yMax, G
 	outLen = (int*)gmallocn(ph, sizeof(int));
 	for (i = 0; i < ph; ++i)
 	{
-		out[i]    = NULL;
+		out[i]    = nullptr;
 		outLen[i] = 0;
 	}
 
@@ -6821,7 +6821,7 @@ TextWordList* TextPage::makeWordListForChars(GList* charList)
 		if (control.overlapHandling != textOutIgnoreOverlaps)
 			overlappingChars = separateOverlappingText(chars);
 		else
-			overlappingChars = NULL;
+			overlappingChars = nullptr;
 		rot       = rotateChars(charList);
 		primaryLR = checkPrimaryLR(charList);
 		tree      = splitChars(charList);
@@ -7017,7 +7017,7 @@ static void outputToFile(void* stream, const char* text, int len)
 
 TextOutputDev::TextOutputDev(char* fileName, TextOutputControl* controlA, GBool append, GBool fileNameIsUTF8)
 {
-	text    = NULL;
+	text    = nullptr;
 	control = *controlA;
 	ok      = gTrue;
 
@@ -7051,8 +7051,8 @@ TextOutputDev::TextOutputDev(char* fileName, TextOutputControl* controlA, GBool 
 	}
 	else
 	{
-		outputFunc   = NULL;
-		outputStream = NULL;
+		outputFunc   = nullptr;
+		outputStream = nullptr;
 	}
 
 	// set up text object

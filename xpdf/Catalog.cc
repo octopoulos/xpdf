@@ -50,8 +50,8 @@ PageTreeNode::PageTreeNode(Ref refA, int countA, PageTreeNode* parentA)
 	ref    = refA;
 	count  = countA;
 	parent = parentA;
-	kids   = NULL;
-	attrs  = NULL;
+	kids   = nullptr;
+	attrs  = nullptr;
 }
 
 PageTreeNode::~PageTreeNode()
@@ -152,14 +152,14 @@ Catalog::Catalog(PDFDoc* docA)
 	ok            = gTrue;
 	doc           = docA;
 	xref          = doc->getXRef();
-	pageTree      = NULL;
-	pages         = NULL;
-	pageRefs      = NULL;
+	pageTree      = nullptr;
+	pages         = nullptr;
+	pageRefs      = nullptr;
 	numPages      = 0;
-	baseURI       = NULL;
-	form          = NULL;
-	embeddedFiles = NULL;
-	pageLabels    = NULL;
+	baseURI       = nullptr;
+	form          = nullptr;
+	embeddedFiles = nullptr;
+	pageLabels    = nullptr;
 #if MULTITHREADED
 	gInitMutex(&pageMutex);
 #endif
@@ -331,7 +331,7 @@ void Catalog::doneWithPage(int i)
 	if (pages[i - 1])
 	{
 		delete pages[i - 1];
-		pages[i - 1] = NULL;
+		pages[i - 1] = nullptr;
 	}
 #if MULTITHREADED
 	gUnlockMutex(&pageMutex);
@@ -347,7 +347,7 @@ GString* Catalog::readMetadata()
 	int      n;
 
 	if (!metadata.isStream())
-		return NULL;
+		return nullptr;
 	dict = metadata.streamGetDict();
 	if (!dict->lookup("Subtype", &obj)->isName("XML"))
 		error(errSyntaxWarning, -1, "Unknown Metadata type: '{0:s}'", obj.isName() ? obj.getName() : "???");
@@ -408,10 +408,10 @@ LinkDest* Catalog::findDest(GString* name)
 			obj1.free();
 	}
 	if (!found)
-		return NULL;
+		return nullptr;
 
 	// construct LinkDest
-	dest = NULL;
+	dest = nullptr;
 	if (obj1.isArray())
 	{
 		dest = new LinkDest(obj1.getArray());
@@ -432,7 +432,7 @@ LinkDest* Catalog::findDest(GString* name)
 	if (dest && !dest->isOk())
 	{
 		delete dest;
-		dest = NULL;
+		dest = nullptr;
 	}
 
 	return dest;
@@ -558,14 +558,14 @@ GBool Catalog::readPageTree(Object* catDict)
 		numPages = 0;
 		return gFalse;
 	}
-	pageTree = new PageTreeNode(topPagesRef.getRef(), numPages, NULL);
+	pageTree = new PageTreeNode(topPagesRef.getRef(), numPages, nullptr);
 	topPagesObj.free();
 	topPagesRef.free();
 	pages    = (Page**)greallocn(pages, numPages, sizeof(Page*));
 	pageRefs = (Ref*)greallocn(pageRefs, numPages, sizeof(Ref));
 	for (i = 0; i < numPages; ++i)
 	{
-		pages[i]        = NULL;
+		pages[i]        = nullptr;
 		pageRefs[i].num = -1;
 		pageRefs[i].gen = -1;
 	}
@@ -677,7 +677,7 @@ void Catalog::loadPage2(int pg, int relPg, PageTreeNode* node)
 		}
 
 		// merge the PageAttrs
-		attrs = new PageAttrs(node->parent ? node->parent->attrs : (PageAttrs*)NULL, pageObj.getDict(), xref);
+		attrs = new PageAttrs(node->parent ? node->parent->attrs : (PageAttrs*)nullptr, pageObj.getDict(), xref);
 
 		// if "Kids" exists, it's an internal node
 		if (pageObj.dictLookup("Kids", &kidsObj)->isArray())
@@ -794,7 +794,7 @@ err2:
 	intents.free();
 err1:
 	catDict.free();
-	return NULL;
+	return nullptr;
 }
 
 void Catalog::readEmbeddedFileList(Dict* catDict)
@@ -1017,7 +1017,7 @@ Object* Catalog::getEmbeddedFileStreamObj(int idx, Object* strObj)
 	if (!strObj->isStream())
 	{
 		strObj->free();
-		return NULL;
+		return nullptr;
 	}
 	return strObj;
 }
@@ -1037,7 +1037,7 @@ void Catalog::readPageLabelTree(Object* root)
 	if (pageLabels->getLength() == 0)
 	{
 		deleteGList(pageLabels, PageLabelNode);
-		pageLabels = NULL;
+		pageLabels = nullptr;
 		return;
 	}
 
@@ -1113,13 +1113,13 @@ TextString* Catalog::getPageLabel(int pageNum)
 	GString*       suffix;
 
 	if (!pageLabels || !(label = findPageLabel(pageNum)))
-		return NULL;
+		return nullptr;
 
 	ts = new TextString(label->prefix);
 
 	pageRangeNum = label->start + (pageNum - label->firstPage);
 
-	suffix = NULL;
+	suffix = nullptr;
 	if (label->style == 'D')
 		suffix = GString::format("{0:d}", pageRangeNum);
 	else if (label->style == 'R')
@@ -1151,7 +1151,7 @@ PageLabelNode* Catalog::findPageLabel(int pageNum)
 		if (pageNum >= label->firstPage && pageNum <= label->lastPage)
 			return label;
 	}
-	return NULL;
+	return nullptr;
 }
 
 GString* Catalog::makeRomanNumeral(int num, GBool uppercase)

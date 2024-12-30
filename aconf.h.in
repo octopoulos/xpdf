@@ -135,4 +135,9 @@
  */
 #cmakedefine01 BUILDING_XPDFREADER
 
+/*
+ * Load fonts from memory
+ */
+#cmakedefine LOAD_FONTS_FROM_MEM
+
 #endif

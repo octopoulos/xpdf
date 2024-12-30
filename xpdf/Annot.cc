@@ -89,10 +89,10 @@ Annot::Annot(PDFDoc* docA, Dict* dict, Ref* refA)
 	doc             = docA;
 	xref            = doc->getXRef();
 	ref             = *refA;
-	type            = NULL;
-	appearanceState = NULL;
-	appearBuf       = NULL;
-	borderStyle     = NULL;
+	type            = nullptr;
+	appearanceState = nullptr;
+	appearBuf       = nullptr;
+	borderStyle     = nullptr;
 
 	//----- parse the type
 
@@ -149,7 +149,7 @@ Annot::Annot(PDFDoc* docA, Dict* dict, Ref* refA)
 
 	borderType        = annotBorderSolid;
 	borderWidth       = 1;
-	borderDash        = NULL;
+	borderDash        = nullptr;
 	borderDashLength  = 0;
 	nBorderColorComps = 3;
 	borderColor[0]    = 0;
@@ -1111,7 +1111,7 @@ void Annot::drawText(GString* text, GString* da, int quadding, double margin, in
 	}
 	else
 	{
-		daToks = NULL;
+		daToks = nullptr;
 	}
 
 	// get the font and font size
@@ -1270,7 +1270,7 @@ void Annot::draw(Gfx* gfx, GBool printing)
 
 	// draw the appearance stream
 	isLink = type && !type->cmp("Link");
-	gfx->drawAnnot(&appearance, isLink ? borderStyle : (AnnotBorderStyle*)NULL, xMin, yMin, xMax, yMax);
+	gfx->drawAnnot(&appearance, isLink ? borderStyle : (AnnotBorderStyle*)nullptr, xMin, yMin, xMax, yMax);
 }
 
 Object* Annot::getObject(Object* obj)
@@ -1316,9 +1316,9 @@ Annots::Annots(PDFDoc* docA)
 	doc        = docA;
 	pageAnnots = (PageAnnots**)gmallocn(doc->getNumPages(), sizeof(PageAnnots*));
 	for (int page = 1; page <= doc->getNumPages(); ++page)
-		pageAnnots[page - 1] = NULL;
+		pageAnnots[page - 1] = nullptr;
 	formFieldRefsSize = 0;
-	formFieldRefs     = NULL;
+	formFieldRefs     = nullptr;
 }
 
 Annots::~Annots()
@@ -1439,7 +1439,7 @@ Annot* Annots::find(int page, double x, double y)
 		if (annot->inRect(x, y))
 			return annot;
 	}
-	return NULL;
+	return nullptr;
 }
 
 int Annots::findIdx(int page, double x, double y)
@@ -1481,7 +1481,7 @@ void Annots::generateAnnotAppearances(int page)
 		for (int i = 0; i < pa->annots->getLength(); ++i)
 		{
 			Annot* annot = (Annot*)pa->annots->get(i);
-			annot->generateAnnotAppearance(NULL);
+			annot->generateAnnotAppearance(nullptr);
 		}
 		pa->appearancesGenerated = gTrue;
 	}

@@ -64,13 +64,13 @@ CMap* CMap::parse(CMapCache* cache, GString* collectionA, Object* obj)
 	}
 	else if (obj->isStream())
 	{
-		if (!(cMap = CMap::parse(NULL, collectionA, obj->getStream())))
+		if (!(cMap = CMap::parse(nullptr, collectionA, obj->getStream())))
 			error(errSyntaxError, -1, "Invalid CMap in Type 0 font");
 	}
 	else
 	{
 		error(errSyntaxError, -1, "Invalid Encoding in Type 0 font");
-		return NULL;
+		return nullptr;
 	}
 	return cMap;
 }
@@ -89,7 +89,7 @@ CMap* CMap::parse(CMapCache* cache, GString* collectionA, GString* cMapNameA)
 			return new CMap(collectionA->copy(), cMapNameA->copy(), 1);
 
 		error(errSyntaxError, -1, "Couldn't find '{0:t}' CMap file for '{1:t}' collection", cMapNameA, collectionA);
-		return NULL;
+		return nullptr;
 	}
 
 	cMap = new CMap(collectionA->copy(), cMapNameA->copy());
@@ -105,7 +105,7 @@ CMap* CMap::parse(CMapCache* cache, GString* collectionA, Stream* str)
 	Object obj1;
 	CMap*  cMap;
 
-	cMap = new CMap(collectionA->copy(), NULL);
+	cMap = new CMap(collectionA->copy(), nullptr);
 
 	if (!str->getDict()->lookup("UseCMap", &obj1)->isNull())
 		cMap->useCMap(cache, &obj1);
@@ -219,7 +219,7 @@ CMap::CMap(GString* collectionA, GString* cMapNameA, int wModeA)
 	cMapName   = cMapNameA;
 	isIdent    = gTrue;
 	wMode      = wModeA;
-	vector     = NULL;
+	vector     = nullptr;
 	refCnt     = 1;
 }
 
@@ -229,7 +229,7 @@ void CMap::useCMap(CMapCache* cache, char* useName)
 	CMap*    subCMap;
 
 	useNameStr = new GString(useName);
-	// if cache is non-NULL, we already have a lock, and we can use
+	// if cache is non-nullptr, we already have a lock, and we can use
 	// CMapCache::getCMap() directly; otherwise, we need to use
 	// GlobalParams::getCMap() in order to acqure the lock need to use
 	// GlobalParams::getCMap
@@ -413,7 +413,7 @@ CMapCache::CMapCache()
 	int i;
 
 	for (i = 0; i < cMapCacheSize; ++i)
-		cache[i] = NULL;
+		cache[i] = nullptr;
 }
 
 CMapCache::~CMapCache()
@@ -457,5 +457,5 @@ CMap* CMapCache::getCMap(GString* collection, GString* cMapName)
 		cmap->incRefCnt();
 		return cmap;
 	}
-	return NULL;
+	return nullptr;
 }

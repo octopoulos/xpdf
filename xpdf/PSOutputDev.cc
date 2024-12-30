@@ -773,7 +773,7 @@ static const char* prolog[] = {
 	"} def",
 	"~123ngs",
 	"end",
-	NULL
+	nullptr
 };
 
 static const char* minLineWidthProlog[] = {
@@ -786,7 +786,7 @@ static const char* minLineWidthProlog[] = {
 	"  } if",
 	"  setlinewidth",
 	"} bind def",
-	NULL
+	nullptr
 };
 
 static const char* cmapProlog[] = {
@@ -831,7 +831,7 @@ static const char* cmapProlog[] = {
 	"  currentdict CMapName exch /CMap defineresource pop",
 	"end",
 	"end",
-	NULL
+	nullptr
 };
 
 //------------------------------------------------------------------------
@@ -869,11 +869,11 @@ public:
 	PSFontInfo(Ref fontIDA)
 	{
 		fontID = fontIDA;
-		ff     = NULL;
+		ff     = nullptr;
 	}
 
 	Ref             fontID;
-	PSFontFileInfo* ff; // pointer to font file info; NULL indicates
+	PSFontFileInfo* ff; // pointer to font file info; nullptr indicates
 	                    //   font mapping failed
 };
 
@@ -910,9 +910,9 @@ PSFontFileInfo::PSFontFileInfo(GString* psNameA, GfxFontType typeA, PSFontFileLo
 	type          = typeA;
 	loc           = locA;
 	embFontID.num = embFontID.gen = -1;
-	extFileName                   = NULL;
-	encoding                      = NULL;
-	codeToGID                     = NULL;
+	extFileName                   = nullptr;
+	encoding                      = nullptr;
+	codeToGID                     = nullptr;
 	codeToGIDLen                  = 0;
 }
 
@@ -959,7 +959,7 @@ PSOutCustomColor::PSOutCustomColor(double cA, double mA, double yA, double kA, G
 	y    = yA;
 	k    = kA;
 	name = nameA;
-	next = NULL;
+	next = nullptr;
 }
 
 PSOutCustomColor::~PSOutCustomColor()
@@ -1015,7 +1015,7 @@ public:
 
 	virtual GString* getPSFilter(int psLevel, const char* indent, GBool okToReadStream)
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	virtual GBool isBinary(GBool last = gTrue) { return gTrue; }
@@ -1041,7 +1041,7 @@ DeviceNRecoder::DeviceNRecoder(Stream* strA, int widthA, int heightA, GfxImageCo
 	width    = widthA;
 	height   = heightA;
 	colorMap = colorMapA;
-	imgStr   = NULL;
+	imgStr   = nullptr;
 	pixelIdx = 0;
 	bufIdx   = gfxColorMaxComps;
 	bufSize  = ((GfxDeviceNColorSpace*)colorMap->getColorSpace())->getAlt()->getNComps();
@@ -1057,7 +1057,7 @@ DeviceNRecoder::~DeviceNRecoder()
 Stream* DeviceNRecoder::copy()
 {
 	error(errInternal, -1, "Called copy() on DeviceNRecoder");
-	return NULL;
+	return nullptr;
 }
 
 void DeviceNRecoder::reset()
@@ -1069,7 +1069,7 @@ void DeviceNRecoder::reset()
 void DeviceNRecoder::close()
 {
 	delete imgStr;
-	imgStr = NULL;
+	imgStr = nullptr;
 	str->close();
 }
 
@@ -1124,7 +1124,7 @@ public:
 
 	virtual GString* getPSFilter(int psLevel, const char* indent, GBool okToReadStream)
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	virtual GBool isBinary(GBool last = gTrue) { return gTrue; }
@@ -1147,7 +1147,7 @@ GrayRecoder::GrayRecoder(Stream* strA, int widthA, int heightA, GfxImageColorMap
 	width    = widthA;
 	height   = heightA;
 	colorMap = colorMapA;
-	imgStr   = NULL;
+	imgStr   = nullptr;
 	buf      = (Guchar*)gmalloc(width);
 	bufIdx   = width;
 }
@@ -1162,7 +1162,7 @@ GrayRecoder::~GrayRecoder()
 Stream* GrayRecoder::copy()
 {
 	error(errInternal, -1, "Called copy() on GrayRecoder");
-	return NULL;
+	return nullptr;
 }
 
 void GrayRecoder::reset()
@@ -1174,7 +1174,7 @@ void GrayRecoder::reset()
 void GrayRecoder::close()
 {
 	delete imgStr;
-	imgStr = NULL;
+	imgStr = nullptr;
 	str->close();
 }
 
@@ -1222,7 +1222,7 @@ public:
 
 	virtual GString* getPSFilter(int psLevel, const char* indent, GBool okToReadStream)
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	virtual GBool isBinary(GBool last = gTrue) { return gTrue; }
@@ -1250,7 +1250,7 @@ ColorKeyToMaskEncoder::ColorKeyToMaskEncoder(Stream* strA, int widthA, int heigh
 	colorMap   = colorMapA;
 	numComps   = colorMap->getNumPixelComps();
 	maskColors = maskColorsA;
-	imgStr     = NULL;
+	imgStr     = nullptr;
 	bufSize    = (width + 7) / 8;
 	buf        = (Guchar*)gmalloc(bufSize);
 	bufIdx     = width;
@@ -1266,7 +1266,7 @@ ColorKeyToMaskEncoder::~ColorKeyToMaskEncoder()
 Stream* ColorKeyToMaskEncoder::copy()
 {
 	error(errInternal, -1, "Called copy() on ColorKeyToMaskEncoder");
-	return NULL;
+	return nullptr;
 }
 
 void ColorKeyToMaskEncoder::reset()
@@ -1278,7 +1278,7 @@ void ColorKeyToMaskEncoder::reset()
 void ColorKeyToMaskEncoder::close()
 {
 	delete imgStr;
-	imgStr = NULL;
+	imgStr = nullptr;
 	str->close();
 }
 
@@ -1340,26 +1340,26 @@ PSOutputDev::PSOutputDev(char* fileName, PDFDoc* docA, int firstPageA, int lastP
 	FILE*      f;
 	PSFileType fileTypeA;
 
-	underlayCbk       = NULL;
-	underlayCbkData   = NULL;
-	overlayCbk        = NULL;
-	overlayCbkData    = NULL;
+	underlayCbk       = nullptr;
+	underlayCbkData   = nullptr;
+	overlayCbk        = nullptr;
+	overlayCbkData    = nullptr;
 	customCodeCbk     = customCodeCbkA;
 	customCodeCbkData = customCodeCbkDataA;
 
-	rasterizePage     = NULL;
+	rasterizePage     = nullptr;
 	fontInfo          = new GList();
 	fontFileInfo      = new GHash();
-	imgIDs            = NULL;
-	formIDs           = NULL;
-	visitedResources  = NULL;
-	saveStack         = NULL;
-	paperSizes        = NULL;
-	embFontList       = NULL;
-	customColors      = NULL;
+	imgIDs            = nullptr;
+	formIDs           = nullptr;
+	visitedResources  = nullptr;
+	saveStack         = nullptr;
+	paperSizes        = nullptr;
+	embFontList       = nullptr;
+	customColors      = nullptr;
 	haveSavedTextPath = gFalse;
 	haveSavedClipPath = gFalse;
-	t3String          = NULL;
+	t3String          = nullptr;
 
 	// open file or pipe
 	if (!strcmp(fileName, "-"))
@@ -1406,26 +1406,26 @@ PSOutputDev::PSOutputDev(char* fileName, PDFDoc* docA, int firstPageA, int lastP
 
 PSOutputDev::PSOutputDev(PSOutputFunc outputFuncA, void* outputStreamA, PDFDoc* docA, int firstPageA, int lastPageA, PSOutMode modeA, int imgLLXA, int imgLLYA, int imgURXA, int imgURYA, GBool manualCtrlA, PSOutCustomCodeCbk customCodeCbkA, void* customCodeCbkDataA, GBool honorUserUnitA)
 {
-	underlayCbk       = NULL;
-	underlayCbkData   = NULL;
-	overlayCbk        = NULL;
-	overlayCbkData    = NULL;
+	underlayCbk       = nullptr;
+	underlayCbkData   = nullptr;
+	overlayCbk        = nullptr;
+	overlayCbkData    = nullptr;
 	customCodeCbk     = customCodeCbkA;
 	customCodeCbkData = customCodeCbkDataA;
 
-	rasterizePage     = NULL;
+	rasterizePage     = nullptr;
 	fontInfo          = new GList();
 	fontFileInfo      = new GHash();
-	imgIDs            = NULL;
-	formIDs           = NULL;
-	visitedResources  = NULL;
-	saveStack         = NULL;
-	paperSizes        = NULL;
-	embFontList       = NULL;
-	customColors      = NULL;
+	imgIDs            = nullptr;
+	formIDs           = nullptr;
+	visitedResources  = nullptr;
+	saveStack         = nullptr;
+	paperSizes        = nullptr;
+	embFontList       = nullptr;
+	customColors      = nullptr;
 	haveSavedTextPath = gFalse;
 	haveSavedClipPath = gFalse;
-	t3String          = NULL;
+	t3String          = nullptr;
 
 	init(outputFuncA, outputStreamA, psGeneric, docA, firstPageA, lastPageA, modeA, imgLLXA, imgLLYA, imgURXA, imgURYA, manualCtrlA, honorUserUnitA);
 }
@@ -1815,7 +1815,7 @@ void PSOutputDev::writeDocSetup(Catalog* catalog)
 	}
 	else
 	{
-		rasterizePage = NULL;
+		rasterizePage = nullptr;
 	}
 
 	visitedResources = (char*)gmalloc(xref->getNumObjects());
@@ -1905,7 +1905,7 @@ void PSOutputDev::writeDocSetup(Catalog* catalog)
 		writePS("end\n");
 
 	gfree(visitedResources);
-	visitedResources = NULL;
+	visitedResources = nullptr;
 }
 
 void PSOutputDev::writePageTrailer()
@@ -2136,7 +2136,7 @@ void PSOutputDev::setupFonts(Dict* resDict)
 	GfxFont*     font;
 	int          i;
 
-	gfxFontDict = NULL;
+	gfxFontDict = nullptr;
 	resDict->lookupNF("Font", &obj1);
 	if (obj1.isRef())
 	{
@@ -2150,7 +2150,7 @@ void PSOutputDev::setupFonts(Dict* resDict)
 	}
 	else if (obj1.isDict())
 	{
-		gfxFontDict = new GfxFontDict(xref, NULL, obj1.getDict());
+		gfxFontDict = new GfxFontDict(xref, nullptr, obj1.getDict());
 	}
 	if (gfxFontDict)
 	{
@@ -2450,7 +2450,7 @@ PSFontFileInfo* PSOutputDev::setupEmbeddedType1Font(GfxFont* font, Ref* id)
 err1:
 	strObj.free();
 	delete psName;
-	return NULL;
+	return nullptr;
 }
 
 PSFontFileInfo* PSOutputDev::setupExternalType1Font(GfxFont* font, GString* fileName)
@@ -2488,7 +2488,7 @@ PSFontFileInfo* PSOutputDev::setupExternalType1Font(GfxFont* font, GString* file
 	{
 		error(errIO, -1, "Couldn't open external font file");
 		delete psName;
-		return NULL;
+		return nullptr;
 	}
 
 	// check for PFB format
@@ -2593,7 +2593,7 @@ PSFontFileInfo* PSOutputDev::setupEmbeddedType1CFont(GfxFont* font, Ref* id)
 	{
 		if ((ffT1C = FoFiType1C::make(fontBuf, fontLen)))
 		{
-			ffT1C->convertToType1(psName->getCString(), NULL, gTrue, outputFunc, outputStream);
+			ffT1C->convertToType1(psName->getCString(), nullptr, gTrue, outputFunc, outputStream);
 			delete ffT1C;
 		}
 		gfree(fontBuf);
@@ -2643,7 +2643,7 @@ PSFontFileInfo* PSOutputDev::setupEmbeddedOpenTypeT1CFont(GfxFont* font, Ref* id
 		if ((ffTT = FoFiTrueType::make(fontBuf, fontLen, 0, gTrue)))
 		{
 			if (ffTT->isOpenTypeCFF())
-				ffTT->convertToType1(psName->getCString(), NULL, gTrue, outputFunc, outputStream);
+				ffTT->convertToType1(psName->getCString(), nullptr, gTrue, outputFunc, outputStream);
 			delete ffTT;
 		}
 		gfree(fontBuf);
@@ -2688,7 +2688,7 @@ PSFontFileInfo* PSOutputDev::setupExternalOpenTypeT1CFont(GfxFont* font, GString
 	if ((ffTT = FoFiTrueType::load(fileName->getCString(), 0, gTrue)))
 	{
 		if (ffTT->isOpenTypeCFF())
-			ffTT->convertToType1(psName->getCString(), NULL, gTrue, outputFunc, outputStream);
+			ffTT->convertToType1(psName->getCString(), nullptr, gTrue, outputFunc, outputStream);
 		delete ffTT;
 	}
 
@@ -2713,11 +2713,11 @@ PSFontFileInfo* PSOutputDev::setupEmbeddedTrueTypeFont(GfxFont* font, Ref* id)
 
 	// get the code-to-GID mapping
 	if (!(fontBuf = font->readEmbFontFile(xref, &fontLen)))
-		return NULL;
+		return nullptr;
 	if (!(ffTT = FoFiTrueType::make(fontBuf, fontLen, 0)))
 	{
 		gfree(fontBuf);
-		return NULL;
+		return nullptr;
 	}
 	codeToGID = ((Gfx8BitFont*)font)->getCodeToGIDMap(ffTT);
 
@@ -2745,7 +2745,7 @@ PSFontFileInfo* PSOutputDev::setupEmbeddedTrueTypeFont(GfxFont* font, Ref* id)
 	embFontList->append("\n");
 
 	// convert it to a Type 42 font
-	ffTT->convertToType42(psName->getCString(), ((Gfx8BitFont*)font)->getHasEncoding() ? ((Gfx8BitFont*)font)->getEncoding() : (char**)NULL, codeToGID, outputFunc, outputStream);
+	ffTT->convertToType42(psName->getCString(), ((Gfx8BitFont*)font)->getHasEncoding() ? ((Gfx8BitFont*)font)->getEncoding() : (char**)nullptr, codeToGID, outputFunc, outputStream);
 	delete ffTT;
 	gfree(fontBuf);
 
@@ -2770,7 +2770,7 @@ PSFontFileInfo* PSOutputDev::setupExternalTrueTypeFont(GfxFont* font, GString* f
 
 	// get the code-to-GID mapping
 	if (!(ffTT = FoFiTrueType::load(fileName->getCString(), fontNum)))
-		return NULL;
+		return nullptr;
 	codeToGID = ((Gfx8BitFont*)font)->getCodeToGIDMap(ffTT);
 
 	// check if font is already embedded
@@ -2796,7 +2796,7 @@ PSFontFileInfo* PSOutputDev::setupExternalTrueTypeFont(GfxFont* font, GString* f
 	embFontList->append("\n");
 
 	// convert it to a Type 42 font
-	ffTT->convertToType42(psName->getCString(), ((Gfx8BitFont*)font)->getHasEncoding() ? ((Gfx8BitFont*)font)->getEncoding() : (char**)NULL, codeToGID, outputFunc, outputStream);
+	ffTT->convertToType42(psName->getCString(), ((Gfx8BitFont*)font)->getHasEncoding() ? ((Gfx8BitFont*)font)->getEncoding() : (char**)nullptr, codeToGID, outputFunc, outputStream);
 	delete ffTT;
 
 	// ending comment
@@ -2958,12 +2958,12 @@ PSFontFileInfo* PSOutputDev::setupExternalCIDTrueTypeFont(
 
 	// create a code-to-GID mapping, via Unicode
 	if (!(ffTT = FoFiTrueType::load(fileName->getCString(), fontNum)))
-		return NULL;
+		return nullptr;
 	if (!(ctu = ((GfxCIDFont*)font)->getToUnicode()))
 	{
 		error(errSyntaxError, -1, "Couldn't find a mapping to Unicode for font '{0:s}'", font->getName() ? font->getName()->getCString() : "(unnamed)");
 		delete ffTT;
-		return NULL;
+		return nullptr;
 	}
 	// look for a Unicode cmap
 	for (cmap = 0; cmap < ffTT->getNumCmaps(); ++cmap)
@@ -2978,7 +2978,7 @@ PSFontFileInfo* PSOutputDev::setupExternalCIDTrueTypeFont(
 		error(errSyntaxError, -1, "Couldn't find a Unicode cmap in font '{0:s}'", font->getName() ? font->getName()->getCString() : "(unnamed)");
 		ctu->decRefCnt();
 		delete ffTT;
-		return NULL;
+		return nullptr;
 	}
 	// map CID -> Unicode -> GID
 	if (ctu->isIdentity())
@@ -3012,7 +3012,7 @@ PSFontFileInfo* PSOutputDev::setupExternalCIDTrueTypeFont(
 		error(errSyntaxError, -1, "TrueType font '{0:s}' does not allow embedding", font->getName() ? font->getName()->getCString() : "(unnamed)");
 		gfree(codeToGID);
 		delete ffTT;
-		return NULL;
+		return nullptr;
 	}
 
 	// generate name
@@ -3134,17 +3134,17 @@ PSFontFileInfo* PSOutputDev::setupExternalOpenTypeCFFFont(GfxFont* font, GString
 
 	// create a code-to-GID mapping, via Unicode
 	if (!(ffTT = FoFiTrueType::load(fileName->getCString(), 0, gTrue)))
-		return NULL;
+		return nullptr;
 	if (!ffTT->isOpenTypeCFF())
 	{
 		delete ffTT;
-		return NULL;
+		return nullptr;
 	}
 	if (!(ctu = ((GfxCIDFont*)font)->getToUnicode()))
 	{
 		error(errSyntaxError, -1, "Couldn't find a mapping to Unicode for font '{0:s}'", font->getName() ? font->getName()->getCString() : "(unnamed)");
 		delete ffTT;
-		return NULL;
+		return nullptr;
 	}
 	// look for a Unicode cmap
 	for (cmap = 0; cmap < ffTT->getNumCmaps(); ++cmap)
@@ -3159,7 +3159,7 @@ PSFontFileInfo* PSOutputDev::setupExternalOpenTypeCFFFont(GfxFont* font, GString
 		error(errSyntaxError, -1, "Couldn't find a Unicode cmap in font '{0:s}'", font->getName() ? font->getName()->getCString() : "(unnamed)");
 		ctu->decRefCnt();
 		delete ffTT;
-		return NULL;
+		return nullptr;
 	}
 	// map CID -> Unicode -> GID
 	if (ctu->isIdentity())
@@ -3280,7 +3280,7 @@ PSFontFileInfo* PSOutputDev::setupType3Font(GfxFont* font, Dict* parentResDict)
 		box.y1      = m[1];
 		box.x2      = m[2];
 		box.y2      = m[3];
-		gfx         = new Gfx(doc, this, resDict, &box, NULL);
+		gfx         = new Gfx(doc, this, resDict, &box, nullptr);
 		inType3Char = gTrue;
 		for (i = 0; i < charProcs->getLength(); ++i)
 		{
@@ -3302,7 +3302,7 @@ PSFontFileInfo* PSOutputDev::setupType3Font(GfxFont* font, Dict* parentResDict)
 				delete buf;
 				(*outputFunc)(outputStream, t3String->getCString(), t3String->getLength());
 				delete t3String;
-				t3String = NULL;
+				t3String = nullptr;
 			}
 			if (t3NeedsRestore)
 				(*outputFunc)(outputStream, "Q\n", 2);
@@ -3823,12 +3823,12 @@ void PSOutputDev::setupImages(Dict* resDict)
 								imgIDs = (Ref*)greallocn(imgIDs, imgIDSize, sizeof(Ref));
 							}
 							imgIDs[imgIDLen++] = imgID;
-							setupImage(imgID, xObj.getStream(), gFalse, NULL);
+							setupImage(imgID, xObj.getStream(), gFalse, nullptr);
 							if (level >= psLevel3)
 							{
 								xObj.streamGetDict()->lookup("Mask", &maskObj);
 								if (maskObj.isStream())
-									setupImage(imgID, maskObj.getStream(), gTrue, NULL);
+									setupImage(imgID, maskObj.getStream(), gTrue, nullptr);
 								else if (level == psLevel3Gray && maskObj.isArray())
 									setupImage(imgID, xObj.getStream(), gFalse, maskObj.getArray());
 								maskObj.free();
@@ -3891,7 +3891,7 @@ void PSOutputDev::setupImage(Ref id, Stream* str, GBool mask, Array* colorKeyMas
 	// build the color map
 	if (mask || imageMask)
 	{
-		colorMap = NULL;
+		colorMap = nullptr;
 	}
 	else
 	{
@@ -3920,7 +3920,7 @@ void PSOutputDev::setupImage(Ref id, Stream* str, GBool mask, Array* colorKeyMas
 		else if (csMode == streamCSDeviceCMYK)
 			colorSpace = GfxColorSpace::create(csDeviceCMYK);
 		else
-			colorSpace = NULL;
+			colorSpace = nullptr;
 		obj1.free();
 		if (!colorSpace)
 		{
@@ -4252,7 +4252,7 @@ void PSOutputDev::setupForm(Object* strRef, Object* strObj)
 
 	// get resources
 	dict->lookup("Resources", &resObj);
-	resDict = resObj.isDict() ? resObj.getDict() : (Dict*)NULL;
+	resDict = resObj.isDict() ? resObj.getDict() : (Dict*)nullptr;
 
 	writePSFmt("/f_{0:d}_{1:d} {{\n", strRef->getRefNum(), strRef->getRefGen());
 	writePS("q\n");
@@ -4563,7 +4563,7 @@ void PSOutputDev::startPage(int pageNum, GfxState* state)
 	if (underlayCbk)
 		(*underlayCbk)(this, underlayCbkData);
 	if (overlayCbk)
-		saveState(NULL);
+		saveState(nullptr);
 
 	switch (mode)
 	{
@@ -4796,7 +4796,7 @@ void PSOutputDev::endPage()
 {
 	if (overlayCbk)
 	{
-		restoreState(NULL);
+		restoreState(nullptr);
 		(*overlayCbk)(this, overlayCbkData);
 	}
 
@@ -4827,12 +4827,12 @@ void PSOutputDev::saveState(GfxState* state)
 	//   q AAA Q q BBB Q
 	if (noStateChanges)
 	{
-		// any non-NULL pointer will work here
+		// any non-nullptr pointer will work here
 		saveStack->append(this);
 	}
 	else
 	{
-		saveStack->append((PSOutputDev*)NULL);
+		saveStack->append((PSOutputDev*)nullptr);
 		writePS("q\n");
 		noStateChanges = gTrue;
 	}
@@ -5362,7 +5362,7 @@ void PSOutputDev::tilingPatternFillL1(GfxState* state, Gfx* gfx, Object* strRef,
 	box.y1 = bbox[1];
 	box.x2 = bbox[2];
 	box.y2 = bbox[3];
-	gfx2   = new Gfx(doc, this, resDict, &box, NULL);
+	gfx2   = new Gfx(doc, this, resDict, &box, nullptr);
 	gfx2->takeContentStreamStack(gfx);
 	writePS("/x {\n");
 	if (paintType == 2)
@@ -5421,7 +5421,7 @@ void PSOutputDev::tilingPatternFillL2(GfxState* state, Gfx* gfx, Object* strRef,
 	box.y1 = bbox[1];
 	box.x2 = bbox[2];
 	box.y2 = bbox[3];
-	gfx2   = new Gfx(doc, this, resDict, &box, NULL);
+	gfx2   = new Gfx(doc, this, resDict, &box, nullptr);
 	gfx2->takeContentStreamStack(gfx);
 	t3FillColorOnly = paintType == 2;
 	inType3Char     = gTrue;
@@ -5986,18 +5986,18 @@ void PSOutputDev::drawString(GfxState* state, GString* s, GBool fill, GBool stro
 		return;
 	int wMode = font->getWMode();
 
-	PSFontInfo* fi = NULL;
+	PSFontInfo* fi = nullptr;
 	for (int i = 0; i < fontInfo->getLength(); ++i)
 	{
 		fi = (PSFontInfo*)fontInfo->get(i);
 		if (fi->fontID.num == font->getID()->num && fi->fontID.gen == font->getID()->gen)
 			break;
-		fi = NULL;
+		fi = nullptr;
 	}
 
 	// check for a subtitute 16-bit font
-	UnicodeMap* uMap      = NULL;
-	int*        codeToGID = NULL;
+	UnicodeMap* uMap      = nullptr;
+	int*        codeToGID = nullptr;
 	if (font->isCIDFont())
 	{
 		if (!(fi && fi->ff))
@@ -6223,17 +6223,17 @@ void PSOutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, int w
 	{
 	case psLevel1:
 	case psLevel1Sep:
-		doImageL1(ref, state, NULL, invert, inlineImg, str, width, height, len);
+		doImageL1(ref, state, nullptr, invert, inlineImg, str, width, height, len);
 		break;
 	case psLevel2:
 	case psLevel2Gray:
 	case psLevel2Sep:
-		doImageL2(ref, state, NULL, invert, inlineImg, str, width, height, len, NULL, NULL, 0, 0, gFalse);
+		doImageL2(ref, state, nullptr, invert, inlineImg, str, width, height, len, nullptr, nullptr, 0, 0, gFalse);
 		break;
 	case psLevel3:
 	case psLevel3Gray:
 	case psLevel3Sep:
-		doImageL3(ref, state, NULL, invert, inlineImg, str, width, height, len, NULL, NULL, 0, 0, gFalse);
+		doImageL3(ref, state, nullptr, invert, inlineImg, str, width, height, len, nullptr, nullptr, 0, 0, gFalse);
 		break;
 	}
 	noStateChanges = gFalse;
@@ -6256,12 +6256,12 @@ void PSOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int width
 	case psLevel2:
 	case psLevel2Gray:
 	case psLevel2Sep:
-		doImageL2(ref, state, colorMap, gFalse, inlineImg, str, width, height, len, maskColors, NULL, 0, 0, gFalse);
+		doImageL2(ref, state, colorMap, gFalse, inlineImg, str, width, height, len, maskColors, nullptr, 0, 0, gFalse);
 		break;
 	case psLevel3:
 	case psLevel3Gray:
 	case psLevel3Sep:
-		doImageL3(ref, state, colorMap, gFalse, inlineImg, str, width, height, len, maskColors, NULL, 0, 0, gFalse);
+		doImageL3(ref, state, colorMap, gFalse, inlineImg, str, width, height, len, maskColors, nullptr, 0, 0, gFalse);
 		break;
 	}
 	t3Cacheable    = gFalse;
@@ -6285,12 +6285,12 @@ void PSOutputDev::drawMaskedImage(GfxState* state, Object* ref, Stream* str, int
 	case psLevel2:
 	case psLevel2Gray:
 	case psLevel2Sep:
-		doImageL2(ref, state, colorMap, gFalse, gFalse, str, width, height, len, NULL, maskStr, maskWidth, maskHeight, maskInvert);
+		doImageL2(ref, state, colorMap, gFalse, gFalse, str, width, height, len, nullptr, maskStr, maskWidth, maskHeight, maskInvert);
 		break;
 	case psLevel3:
 	case psLevel3Gray:
 	case psLevel3Sep:
-		doImageL3(ref, state, colorMap, gFalse, gFalse, str, width, height, len, NULL, maskStr, maskWidth, maskHeight, maskInvert);
+		doImageL3(ref, state, colorMap, gFalse, gFalse, str, width, height, len, nullptr, maskStr, maskWidth, maskHeight, maskInvert);
 		break;
 	}
 	t3Cacheable    = gFalse;
@@ -6638,7 +6638,7 @@ void PSOutputDev::doImageL2(Object* ref, GfxState* state, GfxImageColorMap* colo
 	// filters
 	if ((mode == psModeForm || inType3Char || preload) && globalParams->getPSUncompressPreloadedImages())
 	{
-		s      = NULL;
+		s      = nullptr;
 		useLZW = useRLE = gFalse;
 		useCompressed   = gFalse;
 		useASCII        = gFalse;
@@ -7065,7 +7065,7 @@ void PSOutputDev::doImageL3(Object* ref, GfxState* state, GfxImageColorMap* colo
 	useLZW = useRLE = useASCII = useCompressed = gFalse; // make gcc happy
 	maskUseLZW = maskUseRLE = maskUseASCII = gFalse;     // make gcc happy
 	maskUseCompressed                      = gFalse;     // make gcc happy
-	maskFilters                            = NULL;       // make gcc happy
+	maskFilters                            = nullptr;       // make gcc happy
 
 	// explicit masking
 	// -- this also converts color key masking in grayscale mode
@@ -7074,7 +7074,7 @@ void PSOutputDev::doImageL3(Object* ref, GfxState* state, GfxImageColorMap* colo
 		// mask data source
 		if (maskColors && colorMap && level == psLevel3Gray)
 		{
-			s = NULL;
+			s = nullptr;
 			if (mode == psModeForm || inType3Char || preload)
 			{
 				if (globalParams->getPSUncompressPreloadedImages())
@@ -7115,7 +7115,7 @@ void PSOutputDev::doImageL3(Object* ref, GfxState* state, GfxImageColorMap* colo
 		}
 		else if ((mode == psModeForm || inType3Char || preload) && globalParams->getPSUncompressPreloadedImages())
 		{
-			s          = NULL;
+			s          = nullptr;
 			maskUseLZW = maskUseRLE = gFalse;
 			maskUseCompressed       = gFalse;
 			maskUseASCII            = gFalse;
@@ -7357,7 +7357,7 @@ void PSOutputDev::doImageL3(Object* ref, GfxState* state, GfxImageColorMap* colo
 	// filters
 	if ((mode == psModeForm || inType3Char || preload) && globalParams->getPSUncompressPreloadedImages())
 	{
-		s      = NULL;
+		s      = nullptr;
 		useLZW = useRLE = gFalse;
 		useCompressed   = gFalse;
 		useASCII        = gFalse;
@@ -7673,7 +7673,7 @@ void PSOutputDev::dumpIndexedColorSpace(GfxState* state, GfxIndexedColorSpace* c
 		if (((GfxDeviceNColorSpace*)baseCS)->getAlt()->getMode() == csLab)
 			labCS = (GfxLabColorSpace*)((GfxDeviceNColorSpace*)baseCS)->getAlt();
 		else
-			labCS = NULL;
+			labCS = nullptr;
 		numAltComps = ((GfxDeviceNColorSpace*)baseCS)->getAlt()->getNComps();
 		p           = lookup;
 		for (i = 0; i <= n; i += 8)
@@ -7808,11 +7808,11 @@ GString* PSOutputDev::createDeviceNTintFunc(GfxDeviceNColorSpace* cs)
 
 	attrs = cs->getAttrs();
 	if (!attrs->isDict())
-		return NULL;
+		return nullptr;
 	if (!attrs->dictLookup("Colorants", &colorants)->isDict())
 	{
 		colorants.free();
-		return NULL;
+		return nullptr;
 	}
 	for (i = 0; i < cs->getNComps(); ++i)
 	{
@@ -7848,14 +7848,14 @@ GString* PSOutputDev::createDeviceNTintFunc(GfxDeviceNColorSpace* cs)
 			{
 				sepCSObj.free();
 				colorants.free();
-				return NULL;
+				return nullptr;
 			}
 			if (!sepCSObj.arrayGet(0, &obj1)->isName("Separation"))
 			{
 				obj1.free();
 				sepCSObj.free();
 				colorants.free();
-				return NULL;
+				return nullptr;
 			}
 			obj1.free();
 			if (!sepCSObj.arrayGet(2, &obj1)->isName("DeviceCMYK"))
@@ -7863,7 +7863,7 @@ GString* PSOutputDev::createDeviceNTintFunc(GfxDeviceNColorSpace* cs)
 				obj1.free();
 				sepCSObj.free();
 				colorants.free();
-				return NULL;
+				return nullptr;
 			}
 			obj1.free();
 			sepCSObj.arrayGet(3, &funcObj);
@@ -7872,7 +7872,7 @@ GString* PSOutputDev::createDeviceNTintFunc(GfxDeviceNColorSpace* cs)
 				funcObj.free();
 				sepCSObj.free();
 				colorants.free();
-				return NULL;
+				return nullptr;
 			}
 			funcObj.free();
 			sepIn = 1;

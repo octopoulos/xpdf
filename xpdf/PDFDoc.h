@@ -32,202 +32,216 @@ class PDFCore;
 // PDFDoc
 //------------------------------------------------------------------------
 
-class PDFDoc {
+class PDFDoc
+{
 public:
-
-  PDFDoc(GString *fileNameA, GString *ownerPassword = NULL,
-	 GString *userPassword = NULL, PDFCore *coreA = NULL);
+	PDFDoc(GString* fileNameA, GString* ownerPassword = nullptr, GString* userPassword = nullptr, PDFCore* coreA = nullptr);
 
 #ifdef _WIN32
-  PDFDoc(wchar_t *fileNameA, int fileNameLen, GString *ownerPassword = NULL,
-	 GString *userPassword = NULL, PDFCore *coreA = NULL);
+	PDFDoc(wchar_t* fileNameA, int fileNameLen, GString* ownerPassword = nullptr, GString* userPassword = nullptr, PDFCore* coreA = nullptr);
 #endif
 
-  // This version takes a UTF-8 file name (which is only relevant on
-  // Windows).
-  PDFDoc(char *fileNameA, GString *ownerPassword = NULL,
-	 GString *userPassword = NULL, PDFCore *coreA = NULL);
+	// This version takes a UTF-8 file name (which is only relevant on
+	// Windows).
+	PDFDoc(char* fileNameA, GString* ownerPassword = nullptr, GString* userPassword = nullptr, PDFCore* coreA = nullptr);
 
-  PDFDoc(BaseStream *strA, GString *ownerPassword = NULL,
-	 GString *userPassword = NULL, PDFCore *coreA = NULL);
+	PDFDoc(BaseStream* strA, GString* ownerPassword = nullptr, GString* userPassword = nullptr, PDFCore* coreA = nullptr);
 
-  ~PDFDoc();
+	~PDFDoc();
 
-  // Was PDF document successfully opened?
-  GBool isOk() { return ok; }
+	// Was PDF document successfully opened?
+	GBool isOk() { return ok; }
 
-  // Get the error code (if isOk() returns false).
-  int getErrorCode() { return errCode; }
+	// Get the error code (if isOk() returns false).
+	int getErrorCode() { return errCode; }
 
-  // Get file name.
-  GString *getFileName() { return fileName; }
+	// Get file name.
+	GString* getFileName() { return fileName; }
 #ifdef _WIN32
-  wchar_t *getFileNameU() { return fileNameU; }
+	wchar_t* getFileNameU() { return fileNameU; }
 #endif
 
-  // Get the xref table.
-  XRef *getXRef() { return xref; }
+	// Get the xref table.
+	XRef* getXRef() { return xref; }
 
-  // Get catalog.
-  Catalog *getCatalog() { return catalog; }
+	// Get catalog.
+	Catalog* getCatalog() { return catalog; }
 
-  // Get annotations.
-  Annots *getAnnots() { return annots; }
+	// Get annotations.
+	Annots* getAnnots() { return annots; }
 
-  // Get base stream.
-  BaseStream *getBaseStream() { return str; }
+	// Get base stream.
+	BaseStream* getBaseStream() { return str; }
 
-  // Get page parameters.
-  double getPageMediaWidth(int page)
-    { return catalog->getPage(page)->getMediaWidth(); }
-  double getPageMediaHeight(int page)
-    { return catalog->getPage(page)->getMediaHeight(); }
-  double getPageCropWidth(int page)
-    { return catalog->getPage(page)->getCropWidth(); }
-  double getPageCropHeight(int page)
-    { return catalog->getPage(page)->getCropHeight(); }
-  int getPageRotate(int page)
-    { return catalog->getPage(page)->getRotate(); }
+	// Get page parameters.
+	double getPageMediaWidth(int page)
+	{
+		return catalog->getPage(page)->getMediaWidth();
+	}
 
-  // Get number of pages.
-  int getNumPages() { return catalog->getNumPages(); }
+	double getPageMediaHeight(int page)
+	{
+		return catalog->getPage(page)->getMediaHeight();
+	}
 
-  // Return the contents of the metadata stream, or NULL if there is
-  // no metadata.
-  GString *readMetadata() { return catalog->readMetadata(); }
+	double getPageCropWidth(int page)
+	{
+		return catalog->getPage(page)->getCropWidth();
+	}
 
-  // Return the structure tree root object.
-  Object *getStructTreeRoot() { return catalog->getStructTreeRoot(); }
+	double getPageCropHeight(int page)
+	{
+		return catalog->getPage(page)->getCropHeight();
+	}
 
-  // Display a page.
-  void displayPage(OutputDev *out, int page,
-		   double hDPI, double vDPI, int rotate,
-		   GBool useMediaBox, GBool crop, GBool printing,
-		   GBool (*abortCheckCbk)(void *data) = NULL,
-		   void *abortCheckCbkData = NULL);
+	int getPageRotate(int page)
+	{
+		return catalog->getPage(page)->getRotate();
+	}
 
-  // Display a range of pages.
-  void displayPages(OutputDev *out, int firstPage, int lastPage,
-		    double hDPI, double vDPI, int rotate,
-		    GBool useMediaBox, GBool crop, GBool printing,
-		    GBool (*abortCheckCbk)(void *data) = NULL,
-		    void *abortCheckCbkData = NULL);
+	// Get number of pages.
+	int getNumPages() { return catalog->getNumPages(); }
 
-  // Display part of a page.
-  void displayPageSlice(OutputDev *out, int page,
-			double hDPI, double vDPI, int rotate,
-			GBool useMediaBox, GBool crop, GBool printing,
-			int sliceX, int sliceY, int sliceW, int sliceH,
-			GBool (*abortCheckCbk)(void *data) = NULL,
-			void *abortCheckCbkData = NULL);
+	// Return the contents of the metadata stream, or nullptr if there is
+	// no metadata.
+	GString* readMetadata() { return catalog->readMetadata(); }
 
+	// Return the structure tree root object.
+	Object* getStructTreeRoot() { return catalog->getStructTreeRoot(); }
 
-  // Find a page, given its object ID.  Returns page number, or 0 if
-  // not found.
-  int findPage(int num, int gen) { return catalog->findPage(num, gen); }
+	// Display a page.
+	void displayPage(OutputDev* out, int page, double hDPI, double vDPI, int rotate, GBool useMediaBox, GBool crop, GBool printing, GBool (*abortCheckCbk)(void* data) = nullptr, void* abortCheckCbkData = nullptr);
 
-  // Returns the links for the current page, transferring ownership to
-  // the caller.
-  Links *getLinks(int page);
+	// Display a range of pages.
+	void displayPages(OutputDev* out, int firstPage, int lastPage, double hDPI, double vDPI, int rotate, GBool useMediaBox, GBool crop, GBool printing, GBool (*abortCheckCbk)(void* data) = nullptr, void* abortCheckCbkData = nullptr);
 
-  // Find a named destination.  Returns the link destination, or
-  // NULL if <name> is not a destination.
-  LinkDest *findDest(GString *name)
-    { return catalog->findDest(name); }
+	// Display part of a page.
+	void displayPageSlice(OutputDev* out, int page, double hDPI, double vDPI, int rotate, GBool useMediaBox, GBool crop, GBool printing, int sliceX, int sliceY, int sliceW, int sliceH, GBool (*abortCheckCbk)(void* data) = nullptr, void* abortCheckCbkData = nullptr);
 
-  // Process the links for a page.
-  void processLinks(OutputDev *out, int page);
+	// Find a page, given its object ID.  Returns page number, or 0 if
+	// not found.
+	int findPage(int num, int gen) { return catalog->findPage(num, gen); }
+
+	// Returns the links for the current page, transferring ownership to
+	// the caller.
+	Links* getLinks(int page);
+
+	// Find a named destination.  Returns the link destination, or
+	// nullptr if <name> is not a destination.
+	LinkDest* findDest(GString* name)
+	{
+		return catalog->findDest(name);
+	}
+
+	// Process the links for a page.
+	void processLinks(OutputDev* out, int page);
 
 #ifndef DISABLE_OUTLINE
-  // Return the outline object.
-  Outline *getOutline() { return outline; }
+	// Return the outline object.
+	Outline* getOutline() { return outline; }
 
-  // Return the target page number for an outline item.  Returns 0 if
-  // the item doesn't target a page in this PDF file.
-  int getOutlineTargetPage(OutlineItem *outlineItem);
+	// Return the target page number for an outline item.  Returns 0 if
+	// the item doesn't target a page in this PDF file.
+	int getOutlineTargetPage(OutlineItem* outlineItem);
 #endif
 
-  // Return the OptionalContent object.
-  OptionalContent *getOptionalContent() { return optContent; }
+	// Return the OptionalContent object.
+	OptionalContent* getOptionalContent() { return optContent; }
 
-  // Is the file encrypted?
-  GBool isEncrypted() { return xref->isEncrypted(); }
+	// Is the file encrypted?
+	GBool isEncrypted() { return xref->isEncrypted(); }
 
-  // Check various permissions.
-  GBool okToPrint(GBool ignoreOwnerPW = gFalse)
-    { return xref->okToPrint(ignoreOwnerPW); }
-  GBool okToChange(GBool ignoreOwnerPW = gFalse)
-    { return xref->okToChange(ignoreOwnerPW); }
-  GBool okToCopy(GBool ignoreOwnerPW = gFalse)
-    { return xref->okToCopy(ignoreOwnerPW); }
-  GBool okToAddNotes(GBool ignoreOwnerPW = gFalse)
-    { return xref->okToAddNotes(ignoreOwnerPW); }
+	// Check various permissions.
+	GBool okToPrint(GBool ignoreOwnerPW = gFalse)
+	{
+		return xref->okToPrint(ignoreOwnerPW);
+	}
 
-  // Is the PDF file damaged?  This checks to see if the xref table
-  // was constructed by the repair code.
-  GBool isDamaged() { return xref->isRepaired(); }
+	GBool okToChange(GBool ignoreOwnerPW = gFalse)
+	{
+		return xref->okToChange(ignoreOwnerPW);
+	}
 
-  // Is this document linearized?
-  GBool isLinearized();
+	GBool okToCopy(GBool ignoreOwnerPW = gFalse)
+	{
+		return xref->okToCopy(ignoreOwnerPW);
+	}
 
-  // Return the document's Info dictionary (if any).
-  Object *getDocInfo(Object *obj) { return xref->getDocInfo(obj); }
-  Object *getDocInfoNF(Object *obj) { return xref->getDocInfoNF(obj); }
+	GBool okToAddNotes(GBool ignoreOwnerPW = gFalse)
+	{
+		return xref->okToAddNotes(ignoreOwnerPW);
+	}
 
-  // Return the PDF version specified by the file.
-  double getPDFVersion() { return pdfVersion; }
+	// Is the PDF file damaged?  This checks to see if the xref table
+	// was constructed by the repair code.
+	GBool isDamaged() { return xref->isRepaired(); }
 
-  // Save this file with another name.
-  GBool saveAs(GString *name);
+	// Is this document linearized?
+	GBool isLinearized();
 
-  // Return a pointer to the PDFCore object.
-  PDFCore *getCore() { return core; }
+	// Return the document's Info dictionary (if any).
+	Object* getDocInfo(Object* obj) { return xref->getDocInfo(obj); }
 
-  // Get the list of embedded files.
-  int getNumEmbeddedFiles() { return catalog->getNumEmbeddedFiles(); }
-  Unicode *getEmbeddedFileName(int idx)
-    { return catalog->getEmbeddedFileName(idx); }
-  int getEmbeddedFileNameLength(int idx)
-    { return catalog->getEmbeddedFileNameLength(idx); }
-  GBool saveEmbeddedFile(int idx, const char *path);
-  GBool saveEmbeddedFileU(int idx, const char *path);
+	Object* getDocInfoNF(Object* obj) { return xref->getDocInfoNF(obj); }
+
+	// Return the PDF version specified by the file.
+	double getPDFVersion() { return pdfVersion; }
+
+	// Save this file with another name.
+	GBool saveAs(GString* name);
+
+	// Return a pointer to the PDFCore object.
+	PDFCore* getCore() { return core; }
+
+	// Get the list of embedded files.
+	int getNumEmbeddedFiles() { return catalog->getNumEmbeddedFiles(); }
+
+	Unicode* getEmbeddedFileName(int idx)
+	{
+		return catalog->getEmbeddedFileName(idx);
+	}
+
+	int getEmbeddedFileNameLength(int idx)
+	{
+		return catalog->getEmbeddedFileNameLength(idx);
+	}
+
+	GBool saveEmbeddedFile(int idx, const char* path);
+	GBool saveEmbeddedFileU(int idx, const char* path);
 #ifdef _WIN32
-  GBool saveEmbeddedFile(int idx, const wchar_t *path, int pathLen);
+	GBool saveEmbeddedFile(int idx, const wchar_t* path, int pathLen);
 #endif
-  char *getEmbeddedFileMem(int idx, int *size);
+	char* getEmbeddedFileMem(int idx, int* size);
 
-  // Return true if the document uses JavaScript.
-  GBool usesJavaScript() { return catalog->usesJavaScript(); }
-
+	// Return true if the document uses JavaScript.
+	GBool usesJavaScript() { return catalog->usesJavaScript(); }
 
 private:
+	void  init(PDFCore* coreA);
+	GBool setup(GString* ownerPassword, GString* userPassword);
+	GBool setup2(GString* ownerPassword, GString* userPassword, GBool repairXRef);
+	void  checkHeader();
+	GBool checkEncryption(GString* ownerPassword, GString* userPassword);
+	GBool saveEmbeddedFile2(int idx, FILE* f);
 
-  void init(PDFCore *coreA);
-  GBool setup(GString *ownerPassword, GString *userPassword);
-  GBool setup2(GString *ownerPassword, GString *userPassword,
-	       GBool repairXRef);
-  void checkHeader();
-  GBool checkEncryption(GString *ownerPassword, GString *userPassword);
-  GBool saveEmbeddedFile2(int idx, FILE *f);
-
-  GString *fileName;
+	GString* fileName;
 #ifdef _WIN32
-  wchar_t *fileNameU;
+	wchar_t* fileNameU;
 #endif
-  FILE *file;
-  BaseStream *str;
-  PDFCore *core;
-  double pdfVersion;
-  XRef *xref;
-  Catalog *catalog;
-  Annots *annots;
+	FILE*       file;
+	BaseStream* str;
+	PDFCore*    core;
+	double      pdfVersion;
+	XRef*       xref;
+	Catalog*    catalog;
+	Annots*     annots;
 #ifndef DISABLE_OUTLINE
-  Outline *outline;
+	Outline* outline;
 #endif
-  OptionalContent *optContent;
+	OptionalContent* optContent;
 
-  GBool ok;
-  int errCode;
+	GBool ok;
+	int   errCode;
 };
 
 #endif

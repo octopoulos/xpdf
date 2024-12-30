@@ -36,7 +36,7 @@ TileCompositor::TileCompositor(DisplayState* stateA, TileMap* tileMapA, TileCach
 	state->setTileCompositor(this);
 	tileMap     = tileMapA;
 	tileCache   = tileCacheA;
-	bitmap      = NULL;
+	bitmap      = nullptr;
 	bitmapValid = gFalse;
 }
 
@@ -62,7 +62,7 @@ SplashBitmap* TileCompositor::getBitmap(GBool* finished)
 	{
 		if (bitmap)
 			delete bitmap;
-		bitmap = new SplashBitmap(state->getWinW(), state->getWinH(), state->getBitmapRowPad(), state->getColorMode(), gFalse, gTrue, NULL);
+		bitmap = new SplashBitmap(state->getWinW(), state->getWinH(), state->getBitmapRowPad(), state->getColorMode(), gFalse, gTrue, nullptr);
 	}
 	clearBitmap();
 

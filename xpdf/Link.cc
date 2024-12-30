@@ -31,7 +31,7 @@ LinkAction* LinkAction::parseDest(Object* obj)
 	if (!action->isOk())
 	{
 		delete action;
-		return NULL;
+		return nullptr;
 	}
 	return action;
 }
@@ -44,7 +44,7 @@ LinkAction* LinkAction::parseAction(Object* obj, GString* baseURI)
 	if (!obj->isDict())
 	{
 		error(errSyntaxWarning, -1, "Bad annotation action");
-		return NULL;
+		return nullptr;
 	}
 
 	obj->dictLookup("S", &obj2);
@@ -139,7 +139,7 @@ LinkAction* LinkAction::parseAction(Object* obj, GString* baseURI)
 	else
 	{
 		error(errSyntaxWarning, -1, "Bad annotation action");
-		action = NULL;
+		action = nullptr;
 	}
 
 	obj2.free();
@@ -147,7 +147,7 @@ LinkAction* LinkAction::parseAction(Object* obj, GString* baseURI)
 	if (action && !action->isOk())
 	{
 		delete action;
-		return NULL;
+		return nullptr;
 	}
 	return action;
 }
@@ -157,7 +157,7 @@ GString* LinkAction::getFileSpecName(Object* fileSpecObj)
 	GString* name;
 	Object   obj1;
 
-	name = NULL;
+	name = nullptr;
 
 	// string
 	if (fileSpecObj->isString())
@@ -566,8 +566,8 @@ LinkDest::LinkDest(LinkDest* dest)
 
 LinkGoTo::LinkGoTo(Object* destObj)
 {
-	dest      = NULL;
-	namedDest = NULL;
+	dest      = nullptr;
+	namedDest = nullptr;
 
 	// named destination
 	if (destObj->isName())
@@ -586,7 +586,7 @@ LinkGoTo::LinkGoTo(Object* destObj)
 		if (!dest->isOk())
 		{
 			delete dest;
-			dest = NULL;
+			dest = nullptr;
 		}
 
 		// error
@@ -611,8 +611,8 @@ LinkGoTo::~LinkGoTo()
 
 LinkGoToR::LinkGoToR(Object* fileSpecObj, Object* destObj)
 {
-	dest      = NULL;
-	namedDest = NULL;
+	dest      = nullptr;
+	namedDest = nullptr;
 
 	// get file name
 	fileName = getFileSpecName(fileSpecObj);
@@ -634,7 +634,7 @@ LinkGoToR::LinkGoToR(Object* fileSpecObj, Object* destObj)
 		if (!dest->isOk())
 		{
 			delete dest;
-			dest = NULL;
+			dest = nullptr;
 		}
 
 		// error
@@ -663,8 +663,8 @@ LinkLaunch::LinkLaunch(Object* actionObj)
 {
 	Object obj1, obj2;
 
-	fileName = NULL;
-	params   = NULL;
+	fileName = nullptr;
+	params   = nullptr;
 
 	if (actionObj->isDict())
 	{
@@ -729,7 +729,7 @@ LinkURI::LinkURI(Object* uriObj, GString* baseURI)
 	int      n;
 	char     c;
 
-	uri = NULL;
+	uri = nullptr;
 	if (uriObj->isString())
 	{
 		uri2 = uriObj->getString();
@@ -783,7 +783,7 @@ LinkURI::~LinkURI()
 
 LinkNamed::LinkNamed(Object* nameObj)
 {
-	name = NULL;
+	name = nullptr;
 	if (nameObj->isName())
 		name = new GString(nameObj->getName());
 }
@@ -801,7 +801,7 @@ LinkNamed::~LinkNamed()
 LinkMovie::LinkMovie(Object* annotObj, Object* titleObj)
 {
 	annotRef.num = -1;
-	title        = NULL;
+	title        = nullptr;
 	if (annotObj->isRef())
 		annotRef = annotObj->getRef();
 	else if (titleObj->isString())
@@ -840,7 +840,7 @@ LinkJavaScript::LinkJavaScript(Object* jsObj)
 	else
 	{
 		error(errSyntaxError, -1, "JavaScript action JS key is wrong type");
-		js = NULL;
+		js = nullptr;
 	}
 }
 
@@ -863,7 +863,7 @@ LinkSubmitForm::LinkSubmitForm(Object* urlObj, Object* fieldsObj, Object* flagsO
 	else
 	{
 		error(errSyntaxError, -1, "SubmitForm action URL is wrong type");
-		url = NULL;
+		url = nullptr;
 	}
 
 	if (fieldsObj->isArray())
@@ -951,7 +951,7 @@ Link::Link(Dict* dict, GString* baseURI)
 	Object obj1, obj2;
 	double t;
 
-	action = NULL;
+	action = nullptr;
 	ok     = gFalse;
 
 	// get rectangle
@@ -1046,7 +1046,7 @@ Links::Links(Object* annots, GString* baseURI)
 	int    size;
 	int    i;
 
-	links    = NULL;
+	links    = nullptr;
 	size     = 0;
 	numLinks = 0;
 
@@ -1099,7 +1099,7 @@ LinkAction* Links::find(double x, double y)
 	for (i = numLinks - 1; i >= 0; --i)
 		if (links[i]->inRect(x, y))
 			return links[i]->getAction();
-	return NULL;
+	return nullptr;
 }
 
 GBool Links::onLink(double x, double y)

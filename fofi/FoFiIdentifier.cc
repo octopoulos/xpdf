@@ -254,6 +254,7 @@ GBool FileReader::fillBuf(int pos, int len)
 class StreamReader : public Reader
 {
 public:
+	StreamReader(int (*getCharA)(void* data), void* dataA);
 	static StreamReader* make(int (*getCharA)(void* data), void* dataA);
 	virtual ~StreamReader();
 	virtual int   getByte(int pos);
@@ -264,7 +265,6 @@ public:
 	virtual GBool cmp(int pos, const char* s);
 
 private:
-	StreamReader(int (*getCharA)(void* data), void* dataA);
 	GBool fillBuf(int pos, int len);
 
 	int   (*getChar)(void* data);
@@ -337,11 +337,8 @@ GBool StreamReader::getUVarBE(int pos, int size, Guint* val)
 
 GBool StreamReader::cmp(int pos, const char* s)
 {
-	int n;
-
-	n = (int)strlen(s);
-	if (!fillBuf(pos, n))
-		return gFalse;
+	int n = (int)strlen(s);
+	if (!fillBuf(pos, n)) return gFalse;
 	return !memcmp(buf - bufPos + pos, s, n);
 }
 
@@ -443,6 +440,9 @@ FoFiIdentifierType FoFiIdentifier::identifyStream(int (*getChar)(void* data), vo
 	type = identify(reader);
 	delete reader;
 	return type;
+	//StreamReader reader(getChar, data);
+	//fprintf(stderr, "data=%s", (char*)data);
+	//return identify(&reader);
 }
 
 static FoFiIdentifierType identify(Reader* reader)

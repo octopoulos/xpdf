@@ -166,7 +166,7 @@ Stream* Parser::makeStream(Object* dict, Guchar* fileKey, CryptAlgorithm encAlgo
 	lexer->skipToNextLine();
 	Stream* curStr = lexer->getStream();
 	if (!curStr)
-		return NULL;
+		return nullptr;
 	GFileOffset pos = curStr->getPos();
 
 	GBool       haveLength = gFalse;
@@ -200,7 +200,7 @@ Stream* Parser::makeStream(Object* dict, Guchar* fileKey, CryptAlgorithm encAlgo
 	// in badly damaged PDF files, we can run off the end of the input
 	// stream immediately after the "stream" token
 	if (!lexer->getStream())
-		return NULL;
+		return nullptr;
 
 	// copy the base stream (Lexer will free stream objects when it gets
 	// to end of stream -- which can happen in the shift() calls below)
@@ -229,7 +229,7 @@ Stream* Parser::makeStream(Object* dict, Guchar* fileKey, CryptAlgorithm encAlgo
 		{
 			error(errSyntaxError, getPos(), "Couldn't find 'endstream' for stream");
 			delete baseStr;
-			return NULL;
+			return nullptr;
 		}
 	}
 

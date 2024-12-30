@@ -23,6 +23,13 @@
 
 PdfExtract::PdfExtract(const std::filesystem::path& configFile, int quiet)
 {
+	for (int i = 1; i < 200000000; i *= 2)
+	{
+		auto buf = GString::format("%!PS-TrueTypeFont-{0:2g} {1:d}\n", (double)i / 65536.0, i);
+		fprintf(stderr, "buf=%s\n", buf->getCString());
+		delete buf;
+	}
+
 	if (!globalParams)
 	{
 		globalParams = new GlobalParams(configFile.string().c_str());

@@ -34,12 +34,12 @@ SecurityHandler* SecurityHandler::make(PDFDoc* docA, Object* encryptDictA)
 	else if (filterObj.isName())
 	{
 		error(errSyntaxError, -1, "Couldn't find the '{0:s}' security handler", filterObj.getName());
-		secHdlr = NULL;
+		secHdlr = nullptr;
 	}
 	else
 	{
 		error(errSyntaxError, -1, "Missing or invalid 'Filter' entry in encryption dictionary");
-		secHdlr = NULL;
+		secHdlr = nullptr;
 	}
 	filterObj.free();
 	return secHdlr;
@@ -63,7 +63,7 @@ GBool SecurityHandler::checkEncryption(GString* ownerPassword, GString* userPass
 	if (ownerPassword || userPassword)
 		authData = makeAuthData(ownerPassword, userPassword);
 	else
-		authData = NULL;
+		authData = nullptr;
 	ok = authorize(authData);
 	if (authData)
 		freeAuthData(authData);
@@ -116,11 +116,11 @@ StandardSecurityHandler::StandardSecurityHandler(PDFDoc* docA, Object* encryptDi
 	Object encryptMetadataObj;
 
 	ok            = gFalse;
-	fileID        = NULL;
-	ownerKey      = NULL;
-	userKey       = NULL;
-	ownerEnc      = NULL;
-	userEnc       = NULL;
+	fileID        = nullptr;
+	ownerKey      = nullptr;
+	userKey       = nullptr;
+	ownerEnc      = nullptr;
+	userEnc       = nullptr;
 	fileKeyLength = 0;
 
 	//--- get the main parameters
@@ -310,7 +310,7 @@ GBool StandardSecurityHandler::isUnencrypted()
 
 void* StandardSecurityHandler::makeAuthData(GString* ownerPassword, GString* userPassword)
 {
-	return new StandardAuthData(ownerPassword ? ownerPassword->copy() : (GString*)NULL, userPassword ? userPassword->copy() : (GString*)NULL);
+	return new StandardAuthData(ownerPassword ? ownerPassword->copy() : (GString*)nullptr, userPassword ? userPassword->copy() : (GString*)nullptr);
 }
 
 void* StandardSecurityHandler::getAuthData()
@@ -319,7 +319,7 @@ void* StandardSecurityHandler::getAuthData()
 	GString* password;
 
 	if (!(core = doc->getCore()) || !(password = core->getPassword()))
-		return NULL;
+		return nullptr;
 	return new StandardAuthData(password, password->copy());
 }
 
@@ -341,8 +341,8 @@ GBool StandardSecurityHandler::authorize(void* authData)
 	}
 	else
 	{
-		ownerPassword = NULL;
-		userPassword  = NULL;
+		ownerPassword = nullptr;
+		userPassword  = nullptr;
 	}
 	if (!Decrypt::makeFileKey(encVersion, encRevision, fileKeyLength, ownerKey, userKey, ownerEnc, userEnc, permFlags, fileID, ownerPassword, userPassword, fileKey, encryptMetadata, &ownerPasswordOk))
 		return gFalse;

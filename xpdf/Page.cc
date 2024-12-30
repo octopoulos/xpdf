@@ -420,7 +420,7 @@ void Page::displaySlice(OutputDev* out, double hDPI, double vDPI, int rotate, GB
 		printf("***** Rotate = %d\n", attrs->getRotate());
 	}
 
-	gfx = new Gfx(doc, out, num, attrs->getResourceDict(), hDPI, vDPI, &box, crop ? cropBox : (PDFRectangle*)NULL, rotate, abortCheckCbk, abortCheckCbkData);
+	gfx = new Gfx(doc, out, num, attrs->getResourceDict(), hDPI, vDPI, &box, crop ? cropBox : (PDFRectangle*)nullptr, rotate, abortCheckCbk, abortCheckCbkData);
 	contents.fetch(xref, &obj);
 	if (!obj.isNull())
 	{

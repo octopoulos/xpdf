@@ -75,7 +75,7 @@ static ArgDesc argDesc[] = {
 	{ "-help"    , argFlag  , &printHelp        , 0                         , "print usage information"                       },
 	{ "--help"   , argFlag  , &printHelp        , 0                         , "print usage information"                       },
 	{ "-?"       , argFlag  , &printHelp        , 0                         , "print usage information"                       },
-	{ NULL }
+	{ nullptr }
 };
 // clang-format on
 
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
 		if (cfgFileName[0] && !pathIsFile(cfgFileName))
 			error(errConfig, -1, "Config file '{0:s}' doesn't exist or isn't a file", cfgFileName);
 		globalParams = new GlobalParams(cfgFileName);
-		globalParams->setupBaseFonts(NULL);
+		globalParams->setupBaseFonts(nullptr);
 		if (enableFreeTypeStr[0])
 		{
 			if (!globalParams->setEnableFreeType(enableFreeTypeStr))
@@ -166,11 +166,11 @@ int main(int argc, char* argv[])
 		if (ownerPassword[0])
 			ownerPW = new GString(ownerPassword);
 		else
-			ownerPW = NULL;
+			ownerPW = nullptr;
 		if (userPassword[0])
 			userPW = new GString(userPassword);
 		else
-			userPW = NULL;
+			userPW = nullptr;
 		doc = new PDFDoc(fileName, ownerPW, userPW);
 		if (userPW)
 			delete userPW;

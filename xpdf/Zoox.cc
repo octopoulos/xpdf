@@ -63,9 +63,9 @@ static char nameChar[256] = {
 
 ZxNode::ZxNode()
 {
-	next       = NULL;
-	parent     = NULL;
-	firstChild = lastChild = NULL;
+	next       = nullptr;
+	parent     = nullptr;
+	firstChild = lastChild = nullptr;
 }
 
 ZxNode::~ZxNode()
@@ -84,18 +84,18 @@ ZxNode* ZxNode::deleteChild(ZxNode* child)
 {
 	ZxNode *p1, *p2;
 
-	for (p1 = NULL, p2 = firstChild;
+	for (p1 = nullptr, p2 = firstChild;
 	     p2 && p2 != child;
 	     p1 = p2, p2 = p2->next)
 		;
 	if (!p2)
-		return NULL;
+		return nullptr;
 	if (p1)
 		p1->next = child->next;
 	else
 		firstChild = child->next;
-	child->parent = NULL;
-	child->next   = NULL;
+	child->parent = nullptr;
+	child->next   = nullptr;
 	return child;
 }
 
@@ -145,7 +145,7 @@ ZxElement* ZxNode::findFirstElement(const char* type)
 	for (child = firstChild; child; child = child->next)
 		if ((result = child->findFirstElement(type)))
 			return result;
-	return NULL;
+	return nullptr;
 }
 
 ZxElement* ZxNode::findFirstChildElement(const char* type)
@@ -155,7 +155,7 @@ ZxElement* ZxNode::findFirstChildElement(const char* type)
 	for (child = firstChild; child; child = child->next)
 		if (child->isElement(type))
 			return (ZxElement*)child;
-	return NULL;
+	return nullptr;
 }
 
 GList* ZxNode::findAllElements(const char* type)
@@ -201,16 +201,16 @@ void ZxNode::addChild(ZxNode* child)
 		firstChild = lastChild = child;
 	}
 	child->parent = this;
-	child->next   = NULL;
+	child->next   = nullptr;
 }
 
 //------------------------------------------------------------------------
 
 ZxDoc::ZxDoc()
 {
-	xmlDecl     = NULL;
-	docTypeDecl = NULL;
-	root        = NULL;
+	xmlDecl     = nullptr;
+	docTypeDecl = nullptr;
+	root        = nullptr;
 }
 
 ZxDoc* ZxDoc::loadMem(const char* data, Guint dataLen)
@@ -221,7 +221,7 @@ ZxDoc* ZxDoc::loadMem(const char* data, Guint dataLen)
 	if (!doc->parse(data, dataLen))
 	{
 		delete doc;
-		return NULL;
+		return nullptr;
 	}
 	return doc;
 }
@@ -234,13 +234,13 @@ ZxDoc* ZxDoc::loadFile(const char* fileName)
 	Guint  dataLen;
 
 	if (!(f = fopen(fileName, "rb")))
-		return NULL;
+		return nullptr;
 	fseek(f, 0, SEEK_END);
 	dataLen = (Guint)ftell(f);
 	if (!dataLen)
 	{
 		fclose(f);
-		return NULL;
+		return nullptr;
 	}
 	fseek(f, 0, SEEK_SET);
 	data = (char*)gmalloc(dataLen);
@@ -248,7 +248,7 @@ ZxDoc* ZxDoc::loadFile(const char* fileName)
 	{
 		fclose(f);
 		gfree(data);
-		return NULL;
+		return nullptr;
 	}
 	fclose(f);
 	doc = loadMem(data, dataLen);
@@ -302,7 +302,7 @@ bool ZxDoc::parse(const char* data, Guint dataLen)
 	if (match("<"))
 		parseElement(this);
 	parseMisc(this);
-	return root != NULL;
+	return root != nullptr;
 }
 
 void ZxDoc::parseXMLDecl(ZxNode* par)
@@ -316,7 +316,7 @@ void ZxDoc::parseXMLDecl(ZxNode* par)
 	parseSpace();
 
 	// version
-	version = NULL;
+	version = nullptr;
 	if (match("version"))
 	{
 		parsePtr += 7;
@@ -333,7 +333,7 @@ void ZxDoc::parseXMLDecl(ZxNode* par)
 	parseSpace();
 
 	// encoding
-	encoding = NULL;
+	encoding = nullptr;
 	if (match("encoding"))
 	{
 		parsePtr += 8;
@@ -461,14 +461,14 @@ ZxAttr* ZxDoc::parseAttr()
 	if (!match("="))
 	{
 		delete name;
-		return NULL;
+		return nullptr;
 	}
 	++parsePtr;
 	parseSpace();
 	if (!(parsePtr < parseEnd && (*parsePtr == '"' || *parsePtr == '\'')))
 	{
 		delete name;
-		return NULL;
+		return nullptr;
 	}
 	quote = *parsePtr++;
 	value = new GString();
@@ -1008,7 +1008,7 @@ ZxElement::ZxElement(GString* typeA)
 {
 	type      = typeA;
 	attrs     = new GHash();
-	firstAttr = lastAttr = NULL;
+	firstAttr = lastAttr = nullptr;
 }
 
 ZxElement::~ZxElement()
@@ -1040,7 +1040,7 @@ void ZxElement::addAttr(ZxAttr* attr)
 		firstAttr = lastAttr = attr;
 	}
 	attr->parent = this;
-	attr->next   = NULL;
+	attr->next   = nullptr;
 }
 
 bool ZxElement::write(ZxWriteFunc writeFunc, void* stream)
@@ -1112,8 +1112,8 @@ ZxAttr::ZxAttr(GString* nameA, GString* valueA)
 {
 	name   = nameA;
 	value  = valueA;
-	parent = NULL;
-	next   = NULL;
+	parent = nullptr;
+	next   = nullptr;
 }
 
 ZxAttr::~ZxAttr()

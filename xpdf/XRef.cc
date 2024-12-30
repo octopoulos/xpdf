@@ -165,8 +165,8 @@ ObjectStream::ObjectStream(XRef* xref, int objStrNumA, int recursion)
 
 	objStrNum = objStrNumA;
 	nObjects  = 0;
-	objs      = NULL;
-	objNums   = NULL;
+	objs      = nullptr;
+	objNums   = nullptr;
 	ok        = gFalse;
 
 	if (!xref->fetch(objStrNum, 0, &objStr, recursion)->isStream())
@@ -303,15 +303,15 @@ XRef::XRef(BaseStream* strA, GBool repair)
 	repaired         = gFalse;
 	size             = 0;
 	last             = -1;
-	entries          = NULL;
+	entries          = nullptr;
 	lastStartxrefPos = 0;
-	xrefTablePos     = NULL;
+	xrefTablePos     = nullptr;
 	xrefTablePosLen  = 0;
-	streamEnds       = NULL;
+	streamEnds       = nullptr;
 	streamEndsLen    = 0;
 	for (i = 0; i < objStrCacheSize; ++i)
 	{
-		objStrs[i]       = NULL;
+		objStrs[i]       = nullptr;
 		objStrLastUse[i] = 0;
 	}
 	objStrCacheLength = 0;
@@ -480,7 +480,7 @@ GBool XRef::readXRef(GFileOffset* pos, XRefPosSet* posSet, GBool hybrid)
 	else
 	{
 		obj.initNull();
-		parser = new Parser(NULL, new Lexer(NULL, str->makeSubStream(start + *pos, gFalse, 0, &obj)), gTrue);
+		parser = new Parser(nullptr, new Lexer(nullptr, str->makeSubStream(start + *pos, gFalse, 0, &obj)), gTrue);
 		if (!parser->getObj(&obj, gTrue)->isInt())
 			goto err;
 		obj.free();
@@ -637,7 +637,7 @@ GBool XRef::readXRefTable(GFileOffset* pos, int offset, XRefPosSet* posSet)
 
 	// read the trailer dictionary
 	obj.initNull();
-	parser = new Parser(NULL, new Lexer(NULL, str->makeSubStream(str->getPos(), gFalse, 0, &obj)), gTrue);
+	parser = new Parser(nullptr, new Lexer(nullptr, str->makeSubStream(str->getPos(), gFalse, 0, &obj)), gTrue);
 	parser->getObj(&obj);
 	delete parser;
 	if (!obj.isDict())
@@ -883,7 +883,7 @@ GBool XRef::readXRefStreamSection(Stream* xrefStr, int* w, int first, int n)
 // Attempt to construct an xref table for a damaged file.
 GBool XRef::constructXRef()
 {
-	int* streamObjNums     = NULL;
+	int* streamObjNums     = nullptr;
 	int  streamObjNumsLen  = 0;
 	int  streamObjNumsSize = 0;
 	int  lastObjNum        = -1;
@@ -1035,7 +1035,7 @@ void XRef::constructTrailerDict(GFileOffset pos)
 	Object newTrailerDict, obj;
 	obj.initNull();
 	Parser* parser =
-	    new Parser(NULL, new Lexer(NULL, str->makeSubStream(pos, gFalse, 0, &obj)), gFalse);
+	    new Parser(nullptr, new Lexer(nullptr, str->makeSubStream(pos, gFalse, 0, &obj)), gFalse);
 	parser->getObj(&newTrailerDict);
 	if (newTrailerDict.isDict())
 		saveTrailerDict(newTrailerDict.getDict(), gFalse);
@@ -1129,7 +1129,7 @@ void XRef::constructObjectStreamEntries(Object* objStr, int objStrObjNum)
 		return;
 
 	// parse the header: object numbers and offsets
-	Parser* parser = new Parser(NULL, new Lexer(NULL, objStr->getStream()->copy()), gFalse);
+	Parser* parser = new Parser(nullptr, new Lexer(nullptr, objStr->getStream()->copy()), gFalse);
 	for (int i = 0; i < nObjects; ++i)
 	{
 		parser->getObj(&obj1, gTrue);
@@ -1285,7 +1285,7 @@ Object* XRef::fetch(int num, int gen, Object* obj, int recursion)
 			delete parser;
 			goto err;
 		}
-		parser->getObj(obj, gFalse, encrypted ? fileKey : (Guchar*)NULL, encAlgorithm, keyLength, num, gen, recursion);
+		parser->getObj(obj, gFalse, encrypted ? fileKey : (Guchar*)nullptr, encAlgorithm, keyLength, num, gen, recursion);
 		obj1.free();
 		obj2.free();
 		obj3.free();
@@ -1294,9 +1294,9 @@ Object* XRef::fetch(int num, int gen, Object* obj, int recursion)
 
 	case xrefEntryCompressed:
 #if 0 // Adobe apparently ignores the generation number on compressed objects
-    if (gen != 0) {
-      goto err;
-    }
+		if (gen != 0) {
+			goto err;
+		}
 #endif
 		if (e->offset >= (GFileOffset)size || entries[e->offset].type != xrefEntryUncompressed)
 		{
@@ -1400,7 +1400,7 @@ ObjectStream* XRef::getObjectStreamFromCache(int objStrNum)
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 // NB: objStrsMutex must be locked when calling this function.
@@ -1435,7 +1435,7 @@ void XRef::cleanObjectStreamCache()
 	if (objStrCacheLength > 1 && objStrTime - objStrLastUse[objStrCacheLength - 1] > objStrCacheTimeout)
 	{
 		delete objStrs[objStrCacheLength - 1];
-		objStrs[objStrCacheLength - 1] = NULL;
+		objStrs[objStrCacheLength - 1] = nullptr;
 		--objStrCacheLength;
 	}
 }

@@ -20,110 +20,117 @@ class HTMLGenFontDefn;
 
 //------------------------------------------------------------------------
 
-class HTMLGen {
+class HTMLGen
+{
 public:
+	HTMLGen(double backgroundResolutionA, GBool tableMode);
+	~HTMLGen();
 
-  HTMLGen(double backgroundResolutionA, GBool tableMode);
-  ~HTMLGen();
+	GBool isOk() { return ok; }
 
-  GBool isOk() { return ok; }
+	double getBackgroundResolution() { return backgroundResolution; }
 
-  double getBackgroundResolution() { return backgroundResolution; }
-  void setBackgroundResolution(double backgroundResolutionA)
-    { backgroundResolution = backgroundResolutionA; }
+	void setBackgroundResolution(double backgroundResolutionA)
+	{
+		backgroundResolution = backgroundResolutionA;
+	}
 
-  double getZoom() { return zoom; }
-  void setZoom(double zoomA) { zoom = zoomA; }
+	double getZoom() { return zoom; }
 
-  void setVStretch(double vStretchA) { vStretch = vStretchA; }
+	void setZoom(double zoomA) { zoom = zoomA; }
 
-  GBool getDrawInvisibleText() { return drawInvisibleText; }
-  void setDrawInvisibleText(GBool drawInvisibleTextA)
-    { drawInvisibleText = drawInvisibleTextA; }
+	void setVStretch(double vStretchA) { vStretch = vStretchA; }
 
-  GBool getAllTextInvisible() { return allTextInvisible; }
-  void setAllTextInvisible(GBool allTextInvisibleA)
-    { allTextInvisible = allTextInvisibleA; }
+	GBool getDrawInvisibleText() { return drawInvisibleText; }
 
-  void setExtractFontFiles(GBool extractFontFilesA)
-    { extractFontFiles = extractFontFilesA; }
+	void setDrawInvisibleText(GBool drawInvisibleTextA)
+	{
+		drawInvisibleText = drawInvisibleTextA;
+	}
 
-  void setConvertFormFields(GBool convertFormFieldsA)
-    { convertFormFields = convertFormFieldsA; }
+	GBool getAllTextInvisible() { return allTextInvisible; }
 
-  void setEmbedBackgroundImage(GBool embedBackgroundImageA)
-    { embedBackgroundImage = embedBackgroundImageA; }
+	void setAllTextInvisible(GBool allTextInvisibleA)
+	{
+		allTextInvisible = allTextInvisibleA;
+	}
 
-  void setEmbedFonts(GBool embedFontsA)
-    { embedFonts = embedFontsA; }
+	void setExtractFontFiles(GBool extractFontFilesA)
+	{
+		extractFontFiles = extractFontFilesA;
+	}
 
-  void setIncludeMetadata(GBool includeMetadataA)
-    { includeMetadata = includeMetadataA; }
+	void setConvertFormFields(GBool convertFormFieldsA)
+	{
+		convertFormFields = convertFormFieldsA;
+	}
 
-  void startDoc(PDFDoc *docA);
-  int convertPage(int pg, const char *pngURL, const char *htmlDir,
-		  int (*writeHTML)(void *stream, const char *data, int size),
-		  void *htmlStream,
-		  int (*writePNG)(void *stream, const char *data, int size),
-		  void *pngStream);
+	void setEmbedBackgroundImage(GBool embedBackgroundImageA)
+	{
+		embedBackgroundImage = embedBackgroundImageA;
+	}
 
-  // Get the counter values.
-  int getNumVisibleChars() { return nVisibleChars; }
-  int getNumInvisibleChars() { return nInvisibleChars; }
-  int getNumRemovedDupChars() { return nRemovedDupChars; }
+	void setEmbedFonts(GBool embedFontsA)
+	{
+		embedFonts = embedFontsA;
+	}
+
+	void setIncludeMetadata(GBool includeMetadataA)
+	{
+		includeMetadata = includeMetadataA;
+	}
+
+	void startDoc(PDFDoc* docA);
+	int  convertPage(int pg, const char* pngURL, const char* htmlDir, int (*writeHTML)(void* stream, const char* data, int size), void* htmlStream, int (*writePNG)(void* stream, const char* data, int size), void* pngStream);
+
+	// Get the counter values.
+	int getNumVisibleChars() { return nVisibleChars; }
+
+	int getNumInvisibleChars() { return nInvisibleChars; }
+
+	int getNumRemovedDupChars() { return nRemovedDupChars; }
 
 private:
+	int              findDirSpan(GList* words, int firstWordIdx, int primaryDir, int* spanDir);
+	void             appendSpans(GList* words, int firstWordIdx, int lastWordIdx, int primaryDir, int spanDir, double base, GBool dropCapLine, GString* s);
+	void             appendUTF8(Unicode u, GString* s);
+	HTMLGenFontDefn* getFontDefn(TextFontInfo* font, const char* htmlDir);
+	HTMLGenFontDefn* getFontFile(TextFontInfo* font, const char* htmlDir);
+	HTMLGenFontDefn* getSubstituteFont(TextFontInfo* font);
+	void             getFontDetails(TextFontInfo* font, const char** family, const char** weight, const char** style, double* scale);
+	void             genDocMetadata(int (*writeHTML)(void* stream, const char* data, int size), void* htmlStream);
+	void             genDocMetadataItem(int (*writeHTML)(void* stream, const char* data, int size), void* htmlStream, Dict* infoDict, const char* key);
 
-  int findDirSpan(GList *words, int firstWordIdx, int primaryDir,
-		  int *spanDir);
-  void appendSpans(GList *words, int firstWordIdx, int lastWordIdx,
-		   int primaryDir, int spanDir,
-		   double base, GBool dropCapLine, GString *s);
-  void appendUTF8(Unicode u, GString *s);
-  HTMLGenFontDefn *getFontDefn(TextFontInfo *font, const char *htmlDir);
-  HTMLGenFontDefn *getFontFile(TextFontInfo *font, const char *htmlDir);
-  HTMLGenFontDefn *getSubstituteFont(TextFontInfo *font);
-  void getFontDetails(TextFontInfo *font, const char **family,
-		      const char **weight, const char **style,
-		      double *scale);
-  void genDocMetadata(int (*writeHTML)(void *stream,
-				       const char *data, int size),
-		      void *htmlStream);
-  void genDocMetadataItem(int (*writeHTML)(void *stream,
-					   const char *data, int size),
-			  void *htmlStream,
-			  Dict *infoDict, const char *key);
+	double backgroundResolution;
+	double zoom;
+	double vStretch;
+	GBool  drawInvisibleText;
+	GBool  allTextInvisible;
+	GBool  extractFontFiles;
+	GBool  convertFormFields;
+	GBool  embedBackgroundImage;
+	GBool  embedFonts;
+	GBool  includeMetadata;
 
-  double backgroundResolution;
-  double zoom;
-  double vStretch;
-  GBool drawInvisibleText;
-  GBool allTextInvisible;
-  GBool extractFontFiles;
-  GBool convertFormFields;
-  GBool embedBackgroundImage;
-  GBool embedFonts;
-  GBool includeMetadata;
+	PDFDoc*          doc;
+	TextOutputDev*   textOut;
+	SplashOutputDev* splashOut;
 
-  PDFDoc *doc;
-  TextOutputDev *textOut;
-  SplashOutputDev *splashOut;
+	GList*  fonts; // [TextFontInfo]
+	double* fontScales;
 
-  GList *fonts;			// [TextFontInfo]
-  double *fontScales;
+	GList* fontDefns; // [HTMLGenFontDefn]
+	int    nextFontFaceIdx;
 
-  GList *fontDefns;		// [HTMLGenFontDefn]
-  int nextFontFaceIdx;
+	TextFontInfo* formFieldFont;
+	GList*        formFieldInfo; // [HTMLGenFormFieldInfo]
+	int           nextFieldID;
 
-  TextFontInfo *formFieldFont;
-  GList *formFieldInfo;		// [HTMLGenFormFieldInfo]
-  int nextFieldID;
+	int nVisibleChars;    // number of visible chars on the page
+	int nInvisibleChars;  // number of invisible chars on the page
+	int nRemovedDupChars; // number of duplicate chars removed
 
-  int nVisibleChars;		// number of visible chars on the page
-  int nInvisibleChars;		// number of invisible chars on the page
-  int nRemovedDupChars;		// number of duplicate chars removed
-
-  GBool ok;
+	GBool ok;
 };
 
 #endif

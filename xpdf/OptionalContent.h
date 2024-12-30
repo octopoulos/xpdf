@@ -25,111 +25,114 @@ class OCDisplayNode;
 
 //------------------------------------------------------------------------
 
-class OptionalContent {
+class OptionalContent
+{
 public:
+	OptionalContent(PDFDoc* doc);
+	~OptionalContent();
 
-  OptionalContent(PDFDoc *doc);
-  ~OptionalContent();
+	// Walk the list of optional content groups.
+	int                   getNumOCGs();
+	OptionalContentGroup* getOCG(int idx);
 
-  // Walk the list of optional content groups.
-  int getNumOCGs();
-  OptionalContentGroup *getOCG(int idx);
+	// Find an OCG by indirect reference.
+	OptionalContentGroup* findOCG(Ref* ref);
 
-  // Find an OCG by indirect reference.
-  OptionalContentGroup *findOCG(Ref *ref);
+	// Get the root node of the optional content group display tree
+	// (which does not necessarily include all of the OCGs).
+	OCDisplayNode* getDisplayRoot() { return display; }
 
-  // Get the root node of the optional content group display tree
-  // (which does not necessarily include all of the OCGs).
-  OCDisplayNode *getDisplayRoot() { return display; }
-
-  // Evaluate an optional content object -- either an OCG or an OCMD.
-  // If <obj> is a valid OCG or OCMD, sets *<visible> and returns
-  // true; otherwise returns false.
-  GBool evalOCObject(Object *obj, GBool *visible);
+	// Evaluate an optional content object -- either an OCG or an OCMD.
+	// If <obj> is a valid OCG or OCMD, sets *<visible> and returns
+	// true; otherwise returns false.
+	GBool evalOCObject(Object* obj, GBool* visible);
 
 private:
+	GBool evalOCVisibilityExpr(Object* expr, int recursion);
 
-  GBool evalOCVisibilityExpr(Object *expr, int recursion);
-
-  XRef *xref;
-  GList *ocgs;			// all OCGs [OptionalContentGroup]
-  OCDisplayNode *display;	// root node of display tree 
+	XRef*          xref;
+	GList*         ocgs;    // all OCGs [OptionalContentGroup]
+	OCDisplayNode* display; // root node of display tree
 };
 
 //------------------------------------------------------------------------
 
 // Values from the optional content usage dictionary.
-enum OCUsageState {
-  ocUsageOn,
-  ocUsageOff,
-  ocUsageUnset
+enum OCUsageState
+{
+	ocUsageOn,
+	ocUsageOff,
+	ocUsageUnset
 };
 
 //------------------------------------------------------------------------
 
-class OptionalContentGroup {
+class OptionalContentGroup
+{
 public:
+	static OptionalContentGroup* parse(Ref* refA, Object* obj);
+	~OptionalContentGroup();
 
-  static OptionalContentGroup *parse(Ref *refA, Object *obj);
-  ~OptionalContentGroup();
+	GBool matches(Ref* refA);
 
-  GBool matches(Ref *refA);
+	Unicode* getName();
+	int      getNameLength();
 
-  Unicode *getName();
-  int getNameLength();
-  OCUsageState getViewState() { return viewState; }
-  OCUsageState getPrintState() { return printState; }
-  GBool getState() { return state; }
-  void setState(GBool stateA) { state = stateA; }
-  GBool getInViewUsageAppDict() { return inViewUsageAppDict; }
-  void setInViewUsageAppDict() { inViewUsageAppDict = gTrue; }
+	OCUsageState getViewState() { return viewState; }
+
+	OCUsageState getPrintState() { return printState; }
+
+	GBool getState() { return state; }
+
+	void setState(GBool stateA) { state = stateA; }
+
+	GBool getInViewUsageAppDict() { return inViewUsageAppDict; }
+
+	void setInViewUsageAppDict() { inViewUsageAppDict = gTrue; }
 
 private:
+	OptionalContentGroup(Ref* refA, TextString* nameA, OCUsageState viewStateA, OCUsageState printStateA);
 
-  OptionalContentGroup(Ref *refA, TextString *nameA,
-		       OCUsageState viewStateA, OCUsageState printStateA);
+	Ref          ref;
+	TextString*  name;
+	OCUsageState viewState,   // suggested state when viewing
+	    printState;           // suggested state when printing
+	GBool state;              // current state (on/off)
+	GBool inViewUsageAppDict; // true if this OCG is listed in a usage app dict with Event=View
 
-  Ref ref;
-  TextString *name;
-  OCUsageState viewState,	// suggested state when viewing
-               printState;	// suggested state when printing
-  GBool state;			// current state (on/off)
-  GBool inViewUsageAppDict;	// true if this OCG is listed in a
-				//   usage app dict with Event=View
-
-  friend class OCDisplayNode;
+	friend class OCDisplayNode;
 };
 
 //------------------------------------------------------------------------
 
-class OCDisplayNode {
+class OCDisplayNode
+{
 public:
+	static OCDisplayNode* parse(Object* obj, OptionalContent* oc, XRef* xref, int recursion = 0);
+	OCDisplayNode();
+	~OCDisplayNode();
 
-  static OCDisplayNode *parse(Object *obj, OptionalContent *oc, XRef *xref,
-			      int recursion = 0);
-  OCDisplayNode();
-  ~OCDisplayNode();
+	Unicode* getName();
+	int      getNameLength();
 
-  Unicode *getName();
-  int getNameLength();
-  OptionalContentGroup *getOCG() { return ocg; }
-  int getNumChildren();
-  OCDisplayNode *getChild(int idx);
-  OCDisplayNode *getParent() { return parent; }
+	OptionalContentGroup* getOCG() { return ocg; }
+
+	int            getNumChildren();
+	OCDisplayNode* getChild(int idx);
+
+	OCDisplayNode* getParent() { return parent; }
 
 private:
+	OCDisplayNode(GString* nameA);
+	OCDisplayNode(OptionalContentGroup* ocgA);
+	void   addChild(OCDisplayNode* child);
+	void   addChildren(GList* childrenA);
+	GList* takeChildren();
 
-  OCDisplayNode(GString *nameA);
-  OCDisplayNode(OptionalContentGroup *ocgA);
-  void addChild(OCDisplayNode *child);
-  void addChildren(GList *childrenA);
-  GList *takeChildren();
-
-  TextString *name;		// display name
-  OptionalContentGroup *ocg;	// NULL for display labels
-  OCDisplayNode *parent;	// parent node; NULL at root
-  GList *children;		// NULL if there are no children
-				//   [OCDisplayNode]
+	TextString*           name;     // display name
+	OptionalContentGroup* ocg;      // nullptr for display labels
+	OCDisplayNode*        parent;   // parent node; nullptr at root
+	GList*                children; // nullptr if there are no children [OCDisplayNode]
 };
 
 #endif

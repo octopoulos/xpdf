@@ -46,7 +46,7 @@ SplashBitmap* ShadingImage::generateBitmap(GfxState* state, GfxShading* shading,
 		return generatePatchMeshBitmap(state, (GfxPatchMeshShading*)shading, mode, reverseVideo, parentSplash, parentBitmap, xOut, yOut);
 		break;
 	default:
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -70,7 +70,7 @@ SplashBitmap* ShadingImage::generateFunctionBitmap(GfxState* state, GfxFunctionS
 	double fxMin, fyMin, fxMax, fyMax;
 	state->getClipBBox(&fxMin, &fyMin, &fxMax, &fyMax);
 	if (fxMin > fxMax || fyMin > fyMax)
-		return NULL;
+		return nullptr;
 
 	// convert to integer coords
 	int xMin         = (int)floor(fxMin);
@@ -98,7 +98,7 @@ SplashBitmap* ShadingImage::generateFunctionBitmap(GfxState* state, GfxFunctionS
 	// compute the device space -> domain transform
 	double det = mat[0] * mat[3] - mat[1] * mat[2];
 	if (fabs(det) < 0.000001)
-		return NULL;
+		return nullptr;
 	det = 1 / det;
 	double iMat[6];
 	iMat[0] = mat[3] * det;
@@ -161,13 +161,13 @@ SplashBitmap* ShadingImage::generateAxialBitmap(GfxState* state, GfxAxialShading
 	if (!dZero)
 		d = 1 / d;
 	if (dZero && !ext0 && !ext1)
-		return NULL;
+		return nullptr;
 
 	// get the clip bbox
 	double fxMin, fyMin, fxMax, fyMax;
 	state->getClipBBox(&fxMin, &fyMin, &fxMax, &fyMax);
 	if (fxMin > fxMax || fyMin > fyMax)
-		return NULL;
+		return nullptr;
 
 	// convert to integer coords
 	int xMin         = (int)floor(fxMin);
@@ -181,7 +181,7 @@ SplashBitmap* ShadingImage::generateAxialBitmap(GfxState* state, GfxAxialShading
 	double* ctm = state->getCTM();
 	double  det = ctm[0] * ctm[3] - ctm[1] * ctm[2];
 	if (fabs(det) < 1e-10 * max4(fabs(ctm[0]), fabs(ctm[1]), fabs(ctm[2]), fabs(ctm[3])))
-		return NULL;
+		return nullptr;
 	det = 1 / det;
 	double ictm[6];
 	ictm[0] = ctm[3] * det;
@@ -422,7 +422,7 @@ SplashBitmap* ShadingImage::generateRadialBitmap(GfxState* state, GfxRadialShadi
 	double fxMin, fyMin, fxMax, fyMax;
 	state->getClipBBox(&fxMin, &fyMin, &fxMax, &fyMax);
 	if (fxMin > fxMax || fyMin > fyMax)
-		return NULL;
+		return nullptr;
 
 	// intersect with shading region (in user space): if the extend
 	// flags are false (or just the larger extend flag is false, in the
@@ -444,7 +444,7 @@ SplashBitmap* ShadingImage::generateRadialBitmap(GfxState* state, GfxRadialShadi
 		if (dyMax < fyMax)
 			fyMax = dyMax;
 		if (fxMin > fxMax || fyMin > fyMax)
-			return NULL;
+			return nullptr;
 	}
 
 	// convert to integer coords
@@ -459,7 +459,7 @@ SplashBitmap* ShadingImage::generateRadialBitmap(GfxState* state, GfxRadialShadi
 	double* ctm = state->getCTM();
 	double  det = ctm[0] * ctm[3] - ctm[1] * ctm[2];
 	if (fabs(det) < 1e-10 * max4(fabs(ctm[0]), fabs(ctm[1]), fabs(ctm[2]), fabs(ctm[3])))
-		return NULL;
+		return nullptr;
 	det = 1 / det;
 	double ictm[6];
 	ictm[0] = ctm[3] * det;
@@ -709,7 +709,7 @@ SplashBitmap* ShadingImage::generateGouraudTriangleBitmap(
 	double fxMin, fyMin, fxMax, fyMax;
 	state->getClipBBox(&fxMin, &fyMin, &fxMax, &fyMax);
 	if (fxMin > fxMax || fyMin > fyMax)
-		return NULL;
+		return nullptr;
 
 	// get the shading bbox
 	double tx0, ty0, tx1, ty1, dx, dy, txMin, tyMin, txMax, tyMax;
@@ -753,7 +753,7 @@ SplashBitmap* ShadingImage::generateGouraudTriangleBitmap(
 	if (tyMax < fyMax)
 		fyMax = tyMax;
 	if (fxMin > fxMax || fyMin > fyMax)
-		return NULL;
+		return nullptr;
 
 	// convert to integer coords
 	int xMin         = (int)floor(fxMin);
@@ -957,7 +957,7 @@ SplashBitmap* ShadingImage::generatePatchMeshBitmap(
 	double fxMin, fyMin, fxMax, fyMax;
 	state->getClipBBox(&fxMin, &fyMin, &fxMax, &fyMax);
 	if (fxMin > fxMax || fyMin > fyMax)
-		return NULL;
+		return nullptr;
 
 	// get the shading bbox
 	double tx0, ty0, tx1, ty1, dx, dy, txMin, tyMin, txMax, tyMax;
@@ -1001,7 +1001,7 @@ SplashBitmap* ShadingImage::generatePatchMeshBitmap(
 	if (tyMax < fyMax)
 		fyMax = tyMax;
 	if (fxMin > fxMax || fyMin > fyMax)
-		return NULL;
+		return nullptr;
 
 	// convert to integer coords
 	int xMin         = (int)floor(fxMin);

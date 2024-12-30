@@ -20,13 +20,13 @@
 
 TextString::TextString()
 {
-	u   = NULL;
+	u   = nullptr;
 	len = size = 0;
 }
 
 TextString::TextString(GString* s)
 {
-	u   = NULL;
+	u   = nullptr;
 	len = size = 0;
 	append(s);
 }
@@ -41,7 +41,7 @@ TextString::TextString(TextString* s)
 	}
 	else
 	{
-		u = NULL;
+		u = nullptr;
 	}
 }
 

@@ -79,7 +79,7 @@ PDFDoc::PDFDoc(GString* fileNameA, GString* ownerPassword, GString* userPassword
 	fileName1 = fileName;
 
 	// try to open file
-	fileName2 = NULL;
+	fileName2 = nullptr;
 #ifdef VMS
 	if (!(file = fopen(fileName1->getCString(), fopenReadMode, "ctx=stm")))
 	{
@@ -237,9 +237,9 @@ PDFDoc::PDFDoc(BaseStream* strA, GString* ownerPassword, GString* userPassword, 
 	}
 	else
 	{
-		fileName = NULL;
+		fileName = nullptr;
 #ifdef _WIN32
-		fileNameU = NULL;
+		fileNameU = nullptr;
 #endif
 	}
 	str = strA;
@@ -251,15 +251,15 @@ void PDFDoc::init(PDFCore* coreA)
 	ok      = gFalse;
 	errCode = errNone;
 	core    = coreA;
-	file    = NULL;
-	str     = NULL;
-	xref    = NULL;
-	catalog = NULL;
-	annots  = NULL;
+	file    = nullptr;
+	str     = nullptr;
+	xref    = nullptr;
+	catalog = nullptr;
+	annots  = nullptr;
 #ifndef DISABLE_OUTLINE
-	outline = NULL;
+	outline = nullptr;
 #endif
-	optContent = NULL;
+	optContent = nullptr;
 }
 
 GBool PDFDoc::setup(GString* ownerPassword, GString* userPassword)
@@ -306,7 +306,7 @@ GBool PDFDoc::setup2(GString* ownerPassword, GString* userPassword, GBool repair
 		error(errSyntaxError, -1, "Couldn't read xref table");
 		errCode = xref->getErrorCode();
 		delete xref;
-		xref = NULL;
+		xref = nullptr;
 		return gFalse;
 	}
 
@@ -315,7 +315,7 @@ GBool PDFDoc::setup2(GString* ownerPassword, GString* userPassword, GBool repair
 	{
 		errCode = errEncrypted;
 		delete xref;
-		xref = NULL;
+		xref = nullptr;
 		return gFalse;
 	}
 
@@ -326,9 +326,9 @@ GBool PDFDoc::setup2(GString* ownerPassword, GString* userPassword, GBool repair
 		error(errSyntaxError, -1, "Couldn't read page catalog");
 		errCode = errBadCatalog;
 		delete catalog;
-		catalog = NULL;
+		catalog = nullptr;
 		delete xref;
-		xref = NULL;
+		xref = nullptr;
 		return gFalse;
 	}
 
@@ -653,17 +653,17 @@ char* PDFDoc::getEmbeddedFileMem(int idx, int* size)
 	int    bufSize, sizeInc, n;
 
 	if (!catalog->getEmbeddedFileStreamObj(idx, &strObj))
-		return NULL;
+		return nullptr;
 	strObj.streamReset();
 	bufSize = 0;
-	buf     = NULL;
+	buf     = nullptr;
 	do {
 		sizeInc = bufSize ? bufSize : 1024;
 		if (bufSize > INT_MAX - sizeInc)
 		{
 			error(errIO, -1, "embedded file is too large");
 			*size = 0;
-			return NULL;
+			return nullptr;
 		}
 		buf = (char*)grealloc(buf, bufSize + sizeInc);
 		n   = strObj.streamGetBlock(buf + bufSize, sizeInc);

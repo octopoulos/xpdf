@@ -11,9 +11,10 @@
 #ifndef STREAM_CCITT_H
 #define STREAM_CCITT_H
 
-struct CCITTCode {
-  short bits;
-  short n;
+struct CCITTCode
+{
+	short bits;
+	short n;
 };
 
 #define ccittEOL -2

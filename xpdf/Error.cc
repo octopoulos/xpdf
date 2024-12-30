@@ -27,8 +27,8 @@ const char* errorCategoryNames[] = {
 	"Internal Error"
 };
 
-static void  (*errorCbk)(void* data, ErrorCategory category, int pos, char* msg) = NULL;
-static void* errorCbkData                                                        = NULL;
+static void  (*errorCbk)(void* data, ErrorCategory category, int pos, char* msg) = nullptr;
+static void* errorCbkData                                                        = nullptr;
 
 void setErrorCallback(void (*cbk)(void* data, ErrorCategory category, int pos, char* msg), void* data)
 {

@@ -435,7 +435,7 @@ static void splashOutBlendLuminosity(SplashColorPtr src, SplashColorPtr dest, Sp
 
 // NB: This must match the GfxBlendMode enum defined in GfxState.h.
 SplashBlendFunc splashOutBlendFuncs[] = {
-	NULL,
+	nullptr,
 	&splashOutBlendMultiply,
 	&splashOutBlendScreen,
 	&splashOutBlendOverlay,
@@ -631,10 +631,10 @@ SplashOutputDev::SplashOutputDev(SplashColorMode colorModeA, int bitmapRowPadA, 
 	skipHorizText   = gFalse;
 	skipRotatedText = gFalse;
 
-	xref = NULL;
+	xref = nullptr;
 
-	bitmap = new SplashBitmap(1, 1, bitmapRowPad, colorMode, colorMode != splashModeMono1, bitmapTopDown, NULL);
-	splash = new Splash(bitmap, vectorAntialias, NULL, &screenParams);
+	bitmap = new SplashBitmap(1, 1, bitmapRowPad, colorMode, colorMode != splashModeMono1, bitmapTopDown, nullptr);
+	splash = new Splash(bitmap, vectorAntialias, nullptr, &screenParams);
 	splash->setMinLineWidth(globalParams->getMinLineWidth());
 	splash->setStrokeAdjust(
 	    mapStrokeAdjustMode[globalParams->getStrokeAdjust()]);
@@ -642,22 +642,22 @@ SplashOutputDev::SplashOutputDev(SplashColorMode colorModeA, int bitmapRowPadA, 
 	    globalParams->getEnablePathSimplification());
 	splash->clear(paperColor, 0);
 
-	fontEngine = NULL;
+	fontEngine = nullptr;
 
 	nT3Fonts     = 0;
-	t3GlyphStack = NULL;
+	t3GlyphStack = nullptr;
 
-	font           = NULL;
+	font           = nullptr;
 	needFontUpdate = gFalse;
-	savedTextPath  = NULL;
-	savedClipPath  = NULL;
+	savedTextPath  = nullptr;
+	savedClipPath  = nullptr;
 
-	transpGroupStack = NULL;
+	transpGroupStack = nullptr;
 
 	nestCount = 0;
 
-	startPageCbk     = NULL;
-	startPageCbkData = NULL;
+	startPageCbk     = nullptr;
+	startPageCbkData = nullptr;
 }
 
 void SplashOutputDev::setupScreenParams(double hDPI, double vDPI)
@@ -771,19 +771,19 @@ void SplashOutputDev::startPage(int pageNum, GfxState* state)
 	if (splash)
 	{
 		delete splash;
-		splash = NULL;
+		splash = nullptr;
 	}
 	if (!bitmap || w != bitmap->getWidth() || h != bitmap->getHeight())
 	{
 		if (bitmap)
 		{
 			delete bitmap;
-			bitmap = NULL;
+			bitmap = nullptr;
 		}
 		traceMessage("page bitmap");
-		bitmap = new SplashBitmap(w, h, bitmapRowPad, colorMode, colorMode != splashModeMono1, bitmapTopDown, NULL);
+		bitmap = new SplashBitmap(w, h, bitmapRowPad, colorMode, colorMode != splashModeMono1, bitmapTopDown, nullptr);
 	}
-	splash = new Splash(bitmap, vectorAntialias, NULL, &screenParams);
+	splash = new Splash(bitmap, vectorAntialias, nullptr, &screenParams);
 	splash->setMinLineWidth(globalParams->getMinLineWidth());
 	splash->setEnablePathSimplification(
 	    globalParams->getEnablePathSimplification());
@@ -818,7 +818,7 @@ void SplashOutputDev::startPage(int pageNum, GfxState* state)
 	splash->setFillPattern(new SplashSolidColor(color));
 	splash->setLineCap(splashLineCapButt);
 	splash->setLineJoin(splashLineJoinMiter);
-	splash->setLineDash(NULL, 0, 0);
+	splash->setLineDash(nullptr, 0, 0);
 	splash->setMiterLimit(10);
 	splash->setFlatness(1);
 	// the SA parameter supposedly defaults to false, but Acrobat
@@ -1209,12 +1209,12 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 	int                substIdx, n, code, cmap, cmapPlatform, cmapEncoding, length, i;
 
 	needFontUpdate = gFalse;
-	font           = NULL;
+	font           = nullptr;
 #if LOAD_FONTS_FROM_MEM
-	fontBuf = NULL;
+	fontBuf = nullptr;
 #else
-	tmpFileName = NULL;
-	fileName    = NULL;
+	tmpFileName = nullptr;
+	fileName    = nullptr;
 #endif
 	substIdx = -1;
 
@@ -1272,7 +1272,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 			strObj.streamClose();
 			strObj.free();
 #else
-			if (!openTempFile(&tmpFileName, &tmpFile, "wb", NULL))
+			if (!openTempFile(&tmpFileName, &tmpFile, "wb", nullptr))
 			{
 				error(errIO, -1, "Couldn't create temporary font file");
 				delete fontLoc;
@@ -1337,7 +1337,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 #endif
 			          (const char**)((Gfx8BitFont*)gfxFont)->getEncoding())))
 			{
-				error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'", gfxFont->getName() ? gfxFont->getName()->getCString() : "(unnamed)");
+				error(errSyntaxError, -1, "1/Couldn't create a font for '{0:s}'", gfxFont->getName() ? gfxFont->getName()->getCString() : "(unnamed)");
 				delete fontLoc;
 				goto err1;
 			}
@@ -1355,7 +1355,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 			}
 			else
 			{
-				codeToGID = NULL;
+				codeToGID = nullptr;
 			}
 			if (!(fontFile = fontEngine->loadType1CFont(
 			          id,
@@ -1368,13 +1368,13 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 			          codeToGID,
 			          (const char**)((Gfx8BitFont*)gfxFont)->getEncoding())))
 			{
-				error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'", gfxFont->getName() ? gfxFont->getName()->getCString() : "(unnamed)");
+				error(errSyntaxError, -1, "2/Couldn't create a font for '{0:s}'", gfxFont->getName() ? gfxFont->getName()->getCString() : "(unnamed)");
 				delete fontLoc;
 				goto err1;
 			}
 			break;
 		case fontType1COT:
-			codeToGID = NULL;
+			codeToGID = nullptr;
 #if LOAD_FONTS_FROM_MEM
 			if ((ff = FoFiTrueType::make(fontBuf->getCString(), fontBuf->getLength(), fontNum, gTrue)))
 			{
@@ -1400,7 +1400,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 			          codeToGID,
 			          (const char**)((Gfx8BitFont*)gfxFont)->getEncoding())))
 			{
-				error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'", gfxFont->getName() ? gfxFont->getName()->getCString() : "(unnamed)");
+				error(errSyntaxError, -1, "3/Couldn't create a font for '{0:s}'", gfxFont->getName() ? gfxFont->getName()->getCString() : "(unnamed)");
 				delete fontLoc;
 				goto err1;
 			}
@@ -1429,7 +1429,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 			}
 			else
 			{
-				codeToGID = NULL;
+				codeToGID = nullptr;
 				n         = 0;
 			}
 			if (!(fontFile = fontEngine->loadTrueTypeFont(
@@ -1443,9 +1443,9 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 			          fontNum, codeToGID, n,
 			          gfxFont->getEmbeddedFontName()
 			              ? gfxFont->getEmbeddedFontName()->getCString()
-			              : (char*)NULL)))
+			              : (char*)nullptr)))
 			{
-				error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'", gfxFont->getName() ? gfxFont->getName()->getCString() : "(unnamed)");
+				error(errSyntaxError, -1, "4/Couldn't create a font for '{0:s}'", gfxFont->getName() ? gfxFont->getName()->getCString() : "(unnamed)");
 				delete fontLoc;
 				goto err1;
 			}
@@ -1460,7 +1460,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 			}
 			else
 			{
-				codeToGID = NULL;
+				codeToGID = nullptr;
 				n         = 0;
 			}
 			if (!(fontFile = fontEngine->loadCIDFont(
@@ -1473,13 +1473,13 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 #endif
 			          codeToGID, n)))
 			{
-				error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'", gfxFont->getName() ? gfxFont->getName()->getCString() : "(unnamed)");
+				error(errSyntaxError, -1, "5/Couldn't create a font for '{0:s}'", gfxFont->getName() ? gfxFont->getName()->getCString() : "(unnamed)");
 				delete fontLoc;
 				goto err1;
 			}
 			break;
 		case fontCIDType0COT:
-			codeToGID = NULL;
+			codeToGID = nullptr;
 			n         = 0;
 			if (fontLoc->locType == gfxFontLocEmbedded)
 			{
@@ -1543,14 +1543,14 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 #endif
 			          codeToGID, n)))
 			{
-				error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'", gfxFont->getName() ? gfxFont->getName()->getCString() : "(unnamed)");
+				error(errSyntaxError, -1, "6/Couldn't create a font for '{0:s}'", gfxFont->getName() ? gfxFont->getName()->getCString() : "(unnamed)");
 				delete fontLoc;
 				goto err1;
 			}
 			break;
 		case fontCIDType2:
 		case fontCIDType2OT:
-			codeToGID = NULL;
+			codeToGID = nullptr;
 			n         = 0;
 			if (fontLoc->locType == gfxFontLocEmbedded)
 			{
@@ -1615,9 +1615,9 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 			          fontNum, codeToGID, n,
 			          gfxFont->getEmbeddedFontName()
 			              ? gfxFont->getEmbeddedFontName()->getCString()
-			              : (char*)NULL)))
+			              : (char*)nullptr)))
 			{
-				error(errSyntaxError, -1, "Couldn't create a font for '{0:s}'", gfxFont->getName() ? gfxFont->getName()->getCString() : "(unnamed)");
+				error(errSyntaxError, -1, "7/Couldn't create a font for '{0:s}'", gfxFont->getName() ? gfxFont->getName()->getCString() : "(unnamed)");
 				delete fontLoc;
 				goto err1;
 			}
@@ -1999,10 +1999,10 @@ void SplashOutputDev::tilingPatternFill(GfxState* state, Gfx* gfx, Object* strRe
 	}
 	else
 	{
-		overprintMaskBitmap = NULL;
+		overprintMaskBitmap = nullptr;
 	}
 #else  // SPLASH_CMYK
-	overprintMaskBitmap = NULL;
+	overprintMaskBitmap = nullptr;
 #endif // SPLASH_CMYK
 	splash->setMinLineWidth(globalParams->getMinLineWidth());
 	splash->setStrokeAdjust(
@@ -2092,7 +2092,7 @@ GBool SplashOutputDev::shadedFill(GfxState* state, GfxShading* shading)
 	SplashClipResult clipRes = splash->limitRectToClipRect(&xMin, &yMin, &xMax, &yMax);
 	if (clipRes != splashClipAllOutside)
 	{
-		setOverprintMask(state, state->getFillColorSpace(), state->getFillOverprint(), state->getOverprintMode(), NULL);
+		setOverprintMask(state, state->getFillColorSpace(), state->getFillOverprint(), state->getOverprintMode(), nullptr);
 		splash->composite(tBitmap, xMin - x, yMin - y, xMin, yMin, xMax - xMin, yMax - yMin, clipRes == splashClipAllInside, gFalse);
 	}
 
@@ -2192,7 +2192,7 @@ void SplashOutputDev::drawChar(GfxState* state, double x, double y, double dx, d
 	x -= originX;
 	y -= originY;
 
-	SplashPath* path = NULL;
+	SplashPath* path = nullptr;
 	if (stroke || makePath)
 	{
 		if ((path = font->getGlyphPath(code)))
@@ -2249,7 +2249,7 @@ void SplashOutputDev::drawChar(GfxState* state, double x, double y, double dx, d
 			else
 			{
 				savedTextPath = path;
-				path          = NULL;
+				path          = nullptr;
 			}
 		}
 	}
@@ -2298,7 +2298,7 @@ void SplashOutputDev::clearTextPath(GfxState* state)
 	if (savedTextPath)
 	{
 		delete savedTextPath;
-		savedTextPath = NULL;
+		savedTextPath = nullptr;
 	}
 }
 
@@ -2315,7 +2315,7 @@ void SplashOutputDev::addTextPathToSavedClipPath(GfxState* state)
 		{
 			savedClipPath = savedTextPath;
 		}
-		savedTextPath = NULL;
+		savedTextPath = nullptr;
 	}
 }
 
@@ -2325,7 +2325,7 @@ void SplashOutputDev::clipToSavedClipPath(GfxState* state)
 		return;
 	splash->clipToPath(savedClipPath, gFalse);
 	delete savedClipPath;
-	savedClipPath = NULL;
+	savedClipPath = nullptr;
 }
 
 GBool SplashOutputDev::beginType3Char(GfxState* state, double x, double y, double dx, double dy, CharCode code, Unicode* u, int uLen)
@@ -2472,8 +2472,8 @@ GBool SplashOutputDev::beginType3Char(GfxState* state, double x, double y, doubl
 	t3GlyphStack             = t3gs;
 	t3GlyphStack->code       = (Gushort)code;
 	t3GlyphStack->cache      = t3Font;
-	t3GlyphStack->cacheTag   = NULL;
-	t3GlyphStack->cacheData  = NULL;
+	t3GlyphStack->cacheTag   = nullptr;
+	t3GlyphStack->cacheData  = nullptr;
 	t3GlyphStack->haveDx     = gFalse;
 	t3GlyphStack->doNotCache = gFalse;
 #if 1 //~t3-sa
@@ -2714,8 +2714,8 @@ void SplashOutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, i
 	imgMaskData.height = height;
 	imgMaskData.y      = 0;
 
-	imgTag = makeImageTag(ref, gfxRenderingIntentRelativeColorimetric, NULL);
-	splash->fillImageMask(imgTag, &imageMaskSrc, &imgMaskData, width, height, mat, t3GlyphStack != NULL, interpolate, globalParams->getImageMaskAntialias());
+	imgTag = makeImageTag(ref, gfxRenderingIntentRelativeColorimetric, nullptr);
+	splash->fillImageMask(imgTag, &imageMaskSrc, &imgMaskData, width, height, mat, t3GlyphStack != nullptr, interpolate, globalParams->getImageMaskAntialias());
 
 	if (inlineImg)
 	{
@@ -2767,7 +2767,7 @@ void SplashOutputDev::setSoftMaskFromImageMask(GfxState* state, Object* ref, Str
 	clearMaskRegion(state, maskSplash, 0, 0, 1, 1);
 	maskColor[0] = 0xff;
 	maskSplash->setFillPattern(new SplashSolidColor(maskColor));
-	imgTag = makeImageTag(ref, gfxRenderingIntentRelativeColorimetric, NULL);
+	imgTag = makeImageTag(ref, gfxRenderingIntentRelativeColorimetric, nullptr);
 	maskSplash->fillImageMask(imgTag, &imageMaskSrc, &imgMaskData, width, height, mat, gFalse, interpolate, globalParams->getImageMaskAntialias());
 	delete imgTag;
 	delete imgMaskData.imgStr;
@@ -2976,7 +2976,7 @@ void SplashOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int w
 	Guchar pix;
 	int    n, i;
 
-	setOverprintMask(state, colorMap->getColorSpace(), state->getFillOverprint(), state->getOverprintMode(), NULL);
+	setOverprintMask(state, colorMap->getColorSpace(), state->getFillOverprint(), state->getOverprintMode(), nullptr);
 
 	ctm    = state->getCTM();
 	mat[0] = ctm[0];
@@ -3001,7 +3001,7 @@ void SplashOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int w
 
 	// special case for one-channel (monochrome/gray/separation) images:
 	// build a lookup table here
-	imgData.lookup = NULL;
+	imgData.lookup = nullptr;
 	if (colorMap->getNumPixelComps() == 1)
 	{
 		if (colorMap->getBits() <= 8)
@@ -3214,7 +3214,7 @@ void SplashOutputDev::drawMaskedImage(GfxState* state, Object* ref, Stream* str,
 	Guchar pix;
 	int    n, i;
 
-	setOverprintMask(state, colorMap->getColorSpace(), state->getFillOverprint(), state->getOverprintMode(), NULL);
+	setOverprintMask(state, colorMap->getColorSpace(), state->getFillOverprint(), state->getOverprintMode(), nullptr);
 
 	ctm = state->getCTM();
 	reduceImageResolution(str, ctm, &width, &height);
@@ -3231,7 +3231,7 @@ void SplashOutputDev::drawMaskedImage(GfxState* state, Object* ref, Stream* str,
 		maskDecode.arrayAdd(&decodeHigh);
 		maskColorMap = new GfxImageColorMap(1, &maskDecode, new GfxDeviceGrayColorSpace());
 		maskDecode.free();
-		drawSoftMaskedImage(state, ref, str, width, height, colorMap, maskRef, maskStr, maskWidth, maskHeight, maskColorMap, NULL, interpolate);
+		drawSoftMaskedImage(state, ref, str, width, height, colorMap, maskRef, maskStr, maskWidth, maskHeight, maskColorMap, nullptr, interpolate);
 		delete maskColorMap;
 	}
 	else
@@ -3262,7 +3262,7 @@ void SplashOutputDev::drawMaskedImage(GfxState* state, Object* ref, Stream* str,
 		maskColor[0] = 0xff;
 		maskSplash->setFillPattern(new SplashSolidColor(maskColor));
 		// use "glyph mode" here to get the correct scaled size
-		maskSplash->fillImageMask(NULL, &imageMaskSrc, &imgMaskData, maskWidth, maskHeight, mat, gTrue, interpolate, globalParams->getImageMaskAntialias());
+		maskSplash->fillImageMask(nullptr, &imageMaskSrc, &imgMaskData, maskWidth, maskHeight, mat, gTrue, interpolate, globalParams->getImageMaskAntialias());
 		delete imgMaskData.imgStr;
 		maskStr->close();
 		delete maskSplash;
@@ -3289,7 +3289,7 @@ void SplashOutputDev::drawMaskedImage(GfxState* state, Object* ref, Stream* str,
 
 		// special case for one-channel (monochrome/gray/separation) images:
 		// build a lookup table here
-		imgData.lookup = NULL;
+		imgData.lookup = nullptr;
 		if (colorMap->getNumPixelComps() == 1)
 		{
 			if (colorMap->getBits() <= 8)
@@ -3483,7 +3483,7 @@ void SplashOutputDev::drawSoftMaskedImage(GfxState* state, Object* ref, Stream* 
 	Guchar pix;
 	int    n, i;
 
-	setOverprintMask(state, colorMap->getColorSpace(), state->getFillOverprint(), state->getOverprintMode(), NULL);
+	setOverprintMask(state, colorMap->getColorSpace(), state->getFillOverprint(), state->getOverprintMode(), nullptr);
 
 	ctm    = state->getCTM();
 	mat[0] = ctm[0];
@@ -3567,7 +3567,7 @@ void SplashOutputDev::drawSoftMaskedImage(GfxState* state, Object* ref, Stream* 
 		imgMaskData.imgStr->reset();
 		imgMaskData.colorMap   = maskColorMap;
 		imgMaskData.ri         = state->getRenderingIntent();
-		imgMaskData.maskColors = NULL;
+		imgMaskData.maskColors = nullptr;
 		imgMaskData.colorMode  = splashModeMono8;
 		imgMaskData.invert     = gFalse;
 		imgMaskData.width      = maskWidth;
@@ -3597,7 +3597,7 @@ void SplashOutputDev::drawSoftMaskedImage(GfxState* state, Object* ref, Stream* 
 		maskSplash->setEnablePathSimplification(
 		    globalParams->getEnablePathSimplification());
 		clearMaskRegion(state, maskSplash, 0, 0, 1, 1);
-		maskSplash->drawImage(NULL, &imageSrc, &imgMaskData, splashModeMono8, gFalse, maskWidth, maskHeight, mat, interpolate);
+		maskSplash->drawImage(nullptr, &imageSrc, &imgMaskData, splashModeMono8, gFalse, maskWidth, maskHeight, mat, interpolate);
 		delete imgMaskData.imgStr;
 		maskStr->close();
 		gfree(imgMaskData.lookup);
@@ -3610,7 +3610,7 @@ void SplashOutputDev::drawSoftMaskedImage(GfxState* state, Object* ref, Stream* 
 		imgData.imgStr->reset();
 		imgData.colorMap   = colorMap;
 		imgData.ri         = state->getRenderingIntent();
-		imgData.maskColors = NULL;
+		imgData.maskColors = nullptr;
 		imgData.colorMode  = colorMode;
 		imgData.invert     = reverseVideo && reverseVideoInvertImages;
 		imgData.width      = width;
@@ -3619,7 +3619,7 @@ void SplashOutputDev::drawSoftMaskedImage(GfxState* state, Object* ref, Stream* 
 
 		// special case for one-channel (monochrome/gray/separation) images:
 		// build a lookup table here
-		imgData.lookup = NULL;
+		imgData.lookup = nullptr;
 		if (colorMap->getNumPixelComps() == 1)
 		{
 			if (colorMap->getBits() <= 8)
@@ -3675,7 +3675,7 @@ void SplashOutputDev::drawSoftMaskedImage(GfxState* state, Object* ref, Stream* 
 		imgTag = makeImageTag(ref, state->getRenderingIntent(), colorMap->getColorSpace());
 		splash->drawImage(imgTag, &imageSrc, &imgData, srcMode, gFalse, width, height, mat, interpolate);
 
-		splash->setSoftMask(NULL);
+		splash->setSoftMask(nullptr);
 		delete imgTag;
 		gfree(imgData.lookup);
 		delete imgData.imgStr;
@@ -3687,7 +3687,7 @@ void SplashOutputDev::drawSoftMaskedImage(GfxState* state, Object* ref, Stream* 
 GString* SplashOutputDev::makeImageTag(Object* ref, GfxRenderingIntent ri, GfxColorSpace* colorSpace)
 {
 	if (!ref || !ref->isRef() || (colorSpace && colorSpace->isDefaultColorSpace()))
-		return NULL;
+		return nullptr;
 	return GString::format("{0:d}_{1:d}_{2:d}", ref->getRefNum(), ref->getRefGen(), (int)ri);
 }
 
@@ -3950,7 +3950,7 @@ GBool SplashOutputDev::beginTransparencyGroup(GfxState* state, double* bbox, Gfx
 	{
 		// isolated group
 		backdropBitmap              = transpGroup->origBitmap;
-		transpGroup->backdropBitmap = NULL;
+		transpGroup->backdropBitmap = nullptr;
 		if (forSoftMask)
 		{
 			// setSoftMask uses the whole bitmap, not just the mod region,
@@ -3989,7 +3989,7 @@ GBool SplashOutputDev::beginTransparencyGroup(GfxState* state, double* bbox, Gfx
 	{
 		// other non-isolated group
 		backdropBitmap              = transpGroup->origBitmap;
-		transpGroup->backdropBitmap = NULL;
+		transpGroup->backdropBitmap = nullptr;
 		if (forSoftMask)
 		{
 			// setSoftMask uses the whole bitmap, not just the mod region,
@@ -4234,7 +4234,7 @@ void SplashOutputDev::setSoftMask(GfxState* state, double* bbox, GBool alpha, Fu
 
 void SplashOutputDev::clearSoftMask(GfxState* state)
 {
-	splash->setSoftMask(NULL);
+	splash->setSoftMask(nullptr);
 }
 
 void SplashOutputDev::setPaperColor(SplashColorPtr paperColorA)
@@ -4257,7 +4257,7 @@ SplashBitmap* SplashOutputDev::takeBitmap()
 	SplashBitmap* ret;
 
 	ret    = bitmap;
-	bitmap = new SplashBitmap(1, 1, bitmapRowPad, colorMode, colorMode != splashModeMono1, bitmapTopDown, NULL);
+	bitmap = new SplashBitmap(1, 1, bitmapRowPad, colorMode, colorMode != splashModeMono1, bitmapTopDown, nullptr);
 	return ret;
 }
 
@@ -4331,7 +4331,7 @@ SplashFont* SplashOutputDev::getFont(GString* name, SplashCoord* textMatA)
 		if (!name->cmp(builtinFonts[i].name))
 			break;
 	if (i == nBuiltinFonts)
-		return NULL;
+		return nullptr;
 	ref.num = i;
 	ref.gen = -1;
 	id      = new SplashOutFontFileID(&ref);
@@ -4346,16 +4346,16 @@ SplashFont* SplashOutputDev::getFont(GString* name, SplashCoord* textMatA)
 	else
 	{
 		if (!(fontLoc = GfxFont::locateBase14Font(name)))
-			return NULL;
+			return nullptr;
 #if LOAD_FONTS_FROM_MEM
-		fontBuf = NULL;
+		fontBuf = nullptr;
 		if (fontLoc->fontType == fontType1 || fontLoc->fontType == fontTrueType)
 		{
 			if (!(extFontFile = fopen(fontLoc->path->getCString(), "rb")))
 			{
 				delete fontLoc;
 				delete id;
-				return NULL;
+				return nullptr;
 			}
 			fontBuf = new GString();
 			while ((n = fread(blk, 1, sizeof(blk), extFontFile)) > 0)
@@ -4384,7 +4384,7 @@ SplashFont* SplashOutputDev::getFont(GString* name, SplashCoord* textMatA)
 #endif
 				delete fontLoc;
 				delete id;
-				return NULL;
+				return nullptr;
 			}
 			for (cmap = 0; cmap < ff->getNumCmaps(); ++cmap)
 			{
@@ -4398,7 +4398,7 @@ SplashFont* SplashOutputDev::getFont(GString* name, SplashCoord* textMatA)
 				delete ff;
 				delete fontLoc;
 				delete id;
-				return NULL;
+				return nullptr;
 			}
 			codeToGID = (int*)gmallocn(256, sizeof(int));
 			for (i = 0; i < 256; ++i)
@@ -4414,18 +4414,18 @@ SplashFont* SplashOutputDev::getFont(GString* name, SplashCoord* textMatA)
 #else
 			                                        fontLoc->path->getCString(), gFalse,
 #endif
-			                                        fontLoc->fontNum, codeToGID, 256, NULL);
+			                                        fontLoc->fontNum, codeToGID, 256, nullptr);
 		}
 		else
 		{
 			delete fontLoc;
 			delete id;
-			return NULL;
+			return nullptr;
 		}
 		delete fontLoc;
 	}
 	if (!fontFile)
-		return NULL;
+		return nullptr;
 
 	// create the scaled font
 	oblique    = (SplashCoord)((SplashOutFontFileID*)fontFile->getID())->getOblique();

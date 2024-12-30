@@ -22,7 +22,7 @@
 Array::Array(XRef* xrefA)
 {
 	xref  = xrefA;
-	elems = NULL;
+	elems = nullptr;
 	size = length = 0;
 	ref           = 1;
 }

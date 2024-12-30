@@ -49,7 +49,7 @@ Function* Function::parse(Object* funcObj, int expectedInputs, int expectedOutpu
 	if (recursion > recursionLimit)
 	{
 		error(errSyntaxError, -1, "Loop detected in function objects");
-		return NULL;
+		return nullptr;
 	}
 
 	if (funcObj->isStream())
@@ -65,21 +65,21 @@ Function* Function::parse(Object* funcObj, int expectedInputs, int expectedOutpu
 		if (expectedInputs != expectedOutputs)
 		{
 			error(errSyntaxError, -1, "Invalid use of identity function");
-			return NULL;
+			return nullptr;
 		}
 		return new IdentityFunction(expectedInputs);
 	}
 	else
 	{
 		error(errSyntaxError, -1, "Expected function dictionary or stream");
-		return NULL;
+		return nullptr;
 	}
 
 	if (!dict->lookup("FunctionType", &obj1)->isInt())
 	{
 		error(errSyntaxError, -1, "Function type is missing or wrong type");
 		obj1.free();
-		return NULL;
+		return nullptr;
 	}
 	funcType = obj1.getInt();
 	obj1.free();
@@ -103,19 +103,19 @@ Function* Function::parse(Object* funcObj, int expectedInputs, int expectedOutpu
 	else
 	{
 		error(errSyntaxError, -1, "Unimplemented function type ({0:d})", funcType);
-		return NULL;
+		return nullptr;
 	}
 	if (!func->isOk())
 	{
 		delete func;
-		return NULL;
+		return nullptr;
 	}
 
 	if (func->getInputSize() != expectedInputs || (expectedOutputs >= 0 && func->getOutputSize() != expectedOutputs))
 	{
 		error(errSyntaxError, -1, "Incorrect number of function inputs or outputs");
 		delete func;
-		return NULL;
+		return nullptr;
 	}
 
 	return func;
@@ -248,9 +248,9 @@ SampledFunction::SampledFunction(Object* funcObj, Dict* dict)
 	double  in[funcMaxInputs];
 	int     i, j, t, bit, idx;
 
-	idxOffset = NULL;
-	samples   = NULL;
-	sBuf      = NULL;
+	idxOffset = nullptr;
+	samples   = nullptr;
+	sBuf      = nullptr;
 	ok        = gFalse;
 
 	//----- initialize the generic stuff
@@ -712,10 +712,10 @@ StitchingFunction::StitchingFunction(Object* funcObj, Dict* dict, int expectedIn
 	int    i;
 
 	ok     = gFalse;
-	funcs  = NULL;
-	bounds = NULL;
-	encode = NULL;
-	scale  = NULL;
+	funcs  = nullptr;
+	bounds = nullptr;
+	encode = nullptr;
+	scale  = nullptr;
 
 	//----- initialize the generic stuff
 	if (!init(dict))
@@ -738,7 +738,7 @@ StitchingFunction::StitchingFunction(Object* funcObj, Dict* dict, int expectedIn
 	encode = (double*)gmallocn(2 * k, sizeof(double));
 	scale  = (double*)gmallocn(k, sizeof(double));
 	for (i = 0; i < k; ++i)
-		funcs[i] = NULL;
+		funcs[i] = nullptr;
 	for (i = 0; i < k; ++i)
 	{
 		if (!(funcs[i] = Function::parse(obj1.arrayGet(i, &obj2), expectedInputs, expectedOutputs, recursion + 1)))
@@ -990,8 +990,8 @@ PostScriptFunction::PostScriptFunction(Object* funcObj, Dict* dict)
 	double   in[funcMaxInputs];
 	int      tokPtr, codePtr, i;
 
-	codeString = NULL;
-	code       = NULL;
+	codeString = nullptr;
+	code       = nullptr;
 	codeSize   = 0;
 	ok         = gFalse;
 
@@ -1274,7 +1274,7 @@ GString* PostScriptFunction::getToken(Stream* str)
 		if ((c = str->getChar()) == EOF)
 		{
 			delete s;
-			return NULL;
+			return nullptr;
 		}
 		codeString->append((char)c);
 		if (comment)
