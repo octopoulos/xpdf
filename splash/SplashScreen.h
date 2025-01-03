@@ -63,10 +63,10 @@ private:
 	int  distance(int x0, int y0, int x1, int y1);
 	void buildSCDMatrix(int r);
 
-	uint8_t* mat;      // threshold matrix
-	int      size;     // size of the threshold matrix
-	int      sizeM1;   // size - 1
-	int      log2Size; // log2(size)
-	uint8_t  minVal;   // any pixel value below minVal generates solid black
-	uint8_t  maxVal;   // any pixel value above maxVal generates solid white
+	uint8_t* mat      = nullptr; // threshold matrix
+	int      size     = 0;       // size of the threshold matrix
+	int      sizeM1   = 0;       // size - 1
+	int      log2Size = 0;       // log2(size)
+	uint8_t  minVal   = 0;       // any pixel value below minVal generates solid black
+	uint8_t  maxVal   = 0;       // any pixel value above maxVal generates solid white
 };

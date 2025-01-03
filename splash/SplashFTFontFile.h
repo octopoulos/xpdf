@@ -31,17 +31,16 @@ public:
 
 	virtual ~SplashFTFontFile();
 
-	// Create a new SplashFTFont, i.e., a scaled instance of this font
-	// file.
+	// Create a new SplashFTFont, i.e., a scaled instance of this font file.
 	virtual SplashFont* makeFont(SplashCoord* mat, SplashCoord* textMat);
 
 private:
 	SplashFTFontFile(SplashFTFontEngine* engineA, SplashFontFileID* idA, SplashFontType fontTypeA, LOAD_FONT_ARGS_DEFS(A), FT_Face faceA, int* codeToGIDA, int codeToGIDLenA);
 
-	SplashFTFontEngine* engine;       //
-	FT_Face             face;         //
-	int*                codeToGID;    //
-	int                 codeToGIDLen; //
+	SplashFTFontEngine* engine       = nullptr; //
+	FT_Face             face         = {};      //
+	int*                codeToGID    = nullptr; //
+	int                 codeToGIDLen = 0;       //
 
 	friend class SplashFTFont;
 };

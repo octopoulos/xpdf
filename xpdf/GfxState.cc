@@ -44,32 +44,33 @@ static inline double clip01(double x)
 
 struct GfxBlendModeInfo
 {
-	const char*  name;
-	GfxBlendMode mode;
+	std::string  name = "";
+	GfxBlendMode mode = gfxBlendNormal;
 };
 
+// clang-format off
 static GfxBlendModeInfo gfxBlendModeNames[] = {
-	{"Normal",      gfxBlendNormal    },
-	{ "Compatible", gfxBlendNormal    },
-	{ "Multiply",   gfxBlendMultiply  },
-	{ "Screen",     gfxBlendScreen    },
-	{ "Overlay",    gfxBlendOverlay   },
-	{ "Darken",     gfxBlendDarken    },
-	{ "Lighten",    gfxBlendLighten   },
-	{ "ColorDodge", gfxBlendColorDodge},
-	{ "ColorBurn",  gfxBlendColorBurn },
-	{ "HardLight",  gfxBlendHardLight },
-	{ "SoftLight",  gfxBlendSoftLight },
-	{ "Difference", gfxBlendDifference},
-	{ "Exclusion",  gfxBlendExclusion },
-	{ "Hue",        gfxBlendHue       },
-	{ "Saturation", gfxBlendSaturation},
-	{ "Color",      gfxBlendColor     },
-	{ "Luminosity", gfxBlendLuminosity}
+	{ "Normal"    , gfxBlendNormal     },
+	{ "Compatible", gfxBlendNormal     },
+	{ "Multiply"  , gfxBlendMultiply   },
+	{ "Screen"    , gfxBlendScreen     },
+	{ "Overlay"   , gfxBlendOverlay    },
+	{ "Darken"    , gfxBlendDarken     },
+	{ "Lighten"   , gfxBlendLighten    },
+	{ "ColorDodge", gfxBlendColorDodge },
+	{ "ColorBurn" , gfxBlendColorBurn  },
+	{ "HardLight" , gfxBlendHardLight  },
+	{ "SoftLight" , gfxBlendSoftLight  },
+	{ "Difference", gfxBlendDifference },
+	{ "Exclusion" , gfxBlendExclusion  },
+	{ "Hue"       , gfxBlendHue        },
+	{ "Saturation", gfxBlendSaturation },
+	{ "Color"     , gfxBlendColor      },
+	{ "Luminosity", gfxBlendLuminosity }
 };
+// clang-format on
 
-#define nGfxBlendModeNames \
-	((int)((sizeof(gfxBlendModeNames) / sizeof(GfxBlendModeInfo))))
+#define nGfxBlendModeNames ((int)((sizeof(gfxBlendModeNames) / sizeof(GfxBlendModeInfo))))
 
 //------------------------------------------------------------------------
 
@@ -879,11 +880,8 @@ GfxICCBasedColorSpace::~GfxICCBasedColorSpace()
 
 GfxColorSpace* GfxICCBasedColorSpace::copy()
 {
-	GfxICCBasedColorSpace* cs;
-	int                    i;
-
-	cs = new GfxICCBasedColorSpace(nComps, alt->copy(), &iccProfileStream);
-	for (i = 0; i < 4; ++i)
+	GfxICCBasedColorSpace*cs = new GfxICCBasedColorSpace(nComps, alt->copy(), &iccProfileStream);
+	for (int i = 0; i < 4; ++i)
 	{
 		cs->rangeMin[i] = rangeMin[i];
 		cs->rangeMax[i] = rangeMax[i];
@@ -899,7 +897,6 @@ GfxColorSpace* GfxICCBasedColorSpace::parse(Array* arr, int recursion)
 	GfxColorSpace*         altA;
 	Dict*                  dict;
 	Object                 obj1, obj2, obj3;
-	int                    i;
 
 	if (arr->getLength() < 2)
 	{
@@ -966,7 +963,7 @@ GfxColorSpace* GfxICCBasedColorSpace::parse(Array* arr, int recursion)
 	cs = new GfxICCBasedColorSpace(nCompsA, altA, &iccProfileStreamA);
 	if (dict->lookup("Range", &obj2)->isArray() && obj2.arrayGetLength() == 2 * nCompsA)
 	{
-		for (i = 0; i < nCompsA; ++i)
+		for (int i = 0; i < nCompsA; ++i)
 		{
 			obj2.arrayGet(2 * i, &obj3);
 			cs->rangeMin[i] = obj3.getNum();
@@ -1076,10 +1073,8 @@ GfxColorSpace* GfxIndexedColorSpace::parse(Array* arr, int recursion)
 	indexHighA = obj1.getInt();
 	if (indexHighA < 0 || indexHighA > 255)
 	{
-		// the PDF spec requires indexHigh to be in [0,255] -- allowing
-		// values larger than 255 creates a security hole: if nComps *
-		// indexHigh is greater than 2^31, the loop below may overwrite
-		// past the end of the array
+		// the PDF spec requires indexHigh to be in [0,255] -- allowing values larger than 255 creates a security hole:
+		// if nComps * indexHigh is greater than 2^31, the loop below may overwrite past the end of the array
 		error(errSyntaxError, -1, "Bad Indexed color space (invalid indexHigh value)");
 		delete baseA;
 		goto err2;
@@ -4722,14 +4717,10 @@ GfxState::GfxState(GfxState* state, bool copyPath)
 	int i;
 
 	memcpy(this, state, sizeof(GfxState));
-	if (fillColorSpace)
-		fillColorSpace = state->fillColorSpace->copy();
-	if (strokeColorSpace)
-		strokeColorSpace = state->strokeColorSpace->copy();
-	if (fillPattern)
-		fillPattern = state->fillPattern->copy();
-	if (strokePattern)
-		strokePattern = state->strokePattern->copy();
+	if (fillColorSpace) fillColorSpace = state->fillColorSpace->copy();
+	if (strokeColorSpace) strokeColorSpace = state->strokeColorSpace->copy();
+	if (fillPattern) fillPattern = state->fillPattern->copy();
+	if (strokePattern) strokePattern = state->strokePattern->copy();
 	for (i = 0; i < 4; ++i)
 		if (transfer[i])
 			transfer[i] = state->transfer[i]->copy();
@@ -5226,7 +5217,7 @@ bool GfxState::parseBlendMode(Object* obj, GfxBlendMode* mode)
 	{
 		for (int i = 0; i < nGfxBlendModeNames; ++i)
 		{
-			if (!strcmp(obj->getName(), gfxBlendModeNames[i].name))
+			if (gfxBlendModeNames[i].name == obj->getName())
 			{
 				*mode = gfxBlendModeNames[i].mode;
 				return true;
@@ -5246,7 +5237,7 @@ bool GfxState::parseBlendMode(Object* obj, GfxBlendMode* mode)
 			}
 			for (int j = 0; j < nGfxBlendModeNames; ++j)
 			{
-				if (!strcmp(obj2.getName(), gfxBlendModeNames[j].name))
+				if (gfxBlendModeNames[j].name == obj2.getName())
 				{
 					obj2.free();
 					*mode = gfxBlendModeNames[j].mode;

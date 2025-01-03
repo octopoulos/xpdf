@@ -53,9 +53,9 @@ private:
 	void drawSelection();
 	void applySelection(int xDest, int yDest, int w, int h, SplashColorPtr color);
 
-	DisplayState* state;       //
-	TileMap*      tileMap;     //
-	TileCache*    tileCache;   //
-	SplashBitmap* bitmap;      //
-	bool          bitmapValid; //
+	DisplayState* state       = nullptr; //
+	TileMap*      tileMap     = nullptr; //
+	TileCache*    tileCache   = nullptr; //
+	SplashBitmap* bitmap      = nullptr; //
+	bool          bitmapValid = false;   //
 };

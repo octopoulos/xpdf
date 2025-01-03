@@ -82,16 +82,13 @@ private:
 	CharCodeToUnicode(const std::string& tagA);
 	CharCodeToUnicode(const std::string& tagA, Unicode* mapA, CharCode mapLenA, bool copyMap, CharCodeToUnicodeString* sMapA, int sMapLenA, int sMapSizeA);
 
-	std::string              tag;
-	Unicode*                 map;
-	CharCode                 mapLen;
-	CharCodeToUnicodeString* sMap;
-	int                      sMapLen, sMapSize;
-#if MULTITHREADED
-	GAtomicCounter refCnt;
-#else
-	int refCnt;
-#endif
+	std::string              tag      = "";      //
+	Unicode*                 map      = nullptr; //
+	CharCode                 mapLen   = 0;       //
+	CharCodeToUnicodeString* sMap     = nullptr; //
+	int                      sMapLen  = 0;       //
+	int                      sMapSize = 0;       //
+	REFCNT_TYPE              refCnt   = 0;       //
 };
 
 //------------------------------------------------------------------------
@@ -111,6 +108,6 @@ public:
 	void add(CharCodeToUnicode* ctu);
 
 private:
-	CharCodeToUnicode** cache;
-	int                 size;
+	CharCodeToUnicode** cache = nullptr; //
+	int                 size  = 0;       //
 };

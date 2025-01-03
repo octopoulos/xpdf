@@ -27,7 +27,8 @@ FixedPoint FixedPoint::sqrt(FixedPoint x)
 	else
 	{
 		y1.val = x.val == 1 ? 2 : x.val >> 1;
-		do {
+		do
+		{
 			y0.val = y1.val;
 			z      = x / y0;
 			y1.val = (y0.val + z.val) >> 1;
@@ -53,7 +54,8 @@ FixedPoint FixedPoint::pow(FixedPoint x, FixedPoint y)
 		t2  = t * t;
 		d   = 1;
 		lnx = 0;
-		do {
+		do
+		{
 			lnx0 = lnx;
 			lnx += t / d;
 			t *= t2;
@@ -69,7 +71,8 @@ FixedPoint FixedPoint::pow(FixedPoint x, FixedPoint y)
 		d  = 1;
 		i  = 1;
 		z  = 1;
-		do {
+		do
+		{
 			z0 = z;
 			z += t2 / d;
 			t2 *= t;

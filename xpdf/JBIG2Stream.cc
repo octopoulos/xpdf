@@ -1248,9 +1248,6 @@ JBIG2CodeTable::~JBIG2CodeTable()
 JBIG2Stream::JBIG2Stream(Stream* strA, Object* globalsStreamA)
     : FilterStream(strA)
 {
-	decoded    = false;
-	pageBitmap = nullptr;
-
 	arithDecoder          = new JArithmeticDecoder();
 	genericRegionStats    = new JArithmeticDecoderStats(1 << 1);
 	refinementRegionStats = new JArithmeticDecoderStats(1 << 1);
@@ -1272,9 +1269,6 @@ JBIG2Stream::JBIG2Stream(Stream* strA, Object* globalsStreamA)
 	mmrDecoder            = new JBIG2MMRDecoder();
 
 	globalsStreamA->copy(&globalsStream);
-	segments = globalSegments = nullptr;
-	curStr                    = nullptr;
-	dataPtr = dataEnd = nullptr;
 }
 
 JBIG2Stream::~JBIG2Stream()
@@ -3103,22 +3097,26 @@ JBIG2Bitmap* JBIG2Stream::readGenericBitmap(bool mmr, int w, int h, int templ, b
 					code1 = code2 = 0;
 					if (blackPixels)
 					{
-						do {
+						do
+						{
 							code1 += code3 = mmrDecoder->getBlackCode();
 						}
 						while (code3 >= 64);
-						do {
+						do
+						{
 							code2 += code3 = mmrDecoder->getWhiteCode();
 						}
 						while (code3 >= 64);
 					}
 					else
 					{
-						do {
+						do
+						{
 							code1 += code3 = mmrDecoder->getWhiteCode();
 						}
 						while (code3 >= 64);
-						do {
+						do
+						{
 							code2 += code3 = mmrDecoder->getBlackCode();
 						}
 						while (code3 >= 64);

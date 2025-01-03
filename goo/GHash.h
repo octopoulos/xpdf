@@ -47,9 +47,9 @@ private:
 	int          hash(const std::string& key);
 	int          hash(const char* key);
 
-	int           size; // number of buckets
-	int           len;  // number of entries
-	GHashBucket** tab;
+	int           size = 7;       // number of buckets
+	int           len  = 0;       // number of entries
+	GHashBucket** tab  = nullptr; //
 };
 
 #define deleteGHash(hash, T)                           \

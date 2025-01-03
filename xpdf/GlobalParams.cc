@@ -73,13 +73,13 @@
 
 struct DisplayFontTab
 {
-	std::string name;
-	std::string t1FileName;
-	std::string ttFileName;
-	std::string macFileName;   // may be .dfont, .ttf, or .ttc
-	std::string macFontName;   // font name inside .dfont or .ttc
-	std::string obliqueFont;   // name of font to oblique
-	double      obliqueFactor; // oblique sheer factor
+	std::string name          = ""; //
+	std::string t1FileName    = ""; //
+	std::string ttFileName    = ""; //
+	std::string macFileName   = ""; // may be .dfont, .ttf, or .ttc
+	std::string macFontName   = ""; // font name inside .dfont or .ttc
+	std::string obliqueFont   = ""; // name of font to oblique
+	double      obliqueFactor = 0;  // oblique sheer factor
 };
 
 // clang-format off
@@ -129,7 +129,7 @@ static const char* macSystemFontPath = "/System/Library/Fonts";
 
 std::shared_ptr<GlobalParams> globalParams;
 
-const char* GlobalParams::defaultTextEncoding = "Latin1";
+std::string GlobalParams::defaultTextEncoding = "Latin1";
 
 //------------------------------------------------------------------------
 // PSFontParam16
@@ -303,18 +303,12 @@ int SysFontInfo::match(const std::string& nameA)
 	mungeName3(sysName2, &sysBold2, &sysItalic2);
 	int eq2 = (pdfName2 == sysName2);
 
-	if (eq1 && pdfBold1 == sysBold1 && pdfItalic1 == sysItalic1)
-		return 6;
-	if (eq2 && pdfBold2 == sysBold2 && pdfItalic2 == sysItalic2)
-		return 5;
-	if (eq1 && pdfItalic1 == sysItalic1)
-		return 4;
-	if (eq2 && pdfItalic2 == sysItalic2)
-		return 3;
-	if (eq1)
-		return 2;
-	if (eq2)
-		return 1;
+	if (eq1 && pdfBold1 == sysBold1 && pdfItalic1 == sysItalic1) return 6;
+	if (eq2 && pdfBold2 == sysBold2 && pdfItalic2 == sysItalic2) return 5;
+	if (eq1 && pdfItalic1 == sysItalic1) return 4;
+	if (eq2 && pdfItalic2 == sysItalic2) return 3;
+	if (eq1) return 2;
+	if (eq2) return 1;
 
 	return 0;
 }
@@ -340,7 +334,7 @@ public:
 
 private:
 #ifdef _WIN32
-	SysFontInfo* makeWindowsFont(char* name, int fontNum, const char* path);
+	SysFontInfo* makeWindowsFont(const std::string& name, int fontNum, const char* path);
 #endif
 
 	GList* fonts; // [SysFontInfo]
@@ -438,13 +432,14 @@ void SysFontList::scanWindowsFonts(char* winFontDir)
 	}
 }
 
-SysFontInfo* SysFontList::makeWindowsFont(char* name, int fontNum, const char* path)
+SysFontInfo* SysFontList::makeWindowsFont(const std::string& name, int fontNum, const char* path)
 {
-	int n = TO_INT(strlen(name));
+	int n = TO_INT(name.size());
 
 	// remove trailing ' (TrueType)' or ' (OpenType)'
-	if (n > 11 && (!strncmp(name + n - 11, " (TrueType)", 11) || !strncmp(name + n - 11, " (OpenType)", 11)))
-		n -= 11;
+	std::string clean = name;
+	if (clean.ends_with(" (TrueType") || clean.ends_with(" (OpenType)"))
+		clean.erase(n - 11);
 
 	SysFontType type;
 	if (!strcasecmp(path + strlen(path) - 4, ".ttc"))
@@ -454,39 +449,33 @@ SysFontInfo* SysFontList::makeWindowsFont(char* name, int fontNum, const char* p
 	else
 		type = sysFontTTF;
 
-	return new SysFontInfo(std::string(name, n), path, type, fontNum);
+	return new SysFontInfo(clean, path, type, fontNum);
 }
 #endif // _WIN32
 
 #if HAVE_FONTCONFIG
 void SysFontList::scanFontconfigFonts()
 {
-	FcConfig*    cfg;
-	FcPattern*   pattern;
-	FcObjectSet* objSet;
-	FcFontSet*   fontSet;
-	char *       name, *file;
-	SysFontType  type;
-	int          fontNum, i, n;
-
+	FcConfig* cfg;
 	if (!(cfg = FcInitLoadConfigAndFonts()))
 		return;
 
-	pattern = FcPatternBuild(nullptr, FC_OUTLINE, FcTypeBool, FcTrue, FC_SCALABLE, FcTypeBool, FcTrue, nullptr);
-	objSet  = FcObjectSetBuild(FC_FULLNAME, FC_FILE, FC_INDEX, nullptr);
-	fontSet = FcFontList(cfg, pattern, objSet);
+	FcPattern*   pattern = FcPatternBuild(nullptr, FC_OUTLINE, FcTypeBool, FcTrue, FC_SCALABLE, FcTypeBool, FcTrue, nullptr);
+	FcObjectSet* objSet  = FcObjectSetBuild(FC_FULLNAME, FC_FILE, FC_INDEX, nullptr);
+	FcFontSet*   fontSet = FcFontList(cfg, pattern, objSet);
 	FcPatternDestroy(pattern);
 	FcObjectSetDestroy(objSet);
 
 	if (fontSet)
 	{
-		for (i = 0; i < fontSet->nfont; ++i)
+		for (int i = 0; i < fontSet->nfont; ++i)
 		{
 			//--- font file, font type
-			if (FcPatternGetString(fontSet->fonts[i], FC_FILE, 0, (FcChar8**)&file)
-			    != FcResultMatch)
+			char* file;
+			if (FcPatternGetString(fontSet->fonts[i], FC_FILE, 0, (FcChar8**)&file) != FcResultMatch)
 				continue;
-			n = (int)strlen(file);
+			const int n = (int)strlen(file);
+			SysFontType  type;
 			if (n > 4 && !strcasecmp(file + n - 4, ".pfa"))
 				type = sysFontPFA;
 			else if (n > 4 && !strcasecmp(file + n - 4, ".pfb"))
@@ -499,16 +488,16 @@ void SysFontList::scanFontconfigFonts()
 				continue;
 
 			//--- font number
-			if (FcPatternGetInteger(fontSet->fonts[i], FC_INDEX, 0, &fontNum)
-			    != FcResultMatch)
+			int fontNum;
+			if (FcPatternGetInteger(fontSet->fonts[i], FC_INDEX, 0, &fontNum) != FcResultMatch)
 				fontNum = 0;
 
 			//--- font name
-			if (FcPatternGetString(fontSet->fonts[i], FC_FULLNAME, 0, (FcChar8**)&name)
-			    != FcResultMatch)
+			char *name;
+			if (FcPatternGetString(fontSet->fonts[i], FC_FULLNAME, 0, (FcChar8**)&name) != FcResultMatch)
 				continue;
 
-			fonts->append(new SysFontInfo(new GString(name), new GString(file), type, fontNum));
+			fonts->append(new SysFontInfo(std::string(name), new GString(file), type, fontNum));
 		}
 
 		FcFontSetDestroy(fontSet);
@@ -585,8 +574,7 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 
 	initBuiltinFontTables();
 
-	// scan the encoding in reverse because we want the lowest-numbered
-	// index for each char name ('space' is encoded twice)
+	// scan the encoding in reverse because we want the lowest-numbered index for each char name ('space' is encoded twice)
 	macRomanReverseMap = new NameToCharCode();
 	for (int i = 255; i >= 0; --i)
 		if (macRomanEncoding[i])
@@ -615,51 +603,17 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 	else
 	{
 		error(errConfig, -1, "No paper information available - using defaults");
-		psPaperWidth  = defPaperWidth;
-		psPaperHeight = defPaperHeight;
 	}
 	paperdone();
-#else
-	psPaperWidth  = defPaperWidth;
-	psPaperHeight = defPaperHeight;
 #endif
 	psImageableLLX = psImageableLLY = 0;
 	psImageableURX.store(psPaperWidth.load());
 	psImageableURY.store(psPaperHeight.load());
-	psCrop                      = true;
-	psUseCropBoxAsPage          = false;
-	psExpandSmaller             = false;
-	psShrinkLarger              = true;
-	psCenter                    = true;
-	psDuplex                    = false;
-	psLevel                     = psLevel2;
-	psEmbedType1                = true;
-	psEmbedTrueType             = true;
-	psEmbedCIDPostScript        = true;
-	psEmbedCIDTrueType          = true;
-	psFontPassthrough           = false;
-	psPreload                   = false;
-	psOPI                       = false;
-	psASCIIHex                  = false;
-	psLZW                       = true;
-	psUncompressPreloadedImages = false;
-	psMinLineWidth              = 0;
-	psRasterResolution          = 300;
-	psRasterMono                = false;
-	psRasterSliceSize           = 20000000;
-	psAlwaysRasterize           = false;
-	psNeverRasterize            = false;
-	textEncoding                = defaultTextEncoding;
 #if defined(_WIN32)
 	textEOL = eolDOS;
 #else
 	textEOL = eolUnix;
 #endif
-	textPageBreaks    = true;
-	textKeepTinyChars = true;
-	initialZoom       = "125";
-	defaultFitZoom    = 0;
-	zoomScaleFactor   = 1;
 	zoomValues.push_back("25");
 	zoomValues.push_back("50");
 	zoomValues.push_back("75");
@@ -673,53 +627,8 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 	zoomValues.push_back("400");
 	zoomValues.push_back("600");
 	zoomValues.push_back("800");
-	initialDisplayMode            = "continuous";
-	initialToolbarState           = true;
-	initialSidebarState           = true;
-	initialSidebarWidth           = 0;
-	initialSelectMode             = "linear";
-	maxTileWidth                  = 1500;
-	maxTileHeight                 = 1500;
-	tileCacheSize                 = 10;
-	workerThreads                 = 1;
-	enableFreeType                = true;
-	disableFreeTypeHinting        = false;
-	antialias                     = true;
-	vectorAntialias               = true;
-	imageMaskAntialias            = true;
-	antialiasPrinting             = false;
-	strokeAdjust                  = strokeAdjustNormal;
-	screenType                    = screenUnset;
-	screenSize                    = -1;
-	screenDotRadius               = -1;
-	screenGamma                   = 1.0;
-	screenBlackThreshold          = 0.0;
-	screenWhiteThreshold          = 1.0;
-	minLineWidth                  = 0.0;
-	enablePathSimplification      = false;
-	drawAnnotations               = true;
-	drawFormFields                = true;
-	enableXFA                     = true;
-	overprintPreview              = false;
-	paperColor                    = "#ffffff";
-	matteColor                    = "#808080";
-	fullScreenMatteColor          = "#000000";
-	selectionColor                = "#8080ff";
-	reverseVideoInvertImages      = false;
-	allowLinksToChangeZoom        = true;
-	mapNumericCharNames           = true;
-	mapUnknownCharNames           = false;
-	mapExtTrueTypeFontsViaUnicode = true;
-	useTrueTypeUnicodeMapping     = false;
-	ignoreWrongSizeToUnicode      = false;
-	separateRotatedText           = false;
 	createDefaultKeyBindings();
 	initStateFilePaths();
-	saveSessionOnQuit = true;
-	savePageNumbers   = true;
-	printCommands     = false;
-	printStatusInfo   = false;
-	errQuiet          = false;
 
 	cidToUnicodeCache     = new CharCodeToUnicodeCache(cidToUnicodeCacheSize);
 	unicodeToUnicodeCache = new CharCodeToUnicodeCache(unicodeToUnicodeCacheSize);
@@ -786,26 +695,13 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 void GlobalParams::setDataDirVar()
 {
 	std::string dir;
-
 #if defined(XPDFRC_DATADIR)
 	dir = XPDFRC_DATADIR;
-#elif defined(_WIN32)
-	wchar_t buf[512];
-	DWORD   n = GetModuleFileNameW(nullptr, buf, sizeof(buf) / sizeof(wchar_t));
-	if (n <= 0 || n >= sizeof(buf))
-	{
-		// error or path too long for buffer - just use the current dir
-		buf[0] = L'\0';
-	}
-	const auto path = fileNameToUTF8(buf);
-	dir             = grabPath(path.c_str());
-	appendToPath(dir, "data");
 #else
 	//~ may be useful to allow the options of using the install dir
 	//~   and/or the user's home dir (?)
 	dir = "./data";
 #endif
-
 	configFileVars.emplace("DATADIR", dir);
 }
 
@@ -2385,8 +2281,7 @@ void GlobalParams::setupBaseFonts(const char* dir)
 					{
 						found = true;
 					}
-					if (!found)
-						fileName.clear();
+					if (!found) fileName.clear();
 					break;
 				}
 			}
@@ -3014,7 +2909,7 @@ bool GlobalParams::getIgnoreWrongSizeToUnicode()
 	return ignoreWrongSizeToUnicode;
 }
 
-bool GlobalParams::isDroppedFont(const char* fontName)
+bool GlobalParams::isDroppedFont(const std::string& fontName)
 {
 	std::lock_guard<std::mutex> lock(mtx);
 	return droppedFonts.contains(fontName);
@@ -3234,29 +3129,29 @@ void GlobalParams::addFontFile(const std::string& fontName, const std::string& p
 	fontFiles.emplace(fontName, path);
 }
 
-bool GlobalParams::setPSPaperSize(const char* size)
+bool GlobalParams::setPSPaperSize(std::string_view size)
 {
 	std::lock_guard<std::mutex> lock(mtx);
-	if (!strcmp(size, "match"))
+	if (size == "match")
 	{
 		psPaperWidth = psPaperHeight = -1;
 	}
-	else if (!strcmp(size, "letter"))
+	else if (size == "letter")
 	{
 		psPaperWidth  = 612;
 		psPaperHeight = 792;
 	}
-	else if (!strcmp(size, "legal"))
+	else if (size == "legal")
 	{
 		psPaperWidth  = 612;
 		psPaperHeight = 1008;
 	}
-	else if (!strcmp(size, "A4"))
+	else if (size == "A4")
 	{
 		psPaperWidth  = 595;
 		psPaperHeight = 842;
 	}
-	else if (!strcmp(size, "A3"))
+	else if (size == "A3")
 	{
 		psPaperWidth  = 842;
 		psPaperHeight = 1190;
@@ -3373,20 +3268,20 @@ void GlobalParams::setPSASCIIHex(bool hex)
 	psASCIIHex = hex;
 }
 
-void GlobalParams::setTextEncoding(const char* encodingName)
+void GlobalParams::setTextEncoding(std::string_view encodingName)
 {
 	std::lock_guard<std::mutex> lock(mtx);
 	textEncoding = encodingName;
 }
 
-bool GlobalParams::setTextEOL(const char* s)
+bool GlobalParams::setTextEOL(std::string_view s)
 {
 	std::lock_guard<std::mutex> lock(mtx);
-	if (!strcmp(s, "unix"))
+	if (s == "unix")
 		textEOL = eolUnix;
-	else if (!strcmp(s, "dos"))
+	else if (s == "dos")
 		textEOL = eolDOS;
-	else if (!strcmp(s, "mac"))
+	else if (s == "mac")
 		textEOL = eolMac;
 	else
 		return false;
@@ -3403,7 +3298,7 @@ void GlobalParams::setTextKeepTinyChars(bool keep)
 	textKeepTinyChars = keep;
 }
 
-void GlobalParams::setInitialZoom(const char* s)
+void GlobalParams::setInitialZoom(std::string_view s)
 {
 	std::lock_guard<std::mutex> lock(mtx);
 	initialZoom = s;
@@ -3488,13 +3383,13 @@ void GlobalParams::setMapExtTrueTypeFontsViaUnicode(bool map)
 	mapExtTrueTypeFontsViaUnicode = map;
 }
 
-void GlobalParams::setTabStateFile(const char* tabStateFileA)
+void GlobalParams::setTabStateFile(std::string_view tabStateFileA)
 {
 	std::lock_guard<std::mutex> lock(mtx);
 	tabStateFile = tabStateFileA;
 }
 
-void GlobalParams::setSessionFile(const char* sessionFileA)
+void GlobalParams::setSessionFile(std::string_view sessionFileA)
 {
 	std::lock_guard<std::mutex> lock(mtx);
 	sessionFile = sessionFileA;
@@ -3518,11 +3413,8 @@ void GlobalParams::setErrQuiet(bool errQuietA)
 #ifdef _WIN32
 void GlobalParams::setWin32ErrorInfo(const char* func, DWORD code)
 {
-	XpdfWin32ErrorInfo* errorInfo;
-
-	if (tlsWin32ErrorInfo == TLS_OUT_OF_INDEXES)
-		return;
-	errorInfo = (XpdfWin32ErrorInfo*)TlsGetValue(tlsWin32ErrorInfo);
+	if (tlsWin32ErrorInfo == TLS_OUT_OF_INDEXES) return;
+	auto* errorInfo = (XpdfWin32ErrorInfo*)TlsGetValue(tlsWin32ErrorInfo);
 	if (!errorInfo)
 	{
 		errorInfo = new XpdfWin32ErrorInfo();
@@ -3534,11 +3426,8 @@ void GlobalParams::setWin32ErrorInfo(const char* func, DWORD code)
 
 XpdfWin32ErrorInfo* GlobalParams::getWin32ErrorInfo()
 {
-	XpdfWin32ErrorInfo* errorInfo;
-
-	if (tlsWin32ErrorInfo == TLS_OUT_OF_INDEXES)
-		return nullptr;
-	errorInfo = (XpdfWin32ErrorInfo*)TlsGetValue(tlsWin32ErrorInfo);
+	if (tlsWin32ErrorInfo == TLS_OUT_OF_INDEXES) return nullptr;
+	auto* errorInfo = (XpdfWin32ErrorInfo*)TlsGetValue(tlsWin32ErrorInfo);
 	if (!errorInfo)
 	{
 		errorInfo = new XpdfWin32ErrorInfo();

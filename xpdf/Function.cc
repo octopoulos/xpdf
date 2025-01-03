@@ -22,8 +22,8 @@
 
 //------------------------------------------------------------------------
 
-// Max depth of nested functions.  This is used to catch infinite
-// loops in the function object structure.
+// Max depth of nested functions.
+// This is used to catch infinite loops in the function object structure.
 #define recursionLimit 8
 
 //------------------------------------------------------------------------
@@ -814,11 +814,9 @@ err1:
 
 StitchingFunction::StitchingFunction(StitchingFunction* func)
 {
-	int i;
-
 	memcpy((void*)this, (void*)func, sizeof(StitchingFunction));
 	funcs = (Function**)gmallocn(k, sizeof(Function*));
-	for (i = 0; i < k; ++i)
+	for (int i = 0; i < k; ++i)
 		funcs[i] = func->funcs[i]->copy();
 	bounds = (double*)gmallocn(k + 1, sizeof(double));
 	memcpy(bounds, func->bounds, (k + 1) * sizeof(double));
@@ -831,13 +829,10 @@ StitchingFunction::StitchingFunction(StitchingFunction* func)
 
 StitchingFunction::~StitchingFunction()
 {
-	int i;
-
 	if (funcs)
 	{
-		for (i = 0; i < k; ++i)
-			if (funcs[i])
-				delete funcs[i];
+		for (int i = 0; i < k; ++i)
+			if (funcs[i]) delete funcs[i];
 	}
 	gfree(funcs);
 	gfree(bounds);
@@ -986,13 +981,8 @@ PostScriptFunction::PostScriptFunction(Object* funcObj, Dict* dict)
 	double      in[funcMaxInputs];
 	int         tokPtr, codePtr, i;
 
-	code     = nullptr;
-	codeSize = 0;
-	ok       = false;
-
 	//----- initialize the generic stuff
-	if (!init(dict))
-		goto err1;
+	if (!init(dict)) goto err1;
 	if (!hasRange)
 	{
 		error(errSyntaxError, -1, "Type 4 function is missing range");
@@ -1258,8 +1248,7 @@ std::string PostScriptFunction::getToken(Stream* str)
 	comment = false;
 	while (1)
 	{
-		if ((c = str->getChar()) == EOF)
-			return "";
+		if ((c = str->getChar()) == EOF) return "";
 		codeString += (char)c;
 		if (comment)
 		{
@@ -1297,8 +1286,7 @@ std::string PostScriptFunction::getToken(Stream* str)
 		{
 			s += (char)c;
 			c = str->lookChar();
-			if (c == EOF || !isalnum(c))
-				break;
+			if (c == EOF || !isalnum(c)) break;
 			str->getChar();
 			codeString += (char)c;
 		}

@@ -41,9 +41,8 @@ OptionalContent::OptionalContent(PDFDoc* doc)
 	Ref                   ref1;
 	OptionalContentGroup* ocg;
 
-	xref    = doc->getXRef();
-	ocgs    = new GList();
-	display = nullptr;
+	xref = doc->getXRef();
+	ocgs = new GList();
 
 	if ((ocProps = doc->getCatalog()->getOCProperties())->isDict())
 	{
@@ -406,12 +405,11 @@ OptionalContentGroup* OptionalContentGroup::parse(Ref* refA, Object* obj)
 
 OptionalContentGroup::OptionalContentGroup(Ref* refA, TextString* nameA, OCUsageState viewStateA, OCUsageState printStateA)
 {
-	ref                = *refA;
-	name               = nameA;
-	viewState          = viewStateA;
-	printState         = printStateA;
-	state              = true;
-	inViewUsageAppDict = false;
+	ref        = *refA;
+	name       = nameA;
+	viewState  = viewStateA;
+	printState = printStateA;
+	state      = true;
 }
 
 OptionalContentGroup::~OptionalContentGroup()
@@ -502,24 +500,18 @@ OCDisplayNode* OCDisplayNode::parse(Object* obj, OptionalContent* oc, XRef* xref
 
 OCDisplayNode::OCDisplayNode()
 {
-	name     = new TextString();
-	ocg      = nullptr;
-	parent   = nullptr;
-	children = nullptr;
+	name = new TextString();
 }
 
 OCDisplayNode::OCDisplayNode(const std::string& nameA)
 {
-	name     = new TextString(nameA);
-	ocg      = nullptr;
-	children = nullptr;
+	name = new TextString(nameA);
 }
 
 OCDisplayNode::OCDisplayNode(OptionalContentGroup* ocgA)
 {
-	name     = new TextString(ocgA->name);
-	ocg      = ocgA;
-	children = nullptr;
+	name = new TextString(ocgA->name);
+	ocg  = ocgA;
 }
 
 void OCDisplayNode::addChild(OCDisplayNode* child)

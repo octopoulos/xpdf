@@ -40,12 +40,8 @@ class PDFCore;
 
 struct PDFHistory
 {
-#ifdef _WIN32
-	wchar_t* fileName;
-#else
-	std::string fileName;
-#endif
-	int page;
+	std::string fileName = ""; //
+	int         page     = 0;  //
 };
 
 #define pdfHistorySize 50
@@ -75,8 +71,11 @@ struct FindResult
 	{
 	}
 
-	int    page;
-	double xMin, yMin, xMax, yMax;
+	int    page = 0; //
+	double xMin = 0; //
+	double yMin = 0; //
+	double xMax = 0; //
+	double yMax = 0; //
 };
 
 //------------------------------------------------------------------------
@@ -104,8 +103,8 @@ public:
 	void cancel() { canceled = true; }
 
 private:
-	PDFCore*          core;
-	std::atomic<bool> canceled;
+	PDFCore*          core     = nullptr; //
+	std::atomic<bool> canceled = false;   //
 };
 
 //------------------------------------------------------------------------
@@ -122,11 +121,6 @@ public:
 
 	// Load a new file.  Returns pdfOk or error code.
 	virtual int loadFile(const std::string& fileName, const std::string& ownerPassword = "", const std::string& userPassword = "");
-
-#ifdef _WIN32
-	// Load a new file.  Returns pdfOk or error code.
-	virtual int loadFile(wchar_t* fileName, int fileNameLen, const std::string& ownerPassword = "", const std::string& userPassword = "");
-#endif
 
 	// Load a new file, via a Stream instead of a file name.  Returns
 	// pdfOk or error code.
@@ -348,26 +342,26 @@ protected:
 
 	friend class AsyncFindAll;
 
-	PDFDoc*           doc;                     //
-	int               linksPage;               // cached links for one page
-	Links*            links;                   //
-	int               textPage;                // cached extracted text for one page
-	double            textDPI;                 //
-	int               textRotate;              //
-	TextOutputControl textOutCtrl;             //
-	TextPage*         text;                    //
-	DisplayState*     state;                   //
-	TileMap*          tileMap;                 //
-	TileCache*        tileCache;               //
-	TileCompositor*   tileCompositor;          //
-	bool              bitmapFinished;          //
-	SelectMode        selectMode;              //
-	int               selectPage;              // page of current selection
-	int               selectStartX;            // for block mode: start point of current
-	int               selectStartY;            // selection, in device coords
-	TextPosition      selectStartPos;          // for linear mode: start position of current selection
-	PDFHistory        history[pdfHistorySize]; // page history queue
-	int               historyCur;              // currently displayed page
-	int               historyBLen;             // number of valid entries backward from current entry
-	int               historyFLen;             // number of valid entries forward from current entry
+	PDFDoc*           doc                     = nullptr;         //
+	int               linksPage               = 0;               // cached links for one page
+	Links*            links                   = nullptr;         //
+	int               textPage                = 0;               // cached extracted text for one page
+	double            textDPI                 = 0;               //
+	int               textRotate              = 0;               //
+	TextOutputControl textOutCtrl             = {};              //
+	TextPage*         text                    = nullptr;         //
+	DisplayState*     state                   = nullptr;         //
+	TileMap*          tileMap                 = nullptr;         //
+	TileCache*        tileCache               = nullptr;         //
+	TileCompositor*   tileCompositor          = nullptr;         //
+	bool              bitmapFinished          = false;           //
+	SelectMode        selectMode              = selectModeBlock; //
+	int               selectPage              = 0;               // page of current selection
+	int               selectStartX            = 0;               // for block mode: start point of current
+	int               selectStartY            = 0;               // selection, in device coords
+	TextPosition      selectStartPos          = {};              // for linear mode: start position of current selection
+	PDFHistory        history[pdfHistorySize] = {};              // page history queue
+	int               historyCur              = 0;               // currently displayed page
+	int               historyBLen             = 0;               // number of valid entries backward from current entry
+	int               historyFLen             = 0;               // number of valid entries forward from current entry
 };

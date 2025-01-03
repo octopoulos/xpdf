@@ -56,13 +56,13 @@ public:
 	}
 
 	// Get current position in file.
-	GFileOffset getPos()
+	int64_t getPos()
 	{
 		return curStr.isNone() ? -1 : curStr.streamGetPos();
 	}
 
 	// Set position in file.
-	void setPos(GFileOffset pos, int dir = 0)
+	void setPos(int64_t pos, int dir = 0)
 	{
 		if (!curStr.isNone()) curStr.streamSetPos(pos, dir);
 	}
@@ -74,9 +74,9 @@ private:
 	int getChar();
 	int lookChar();
 
-	Array* streams;            // array of input streams
-	int    strPtr;             // index of current stream
-	Object curStr;             // current stream
-	bool   freeArray;          // should lexer free the streams array?
-	char   tokBuf[tokBufSize]; // temporary token buffer
+	Array* streams            = nullptr; // array of input streams
+	int    strPtr             = 0;       // index of current stream
+	Object curStr             = {};      // current stream
+	bool   freeArray          = true;    // should lexer free the streams array?
+	char   tokBuf[tokBufSize] = {};      // temporary token buffer
 };

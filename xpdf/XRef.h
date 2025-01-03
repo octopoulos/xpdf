@@ -34,16 +34,16 @@ enum XRefEntryType
 
 struct XRefEntry
 {
-	GFileOffset   offset; //
-	int           gen;    //
-	XRefEntryType type;   //
+	int64_t       offset = 0;             //
+	int           gen    = 0;             //
+	XRefEntryType type   = xrefEntryFree; //
 };
 
 struct XRefCacheEntry
 {
-	int    num; //
-	int    gen; //
-	Object obj; //
+	int    num = 0;  //
+	int    gen = 0;  //
+	Object obj = {}; //
 };
 
 #define xrefCacheSize 16
@@ -99,10 +99,10 @@ public:
 	int getNumObjects() { return last + 1; }
 
 	// Return the offset of the last xref table.
-	GFileOffset getLastXRefPos() { return lastXRefPos; }
+	int64_t getLastXRefPos() { return lastXRefPos; }
 
 	// Return the offset of the 'startxref' at the end of the file.
-	GFileOffset getLastStartxrefPos() { return lastStartxrefPos; }
+	int64_t getLastStartxrefPos() { return lastStartxrefPos; }
 
 	// Return the catalog object reference.
 	int getRootNum() { return rootNum; }
@@ -112,11 +112,11 @@ public:
 	// Get the xref table positions.
 	int getNumXRefTables() { return xrefTablePosLen; }
 
-	GFileOffset getXRefTablePos(int idx) { return xrefTablePos[idx]; }
+	int64_t getXRefTablePos(int idx) { return xrefTablePos[idx]; }
 
 	// Get end position for a stream in a damaged file.
 	// Returns false if unknown or file is not damaged.
-	bool getStreamEnd(GFileOffset streamStart, GFileOffset* streamEnd);
+	bool getStreamEnd(int64_t streamStart, int64_t* streamEnd);
 
 	// Direct access.
 	int getSize() { return size; }
@@ -126,55 +126,55 @@ public:
 	Object* getTrailerDict() { return &trailerDict; }
 
 private:
-	BaseStream*    str;                            // input stream
-	GFileOffset    start;                          // offset in file (to allow for garbage at beginning of file)
-	XRefEntry*     entries;                        // xref entries
-	int            size;                           // size of <entries> array
-	int            last;                           // last used index in <entries>
-	int            rootNum;                        //
-	int            rootGen;                        // catalog dict
-	bool           ok;                             // true if xref table is valid
-	int            errCode;                        // error code (if <ok> is false)
-	bool           repaired;                       // set if the xref table was constructed by the repair code
-	Object         trailerDict;                    // trailer dictionary
-	GFileOffset    lastXRefPos;                    // offset of last xref table
-	GFileOffset    lastStartxrefPos;               // offset of 'startxref' at end of file
-	GFileOffset*   xrefTablePos;                   // positions of all xref tables
-	int            xrefTablePosLen;                // number of xref table positions
-	GFileOffset*   streamEnds;                     // 'endstream' positions - only used in damaged files
-	int            streamEndsLen;                  // number of valid entries in streamEnds
-	ObjectStream*  objStrs[objStrCacheSize];       // cached object streams
-	int            objStrCacheLength;              // number of valid entries in objStrs[]
-	uint32_t       objStrLastUse[objStrCacheSize]; // time of last use for each obj stream
-	uint32_t       objStrTime;                     // current time for the obj stream cache
-	bool           encrypted;                      // true if file is encrypted
-	int            permFlags;                      // permission bits
-	bool           ownerPasswordOk;                // true if owner password is correct
-	uint8_t        fileKey[32];                    // file decryption key
-	int            keyLength;                      // length of key, in bytes
-	int            encVersion;                     // encryption version
-	CryptAlgorithm encAlgorithm;                   // encryption algorithm
-	XRefCacheEntry cache[xrefCacheSize];           // cache of recently accessed objects
+	BaseStream*    str                            = nullptr;  // input stream
+	int64_t        start                          = 0;        // offset in file (to allow for garbage at beginning of file)
+	XRefEntry*     entries                        = nullptr;  // xref entries
+	int            size                           = 0;        // size of <entries> array
+	int            last                           = -1;       // last used index in <entries>
+	int            rootNum                        = 0;        //
+	int            rootGen                        = 0;        // catalog dict
+	bool           ok                             = false;    // true if xref table is valid
+	int            errCode                        = 0;        // error code (if <ok> is false)
+	bool           repaired                       = false;    // set if the xref table was constructed by the repair code
+	Object         trailerDict                    = {};       // trailer dictionary
+	int64_t        lastXRefPos                    = 0;        // offset of last xref table
+	int64_t        lastStartxrefPos               = 0;        // offset of 'startxref' at end of file
+	int64_t*       xrefTablePos                   = nullptr;  // positions of all xref tables
+	int            xrefTablePosLen                = 0;        // number of xref table positions
+	int64_t*       streamEnds                     = nullptr;  // 'endstream' positions - only used in damaged files
+	int            streamEndsLen                  = 0;        // number of valid entries in streamEnds
+	ObjectStream*  objStrs[objStrCacheSize]       = {};       // cached object streams
+	int            objStrCacheLength              = 0;        // number of valid entries in objStrs[]
+	uint32_t       objStrLastUse[objStrCacheSize] = {};       // time of last use for each obj stream
+	uint32_t       objStrTime                     = 0;        // current time for the obj stream cache
+	bool           encrypted                      = false;    // true if file is encrypted
+	int            permFlags                      = 0;        // permission bits
+	bool           ownerPasswordOk                = false;    // true if owner password is correct
+	uint8_t        fileKey[32]                    = {};       // file decryption key
+	int            keyLength                      = 0;        // length of key, in bytes
+	int            encVersion                     = 0;        // encryption version
+	CryptAlgorithm encAlgorithm                   = cryptAES; // encryption algorithm
+	XRefCacheEntry cache[xrefCacheSize]           = {};       // cache of recently accessed objects
 
 #if MULTITHREADED
 	GMutex objStrsMutex;
 	GMutex cacheMutex;
 #endif
 
-	GFileOffset   getStartXref();
-	bool          readXRef(GFileOffset* pos, XRefPosSet* posSet, bool hybrid);
-	bool          readXRefTable(GFileOffset* pos, int offset, XRefPosSet* posSet);
-	bool          readXRefStream(Stream* xrefStr, GFileOffset* pos, bool hybrid);
+	int64_t       getStartXref();
+	bool          readXRef(int64_t* pos, XRefPosSet* posSet, bool hybrid);
+	bool          readXRefTable(int64_t* pos, int offset, XRefPosSet* posSet);
+	bool          readXRefStream(Stream* xrefStr, int64_t* pos, bool hybrid);
 	bool          readXRefStreamSection(Stream* xrefStr, int* w, int first, int n);
 	bool          constructXRef();
-	void          constructTrailerDict(GFileOffset pos);
+	void          constructTrailerDict(int64_t pos);
 	void          saveTrailerDict(Dict* dict, bool isXRefStream);
-	char*         constructObjectEntry(char* p, GFileOffset pos, int* objNum);
+	char*         constructObjectEntry(char* p, int64_t pos, int* objNum);
 	void          constructObjectStreamEntries(Object* objStr, int objStrObjNum);
-	bool          constructXRefEntry(int num, int gen, GFileOffset pos, XRefEntryType type);
+	bool          constructXRefEntry(int num, int gen, int64_t pos, XRefEntryType type);
 	bool          getObjectStreamObject(int objStrNum, int objIdx, int objNum, Object* obj, int recursion);
 	ObjectStream* getObjectStreamFromCache(int objStrNum);
 	void          addObjectStreamToCache(ObjectStream* objStr);
 	void          cleanObjectStreamCache();
-	GFileOffset   strToFileOffset(char* s);
+	int64_t       strToFileOffset(char* s);
 };

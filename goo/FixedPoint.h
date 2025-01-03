@@ -20,7 +20,7 @@
 #	define fixptMaskL ((1 << fixptShift) - 1)
 #	define fixptMaskH (~fixptMaskL)
 
-typedef long long FixPtInt64;
+// typedef long long FixPtInt64;
 
 class FixedPoint
 {
@@ -262,7 +262,7 @@ private:
 	static int mul(int x, int y);
 	static int div(int x, int y);
 
-	int val; // fixed point: (n-fixptShift).(fixptShift)
+	int val = 0; // fixed point: (n-fixptShift).(fixptShift)
 };
 
 #endif // USE_FIXEDPOINT

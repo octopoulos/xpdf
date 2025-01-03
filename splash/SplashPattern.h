@@ -54,5 +54,5 @@ public:
 	virtual bool isStatic() { return true; }
 
 private:
-	SplashColor color;
+	SplashColor color = {}; //
 };

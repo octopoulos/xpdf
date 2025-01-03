@@ -81,16 +81,11 @@ Annot::Annot(PDFDoc* docA, Dict* dict, Ref* refA)
 	double          borderColor[4];
 	int             nBorderColorComps;
 	double          t;
-	int             i;
 
 	ok   = true;
 	doc  = docA;
 	xref = doc->getXRef();
 	ref  = *refA;
-	type.clear();
-	appearanceState = nullptr;
-	appearBuf       = nullptr;
-	borderStyle     = nullptr;
 
 	//----- parse the type
 
@@ -177,7 +172,7 @@ Annot::Annot(PDFDoc* docA, Dict* dict, Ref* refA)
 		{
 			borderDashLength = obj2.arrayGetLength();
 			borderDash       = (double*)gmallocn(borderDashLength, sizeof(double));
-			for (i = 0; i < borderDashLength; ++i)
+			for (int i = 0; i < borderDashLength; ++i)
 			{
 				if (obj2.arrayGet(i, &obj3)->isNum())
 					borderDash[i] = obj3.getNum();
@@ -205,7 +200,7 @@ Annot::Annot(PDFDoc* docA, Dict* dict, Ref* refA)
 						borderType       = annotBorderDashed;
 						borderDashLength = obj2.arrayGetLength();
 						borderDash       = (double*)gmallocn(borderDashLength, sizeof(double));
-						for (i = 0; i < borderDashLength; ++i)
+						for (int i = 0; i < borderDashLength; ++i)
 						{
 							if (obj2.arrayGet(i, &obj3)->isNum())
 								borderDash[i] = obj3.getNum();
@@ -216,8 +211,7 @@ Annot::Annot(PDFDoc* docA, Dict* dict, Ref* refA)
 					}
 					else
 					{
-						// Adobe draws no border at all if the last element is of
-						// the wrong type.
+						// Adobe draws no border at all if the last element is of the wrong type.
 						borderWidth = 0;
 					}
 					obj2.free();
@@ -237,7 +231,7 @@ Annot::Annot(PDFDoc* docA, Dict* dict, Ref* refA)
 	if (dict->lookup("C", &obj1)->isArray() && (obj1.arrayGetLength() == 1 || obj1.arrayGetLength() == 3 || obj1.arrayGetLength() == 4))
 	{
 		nBorderColorComps = obj1.arrayGetLength();
-		for (i = 0; i < nBorderColorComps; ++i)
+		for (int i = 0; i < nBorderColorComps; ++i)
 		{
 			if (obj1.arrayGet(i, &obj2)->isNum())
 				borderColor[i] = obj2.getNum();
@@ -250,18 +244,17 @@ Annot::Annot(PDFDoc* docA, Dict* dict, Ref* refA)
 	borderStyle = new AnnotBorderStyle(borderType, borderWidth, borderDash, borderDashLength, borderColor, nBorderColorComps);
 
 	//----- get the appearance state
-
 	dict->lookup("AP", &apObj);
 	dict->lookup("AS", &asObj);
 	if (asObj.isName())
 	{
-		appearanceState = asObj.getName();
+		ASSIGN_CSTRING(appearanceState, asObj.getName());
 	}
 	else if (apObj.isDict())
 	{
 		apObj.dictLookup("N", &obj1);
 		if (obj1.isDict() && obj1.dictGetLength() == 1)
-			appearanceState = obj1.dictGetKey(0);
+			ASSIGN_CSTRING(appearanceState, obj1.dictGetKey(0));
 		obj1.free();
 	}
 	if (appearanceState.empty())
@@ -1297,8 +1290,7 @@ Annots::~Annots()
 
 void Annots::loadAnnots(int page)
 {
-	if (pageAnnots[page - 1])
-		return;
+	if (pageAnnots[page - 1]) return;
 
 	pageAnnots[page - 1] = new PageAnnots();
 
@@ -1354,12 +1346,10 @@ void Annots::loadAnnots(int page)
 // Build a set of object refs for AcroForm fields.
 void Annots::loadFormFieldRefs()
 {
-	if (formFieldRefs)
-		return;
+	if (formFieldRefs) return;
 
 	AcroForm* form = doc->getCatalog()->getForm();
-	if (!form)
-		return;
+	if (!form) return;
 
 	int newFormFieldRefsSize = 256;
 	for (int i = 0; i < form->getNumFields(); ++i)
@@ -1423,8 +1413,7 @@ int Annots::findIdx(int page, double x, double y)
 
 void Annots::add(int page, Object* annotObj)
 {
-	if (!annotObj->isDict())
-		return;
+	if (!annotObj->isDict()) return;
 	Ref    annotRef = { -1, -1 };
 	Annot* annot    = new Annot(doc, annotObj->getDict(), &annotRef);
 	if (annot->isOk())

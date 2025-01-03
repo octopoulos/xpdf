@@ -32,10 +32,8 @@ TileCompositor::TileCompositor(DisplayState* stateA, TileMap* tileMapA, TileCach
 {
 	state = stateA;
 	state->setTileCompositor(this);
-	tileMap     = tileMapA;
-	tileCache   = tileCacheA;
-	bitmap      = nullptr;
-	bitmapValid = false;
+	tileMap   = tileMapA;
+	tileCache = tileCacheA;
 }
 
 TileCompositor::~TileCompositor()

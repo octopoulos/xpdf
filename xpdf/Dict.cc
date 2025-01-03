@@ -19,9 +19,9 @@
 
 struct DictEntry
 {
-	char*      key;
-	Object     val;
-	DictEntry* next;
+	char*      key  = nullptr; //
+	Object     val  = {};      //
+	DictEntry* next = nullptr; //
 };
 
 //------------------------------------------------------------------------
@@ -32,7 +32,6 @@ Dict::Dict(XRef* xrefA)
 {
 	xref    = xrefA;
 	size    = 8;
-	length  = 0;
 	entries = (DictEntry*)gmallocn(size, sizeof(DictEntry));
 	hashTab = (DictEntry**)gmallocn(2 * size - 1, sizeof(DictEntry*));
 	memset(hashTab, 0, (2 * size - 1) * sizeof(DictEntry*));
@@ -62,8 +61,7 @@ void Dict::add(char* key, Object* val)
 	}
 	else
 	{
-		if (length == size)
-			expand();
+		if (length == size) expand();
 
 		const int h          = hash(key);
 		entries[length].key  = key;
@@ -90,18 +88,16 @@ void Dict::expand()
 
 inline DictEntry* Dict::find(const char* key)
 {
-	DictEntry* e;
-
 	const int h = hash(key);
+	DictEntry* e;
 	for (e = hashTab[h]; e; e = e->next)
-		if (!strcmp(key, e->key))
-			return e;
+		if (!strcmp(key, e->key)) return e;
 	return nullptr;
 }
 
 int Dict::hash(const char* key)
 {
-	unsigned int h = 0;
+	uint32_t h = 0;
 	for (const char* p = key; *p; ++p)
 		h = 17 * h + (int)(*p & 0xff);
 	return (int)(h % (2 * size - 1));

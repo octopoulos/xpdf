@@ -79,28 +79,28 @@
 
 struct TrueTypeTable
 {
-	uint32_t tag;
-	uint32_t checksum;
-	int      offset;
-	int      origOffset;
-	int      len;
+	uint32_t tag        = 0; //
+	uint32_t checksum   = 0; //
+	int      offset     = 0; //
+	int      origOffset = 0; //
+	int      len        = 0; //
 };
 
 struct TrueTypeCmap
 {
-	int platform;
-	int encoding;
-	int offset;
-	int len;
-	int fmt;
+	int platform = 0; //
+	int encoding = 0; //
+	int offset   = 0; //
+	int len      = 0; //
+	int fmt      = 0; //
 };
 
 struct TrueTypeLoca
 {
-	int idx;
-	int origOffset;
-	int newOffset;
-	int len;
+	int idx        = 0; //
+	int origOffset = 0; //
+	int newOffset  = 0; //
+	int len        = 0; //
 };
 
 #define cmapTag 0x636d6170
@@ -310,14 +310,7 @@ FoFiTrueType* FoFiTrueType::load(const char* fileName, int fontNum, bool allowHe
 FoFiTrueType::FoFiTrueType(const char* fileA, int lenA, bool freeFileDataA, int fontNum, bool isDfontA, bool allowHeadlessCFF)
     : FoFiBase(fileA, lenA, freeFileDataA)
 {
-	tables    = nullptr;
-	nTables   = 0;
-	cmaps     = nullptr;
-	nCmaps    = 0;
-	nameToGID = nullptr;
-	isDfont   = isDfontA;
-	isTTC     = false;
-	parsedOk  = false;
+	isDfont = isDfontA;
 
 	parse(fontNum, allowHeadlessCFF);
 }
@@ -326,8 +319,7 @@ FoFiTrueType::~FoFiTrueType()
 {
 	gfree(tables);
 	gfree(cmaps);
-	if (nameToGID)
-		delete nameToGID;
+	if (nameToGID) delete nameToGID;
 }
 
 int FoFiTrueType::getNumCmaps()

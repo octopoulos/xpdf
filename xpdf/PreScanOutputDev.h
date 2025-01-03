@@ -106,9 +106,9 @@ public:
 private:
 	void check(GfxState* state, GfxColorSpace* colorSpace, GfxColor* color, double opacity, GfxBlendMode blendMode);
 
-	bool mono;           //
-	bool gray;           //
-	bool transparency;   //
-	bool patternImgMask; //
-	bool gdi;            //
+	bool mono           = false; //
+	bool gray           = false; //
+	bool transparency   = false; //
+	bool patternImgMask = false; //
+	bool gdi            = false; //
 };

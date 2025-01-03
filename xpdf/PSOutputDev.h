@@ -55,14 +55,14 @@ public:
 	PSFontFileInfo(const std::string& psNameA, GfxFontType typeA, PSFontFileLocation locA);
 	~PSFontFileInfo();
 
-	std::string        psName;       // name under which font is defined
-	GfxFontType        type;         // font type
-	PSFontFileLocation loc;          // font location
-	Ref                embFontID;    // object ID for the embedded font file (for all embedded fonts)
-	std::string        extFileName;  // external font file path (for all external fonts)
-	std::string        encoding;     // encoding name (for resident CID fonts)
-	int*               codeToGID;    // mapping from code/CID to GID (for TrueType, OpenType-TrueType, and CID OpenType-CFF fonts)
-	int                codeToGIDLen; // length of codeToGID array
+	std::string        psName       = "";                 // name under which font is defined
+	GfxFontType        type         = fontUnknownType;    // font type
+	PSFontFileLocation loc          = psFontFileResident; // font location
+	Ref                embFontID    = {};                 // object ID for the embedded font file (for all embedded fonts)
+	std::string        extFileName  = "";                 // external font file path (for all external fonts)
+	std::string        encoding     = "";                 // encoding name (for resident CID fonts)
+	int*               codeToGID    = nullptr;            // mapping from code/CID to GID (for TrueType, OpenType-TrueType, and CID OpenType-CFF fonts)
+	int                codeToGIDLen = 0;                  // length of codeToGID array
 };
 
 using sPSFontFileInfo = std::shared_ptr<PSFontFileInfo>;
@@ -301,7 +301,7 @@ public:
 	template <typename... T>
 	void writePSFmt(fmt::format_string<T...> fmt, T&&... args);
 
-	void writePSString(const std::string& s);
+	void writePSString(std::string_view sv);
 	void writePSName(const char* s);
 
 private:
@@ -375,12 +375,12 @@ private:
 	std::string filterPSName(const std::string& name);
 	void        writePSTextLine(const std::string& s);
 
-	void (*underlayCbk)(PSOutputDev* psOut, void* data)                                              = nullptr;
-	void* underlayCbkData                                                                            = nullptr;
-	void (*overlayCbk)(PSOutputDev* psOut, void* data)                                               = nullptr;
-	void* overlayCbkData                                                                             = nullptr;
+	void        (*underlayCbk)(PSOutputDev* psOut, void* data)                                       = nullptr;
+	void*       underlayCbkData                                                                      = nullptr;
+	void        (*overlayCbk)(PSOutputDev* psOut, void* data)                                        = nullptr;
+	void*       overlayCbkData                                                                       = nullptr;
 	std::string (*customCodeCbk)(PSOutputDev* psOut, PSOutCustomCodeLocation loc, int n, void* data) = nullptr;
-	void* customCodeCbkData                                                                          = nullptr;
+	void*       customCodeCbkData                                                                    = nullptr;
 
 	PSLevel                            level             = psLevel2; // PostScript level
 	PSOutMode                          mode              = psModePS; // PostScript mode (PS, EPS, form)
@@ -452,13 +452,12 @@ private:
 	bool                               t3FillColorOnly   = false;    // operators should only use the fill color
 	bool                               t3Cacheable       = false;    // cleared if char is not cacheable
 	bool                               t3NeedsRestore    = false;    // set if a 'q' operator was issued
+	bool                               ok                = false;    // set up ok?
 
 #if OPI_SUPPORT
-	int opi13Nest; // nesting level of OPI 1.3 objects
-	int opi20Nest; // nesting level of OPI 2.0 objects
+	int opi13Nest = 0; // nesting level of OPI 1.3 objects
+	int opi20Nest = 0; // nesting level of OPI 2.0 objects
 #endif
-
-	bool ok = false; // set up ok?
 
 	friend class WinPDFPrinter;
 };

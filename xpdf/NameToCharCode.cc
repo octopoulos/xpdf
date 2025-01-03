@@ -16,8 +16,8 @@
 
 struct NameToCharCodeEntry
 {
-	char*    name; //
-	CharCode c;    //
+	char*    name = nullptr; //
+	CharCode c    = 0;       //
 };
 
 //------------------------------------------------------------------------
@@ -25,7 +25,6 @@ struct NameToCharCodeEntry
 NameToCharCode::NameToCharCode()
 {
 	size = 31;
-	len  = 0;
 	tab  = (NameToCharCodeEntry*)gmallocn(size, sizeof(NameToCharCodeEntry));
 	for (int i = 0; i < size; ++i)
 		tab[i].name = nullptr;
@@ -93,8 +92,8 @@ CharCode NameToCharCode::lookup(const char* name)
 
 int NameToCharCode::hash(const char* name)
 {
-	const char*  p;
-	unsigned int h = 0;
+	const char* p;
+	uint32_t    h = 0;
 	for (p = name; *p; ++p)
 		h = 17 * h + (int)(*p & 0xff);
 	return (int)(h % size);

@@ -52,11 +52,7 @@ public:
 	Object* getNF(int i, Object* obj);
 
 private:
-	XRef*               xref;   // the xref table for this PDF file
-	std::vector<Object> elems;  // array of elements
-#if MULTITHREADED
-	GAtomicCounter ref; // reference count
-#else
-	long ref; // reference count
-#endif
+	XRef*               xref  = nullptr; // the xref table for this PDF file
+	std::vector<Object> elems = {};      // array of elements
+	REFCNT_TYPE         ref   = 0;       // reference count
 };

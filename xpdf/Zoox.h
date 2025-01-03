@@ -61,10 +61,10 @@ public:
 protected:
 	void findAllElements(const char* type, std::vector<ZxNode*> results);
 
-	ZxNode* next;
-	ZxNode* parent;
-	ZxNode* firstChild;
-	ZxNode* lastChild;
+	ZxNode* next       = nullptr; //
+	ZxNode* parent     = nullptr; //
+	ZxNode* firstChild = nullptr; //
+	ZxNode* lastChild  = nullptr; //
 };
 
 //------------------------------------------------------------------------
@@ -105,7 +105,7 @@ private:
 	ZxAttr*     parseAttr();
 	void        parseContent(ZxElement* par);
 	void        parseCharData(ZxElement* par);
-	void        appendUTF8(std::string& s, unsigned int c);
+	void        appendUTF8(std::string& s, uint32_t c);
 	void        parseCDSect(ZxNode* par);
 	void        parseMisc(ZxNode* par);
 	void        parseComment(ZxNode* par);
@@ -116,12 +116,11 @@ private:
 	void        parseSpace();
 	bool        match(const char* s);
 
-	ZxXMLDecl*     xmlDecl;     // may be nullptr
-	ZxDocTypeDecl* docTypeDecl; // may be nullptr
-	ZxElement*     root;        // may be nullptr
-
-	const char* parsePtr;
-	const char* parseEnd;
+	ZxXMLDecl*     xmlDecl     = nullptr; // may be nullptr
+	ZxDocTypeDecl* docTypeDecl = nullptr; // may be nullptr
+	ZxElement*     root        = nullptr; // may be nullptr
+	const char*    parsePtr    = nullptr; //
+	const char*    parseEnd    = nullptr; //
 };
 
 //------------------------------------------------------------------------
@@ -143,9 +142,9 @@ public:
 	virtual bool write(ZxWriteFunc writeFunc, void* stream);
 
 private:
-	std::string version;
-	std::string encoding; // may be nullptr
-	bool        standalone;
+	std::string version    = "";    //
+	std::string encoding   = "";    // may be ""
+	bool        standalone = false; //
 };
 
 //------------------------------------------------------------------------
@@ -158,12 +157,12 @@ public:
 
 	virtual bool isDocTypeDecl() { return true; }
 
-	std::string getName() { return name; }
+	std::string_view getName() { return name; }
 
 	virtual bool write(ZxWriteFunc writeFunc, void* stream);
 
 private:
-	std::string name;
+	std::string name = ""; //
 };
 
 //------------------------------------------------------------------------
@@ -181,7 +180,7 @@ public:
 	virtual bool write(ZxWriteFunc writeFunc, void* stream);
 
 private:
-	std::string text;
+	std::string text = ""; //
 };
 
 //------------------------------------------------------------------------
@@ -201,8 +200,8 @@ public:
 	virtual bool write(ZxWriteFunc writeFunc, void* stream);
 
 private:
-	std::string target;
-	std::string text;
+	std::string target = ""; //
+	std::string text   = ""; //
 };
 
 //------------------------------------------------------------------------
@@ -230,10 +229,10 @@ public:
 private:
 	void appendEscapedAttrValue(std::string& out, const std::string& s);
 
-	std::string                type;
-	UMAP<std::string, ZxAttr*> attrs; // [ZxAttr]
-	ZxAttr*                    firstAttr;
-	ZxAttr*                    lastAttr;
+	std::string                type      = "";      //
+	UMAP<std::string, ZxAttr*> attrs     = {};      // [ZxAttr]
+	ZxAttr*                    firstAttr = nullptr; //
+	ZxAttr*                    lastAttr  = nullptr; //
 };
 
 //------------------------------------------------------------------------
@@ -244,7 +243,7 @@ public:
 	ZxAttr(const std::string& nameA, const std::string& valueA);
 	~ZxAttr();
 
-	std::string getName() { return name; }
+	std::string_view getName() { return name; }
 
 	std::string getValue() { return value; }
 
@@ -253,10 +252,10 @@ public:
 	ZxNode* getParent() { return parent; }
 
 private:
-	std::string name;
-	std::string value;
-	ZxElement*  parent;
-	ZxAttr*     next;
+	std::string name   = "";      //
+	std::string value  = "";      //
+	ZxElement*  parent = nullptr; //
+	ZxAttr*     next   = nullptr; //
 
 	friend class ZxElement;
 };
@@ -278,6 +277,6 @@ public:
 	virtual bool write(ZxWriteFunc writeFunc, void* stream);
 
 private:
-	std::string data; // in UTF-8 format
-	bool        parsed;
+	std::string data   = "";    // in UTF-8 format
+	bool        parsed = false; //
 };

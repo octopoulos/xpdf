@@ -308,8 +308,6 @@ bool Decrypt::makeFileKey2(int encVersion, int encRevision, int keyLength, const
 DecryptStream::DecryptStream(Stream* strA, uint8_t* fileKeyA, CryptAlgorithm algoA, int keyLengthA, int objNumA, int objGenA)
     : FilterStream(strA)
 {
-	int i;
-
 	memcpy(fileKey, fileKeyA, keyLengthA);
 	algo      = algoA;
 	keyLength = keyLengthA;
@@ -317,7 +315,7 @@ DecryptStream::DecryptStream(Stream* strA, uint8_t* fileKeyA, CryptAlgorithm alg
 	objGen    = objGenA;
 
 	// construct object key
-	for (i = 0; i < keyLength; ++i)
+	for (int i = 0; i < keyLength; ++i)
 		objKey[i] = fileKey[i];
 	switch (algo)
 	{

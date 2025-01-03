@@ -70,7 +70,7 @@ public:
 	virtual CryptAlgorithm getEncAlgorithm()    = 0;
 
 protected:
-	PDFDoc* doc;
+	PDFDoc* doc = nullptr; //
 };
 
 //------------------------------------------------------------------------
@@ -102,18 +102,18 @@ public:
 	virtual CryptAlgorithm getEncAlgorithm() { return encAlgorithm; }
 
 private:
-	int            permFlags;       //
-	bool           ownerPasswordOk; //
-	uint8_t        fileKey[32];     //
-	int            fileKeyLength;   //
-	int            encVersion;      //
-	int            encRevision;     //
-	CryptAlgorithm encAlgorithm;    //
-	bool           encryptMetadata; //
-	std::string    ownerKey;        //
-	std::string    userKey;         //
-	std::string    ownerEnc;        //
-	std::string    userEnc;         //
-	std::string    fileID;          //
-	bool           ok;              //
+	int            permFlags       = 0;        //
+	bool           ownerPasswordOk = false;    //
+	uint8_t        fileKey[32]     = {};       //
+	int            fileKeyLength   = 0;        //
+	int            encVersion      = 0;        //
+	int            encRevision     = 0;        //
+	CryptAlgorithm encAlgorithm    = cryptAES; //
+	bool           encryptMetadata = false;    //
+	std::string    ownerKey        = "";       //
+	std::string    userKey         = "";       //
+	std::string    ownerEnc        = "";       //
+	std::string    userEnc         = "";       //
+	std::string    fileID          = "";       //
+	bool           ok              = false;    //
 };

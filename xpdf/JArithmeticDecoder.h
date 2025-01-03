@@ -32,8 +32,8 @@ public:
 	void setEntry(uint32_t cx, int i, int mps);
 
 private:
-	uint8_t* cxTab;       // cxTab[cx] = (i[cx] << 1) + mps[cx]
-	int      contextSize; //
+	uint8_t* cxTab       = nullptr; // cxTab[cx] = (i[cx] << 1) + mps[cx]
+	int      contextSize = 0;       //
 
 	friend class JArithmeticDecoder;
 };
@@ -62,14 +62,13 @@ public:
 		limitStream = true;
 	}
 
-	// Start decoding on a new stream.  This fills the byte buffers and
-	// runs INITDEC.
+	// Start decoding on a new stream.
+	// This fills the byte buffers and runs INITDEC.
 	void start();
 
-	// Restart decoding on an interrupted stream.  This refills the
-	// buffers if needed, but does not run INITDEC.  (This is used in
-	// JPEG 2000 streams when codeblock data is split across multiple
-	// packets/layers.)
+	// Restart decoding on an interrupted stream.
+	// This refills the buffers if needed, but does not run INITDEC.
+	// (This is used in JPEG 2000 streams when codeblock data is split across multiple packets/layers.)
 	void restart(int dataLenA);
 
 	// Read any leftover data in the stream.
@@ -99,15 +98,16 @@ private:
 	static int      nmpsTab[47];   //
 	static int      nlpsTab[47];   //
 	static int      switchTab[47]; //
-	uint32_t        buf0;          //
-	uint32_t        buf1;          //
-	uint32_t        c;             //
-	uint32_t        a;             //
-	int             ct;            //
-	uint32_t        prev;          // for the integer decoder
-	Stream*         str;           //
-	uint32_t        nBytesRead;    //
-	int             dataLen;       //
-	bool            limitStream;   //
-	int             readBuf;       //
+
+	uint32_t        buf0          = 0;       //
+	uint32_t        buf1          = 0;       //
+	uint32_t        c             = 0;       //
+	uint32_t        a             = 0;       //
+	int             ct            = 0;       //
+	uint32_t        prev          = 0;       // for the integer decoder
+	Stream*         str           = nullptr; //
+	uint32_t        nBytesRead    = 0;       //
+	int             dataLen       = 0;       //
+	bool            limitStream   = false;   //
+	int             readBuf       = -1;      //
 };

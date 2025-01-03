@@ -30,8 +30,10 @@ typedef int (*UnicodeMapFunc)(Unicode u, char* buf, int bufSize);
 
 struct UnicodeMapRange
 {
-	Unicode  start, end;   // range of Unicode chars
-	uint32_t code, nBytes; // first output code
+	Unicode  start  = 0; //
+	Unicode  end    = 0; // range of Unicode chars
+	uint32_t code   = 0; //
+	uint32_t nBytes = 0; // first output code
 };
 
 struct UnicodeMapExt;
@@ -74,9 +76,9 @@ public:
 private:
 	UnicodeMap(const std::string& encodingNameA);
 
-	std::string    encodingName;
-	UnicodeMapKind kind;
-	bool           unicodeOut;
+	std::string    encodingName = "";             //
+	UnicodeMapKind kind         = unicodeMapUser; //
+	bool           unicodeOut   = false;          //
 
 	union
 	{
@@ -84,14 +86,10 @@ private:
 		UnicodeMapFunc   func;   // (func)
 	};
 
-	int            len;      // (user, resident)
-	UnicodeMapExt* eMaps;    // (user)
-	int            eMapsLen; // (user)
-#if MULTITHREADED
-	GAtomicCounter refCnt;
-#else
-	int refCnt;
-#endif
+	int            len      = 0;       // (user, resident)
+	UnicodeMapExt* eMaps    = nullptr; // (user)
+	int            eMapsLen = 0;       // (user)
+	REFCNT_TYPE    refCnt   = 0;       //
 };
 
 //------------------------------------------------------------------------
@@ -110,5 +108,5 @@ public:
 	UnicodeMap* getUnicodeMap(const std::string& encodingName);
 
 private:
-	UnicodeMap* cache[unicodeMapCacheSize];
+	UnicodeMap* cache[unicodeMapCacheSize] = {}; //
 };

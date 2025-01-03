@@ -103,17 +103,6 @@ PDFCore::~PDFCore()
 		aboutToDeleteDoc();
 		delete doc;
 	}
-	for (int i = 0; i < pdfHistorySize; ++i)
-	{
-		if (history[i].fileName)
-		{
-#ifdef _WIN32
-			delete[] history[i].fileName;
-#else
-			delete history[i].fileName;
-#endif
-		}
-	}
 }
 
 int PDFCore::loadFile(const std::string& fileName, const std::string& ownerPassword, const std::string& userPassword)
@@ -123,16 +112,6 @@ int PDFCore::loadFile(const std::string& fileName, const std::string& ownerPassw
 	setBusyCursor(false);
 	return err;
 }
-
-#ifdef _WIN32
-int PDFCore::loadFile(wchar_t* fileName, int fileNameLen, const std::string& ownerPassword, const std::string& userPassword)
-{
-	setBusyCursor(true);
-	const int err = loadFile2(new PDFDoc(fileName, fileNameLen, ownerPassword, userPassword, this));
-	setBusyCursor(false);
-	return err;
-}
-#endif
 
 int PDFCore::loadFile(BaseStream* stream, const std::string& ownerPassword, const std::string& userPassword)
 {
@@ -424,81 +403,33 @@ void PDFCore::finishUpdate(bool addToHist, bool checkForChangedFile)
 
 void PDFCore::addToHistory()
 {
+	PDFHistory* cur = &history[historyCur];
 	PDFHistory  h;
-	PDFHistory* cur;
+	h.page = tileMap->getMidPage();
 
-	cur        = &history[historyCur];
-	h.page     = tileMap->getMidPage();
-	h.fileName = nullptr;
-#ifdef _WIN32
-	if (doc->getFileNameU())
-	{
-		wchar_t dummy;
-		// NB: if the buffer is too small, GetFullPathNameW returns a
-		// *maximum* required buffer size, which may be larger than the
-		// size actually used by the second call (it looks like it just
-		// adds the size of the current directory and the sizef of the
-		// input path)
-		DWORD   nChars = GetFullPathNameW(doc->getFileNameU(), 1, &dummy, nullptr);
-		if (nChars > 0)
-		{
-			h.fileName = (wchar_t*)gmallocn(nChars, sizeof(wchar_t));
-			if (GetFullPathNameW(doc->getFileNameU(), nChars, h.fileName, nullptr) == 0)
-			{
-				gfree(h.fileName);
-				h.fileName = nullptr;
-			}
-		}
-	}
-#else
-	if (doc->getFileName())
-		h.fileName = doc->getFileName()->copy();
-#endif
+	if (doc->getFileName().size())
+		h.fileName = doc->getFileName();
+
 	if (historyBLen > 0 && h.page == cur->page)
 	{
-		if (!h.fileName && !cur->fileName)
-			return;
-#ifdef _WIN32
-		if (h.fileName && cur->fileName && !wcscmp(h.fileName, cur->fileName))
+		if (h.fileName.empty() && cur->fileName.empty()) return;
+		if (h.fileName == cur->fileName)
 		{
-			gfree(h.fileName);
 			return;
 		}
-#else
-		if (h.fileName && cur->fileName && !h.fileName->cmp(cur->fileName))
-		{
-			delete h.fileName;
-			return;
-		}
-#endif
 	}
-	if (++historyCur == pdfHistorySize)
-		historyCur = 0;
-	if (history[historyCur].fileName)
-	{
-#ifdef _WIN32
-		gfree(history[historyCur].fileName);
-#else
-		delete history[historyCur].fileName;
-#endif
-	}
+	if (++historyCur == pdfHistorySize) historyCur = 0;
 	history[historyCur] = h;
-	if (historyBLen < pdfHistorySize)
-		++historyBLen;
+	if (historyBLen < pdfHistorySize) ++historyBLen;
 	historyFLen = 0;
 }
 
 bool PDFCore::gotoNextPage(int inc, bool top)
 {
-	bool sideBySide;
-	int  pg;
-
-	if (!doc || !doc->getNumPages())
-		return false;
-	pg         = tileMap->getFirstPage();
-	sideBySide = state->displayModeIsSideBySide();
-	if (pg + (sideBySide ? 2 : 1) > doc->getNumPages())
-		return false;
+	if (!doc || !doc->getNumPages()) return false;
+	int        pg         = tileMap->getFirstPage();
+	const bool sideBySide = state->displayModeIsSideBySide();
+	if (pg + (sideBySide ? 2 : 1) > doc->getNumPages()) return false;
 	if (sideBySide && inc < 2)
 		inc = 2;
 	if ((pg += inc) > doc->getNumPages())
@@ -509,11 +440,8 @@ bool PDFCore::gotoNextPage(int inc, bool top)
 
 bool PDFCore::gotoPrevPage(int dec, bool top, bool bottom)
 {
-	int pg;
-
-	if (!doc || !doc->getNumPages())
-		return false;
-	pg = tileMap->getFirstPage();
+	if (!doc || !doc->getNumPages()) return false;
+	int pg = tileMap->getFirstPage();
 	if (state->getDisplayMode() == displayContinuous && state->getScrollY() > tileMap->getPageTopY(pg))
 		++pg;
 	else if (state->getDisplayMode() == displaySideBySideContinuous && state->getScrollY() > tileMap->getPageTopY(pg))
@@ -532,12 +460,9 @@ bool PDFCore::gotoPrevPage(int dec, bool top, bool bottom)
 
 bool PDFCore::gotoNamedDestination(const std::string& dest)
 {
+	if (!doc) return false;
 	LinkDest* d;
-
-	if (!doc)
-		return false;
-	if (!(d = doc->findDest(dest)))
-		return false;
+	if (!(d = doc->findDest(dest))) return false;
 	displayDest(d);
 	delete d;
 	return true;
@@ -545,60 +470,34 @@ bool PDFCore::gotoNamedDestination(const std::string& dest)
 
 bool PDFCore::goForward()
 {
-	int pg;
-
-	if (historyFLen == 0)
-		return false;
-	if (++historyCur == pdfHistorySize)
-		historyCur = 0;
+	if (historyFLen == 0) return false;
+	if (++historyCur == pdfHistorySize) historyCur = 0;
 	--historyFLen;
 	++historyBLen;
-	if (!history[historyCur].fileName)
-		return false;
-#ifdef _WIN32
-	if (!doc || !doc->getFileNameU() || wcscmp(history[historyCur].fileName, doc->getFileNameU()) != 0)
-	{
-		if (loadFile(history[historyCur].fileName, (int)wcslen(history[historyCur].fileName)) != errNone)
-			return false;
-	}
-#else
-	if (!doc || !doc->getFileName() || history[historyCur].fileName->cmp(doc->getFileName()) != 0)
+	if (history[historyCur].fileName.empty()) return false;
+	if (!doc || doc->getFileName().empty() || history[historyCur].fileName != doc->getFileName())
 	{
 		if (loadFile(history[historyCur].fileName) != errNone)
 			return false;
 	}
-#endif
-	pg = history[historyCur].page;
+	const int pg = history[historyCur].page;
 	displayPage(pg, false, false, false);
 	return true;
 }
 
 bool PDFCore::goBackward()
 {
-	int pg;
-
-	if (historyBLen <= 1)
-		return false;
-	if (--historyCur < 0)
-		historyCur = pdfHistorySize - 1;
+	if (historyBLen <= 1) return false;
+	if (--historyCur < 0) historyCur = pdfHistorySize - 1;
 	--historyBLen;
 	++historyFLen;
-	if (!history[historyCur].fileName)
-		return false;
-#ifdef _WIN32
-	if (!doc || !doc->getFileNameU() || wcscmp(history[historyCur].fileName, doc->getFileNameU()) != 0)
-	{
-		if (loadFile(history[historyCur].fileName, (int)wcslen(history[historyCur].fileName)) != errNone)
-			return false;
-	}
-#else
-	if (!doc || !doc->getFileName() || history[historyCur].fileName->cmp(doc->getFileName()) != 0)
+	if (history[historyCur].fileName.empty()) return false;
+	if (!doc || doc->getFileName().empty() || history[historyCur].fileName != doc->getFileName())
 	{
 		if (loadFile(history[historyCur].fileName) != errNone)
 			return false;
 	}
-#endif
-	pg = history[historyCur].page;
+	const int pg = history[historyCur].page;
 	displayPage(pg, false, false, false);
 	return true;
 }

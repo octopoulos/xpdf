@@ -36,13 +36,13 @@ public:
 		return page == tile->page && rotate == tile->rotate && dpi == tile->dpi && tx == tile->tx && ty == tile->ty && tw == tile->tw && th == tile->th;
 	}
 
-	int    page;   // page number
-	int    rotate; // rotation
-	double dpi;    // tile resolution
-	int    tx;     //
-	int    ty;     // origin of tile, relative to top left corner of page
-	int    tw;     //
-	int    th;     // tile size
+	int    page   = 0; // page number
+	int    rotate = 0; // rotation
+	double dpi    = 0; // tile resolution
+	int    tx     = 0; //
+	int    ty     = 0; // origin of tile, relative to top left corner of page
+	int    tw     = 0; //
+	int    th     = 0; // tile size
 };
 
 //------------------------------------------------------------------------
@@ -58,8 +58,8 @@ public:
 	{
 	}
 
-	int px; //
-	int py; // position, in window coordinates, of tile origin
+	int px = 0; //
+	int py = 0; // position, in window coordinates, of tile origin
 };
 
 //------------------------------------------------------------------------
@@ -188,17 +188,19 @@ private:
 	// If x falls after the last page, return numPages + 1.
 	int findHorizContinuousPage(int x);
 
-	DisplayState* state;
-
-	double *pageBoxW, *pageBoxH; // page sizes, in points
+	DisplayState* state    = nullptr; //
+	double*       pageBoxW = nullptr; //
+	double*       pageBoxH = nullptr; // page sizes, in points
 
 	// Page parameters:
 	//   pageDPI[pg-1] = rasterization resolution
 	//   pageW[pg-1], pageH[pg-1] = size of rasterized page
 	//   tileW[pg-1], tileH[pg-1] = size of tiles
-	double* pageDPI;
-	int *   pageW, *pageH;
-	int *   tileW, *tileH;
+	double* pageDPI = nullptr; //
+	int*    pageW   = nullptr; //
+	int*    pageH   = nullptr; //
+	int*    tileW   = nullptr; //
+	int*    tileH   = nullptr; //
 
 	// In displayContinuous mode:
 	//   pageY[pg-1] = top edge of page
@@ -215,9 +217,12 @@ private:
 	//   maxH = max page height
 	//   totalW = total page width (including gaps)
 	// Only one of pageX or pageY is used at a time, so a single array is allocated, i.e., pageX = pageY.
-	int *pageX, *pageY;
-	int  maxW, maxW2, maxH;
-	int  totalW, totalH;
-
-	GList* tiles;
+	int*   pageX  = nullptr; //
+	int*   pageY  = nullptr; //
+	int    maxW   = 0;       //
+	int    maxW2  = 0;       //
+	int    maxH   = 0;       //
+	int    totalW = 0;       //
+	int    totalH = 0;       //
+	GList* tiles  = nullptr; //
 };

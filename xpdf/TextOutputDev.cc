@@ -700,23 +700,6 @@ TextLink::~TextLink()
 
 TextOutputControl::TextOutputControl()
 {
-	mode                 = textOutReadingOrder;
-	fixedPitch           = 0;
-	fixedLineSpacing     = 0;
-	html                 = false;
-	clipText             = false;
-	discardDiagonalText  = false;
-	discardRotatedText   = false;
-	discardInvisibleText = false;
-	discardClippedText   = false;
-	splitRotatedWords    = false;
-	overlapHandling      = textOutIgnoreOverlaps;
-	separateLargeChars   = true;
-	insertBOM            = false;
-	marginLeft           = 0;
-	marginRight          = 0;
-	marginTop            = 0;
-	marginBottom         = 0;
 }
 
 //------------------------------------------------------------------------
@@ -725,9 +708,7 @@ TextOutputControl::TextOutputControl()
 
 TextFontInfo::TextFontInfo(GfxState* state)
 {
-	GfxFont* gfxFont;
-
-	gfxFont = state->getFont();
+	GfxFont* gfxFont = state->getFont();
 	if (gfxFont)
 	{
 		fontID  = *gfxFont->getID();
@@ -738,10 +719,8 @@ TextFontInfo::TextFontInfo(GfxState* state)
 		// fonts -- but they are more often due to buggy PDF generators)
 		// (values that are too small are a different issue -- those seem
 		// to be more commonly legitimate)
-		if (ascent > 1)
-			ascent = 0.75;
-		if (descent < -0.5)
-			descent = -0.25;
+		if (ascent > 1) ascent = 0.75;
+		if (descent < -0.5) descent = -0.25;
 	}
 	else
 	{
@@ -750,7 +729,7 @@ TextFontInfo::TextFontInfo(GfxState* state)
 		ascent     = 0.75;
 		descent    = -0.25;
 	}
-	fontName = (gfxFont && gfxFont->getName().size()) ? gfxFont->getName() : "";
+	fontName = gfxFont->getName();
 	flags    = gfxFont ? gfxFont->getFlags() : 0;
 	mWidth   = 0;
 	if (gfxFont && !gfxFont->isCIDFont())
@@ -992,14 +971,11 @@ TextLine::TextLine(GList* wordsA, double xMinA, double yMinA, double xMaxA, doub
 	int       i, j, k;
 
 	words    = wordsA;
-	rot      = 0;
 	xMin     = xMinA;
 	yMin     = yMinA;
 	xMax     = xMaxA;
 	yMax     = yMaxA;
 	fontSize = fontSizeA;
-	px       = 0;
-	pw       = 0;
 
 	// build the text
 	len = 0;
@@ -1051,14 +1027,10 @@ double TextLine::getBaseline()
 	switch (rot)
 	{
 	case 0:
-	default:
-		return yMax + fontSize * word0->font->descent;
-	case 1:
-		return xMin - fontSize * word0->font->descent;
-	case 2:
-		return yMin - fontSize * word0->font->descent;
-	case 3:
-		return xMax + fontSize * word0->font->descent;
+	case 1: return xMin - fontSize * word0->font->descent;
+	case 2: return yMin - fontSize * word0->font->descent;
+	case 3: return xMax + fontSize * word0->font->descent;
+	default: return yMax + fontSize * word0->font->descent;
 	}
 }
 
@@ -1067,12 +1039,9 @@ int TextLine::cmpX(const void* p1, const void* p2)
 	const TextLine* line1 = *(const TextLine**)p1;
 	const TextLine* line2 = *(const TextLine**)p2;
 
-	if (line1->xMin < line2->xMin)
-		return -1;
-	else if (line1->xMin > line2->xMin)
-		return 1;
-	else
-		return 0;
+	if (line1->xMin < line2->xMin) return -1;
+	if (line1->xMin > line2->xMin) return 1;
+	return 0;
 }
 
 //------------------------------------------------------------------------
@@ -1110,8 +1079,6 @@ TextColumn::TextColumn(GList* paragraphsA, double xMinA, double yMinA, double xM
 	yMin       = yMinA;
 	xMax       = xMaxA;
 	yMax       = yMaxA;
-	px = py = 0;
-	pw = ph = 0;
 }
 
 TextColumn::~TextColumn()
@@ -1134,12 +1101,9 @@ int TextColumn::cmpX(const void* p1, const void* p2)
 	const TextColumn* col1 = *(const TextColumn**)p1;
 	const TextColumn* col2 = *(const TextColumn**)p2;
 
-	if (col1->xMin < col2->xMin)
-		return -1;
-	else if (col1->xMin > col2->xMin)
-		return 1;
-	else
-		return 0;
+	if (col1->xMin < col2->xMin) return -1;
+	if (col1->xMin > col2->xMin) return 1;
+	return 0;
 }
 
 int TextColumn::cmpY(const void* p1, const void* p2)
@@ -1147,12 +1111,9 @@ int TextColumn::cmpY(const void* p1, const void* p2)
 	const TextColumn* col1 = *(const TextColumn**)p1;
 	const TextColumn* col2 = *(const TextColumn**)p2;
 
-	if (col1->yMin < col2->yMin)
-		return -1;
-	else if (col1->yMin > col2->yMin)
-		return 1;
-	else
-		return 0;
+	if (col1->yMin < col2->yMin) return -1;
+	if (col1->yMin > col2->yMin) return 1;
+	return 0;
 }
 
 int TextColumn::cmpPX(const void* p1, const void* p2)
@@ -1160,12 +1121,9 @@ int TextColumn::cmpPX(const void* p1, const void* p2)
 	const TextColumn* col1 = *(const TextColumn**)p1;
 	const TextColumn* col2 = *(const TextColumn**)p2;
 
-	if (col1->px < col2->px)
-		return -1;
-	else if (col1->px > col2->px)
-		return 1;
-	else
-		return 0;
+	if (col1->px < col2->px) return -1;
+	if (col1->px > col2->px) return 1;
+	return 0;
 }
 
 //------------------------------------------------------------------------
@@ -1224,35 +1182,13 @@ int TextPosition::operator>(TextPosition pos)
 
 TextPage::TextPage(TextOutputControl* controlA)
 {
-	control          = *controlA;
-	remapping        = globalParams->getUnicodeRemapping();
-	uBufSize         = 16;
-	uBuf             = (Unicode*)gmallocn(uBufSize, sizeof(Unicode));
-	pageWidth        = 0;
-	pageHeight       = 0;
-	charPos          = 0;
-	curFont          = nullptr;
-	curFontSize      = 0;
-	curRot           = 0;
-	diagonal         = false;
-	rotated          = false;
-	nTinyChars       = 0;
-	actualText       = nullptr;
-	actualTextLen    = 0;
-	actualTextX0     = 0;
-	actualTextY0     = 0;
-	actualTextX1     = 0;
-	actualTextY1     = 0;
-	actualTextNBytes = 0;
-	chars            = new GList();
-	primaryRot       = 0;
-	underlines       = new GList();
-	links            = new GList();
-	findCols         = nullptr;
-	lastFindXMin     = 0;
-	lastFindYMin     = 0;
-	haveLastFind     = false;
-	problematic      = false;
+	control    = *controlA;
+	remapping  = globalParams->getUnicodeRemapping();
+	uBufSize   = 16;
+	uBuf       = (Unicode*)gmallocn(uBufSize, sizeof(Unicode));
+	chars      = new GList();
+	underlines = new GList();
+	links      = new GList();
 }
 
 TextPage::~TextPage()
@@ -1349,12 +1285,10 @@ void TextPage::updateFont(GfxState* state)
 	curFontSize        = state->getTransformedFontSize();
 	if (gfxFont && gfxFont->getType() == fontType3)
 	{
-		// This is a hack which makes it possible to deal with some Type 3
-		// fonts.  The problem is that it's impossible to know what the
-		// base coordinate system used in the font is without actually
-		// rendering the font.  This code tries to guess by looking at the
-		// width of the character 'm' (which breaks if the font is a
-		// subset that doesn't contain 'm').
+		// This is a hack which makes it possible to deal with some Type 3 fonts.
+		// The problem is that it's impossible to know what the base coordinate system used in the font is without actually rendering the font.
+		// This code tries to guess by looking at the width of the character 'm'
+		// (which breaks if the font is a subset that doesn't contain 'm').
 		mCode = letterCode = anyCode = -1;
 		for (code = 0; code < 256; ++code)
 		{
@@ -2332,8 +2266,8 @@ void TextPage::encodeFragment(Unicode* text, int len, UnicodeMap* uMap, bool pri
 			}
 		}
 		else
-		{ // !primaryLR
-
+		{
+			// !primaryLR
 			s.append(rle, rleLen);
 			i = len - 1;
 			while (i >= 0)
@@ -6813,12 +6747,10 @@ static void outputToFile(void* stream, const char* text, size_t len)
 
 TextOutputDev::TextOutputDev(const char* fileName, TextOutputControl* controlA, bool append, bool fileNameIsUTF8)
 {
-	text    = nullptr;
 	control = *controlA;
 	ok      = true;
 
 	// open file
-	needClose = false;
 	if (fileName)
 	{
 		if (!strcmp(fileName, "-"))
@@ -6860,7 +6792,6 @@ TextOutputDev::TextOutputDev(TextOutputFunc func, void* stream, TextOutputContro
 {
 	outputFunc   = func;
 	outputStream = stream;
-	needClose    = false;
 	control      = *controlA;
 	text         = new TextPage(&control);
 	generateBOM();
@@ -6869,10 +6800,8 @@ TextOutputDev::TextOutputDev(TextOutputFunc func, void* stream, TextOutputContro
 
 TextOutputDev::~TextOutputDev()
 {
-	if (needClose)
-		fclose((FILE*)outputStream);
-	if (text)
-		delete text;
+	if (needClose) fclose((FILE*)outputStream);
+	if (text) delete text;
 }
 
 void TextOutputDev::generateBOM()

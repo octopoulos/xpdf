@@ -30,8 +30,7 @@ enum SplashFontType
 	splashFontOpenTypeT1C, // GfxFontType.fontType1COT
 	splashFontCID,         // GfxFontType.fontCIDType0/fontCIDType0C
 	splashFontOpenTypeCFF, // GfxFontType.fontCIDType0COT
-	splashFontTrueType     // GfxFontType.fontTrueType/fontTrueTypeOT/
-	                       //             fontCIDType2/fontCIDType2OT
+	splashFontTrueType     // GfxFontType.fontTrueType/fontTrueTypeOT/fontCIDType2/fontCIDType2OT
 };
 
 //------------------------------------------------------------------------
@@ -66,19 +65,15 @@ protected:
 #endif
 	);
 
-	SplashFontFileID* id;
-	SplashFontType    fontType;
+	SplashFontFileID* id       = nullptr;
+	SplashFontType    fontType = splashFontType1;
 #if LOAD_FONTS_FROM_MEM
-	std::string fontBuf;
+	std::string fontBuf = "";
 #else
-	std::string fileName;
-	bool        deleteFile;
+	std::string fileName   = "";
+	bool        deleteFile = false;
 #endif
-#if MULTITHREADED
-	GAtomicCounter refCnt;
-#else
-	int refCnt;
-#endif
+	REFCNT_TYPE refCnt = 0;//
 
 	friend class SplashFontEngine;
 };

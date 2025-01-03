@@ -17,22 +17,22 @@ class BuiltinFontWidths;
 
 struct BuiltinFont
 {
-	const char*        name;
-	const char**       defaultBaseEnc;
-	short              missingWidth;
-	short              ascent;
-	short              descent;
-	short              bbox[4];
-	BuiltinFontWidths* widths;
+	const char*        name           = nullptr; //
+	const char**       defaultBaseEnc = nullptr; //
+	short              missingWidth   = 0;       //
+	short              ascent         = 0;       //
+	short              descent        = 0;       //
+	short              bbox[4]        = {};      //
+	BuiltinFontWidths* widths         = nullptr; //
 };
 
 //------------------------------------------------------------------------
 
 struct BuiltinFontWidth
 {
-	const char*       name;
-	uint16_t          width;
-	BuiltinFontWidth* next;
+	const char*       name  = nullptr; //
+	uint16_t          width = 0;       //
+	BuiltinFontWidth* next  = nullptr; //
 };
 
 class BuiltinFontWidths
@@ -45,6 +45,6 @@ public:
 private:
 	int hash(const char* name);
 
-	BuiltinFontWidth** tab;
-	int                size;
+	BuiltinFontWidth** tab  = nullptr; //
+	int                size = 0;       //
 };

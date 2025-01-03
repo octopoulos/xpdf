@@ -28,17 +28,24 @@
 
 struct SplashXPathPoint
 {
-	SplashCoord x, y;
+	SplashCoord x = 0; //
+	SplashCoord y = 0; //
 };
 
 struct SplashXPathAdjust
 {
-	int         firstPt, lastPt; // range of points
-	bool        vert;            // vertical or horizontal hint
-	SplashCoord x0a, x0b,        // hint boundaries
-	    xma, xmb,
-	    x1a, x1b;
-	SplashCoord x0, x1, xm; // adjusted coordinates
+	int         firstPt = 0;     //
+	int         lastPt  = 0;     // range of points
+	bool        vert    = false; // vertical or horizontal hint
+	SplashCoord x0a     = 0;     //
+	SplashCoord x0b     = 0;     // hint boundaries
+	SplashCoord xma     = 0;     //
+	SplashCoord xmb     = 0;     //
+	SplashCoord x1a     = 0;     //
+	SplashCoord x1b     = 0;     //
+	SplashCoord x0      = 0;     //
+	SplashCoord x1      = 0;     //
+	SplashCoord xm      = 0;     // adjusted coordinates
 };
 
 //------------------------------------------------------------------------
@@ -395,10 +402,8 @@ void SplashXPath::grow(int nSegs)
 {
 	if (length + nSegs > size)
 	{
-		if (size == 0)
-			size = 32;
-		while (size < length + nSegs)
-			size *= 2;
+		if (size == 0) size = 32;
+		while (size < length + nSegs) size *= 2;
 		segs = (SplashXPathSeg*)greallocn(segs, size, sizeof(SplashXPathSeg));
 	}
 }
@@ -600,8 +605,7 @@ void SplashXPath::mergeSegments(int first)
 			for (j = in; j < i; ++j)
 				if (!pointCloseToSegment(segs[in].x0, segs[in].y0, segs[j].x1, segs[j].y1, segs[i].x1, segs[i].y1))
 					break;
-			if (j < i)
-				break;
+			if (j < i) break;
 
 			prev = i;
 		}
@@ -623,11 +627,10 @@ void SplashXPath::finishSegments()
 {
 	SplashXPathSeg* seg;
 	SplashCoord     xMinFP, xMaxFP, yMinFP, yMaxFP, t;
-	int             i;
 
 	xMinFP = yMinFP = xMaxFP = yMaxFP = 0;
 
-	for (i = 0; i < length; ++i)
+	for (int i = 0; i < length; ++i)
 	{
 		seg = &segs[i];
 
@@ -694,10 +697,8 @@ void SplashXPath::finishSegments()
 				xMinFP = seg->x1;
 			else if (seg->x1 > xMaxFP)
 				xMaxFP = seg->x1;
-			if (seg->y0 < yMinFP)
-				yMinFP = seg->y0;
-			if (seg->y1 > yMaxFP)
-				yMaxFP = seg->y1;
+			if (seg->y0 < yMinFP) yMinFP = seg->y0;
+			if (seg->y1 > yMaxFP) yMaxFP = seg->y1;
 		}
 	}
 

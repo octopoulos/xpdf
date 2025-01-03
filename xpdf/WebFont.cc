@@ -17,18 +17,12 @@
 
 WebFont::WebFont(GfxFont* gfxFontA, XRef* xref)
 {
-	GfxFontType type;
-	Ref         id;
+	gfxFont = gfxFontA;
 
-	gfxFont    = gfxFontA;
-	fontBuf    = nullptr;
-	ffTrueType = nullptr;
-	ffType1C   = nullptr;
-	isOpenType = false;
-
+	Ref id;
 	if (gfxFont->getEmbeddedFontID(&id))
 	{
-		type = gfxFont->getType();
+		GfxFontType type = gfxFont->getType();
 		if (type == fontTrueType || type == fontTrueTypeOT || type == fontCIDType2 || type == fontCIDType2OT)
 		{
 			if ((fontBuf = gfxFont->readEmbFontFile(xref, &fontLength)))

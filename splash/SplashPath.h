@@ -43,11 +43,11 @@ struct SplashPathPoint
 
 struct SplashPathHint
 {
-	int  ctrl0;         //
-	int  ctrl1;         //
-	int  firstPt;       //
-	int  lastPt;        //
-	bool projectingCap; //
+	int  ctrl0         = 0;     //
+	int  ctrl1         = 0;     //
+	int  firstPt       = 0;     //
+	int  lastPt        = 0;     //
+	bool projectingCap = false; //
 };
 
 //------------------------------------------------------------------------
@@ -120,14 +120,14 @@ private:
 
 	bool openSubpath() { return curSubpath < length - 1; }
 
-	SplashPathPoint* pts;         // array of points
-	uint8_t*         flags;       // array of flags
-	int              length;      // length/size of the pts and flags arrays
-	int              size;        //
-	int              curSubpath;  // index of first point in last subpath
-	SplashPathHint*  hints;       // list of hints
-	int              hintsLength; //
-	int              hintsSize;   //
+	SplashPathPoint* pts         = nullptr; // array of points
+	uint8_t*         flags       = nullptr; // array of flags
+	int              length      = 0;       // length/size of the pts and flags arrays
+	int              size        = 0;       //
+	int              curSubpath  = 0;       // index of first point in last subpath
+	SplashPathHint*  hints       = nullptr; // list of hints
+	int              hintsLength = 0;       //
+	int              hintsSize   = 0;       //
 
 	friend class SplashXPath;
 	friend class Splash;

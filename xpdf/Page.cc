@@ -201,21 +201,20 @@ PageAttrs::PageAttrs(PageAttrs* attrs, Dict* dict, XRef* xref)
 
 PageAttrs::PageAttrs()
 {
-	mediaBox.x1 = mediaBox.y1 = 0;
-	mediaBox.x2 = mediaBox.y2 = 50;
-	cropBox                   = mediaBox;
-	haveCropBox               = false;
-	bleedBox                  = cropBox;
-	trimBox                   = cropBox;
-	artBox                    = cropBox;
-	rotate                    = 0;
+	mediaBox.x1 = 0;
+	mediaBox.y1 = 0;
+	mediaBox.x2 = 50;
+	mediaBox.y2 = 50;
+	cropBox     = mediaBox;
+	bleedBox    = cropBox;
+	trimBox     = cropBox;
+	artBox      = cropBox;
 	lastModified.initNull();
 	boxColorInfo.initNull();
 	group.initNull();
 	metadata.initNull();
 	pieceInfo.initNull();
 	separationInfo.initNull();
-	userUnit = 1;
 	resources.initNull();
 }
 

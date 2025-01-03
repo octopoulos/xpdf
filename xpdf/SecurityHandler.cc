@@ -109,14 +109,6 @@ StandardSecurityHandler::StandardSecurityHandler(PDFDoc* docA, Object* encryptDi
 	Object cryptFilterObj, cfmObj, cfLengthObj;
 	Object encryptMetadataObj;
 
-	ok            = false;
-	fileID        = nullptr;
-	ownerKey      = nullptr;
-	userKey       = nullptr;
-	ownerEnc      = nullptr;
-	userEnc       = nullptr;
-	fileKeyLength = 0;
-
 	//--- get the main parameters
 	encryptDictA->dictLookup("V", &versionObj);
 	encryptDictA->dictLookup("R", &revisionObj);
@@ -234,10 +226,8 @@ StandardSecurityHandler::StandardSecurityHandler(PDFDoc* docA, Object* encryptDi
 	{
 		// Adobe apparently zero-pads the U value (and maybe the O value?)
 		// if it's short
-		while (ownerKey.size() < 32)
-			ownerKey += (char)0x00;
-		while (userKey.size() < 32)
-			userKey += (char)0x00;
+		while (ownerKey.size() < 32) ownerKey += (char)0x00;
+		while (userKey.size() < 32) userKey += (char)0x00;
 	}
 	if (encVersion >= 1 && encVersion <= 2 && encRevision >= 2 && encRevision <= 3)
 	{
@@ -316,8 +306,7 @@ bool StandardSecurityHandler::authorize(void* authData)
 {
 	std::string ownerPassword, userPassword;
 
-	if (!ok)
-		return false;
+	if (!ok) return false;
 	if (authData)
 	{
 		ownerPassword = ((StandardAuthData*)authData)->ownerPassword;

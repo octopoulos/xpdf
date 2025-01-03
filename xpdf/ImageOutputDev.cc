@@ -24,13 +24,11 @@
 
 ImageOutputDev::ImageOutputDev(std::string_view fileRootA, bool dumpJPEGA, bool dumpRawA, bool listA)
 {
-	fileRoot   = fileRootA;
-	dumpJPEG   = dumpJPEGA;
-	dumpRaw    = dumpRawA;
-	list       = listA;
-	imgNum     = 0;
-	curPageNum = 0;
-	ok         = true;
+	fileRoot = fileRootA;
+	dumpJPEG = dumpJPEGA;
+	dumpRaw  = dumpRawA;
+	list     = listA;
+	ok       = true;
 }
 
 ImageOutputDev::~ImageOutputDev()
@@ -53,7 +51,6 @@ void ImageOutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, in
 	std::string fileName;
 	FILE*       f;
 	char        buf[4096];
-	int         size, n, i;
 
 	// dump raw file
 	if (dumpRaw && !inlineImg)
@@ -72,6 +69,7 @@ void ImageOutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, in
 		str->reset();
 
 		// copy the stream
+		int n;
 		while ((n = str->getBlock(buf, sizeof(buf))) > 0)
 			fwrite(buf, 1, n, f);
 
@@ -96,6 +94,7 @@ void ImageOutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, in
 		str->reset();
 
 		// copy the stream
+		int n;
 		while ((n = str->getBlock(buf, sizeof(buf))) > 0)
 			fwrite(buf, 1, n, f);
 
@@ -121,14 +120,13 @@ void ImageOutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, in
 		str->reset();
 
 		// copy the stream
-		size = height * ((width + 7) / 8);
+		int size = height * ((width + 7) / 8);
 		while (size > 0)
 		{
-			i = size < (int)sizeof(buf) ? size : (int)sizeof(buf);
-			n = str->getBlock(buf, i);
+			const int i = size < (int)sizeof(buf) ? size : (int)sizeof(buf);
+			const int n = str->getBlock(buf, i);
 			fwrite(buf, 1, n, f);
-			if (n < i)
-				break;
+			if (n < i) break;
 			size -= n;
 		}
 
@@ -136,24 +134,22 @@ void ImageOutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, in
 		fclose(f);
 	}
 
-	if (list)
-		writeImageInfo(fileName, width, height, state, nullptr);
+	if (list) writeImageInfo(fileName, width, height, state, nullptr);
 }
 
 void ImageOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int width, int height, GfxImageColorMap* colorMap, int* maskColors, bool inlineImg, bool interpolate)
 {
-	GfxColorSpaceMode csMode;
-	FILE*             f;
-	ImageStream*      imgStr;
-	uint8_t*          p;
-	GfxRGB            rgb;
-	GfxGray           gray;
-	char              buf[4096];
-	int               size, n, i, j;
+	FILE*        f;
+	ImageStream* imgStr;
+	uint8_t*     p;
+	GfxRGB       rgb;
+	GfxGray      gray;
+	char         buf[4096];
+	int          size, n, i, j;
 
 	std::string fileName;
 
-	csMode = colorMap->getColorSpace()->getMode();
+	GfxColorSpaceMode csMode = colorMap->getColorSpace()->getMode();
 	if (csMode == csIndexed)
 		csMode = ((GfxIndexedColorSpace*)colorMap->getColorSpace())->getBase()->getMode();
 

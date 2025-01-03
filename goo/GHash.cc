@@ -36,11 +36,9 @@ struct GHashIter
 
 GHash::GHash(bool deleteKeysA)
 {
-	size = 7;
-	tab  = (GHashBucket**)gmallocn(size, sizeof(GHashBucket*));
+	tab = (GHashBucket**)gmallocn(size, sizeof(GHashBucket*));
 	for (int h = 0; h < size; ++h)
 		tab[h] = nullptr;
-	len = 0;
 }
 
 GHash::~GHash()
@@ -66,8 +64,7 @@ void GHash::add(const std::string& key, void* val)
 	int          h;
 
 	// expand the table if necessary
-	if (len >= size)
-		expand();
+	if (len >= size) expand();
 
 	// add the new symbol
 	p        = new GHashBucket;
@@ -85,8 +82,7 @@ void GHash::add(const std::string& key, int val)
 	int          h;
 
 	// expand the table if necessary
-	if (len >= size)
-		expand();
+	if (len >= size) expand();
 
 	// add the new symbol
 	p        = new GHashBucket;
@@ -134,8 +130,7 @@ int GHash::lookupInt(const std::string& key)
 	GHashBucket* p;
 	int          h;
 
-	if (!(p = find(key, &h)))
-		return 0;
+	if (!(p = find(key, &h))) return 0;
 	return p->val.i;
 }
 
@@ -153,8 +148,7 @@ int GHash::lookupInt(const char* key)
 	GHashBucket* p;
 	int          h;
 
-	if (!(p = find(key, &h)))
-		return 0;
+	if (!(p = find(key, &h))) return 0;
 	return p->val.i;
 }
 
@@ -183,8 +177,7 @@ int GHash::removeInt(const std::string& key)
 	int           val;
 	int           h;
 
-	if (!(p = find(key, &h)))
-		return 0;
+	if (!(p = find(key, &h))) return 0;
 	q = &tab[h];
 	while (*q != p)
 		q = &((*q)->next);
@@ -220,8 +213,7 @@ int GHash::removeInt(const char* key)
 	int           val;
 	int           h;
 
-	if (!(p = find(key, &h)))
-		return 0;
+	if (!(p = find(key, &h))) return 0;
 	q = &tab[h];
 	while (*q != p)
 		q = &((*q)->next);
@@ -241,8 +233,7 @@ void GHash::startIter(GHashIter** iter)
 
 bool GHash::getNext(GHashIter** iter, std::string& key, void** val)
 {
-	if (!*iter)
-		return false;
+	if (!*iter) return false;
 	if ((*iter)->p)
 		(*iter)->p = (*iter)->p->next;
 	while (!(*iter)->p)
@@ -262,8 +253,7 @@ bool GHash::getNext(GHashIter** iter, std::string& key, void** val)
 
 bool GHash::getNext(GHashIter** iter, std::string& key, int* val)
 {
-	if (!*iter)
-		return false;
+	if (!*iter) return false;
 	if ((*iter)->p)
 		(*iter)->p = (*iter)->p->next;
 	while (!(*iter)->p)
@@ -337,9 +327,9 @@ GHashBucket* GHash::find(const char* key, int* h)
 
 int GHash::hash(const std::string& key)
 {
-	const char*  p;
-	unsigned int h;
-	int          i;
+	const char* p;
+	uint32_t    h;
+	int         i;
 
 	h = 0;
 	for (p = key.c_str(), i = 0; i < key.size(); ++p, ++i)
@@ -349,8 +339,8 @@ int GHash::hash(const std::string& key)
 
 int GHash::hash(const char* key)
 {
-	const char*  p;
-	unsigned int h;
+	const char* p;
+	uint32_t    h;
 
 	h = 0;
 	for (p = key; *p; ++p)

@@ -37,30 +37,24 @@ static int glyphPathCubicTo(const FT_Vector* ctrl1, const FT_Vector* ctrl2, cons
 SplashFTFont::SplashFTFont(SplashFTFontFile* fontFileA, SplashCoord* matA, SplashCoord* textMatA)
     : SplashFont(fontFileA, matA, textMatA, fontFileA->engine->aa)
 {
-	FT_Face face;
-	int     size, div;
-	int     x, y;
 #	if USE_FIXEDPOINT
 	SplashCoord scale;
 #	endif
 
-	face = fontFileA->face;
-	if (FT_New_Size(face, &sizeObj))
-		return;
+	FT_Face face = fontFileA->face;
+	if (FT_New_Size(face, &sizeObj)) return;
 	face->size = sizeObj;
-	size       = splashRound(splashDist(0, 0, mat[2], mat[3]));
-	if (size < 1)
-		size = 1;
-	if (FT_Set_Pixel_Sizes(face, 0, size))
-		return;
-	// if the textMat values are too small, FreeType's fixed point
-	// arithmetic doesn't work so well
+	int size   = splashRound(splashDist(0, 0, mat[2], mat[3]));
+	if (size < 1) size = 1;
+	if (FT_Set_Pixel_Sizes(face, 0, size)) return;
+	// if the textMat values are too small, FreeType's fixed point arithmetic doesn't work so well
 	textScale = splashDist(0, 0, textMat[2], textMat[3]) / size;
 	// avoid problems with singular (or close-to-singular) matrices
 	if (textScale < 0.00001)
 		textScale = 0.00001;
 
-	div = face->bbox.xMax > 20000 ? 65536 : 1;
+	const int div = face->bbox.xMax > 20000 ? 65536 : 1;
+	int       x, y;
 
 #	if USE_FIXEDPOINT
 	scale = (SplashCoord)1 / (SplashCoord)face->units_per_EM;
@@ -183,23 +177,16 @@ bool SplashFTFont::getGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitm
 
 bool SplashFTFont::makeGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitmap)
 {
-	SplashFTFontFile* ff;
-	FT_Vector         offset;
-	FT_GlyphSlot      slot;
-	int               gid;
-	FT_Int32          flags;
-	int               rowSize;
-	uint8_t *         p, *q;
-	int               i;
-
-	ff = (SplashFTFontFile*)fontFile;
-
+	auto* ff       = (SplashFTFontFile*)fontFile;
 	ff->face->size = sizeObj;
-	offset.x       = (FT_Pos)(int)((SplashCoord)xFrac * splashFontFractionMul * 64);
-	offset.y       = 0;
-	FT_Set_Transform(ff->face, &matrix, &offset);
-	slot = ff->face->glyph;
 
+	FT_Vector offset = {};
+	offset.x         = (FT_Pos)(int)((SplashCoord)xFrac * splashFontFractionMul * 64);
+	offset.y         = 0;
+	FT_Set_Transform(ff->face, &matrix, &offset);
+	FT_GlyphSlot slot = ff->face->glyph;
+
+	int gid;
 	if (ff->codeToGID && c < ff->codeToGIDLen)
 		gid = ff->codeToGID[c];
 	else
@@ -211,41 +198,38 @@ bool SplashFTFont::makeGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bit
 	}
 
 	// Set up the load flags:
-	// * disable bitmaps because they look ugly when scaled, rotated,
-	//   etc.
-	// * disable autohinting because it can fail badly with font subsets
-	//   that use invalid glyph names (the FreeType autohinter depends
-	//   on the glyph name to figure out how to autohint the glyph)
-	// * but enable light autohinting for Type 1 fonts because regular
-	//   hinting looks pretty bad, and the invalid glyph name issue
-	//   seems to be very rare (Type 1 fonts are mostly used for
-	//   substitution, in which case the full font is being used, which
-	//   means we have the glyph names)
-	// This also sets the "pedantic" flag, running the FreeType hinter
-	// in paranoid mode.  If that triggers any errors, we disable
-	// hinting below.
-	flags = FT_LOAD_NO_BITMAP | FT_LOAD_PEDANTIC;
+	// * disable bitmaps because they look ugly when scaled, rotated, etc.
+	// * disable autohinting because it can fail badly with font subsets that use invalid glyph names
+	//   (the FreeType autohinter depends on the glyph name to figure out how to autohint the glyph)
+	// * but enable light autohinting for Type 1 fonts because regular hinting looks pretty bad, and the invalid glyph name issue seems to be very rare
+	//   (Type 1 fonts are mostly used for substitution, in which case the full font is being used, which means we have the glyph names)
+	// This also sets the "pedantic" flag, running the FreeType hinter in paranoid mode.
+	// If that triggers any errors, we disable hinting below.
+	FT_Int32 flags = FT_LOAD_NO_BITMAP | FT_LOAD_PEDANTIC;
 	if (ff->engine->flags & splashFTNoHinting)
 		flags |= FT_LOAD_NO_HINTING;
 	else if (ff->fontType == splashFontType1)
 		flags |= FT_LOAD_TARGET_LIGHT;
 	else
 		flags |= FT_LOAD_NO_AUTOHINT;
-	if (FT_Load_Glyph(ff->face, (FT_UInt)gid, flags))
+
+	if (FT_Load_Glyph(ff->face, (FT_UInt)gid, flags)) // <-- CRASH HERE
 	{
 		// fonts with broken hinting instructions can cause errors here;
-		// try again with no hinting (this is probably only relevant for
-		// TrueType fonts)
+		// try again with no hinting (this is probably only relevant for TrueType fonts)
 		flags = FT_LOAD_NO_BITMAP | FT_LOAD_NO_HINTING;
 		if (FT_Load_Glyph(ff->face, (FT_UInt)gid, flags))
+		{
 			return false;
+		}
 	}
 	if (FT_Render_Glyph(slot, aa ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO))
+	{
 		return false;
+	}
 	if (slot->bitmap.width == 0 || slot->bitmap.rows == 0)
 	{
-		// this can happen if (a) the glyph is really tiny or (b) the
-		// metrics in the TrueType file are broken
+		// this can happen if (a) the glyph is really tiny or (b) the metrics in the TrueType file are broken
 		return false;
 	}
 
@@ -254,12 +238,17 @@ bool SplashFTFont::makeGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bit
 	bitmap->w  = slot->bitmap.width;
 	bitmap->h  = slot->bitmap.rows;
 	bitmap->aa = aa;
+	int rowSize;
 	if (aa)
 		rowSize = bitmap->w;
 	else
 		rowSize = (bitmap->w + 7) >> 3;
 	bitmap->data     = (uint8_t*)gmallocn(bitmap->h, rowSize);
 	bitmap->freeData = true;
+
+	int      i;
+	uint8_t* p;
+	uint8_t* q;
 	for (i = 0, p = bitmap->data, q = slot->bitmap.buffer; i < bitmap->h; ++i, p += rowSize, q += slot->bitmap.pitch)
 		memcpy(p, q, rowSize);
 
@@ -268,9 +257,9 @@ bool SplashFTFont::makeGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bit
 
 struct SplashFTFontPath
 {
-	SplashPath* path;
-	SplashCoord textScale;
-	bool        needClose;
+	SplashPath* path      = nullptr; //
+	SplashCoord textScale = 0;       //
+	bool        needClose = false;   //
 };
 
 SplashPath* SplashFTFont::getGlyphPath(int c)
@@ -290,16 +279,13 @@ SplashPath* SplashFTFont::getGlyphPath(int c)
 		0,
 		0
 	};
-	SplashFTFontFile* ff;
-	SplashFTFontPath  path;
-	FT_GlyphSlot      slot;
-	int               gid;
-	FT_Glyph          glyph;
 
-	ff             = (SplashFTFontFile*)fontFile;
+	auto* ff       = (SplashFTFontFile*)fontFile;
 	ff->face->size = sizeObj;
 	FT_Set_Transform(ff->face, &textMatrix, nullptr);
-	slot = ff->face->glyph;
+	FT_GlyphSlot slot = ff->face->glyph;
+
+	int gid;
 	if (ff->codeToGID && c < ff->codeToGIDLen)
 		gid = ff->codeToGID[c];
 	else
@@ -312,19 +298,22 @@ SplashPath* SplashFTFont::getGlyphPath(int c)
 	if (FT_Load_Glyph(ff->face, (FT_UInt)gid, FT_LOAD_NO_BITMAP))
 	{
 		// fonts with broken hinting instructions can cause errors here;
-		// try again with no hinting (this is probably only relevant for
-		// TrueType fonts)
+		// try again with no hinting (this is probably only relevant for TrueType fonts)
 		if (FT_Load_Glyph(ff->face, (FT_UInt)gid, FT_LOAD_NO_BITMAP | FT_LOAD_NO_HINTING))
 			return nullptr;
 	}
-	if (FT_Get_Glyph(slot, &glyph))
-		return nullptr;
+
+	FT_Glyph glyph = {};
+	if (FT_Get_Glyph(slot, &glyph)) return nullptr;
+
+	SplashFTFontPath path;
 	path.path      = new SplashPath();
 	path.textScale = textScale;
 	path.needClose = false;
 	FT_Outline_Decompose(&((FT_OutlineGlyph)glyph)->outline, &outlineFuncs, &path);
 	if (path.needClose)
 		path.path->close();
+
 	FT_Done_Glyph(glyph);
 	return path.path;
 }
@@ -332,7 +321,6 @@ SplashPath* SplashFTFont::getGlyphPath(int c)
 static int glyphPathMoveTo(const FT_Vector* pt, void* path)
 {
 	SplashFTFontPath* p = (SplashFTFontPath*)path;
-
 	if (p->needClose)
 	{
 		p->path->close();
@@ -345,7 +333,6 @@ static int glyphPathMoveTo(const FT_Vector* pt, void* path)
 static int glyphPathLineTo(const FT_Vector* pt, void* path)
 {
 	SplashFTFontPath* p = (SplashFTFontPath*)path;
-
 	p->path->lineTo((SplashCoord)pt->x * p->textScale / 64.0, (SplashCoord)pt->y * p->textScale / 64.0);
 	p->needClose = true;
 	return 0;
@@ -356,26 +343,19 @@ static int glyphPathConicTo(const FT_Vector* ctrl, const FT_Vector* pt, void* pa
 	SplashFTFontPath* p = (SplashFTFontPath*)path;
 	SplashCoord       x0, y0, x1, y1, x2, y2, x3, y3, xc, yc;
 
-	if (!p->path->getCurPt(&x0, &y0))
-		return 0;
+	if (!p->path->getCurPt(&x0, &y0)) return 0;
 	xc = (SplashCoord)ctrl->x * p->textScale / 64.0;
 	yc = (SplashCoord)ctrl->y * p->textScale / 64.0;
 	x3 = (SplashCoord)pt->x * p->textScale / 64.0;
 	y3 = (SplashCoord)pt->y * p->textScale / 64.0;
 
-	// A second-order Bezier curve is defined by two endpoints, p0 and
-	// p3, and one control point, pc:
-	//
+	// A second-order Bezier curve is defined by two endpoints, p0 and p3, and one control point, pc:
 	//     p(t) = (1-t)^2*p0 + t*(1-t)*pc + t^2*p3
 	//
-	// A third-order Bezier curve is defined by the same two endpoints,
-	// p0 and p3, and two control points, p1 and p2:
-	//
+	// A third-order Bezier curve is defined by the same two endpoints, p0 and p3, and two control points, p1 and p2:
 	//     p(t) = (1-t)^3*p0 + 3t*(1-t)^2*p1 + 3t^2*(1-t)*p2 + t^3*p3
 	//
-	// Applying some algebra, we can convert a second-order curve to a
-	// third-order curve:
-	//
+	// Applying some algebra, we can convert a second-order curve to a third-order curve:
 	//     p1 = (1/3) * (p0 + 2pc)
 	//     p2 = (1/3) * (2pc + p3)
 
@@ -392,7 +372,6 @@ static int glyphPathConicTo(const FT_Vector* ctrl, const FT_Vector* pt, void* pa
 static int glyphPathCubicTo(const FT_Vector* ctrl1, const FT_Vector* ctrl2, const FT_Vector* pt, void* path)
 {
 	SplashFTFontPath* p = (SplashFTFontPath*)path;
-
 	p->path->curveTo((SplashCoord)ctrl1->x * p->textScale / 64.0, (SplashCoord)ctrl1->y * p->textScale / 64.0, (SplashCoord)ctrl2->x * p->textScale / 64.0, (SplashCoord)ctrl2->y * p->textScale / 64.0, (SplashCoord)pt->x * p->textScale / 64.0, (SplashCoord)pt->y * p->textScale / 64.0);
 	p->needClose = true;
 	return 0;

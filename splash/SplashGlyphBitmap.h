@@ -16,11 +16,11 @@
 
 struct SplashGlyphBitmap
 {
-	int      x;        // offset and size of glyph
-	int      y;        //
-	int      w;        //
-	int      h;        //
-	bool     aa;       // anti-aliased: true means 8-bit alpha bitmap; false means 1-bit
-	uint8_t* data;     // bitmap data
-	bool     freeData; // true if data memory should be freed
+	int      x        = 0;       // offset and size of glyph
+	int      y        = 0;       //
+	int      w        = 0;       //
+	int      h        = 0;       //
+	bool     aa       = false;   // anti-aliased: true means 8-bit alpha bitmap; false means 1-bit
+	uint8_t* data     = nullptr; // bitmap data
+	bool     freeData = false;   // true if data memory should be freed
 };

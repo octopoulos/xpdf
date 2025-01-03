@@ -23,8 +23,7 @@
 //  - can we assume that QCC segments must come after the QCD segment?
 //  - handle tilePartToEOC in readTilePartData
 //  - in coefficient decoding (readCodeBlockData):
-//    - selective arithmetic coding bypass
-//      (this also affects reading the cb->dataLen array)
+//    - selective arithmetic coding bypass (this also affects reading the cb->dataLen array)
 //    - coeffs longer than 31 bits (should just ignore the extra bits?)
 //  - handle boxes larger than 2^32 bytes
 //  - the fixed-point arithmetic won't handle 16-bit pixels
@@ -181,8 +180,9 @@ public:
 	void incr(int idx);
 
 private:
-	int  size, used;
-	int* data;
+	int  size = 0;       //
+	int  used = 0;       //
+	int* data = nullptr; //
 };
 
 JPXCover::JPXCover(int sizeA)
@@ -195,10 +195,8 @@ JPXCover::JPXCover(int sizeA)
 
 JPXCover::~JPXCover()
 {
-	int i;
-
 	printf("JPX coverage:\n");
-	for (i = 0; i <= used; ++i)
+	for (int i = 0; i <= used; ++i)
 		printf("  %4d: %8d\n", i, data[i]);
 	gfree(data);
 }
@@ -208,8 +206,7 @@ void JPXCover::incr(int idx)
 	if (idx < size)
 	{
 		++data[idx];
-		if (idx > used)
-			used = idx;
+		if (idx > used) used = idx;
 	}
 }
 
@@ -224,35 +221,19 @@ JPXCover jpxCover(150);
 JPXStream::JPXStream(Stream* strA)
     : FilterStream(strA)
 {
-	bufStr = new BufStream(str, 3);
-
-	decoded = false;
-	nComps  = 0;
-	bpc     = nullptr;
-	width = height = 0;
-	reduction      = 0;
-	haveCS         = false;
-
-	palette.bpc = nullptr;
-	palette.c   = nullptr;
-	havePalette = false;
-
-	compMap.comp  = nullptr;
-	compMap.type  = nullptr;
-	compMap.pComp = nullptr;
-	haveCompMap   = false;
-
+	bufStr            = new BufStream(str, 3);
+	palette.bpc       = nullptr;
+	palette.c         = nullptr;
+	//
+	compMap.comp      = nullptr;
+	compMap.type      = nullptr;
+	compMap.pComp     = nullptr;
+	//
 	channelDefn.idx   = nullptr;
 	channelDefn.type  = nullptr;
 	channelDefn.assoc = nullptr;
-	haveChannelDefn   = false;
-
-	img.tiles = nullptr;
-
-	bitBuf     = 0;
-	bitBufLen  = 0;
-	bitBufSkip = false;
-	byteCount  = 0;
+	//
+	img.tiles         = nullptr;
 }
 
 JPXStream::~JPXStream()
@@ -275,14 +256,6 @@ void JPXStream::reset()
 
 void JPXStream::close()
 {
-	JPXTile*      tile;
-	JPXTileComp*  tileComp;
-	JPXResLevel*  resLevel;
-	JPXPrecinct*  precinct;
-	JPXSubband*   subband;
-	JPXCodeBlock* cb;
-	uint32_t      comp, i, k, r, pre, sb;
-
 	gfree(bpc);
 	bpc = nullptr;
 	if (havePalette)
@@ -308,45 +281,43 @@ void JPXStream::close()
 
 	if (img.tiles)
 	{
-		for (i = 0; i < img.nXTiles * img.nYTiles; ++i)
+		for (uint32_t i = 0; i < img.nXTiles * img.nYTiles; ++i)
 		{
-			tile = &img.tiles[i];
+			JPXTile* tile = &img.tiles[i];
 			if (tile->tileComps)
 			{
-				for (comp = 0; comp < img.nComps; ++comp)
+				for (uint32_t comp = 0; comp < img.nComps; ++comp)
 				{
-					tileComp = &tile->tileComps[comp];
+					JPXTileComp* tileComp = &tile->tileComps[comp];
 					gfree(tileComp->quantSteps);
 					gfree(tileComp->data);
 					gfree(tileComp->buf);
 					if (tileComp->resLevels)
 					{
-						for (r = 0; r <= tileComp->nDecompLevels; ++r)
+						for (uint32_t r = 0; r <= tileComp->nDecompLevels; ++r)
 						{
-							resLevel = &tileComp->resLevels[r];
+							JPXResLevel* resLevel = &tileComp->resLevels[r];
 							if (resLevel->precincts)
 							{
-								for (pre = 0; pre < resLevel->nPrecincts; ++pre)
+								for (uint32_t pre = 0; pre < resLevel->nPrecincts; ++pre)
 								{
-									precinct = &resLevel->precincts[pre];
+									JPXPrecinct* precinct = &resLevel->precincts[pre];
 									if (precinct->subbands)
 									{
-										for (sb = 0; sb < (uint32_t)(r == 0 ? 1 : 3); ++sb)
+										for (uint32_t sb = 0; sb < (uint32_t)(r == 0 ? 1 : 3); ++sb)
 										{
-											subband = &precinct->subbands[sb];
+											JPXSubband* subband = &precinct->subbands[sb];
 											gfree(subband->inclusion);
 											gfree(subband->zeroBitPlane);
 											if (subband->cbs)
 											{
-												for (k = 0; k < subband->nXCBs * subband->nYCBs; ++k)
+												for (uint32_t k = 0; k < subband->nXCBs * subband->nYCBs; ++k)
 												{
-													cb = &subband->cbs[k];
+													JPXCodeBlock* cb = &subband->cbs[k];
 													gfree(cb->dataLen);
 													gfree(cb->touched);
-													if (cb->arithDecoder)
-														delete cb->arithDecoder;
-													if (cb->stats)
-														delete cb->stats;
+													if (cb->arithDecoder) delete cb->arithDecoder;
+													if (cb->stats) delete cb->stats;
 												}
 												gfree(subband->cbs);
 											}
@@ -390,10 +361,8 @@ int JPXStream::getChar()
 {
 	int c;
 
-	if (!decoded)
-		decodeImage();
-	if (readBufLen < 8)
-		fillReadBuf();
+	if (!decoded) decodeImage();
+	if (readBufLen < 8) fillReadBuf();
 	if (readBufLen == 8)
 	{
 		c          = readBuf & 0xff;
@@ -420,10 +389,8 @@ int JPXStream::lookChar()
 {
 	int c;
 
-	if (!decoded)
-		decodeImage();
-	if (readBufLen < 8)
-		fillReadBuf();
+	if (!decoded) decodeImage();
+	if (readBufLen < 8) fillReadBuf();
 	if (readBufLen == 8)
 		c = readBuf & 0xff;
 	else if (readBufLen > 8)
@@ -442,9 +409,9 @@ void JPXStream::fillReadBuf()
 	int          pix, pixBits, k;
 	bool         eol;
 
-	do {
-		if (curY >= (img.ySize >> reduction))
-			return;
+	do
+	{
+		if (curY >= (img.ySize >> reduction)) return;
 		tileIdx = (((curY << reduction) - img.yTileOffset) / img.yTileSize) * img.nXTiles + ((curX << reduction) - img.xTileOffset) / img.xTileSize;
 #if 1 //~ ignore the palette, assume the PDF ColorSpace object is valid
 		tileComp = &img.tiles[tileIdx].tileComps[curComp];
@@ -808,9 +775,8 @@ bool JPXStream::readColorSpecBox(uint32_t dataLen)
 {
 	JPXColorSpec newCS;
 	uint32_t     csApprox, csEnum;
-	bool         ok;
 
-	ok = false;
+	bool ok = false;
 	if (!readUByte(&newCS.meth) || !readByte(&newCS.prec) || !readUByte(&csApprox))
 		goto err;
 	switch (newCS.meth)
@@ -2411,7 +2377,8 @@ nextPacket:
 		{
 		case 0: // layer, resolution level, component, precinct
 			cover(58);
-			do {
+			do
+			{
 				if (++tile->precinct == tile->maxNPrecincts)
 				{
 					tile->precinct = 0;
@@ -2434,7 +2401,8 @@ nextPacket:
 			break;
 		case 1: // resolution level, layer, component, precinct
 			cover(59);
-			do {
+			do
+			{
 				if (++tile->precinct == tile->maxNPrecincts)
 				{
 					tile->precinct = 0;
@@ -2458,7 +2426,8 @@ nextPacket:
 		case 2: // resolution level, precinct, component, layer
 			cover(60);
 			//~ this is incorrect if there are subsampled components (?)
-			do {
+			do
+			{
 				if (++tile->layer == tile->nLayers)
 				{
 					tile->layer = 0;
@@ -2482,7 +2451,8 @@ nextPacket:
 		case 3: // precinct, component, resolution level, layer
 			cover(61);
 			//~ this is incorrect if there are subsampled components (?)
-			do {
+			do
+			{
 				if (++tile->layer == tile->nLayers)
 				{
 					tile->layer = 0;
@@ -2505,7 +2475,8 @@ nextPacket:
 			break;
 		case 4: // component, precinct, resolution level, layer
 			cover(62);
-			do {
+			do
+			{
 				if (++tile->layer == tile->nLayers)
 				{
 					tile->layer = 0;
@@ -2958,10 +2929,9 @@ void JPXStream::inverseTransform(JPXTileComp* tileComp)
 	{
 		resLevel = &tileComp->resLevels[r];
 
-		// (n)LL is already in the upper-left corner of the
-		// tile-component data array -- interleave with (n)HL/LH/HH
-		// and inverse transform to get (n-1)LL, which will be stored
-		// in the upper-left corner of the tile-component data array
+		// (n)LL is already in the upper-left corner of the tile-component data array
+		// -- interleave with (n)HL/LH/HH and inverse transform to get (n-1)LL,
+		// which will be stored in the upper-left corner of the tile-component data array
 		inverseTransformLevel(tileComp, r, resLevel);
 	}
 }
@@ -3417,13 +3387,16 @@ bool JPXStream::readBoxHdr(uint32_t* boxType, uint32_t* boxLen, uint32_t* dataLe
 int JPXStream::readMarkerHdr(int* segType, uint32_t* segLen)
 {
 	int c;
-	do {
-		do {
+	do
+	{
+		do
+		{
 			if ((c = bufStr->getChar()) == EOF)
 				return false;
 		}
 		while (c != 0xff);
-		do {
+		do
+		{
 			if ((c = bufStr->getChar()) == EOF)
 				return false;
 		}

@@ -61,11 +61,11 @@ private:
 	void            rasterizeTile(CachedTileDesc* tile);
 	static bool     abortCheckCbk(void* data);
 
-	DisplayState*        state;      //
-	GList*               cache;      // [CachedTileDesc]
-	TileCacheThreadPool* threadPool; //
-	void (*tileDoneCbk)(void* data); //
-	void* tileDoneCbkData;           //
+	DisplayState*        state      = nullptr; //
+	GList*               cache      = nullptr; // [CachedTileDesc]
+	TileCacheThreadPool* threadPool = nullptr; //
+	void (*tileDoneCbk)(void* data) = nullptr; //
+	void* tileDoneCbkData           = nullptr; //
 
 	friend class TileCacheThreadPool;
 };

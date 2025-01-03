@@ -21,8 +21,6 @@
 
 DisplayState::DisplayState(int maxTileWidthA, int maxTileHeightA, int tileCacheSizeA, int nWorkerThreadsA, SplashColorMode colorModeA, int bitmapRowPadA)
 {
-	int i;
-
 	maxTileWidth   = maxTileWidthA;
 	maxTileHeight  = maxTileHeightA;
 	tileCacheSize  = tileCacheSizeA;
@@ -30,11 +28,7 @@ DisplayState::DisplayState(int maxTileWidthA, int maxTileHeightA, int tileCacheS
 	colorMode      = colorModeA;
 	bitmapRowPad   = bitmapRowPadA;
 
-	tileMap        = nullptr;
-	tileCache      = nullptr;
-	tileCompositor = nullptr;
-
-	for (i = 0; i < splashColorModeNComps[colorMode]; ++i)
+	for (int i = 0; i < splashColorModeNComps[colorMode]; ++i)
 	{
 		paperColor[i] = 0xff;
 		matteColor[i] = 0x80;
@@ -47,19 +41,9 @@ DisplayState::DisplayState(int maxTileWidthA, int maxTileHeightA, int tileCacheS
 	}
 	else
 	{
-		for (i = 0; i < splashColorModeNComps[colorMode]; ++i)
+		for (int i = 0; i < splashColorModeNComps[colorMode]; ++i)
 			selectColor[i] = 0xa0;
 	}
-	reverseVideo = false;
-
-	doc = nullptr;
-
-	winW = winH = 100;
-	displayMode = displayContinuous;
-	zoom        = 100;
-	rotate      = 0;
-	scrollPage  = 0;
-	scrollX = scrollY = 0;
 }
 
 DisplayState::~DisplayState()

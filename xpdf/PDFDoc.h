@@ -34,10 +34,6 @@ class PDFDoc
 public:
 	PDFDoc(const std::string& fileNameA, const std::string& ownerPassword = "", const std::string& userPassword = "", PDFCore* coreA = nullptr);
 
-#ifdef _WIN32
-	PDFDoc(wchar_t* fileNameA, int fileNameLen, const std::string& ownerPassword = "", const std::string& userPassword = "", PDFCore* coreA = nullptr);
-#endif
-
 	// This version takes a UTF-8 file name (which is only relevant on
 	// Windows).
 	PDFDoc(char* fileNameA, const std::string& ownerPassword = "", const std::string& userPassword = "", PDFCore* coreA = nullptr);
@@ -54,9 +50,6 @@ public:
 
 	// Get file name.
 	std::string getFileName() { return fileName; }
-#ifdef _WIN32
-	wchar_t* getFileNameU() { return fileNameU; }
-#endif
 
 	// Get the xref table.
 	XRef* getXRef() { return xref; }
@@ -205,9 +198,6 @@ public:
 
 	bool saveEmbeddedFile(int idx, const char* path);
 	bool saveEmbeddedFileU(int idx, const char* path);
-#ifdef _WIN32
-	bool saveEmbeddedFile(int idx, const wchar_t* path, int pathLen);
-#endif
 	char* getEmbeddedFileMem(int idx, int* size);
 
 	// Return true if the document uses JavaScript.
@@ -221,20 +211,16 @@ private:
 	bool checkEncryption(const std::string& ownerPassword, const std::string& userPassword);
 	bool saveEmbeddedFile2(int idx, FILE* f);
 
-	std::string fileName; //
-#ifdef _WIN32
-	wchar_t* fileNameU; //
-#endif
-	FILE*            file;       //
-	BaseStream*      str;        //
-	PDFCore*         core;       //
-	double           pdfVersion; //
-	XRef*            xref;       //
-	Catalog*         catalog;    //
-	Annots*          annots;     //
-	Outline*         outline;    //
-	OptionalContent* optContent; //
-
-	bool ok;      //
-	int  errCode; //
+	std::string      fileName   = "";      //
+	FILE*            file       = nullptr; //
+	BaseStream*      str        = nullptr; //
+	PDFCore*         core       = nullptr; //
+	double           pdfVersion = 0;       //
+	XRef*            xref       = nullptr; //
+	Catalog*         catalog    = nullptr; //
+	Annots*          annots     = nullptr; //
+	Outline*         outline    = nullptr; //
+	OptionalContent* optContent = nullptr; //
+	bool             ok         = false;   //
+	int              errCode    = 0;       //
 };

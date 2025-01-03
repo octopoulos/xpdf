@@ -25,7 +25,7 @@
 
 struct CMapVectorEntry
 {
-	bool isVector;
+	bool isVector = false;
 
 	union
 	{
@@ -55,7 +55,7 @@ CMap* CMap::parse(CMapCache* cache, const std::string& collectionA, Object* obj)
 
 	if (obj->isName())
 	{
-		cMapNameA = obj->getName();
+		ASSIGN_CSTRING(cMapNameA, obj->getName());
 		if (!(cMap = globalParams->getCMap(collectionA, cMapNameA)))
 			error(errSyntaxError, -1, "Unknown CMap '{}' for character collection '{}'", cMapNameA, collectionA);
 	}
@@ -99,11 +99,9 @@ CMap* CMap::parse(CMapCache* cache, const std::string& collectionA, const std::s
 
 CMap* CMap::parse(CMapCache* cache, const std::string& collectionA, Stream* str)
 {
+	CMap* cMap = new CMap(collectionA, nullptr);
+
 	Object obj1;
-	CMap*  cMap;
-
-	cMap = new CMap(collectionA, nullptr);
-
 	if (!str->getDict()->lookup("UseCMap", &obj1)->isNull())
 		cMap->useCMap(cache, &obj1);
 	obj1.free();
@@ -116,12 +114,11 @@ CMap* CMap::parse(CMapCache* cache, const std::string& collectionA, Stream* str)
 
 void CMap::parse2(CMapCache* cache, int (*getCharFunc)(void*), void* data)
 {
-	PSTokenizer* pst;
-	char         tok1[256], tok2[256], tok3[256];
-	int          n1, n2, n3;
-	uint32_t     start, end, code;
+	char     tok1[256], tok2[256], tok3[256];
+	int      n1, n2, n3;
+	uint32_t start, end, code;
 
-	pst = new PSTokenizer(getCharFunc, data);
+	PSTokenizer* pst = new PSTokenizer(getCharFunc, data);
 	pst->getToken(tok1, sizeof(tok1), &n1);
 	while (pst->getToken(tok2, sizeof(tok2), &n2))
 	{
@@ -214,7 +211,6 @@ CMap::CMap(const std::string& collectionA, const std::string& cMapNameA, int wMo
 	cMapName   = cMapNameA;
 	isIdent    = true;
 	wMode      = wModeA;
-	vector     = nullptr;
 	refCnt     = 1;
 }
 
@@ -342,8 +338,7 @@ void CMap::decRefCnt()
 #else
 	done = --refCnt == 0;
 #endif
-	if (done)
-		delete this;
+	if (done) delete this;
 }
 
 bool CMap::match(const std::string& collectionA, const std::string& cMapNameA)

@@ -39,10 +39,10 @@ public:
 private:
 	SplashFTFontEngine(bool aaA, uint32_t flagsA, FT_Library libA);
 
-	bool       aa;      //
-	uint32_t   flags;   //
-	FT_Library lib;     //
-	bool       useCIDs; //
+	bool       aa      = false;   //
+	uint32_t   flags   = 0;       //
+	FT_Library lib     = nullptr; //
+	bool       useCIDs = false;   //
 
 	friend class SplashFTFontFile;
 	friend class SplashFTFont;

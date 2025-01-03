@@ -39,10 +39,10 @@ public:
 	virtual SplashPath* getGlyphPath(int c);
 
 private:
-	FT_Size     sizeObj;
-	FT_Matrix   matrix;
-	FT_Matrix   textMatrix;
-	SplashCoord textScale;
+	FT_Size     sizeObj    = 0;  //
+	FT_Matrix   matrix     = {}; //
+	FT_Matrix   textMatrix = {}; //
+	SplashCoord textScale  = 0;  //
 };
 
 #endif // HAVE_FREETYPE_H

@@ -133,12 +133,12 @@ enum SplashScreenType
 
 struct SplashScreenParams
 {
-	SplashScreenType type;           //
-	int              size;           //
-	int              dotRadius;      //
-	SplashCoord      gamma;          //
-	SplashCoord      blackThreshold; //
-	SplashCoord      whiteThreshold; //
+	SplashScreenType type           = splashScreenDispersed; //
+	int              size           = 0;                     //
+	int              dotRadius      = 0;                     //
+	SplashCoord      gamma          = 0;                     //
+	SplashCoord      blackThreshold = 0;                     //
+	SplashCoord      whiteThreshold = 0;                     //
 };
 
 //------------------------------------------------------------------------

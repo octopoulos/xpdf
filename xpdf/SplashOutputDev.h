@@ -232,33 +232,33 @@ private:
 	void setInShading(bool sh);
 #endif
 
-	SplashColorMode          colorMode;                             //
-	int                      bitmapRowPad;                          //
-	bool                     bitmapTopDown;                         //
-	bool                     bitmapUpsideDown;                      //
-	bool                     noComposite;                           //
-	bool                     allowAntialias;                        //
-	bool                     vectorAntialias;                       //
-	bool                     reverseVideo;                          // reverse video mode
-	bool                     reverseVideoInvertImages;              //
-	SplashColor              paperColor;                            // paper color
-	SplashScreenParams       screenParams;                          //
-	bool                     skipHorizText;                         //
-	bool                     skipRotatedText;                       //
-	XRef*                    xref;                                  // xref table for current document
-	SplashBitmap*            bitmap;                                //
-	Splash*                  splash;                                //
-	SplashFontEngine*        fontEngine;                            //
-	T3FontCache*             t3FontCache[splashOutT3FontCacheSize]; // Type 3 font cache
-	int                      nT3Fonts;                              // number of valid entries in t3FontCache
-	T3GlyphStack*            t3GlyphStack;                          // Type 3 glyph context stack
-	SplashFont*              font;                                  // current font
-	bool                     needFontUpdate;                        // set when the font needs to be updated
-	SplashPath*              savedTextPath;                         // path built for text string
-	SplashPath*              savedClipPath;                         // clipping path built with text object
-	SplashTransparencyGroup* transpGroupStack;                      // transparency group stack
-	int                      nestCount;                             //
+	SplashColorMode          colorMode                             = splashModeRGB8; //
+	int                      bitmapRowPad                          = 0;              //
+	bool                     bitmapTopDown                         = false;          //
+	bool                     bitmapUpsideDown                      = false;          //
+	bool                     noComposite                           = false;          //
+	bool                     allowAntialias                        = false;          //
+	bool                     vectorAntialias                       = false;          //
+	bool                     reverseVideo                          = false;          // reverse video mode
+	bool                     reverseVideoInvertImages              = false;          //
+	SplashColor              paperColor                            = {};             // paper color
+	SplashScreenParams       screenParams                          = {};             //
+	bool                     skipHorizText                         = false;          //
+	bool                     skipRotatedText                       = false;          //
+	XRef*                    xref                                  = nullptr;        // xref table for current document
+	SplashBitmap*            bitmap                                = nullptr;        //
+	Splash*                  splash                                = nullptr;        //
+	SplashFontEngine*        fontEngine                            = nullptr;        //
+	T3FontCache*             t3FontCache[splashOutT3FontCacheSize] = {};             // Type 3 font cache
+	int                      nT3Fonts                              = 0;              // number of valid entries in t3FontCache
+	T3GlyphStack*            t3GlyphStack                          = nullptr;        // Type 3 glyph context stack
+	SplashFont*              font                                  = nullptr;        // current font
+	bool                     needFontUpdate                        = false;          // set when the font needs to be updated
+	SplashPath*              savedTextPath                         = nullptr;        // path built for text string
+	SplashPath*              savedClipPath                         = nullptr;        // clipping path built with text object
+	SplashTransparencyGroup* transpGroupStack                      = nullptr;        // transparency group stack
+	int                      nestCount                             = 0;              //
 
-	void (*startPageCbk)(void* data);
-	void* startPageCbkData;
+	void (*startPageCbk)(void* data) = nullptr; //
+	void* startPageCbkData           = nullptr; //
 };

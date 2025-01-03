@@ -61,10 +61,10 @@ private:
 	uint8_t*  makeUnicodeCmapTable(int* codeToGID, int nCodes, int* unicodeCmapLength);
 	int*      makeUnicodeToGID(int* codeToGID, int nCodes, int* unicodeToGIDLength);
 
-	GfxFont*      gfxFont;    //
-	char*         fontBuf;    //
-	int           fontLength; //
-	FoFiTrueType* ffTrueType; //
-	FoFiType1C*   ffType1C;   //
-	bool          isOpenType; //
+	GfxFont*      gfxFont    = nullptr; //
+	char*         fontBuf    = nullptr; //
+	int           fontLength = 0;       //
+	FoFiTrueType* ffTrueType = nullptr; //
+	FoFiType1C*   ffType1C   = nullptr; //
+	bool          isOpenType = false;   //
 };

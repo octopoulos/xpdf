@@ -401,30 +401,22 @@ std::string makePathAbsolute(std::string path)
 #endif
 }
 
-bool pathIsFile(const char* path)
+/**
+ * Check if the path is a directory
+ */
+bool pathIsDir(const std::filesystem::path& path) noexcept
 {
-#ifdef _WIN32
-	wchar_t wPath[winMaxLongPath + 1];
-	fileNameToUCS2(path, wPath, winMaxLongPath + 1);
-	DWORD attr = GetFileAttributesW(wPath);
-	return attr != INVALID_FILE_ATTRIBUTES && !(attr & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_DEVICE));
-#else
-	struct stat statBuf;
-	return stat(path, &statBuf) == 0 && S_ISREG(statBuf.st_mode);
-#endif
+	std::error_code ec;
+	return std::filesystem::is_directory(path, ec);
 }
 
-bool pathIsDir(const char* path)
+/**
+ * Check if the path is a regular file or a symlink
+ */
+bool pathIsFile(const std::filesystem::path& path) noexcept
 {
-#ifdef _WIN32
-	wchar_t wPath[winMaxLongPath + 1];
-	fileNameToUCS2(path, wPath, winMaxLongPath + 1);
-	DWORD attr = GetFileAttributesW(wPath);
-	return attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY);
-#else
-	struct stat statBuf;
-	return stat(path, &statBuf) == 0 && S_ISDIR(statBuf.st_mode);
-#endif
+	std::error_code ec;
+	return (std::filesystem::is_regular_file(path, ec) || std::filesystem::is_symlink(path, ec));
 }
 
 time_t getModTime(char* fileName)
@@ -560,173 +552,28 @@ bool executeCommand(char* cmd)
 #endif
 }
 
-#ifdef _WIN32
-std::string fileNameToUTF8(const char* path)
-{
-	std::string s;
-	for (const char* p = path; *p; ++p)
-	{
-		if (*p & 0x80)
-		{
-			s += (char)(0xc0 | ((*p >> 6) & 0x03));
-			s += (char)(0x80 | (*p & 0x3f));
-		}
-		else
-		{
-			s += *p;
-		}
-	}
-	return s;
-}
-
-std::string fileNameToUTF8(wchar_t* path)
-{
-	std::string s;
-	wchar_t*    p;
-
-	for (p = path; *p; ++p)
-	{
-		if (*p < 0x80)
-		{
-			s += (char)*p;
-		}
-		else if (*p < 0x800)
-		{
-			s += (char)(0xc0 | ((*p >> 6) & 0x1f));
-			s += (char)(0x80 | (*p & 0x3f));
-		}
-		else
-		{
-			s += (char)(0xe0 | ((*p >> 12) & 0x0f));
-			s += (char)(0x80 | ((*p >> 6) & 0x3f));
-			s += (char)(0x80 | (*p & 0x3f));
-		}
-	}
-	return s;
-}
-
-std::string fileNameMultiByteToUTF8(char* path)
-{
-	wchar_t fileNameW[winMaxLongPath + 1];
-	if (MultiByteToWideChar(CP_OEMCP, 0, path, -1, fileNameW, sizeof(fileNameW) / sizeof(wchar_t)))
-	{
-		return fileNameToUTF8(fileNameW);
-	}
-	else
-	{
-		// shouldn't happen, but just in case...
-		return path;
-	}
-}
-
-wchar_t* fileNameToUCS2(const char* path, wchar_t* out, size_t outSize)
-{
-	const char* p;
-	size_t      i;
-
-	for (p = path, i = 0; *p && i < outSize - 1; ++i)
-	{
-		if ((p[0] & 0xe0) == 0xc0 && p[1] && (p[1] & 0xc0) == 0x80)
-		{
-			out[i] = (wchar_t)(((p[0] & 0x1f) << 6) | (p[1] & 0x3f));
-			p += 2;
-		}
-		else if ((p[0] & 0xf0) == 0xe0 && (p[1] & 0xc0) == 0x80 && (p[2] & 0xc0) == 0x80)
-		{
-			out[i] = (wchar_t)(((p[0] & 0x0f) << 12) | ((p[1] & 0x3f) << 6) | (p[2] & 0x3f));
-			p += 3;
-		}
-		else
-		{
-			out[i] = (wchar_t)(p[0] & 0xff);
-			p += 1;
-		}
-	}
-	out[i] = (wchar_t)0;
-	return out;
-}
-#endif
-
 FILE* openFile(const char* path, const char* mode)
 {
-#if defined(_WIN32)
-	wchar_t wPath[winMaxLongPath + 1];
-	wchar_t wMode[8];
-	int     i;
-
-	fileNameToUCS2(path, wPath, winMaxLongPath + 1);
-	for (i = 0; mode[i] && i < sizeof(wMode) / sizeof(wchar_t) - 1; ++i)
-		wMode[i] = (wchar_t)(mode[i] & 0xff);
-	wMode[i] = (wchar_t)0;
-	readWindowsShortcut(wPath, winMaxLongPath + 1);
-	return _wfopen(wPath, wMode);
-#elif defined(VMS)
+#if defined(VMS)
 	return fopen(path, mode, "ctx=stm");
 #else
 	return fopen(path, mode);
 #endif
 }
 
-#ifdef _WIN32
-void readWindowsShortcut(wchar_t* wPath, size_t wPathSize)
+bool makeDir(const std::filesystem::path& path, int mode)
 {
-	size_t n = wcslen(wPath);
-	if (n < 4 || wcscmp(wPath + n - 4, L".lnk"))
-		return;
-	IShellLinkW* shellLink;
-	HRESULT      hres;
-	hres              = CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (LPVOID*)&shellLink);
-	bool needCoUninit = false;
-	if (hres == CO_E_NOTINITIALIZED)
-	{
-		CoInitialize(nullptr);
-		needCoUninit = true;
-		hres         = CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_IShellLinkW, (LPVOID*)&shellLink);
-	}
-	if (FAILED(hres))
-		return;
-	IPersistFile* persistFile;
-	hres = shellLink->QueryInterface(IID_IPersistFile, (LPVOID*)&persistFile);
-	if (FAILED(hres))
-		return;
-	hres = persistFile->Load(wPath, STGM_READ);
-	if (FAILED(hres))
-	{
-		fprintf(stderr, "IPersistFile.Load failed: 0x%08lx\n", hres);
-		exit(1);
-	}
-	wchar_t target[winMaxLongPath + 1];
-	hres = shellLink->GetPath(target, winMaxLongPath + 1, nullptr, 0);
-	if (FAILED(hres))
-		return;
-	shellLink->Release();
-	if (needCoUninit)
-		CoUninitialize();
-	if (wcslen(target) > wPathSize - 1)
-		return;
-	wcscpy(wPath, target);
-}
-#endif
-
-int makeDir(const char* path, int mode)
-{
-#ifdef _WIN32
-	wchar_t wPath[winMaxLongPath + 1];
-	return _wmkdir(fileNameToUCS2(path, wPath, winMaxLongPath + 1));
-#else
-	return mkdir(path, (mode_t)mode);
-#endif
+	std::error_code ec;
+	return std::filesystem::create_directories(path, ec);
 }
 
 char* getLine(char* buf, int size, FILE* f)
 {
-	int c, i;
-
-	i = 0;
+	int i = 0;
 	while (i < size - 1)
 	{
-		if ((c = fgetc(f)) == EOF)
-			break;
+		int c;
+		if ((c = fgetc(f)) == EOF) break;
 		buf[i++] = (char)c;
 		if (c == '\x0a')
 			break;
@@ -745,7 +592,7 @@ char* getLine(char* buf, int size, FILE* f)
 	return buf;
 }
 
-int gfseek(FILE* f, GFileOffset offset, int whence)
+int gfseek(FILE* f, int64_t offset, int whence)
 {
 #if HAVE_FSEEKO
 	return fseeko(f, offset, whence);
@@ -758,7 +605,7 @@ int gfseek(FILE* f, GFileOffset offset, int whence)
 #endif
 }
 
-GFileOffset gftell(FILE* f)
+int64_t gftell(FILE* f)
 {
 #if HAVE_FSEEKO
 	return ftello(f);
@@ -773,25 +620,4 @@ GFileOffset gftell(FILE* f)
 
 void fixCommandLine(int* argc, char** argv[])
 {
-#ifdef _WIN32
-	int       argcw;
-	wchar_t** argvw;
-	int       i;
-
-	argvw = CommandLineToArgvW(GetCommandLineW(), &argcw);
-	if (!argvw || argcw < 0)
-		return;
-
-	*argc = argcw;
-
-	*argv = (char**)gmallocn(argcw + 1, sizeof(char*));
-	for (i = 0; i < argcw; ++i)
-	{
-		const auto arg = fileNameToUTF8(argvw[i]);
-		(*argv)[i]     = copyString(arg.c_str());
-	}
-	(*argv)[argcw] = nullptr;
-
-	LocalFree(argvw);
-#endif
 }

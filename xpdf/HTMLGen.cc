@@ -697,7 +697,8 @@ void HTMLGen::appendSpans(GList* words, int firstWordIdx, int lastWordIdx, int p
 			std::string       linkURI0   = "";
 			bool              invisible  = word0->isInvisible() || word0->isRotated();
 
-			do {
+			do
+			{
 				TextWord* word1 = (TextWord*)words->get(wordIdx);
 
 				// get word parameters

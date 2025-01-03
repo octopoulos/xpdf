@@ -23,17 +23,17 @@
 
 struct CharCodeToUnicodeString
 {
-	CharCode c;
-	Unicode  u[maxUnicodeString];
-	int      len;
+	CharCode c                   = 0;  //
+	Unicode  u[maxUnicodeString] = {}; //
+	int      len                 = 0;  //
 };
 
 //------------------------------------------------------------------------
 
 struct GStringIndex
 {
-	std::string s;
-	int         i;
+	std::string s = ""; //
+	int         i = 0;  //
 };
 
 static int getCharFromGString(void* data)

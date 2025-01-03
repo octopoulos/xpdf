@@ -914,10 +914,8 @@ void XpdfViewer::tweakSize()
 	QRect screen = QGuiApplication::primaryScreen()->availableGeometry();
 	int   w      = hint.width();
 	int   h      = hint.height();
-	if (w > screen.width() - 60)
-		w = screen.width() - 60;
-	if (h > screen.height() - 60)
-		h = screen.height() - 60;
+	if (w > screen.width() - 60) w = screen.width() - 60;
+	if (h > screen.height() - 60) h = screen.height() - 60;
 	resize(w, h);
 }
 

@@ -73,11 +73,11 @@ private:
 	const char* getRawFileExtension(Stream* str);
 	void        writeImageInfo(const std::string& fileName, int width, int height, GfxState* state, GfxImageColorMap* colorMap);
 
-	std::string fileRoot;   // root of output file names
-	bool        dumpJPEG;   // set to dump native JPEG files
-	bool        dumpRaw;    // set to dump raw PDF-native image files
-	bool        list;       // set to write image info to stdout
-	int         imgNum;     // current image number
-	int         curPageNum; // current page number
-	bool        ok;         // set up ok?
+	std::string fileRoot   = "";    // root of output file names
+	bool        dumpJPEG   = false; // set to dump native JPEG files
+	bool        dumpRaw    = false; // set to dump raw PDF-native image files
+	bool        list       = false; // set to write image info to stdout
+	int         imgNum     = 0;     // current image number
+	int         curPageNum = 0;     // current page number
+	bool        ok         = false; // set up ok?
 };

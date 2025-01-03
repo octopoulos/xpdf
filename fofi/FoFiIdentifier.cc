@@ -46,7 +46,7 @@ public:
 	// Returns true if equal.
 	virtual bool cmp(int pos, const char* s) = 0;
 
-	virtual std::string getName() { return "Reader"; }
+	virtual int getId() { return 101; }
 };
 
 //------------------------------------------------------------------------
@@ -56,19 +56,19 @@ class MemReader : public Reader
 public:
 	static MemReader* make(char* bufA, int lenA);
 
+	MemReader(char* bufA, int lenA);
 	virtual ~MemReader();
-	virtual int  getByte(int pos);
-	virtual bool getU16BE(int pos, int* val);
-	virtual bool getU32BE(int pos, uint32_t* val);
-	virtual bool getU32LE(int pos, uint32_t* val);
-	virtual bool getUVarBE(int pos, int size, uint32_t* val);
-	virtual bool cmp(int pos, const char* s);
 
-	virtual std::string getName() { return "MemReader"; }
+	virtual int  getByte(int pos) override;
+	virtual bool getU16BE(int pos, int* val) override;
+	virtual bool getU32BE(int pos, uint32_t* val) override;
+	virtual bool getU32LE(int pos, uint32_t* val) override;
+	virtual bool getUVarBE(int pos, int size, uint32_t* val) override;
+	virtual bool cmp(int pos, const char* s) override;
+
+	virtual int getId() override { return 202; }
 
 private:
-	MemReader(char* bufA, int lenA);
-
 	char* buf = nullptr; //
 	int   len = 0;       //
 };
@@ -138,18 +138,19 @@ class FileReader : public Reader
 public:
 	static FileReader* make(const char* fileName);
 
+	FileReader(FILE* fA);
 	virtual ~FileReader();
-	virtual int  getByte(int pos);
-	virtual bool getU16BE(int pos, int* val);
-	virtual bool getU32BE(int pos, uint32_t* val);
-	virtual bool getU32LE(int pos, uint32_t* val);
-	virtual bool getUVarBE(int pos, int size, uint32_t* val);
-	virtual bool cmp(int pos, const char* s);
 
-	virtual std::string getName() { return "FileReader"; }
+	virtual int  getByte(int pos) override;
+	virtual bool getU16BE(int pos, int* val) override;
+	virtual bool getU32BE(int pos, uint32_t* val) override;
+	virtual bool getU32LE(int pos, uint32_t* val) override;
+	virtual bool getUVarBE(int pos, int size, uint32_t* val) override;
+	virtual bool cmp(int pos, const char* s) override;
+
+	virtual int getId() override { return 303; }
 
 private:
-	FileReader(FILE* fA);
 	bool fillBuf(int pos, int len);
 
 	FILE* f         = nullptr; //
@@ -245,18 +246,19 @@ class StreamReader : public Reader
 public:
 	static StreamReader* make(int (*getCharA)(void* data), void* dataA);
 
+	StreamReader(int (*getCharA)(void* data), void* dataA);
 	virtual ~StreamReader();
-	virtual int  getByte(int pos);
-	virtual bool getU16BE(int pos, int* val);
-	virtual bool getU32BE(int pos, uint32_t* val);
-	virtual bool getU32LE(int pos, uint32_t* val);
-	virtual bool getUVarBE(int pos, int size, uint32_t* val);
-	virtual bool cmp(int pos, const char* s);
 
-	virtual std::string getName() { return "StreamReader"; }
+	virtual int  getByte(int pos) override;
+	virtual bool getU16BE(int pos, int* val) override;
+	virtual bool getU32BE(int pos, uint32_t* val) override;
+	virtual bool getU32LE(int pos, uint32_t* val) override;
+	virtual bool getUVarBE(int pos, int size, uint32_t* val) override;
+	virtual bool cmp(int pos, const char* s) override;
+
+	virtual int getId() override { return 404; }
 
 private:
-	StreamReader(int (*getCharA)(void* data), void* dataA);
 	bool fillBuf(int pos, int len);
 
 	int   (*getChar)(void* data) = nullptr; //
@@ -410,20 +412,44 @@ FoFiIdentifierType FoFiIdentifier::identifyFile(const char* fileName)
 	return type;
 }
 
+void Indentify(Reader *reader)
+{
+	fprintf(stderr, "reader1=%d; ", reader->getId());
+}
+
+void Indentify2(StreamReader* reader)
+{
+	fprintf(stderr, "reader2=%d; ", reader->getId());
+}
+
+// std::mutex access_mutex;
+
 FoFiIdentifierType FoFiIdentifier::identifyStream(int (*getChar)(void* data), void* data)
 {
-	StreamReader* reader;
-	if (!(reader = StreamReader::make(getChar, data)))
-		return fofiIdError;
-
-	FoFiIdentifierType type = identify(reader);
-	delete reader;
+	fprintf(stderr, "IS 1; ");
+	//StreamReader* reader;
+	fprintf(stderr, "IS 2; ");
+	StreamReader reader(getChar, data);
+	//if (!(reader = StreamReader::make(getChar, data)))
+	//	return fofiIdError;
+	fprintf(stderr, "IS 3; ");
+	fprintf(stderr, "IS 3a: %p %p %p; ", &reader, getChar, data);
+	fprintf(stderr, "IS 3b: %d; ", reader.getId());
+	Indentify(&reader);
+	Indentify2(&reader);
+	FoFiIdentifierType type = identify(&reader);
+	Indentify(&reader);
+	fprintf(stderr, "IS 4: %d; ", reader.getId());
+	fprintf(stderr, "IS 4a: %d; ", TO_INT(type));
+	//delete reader;
+	fprintf(stderr, "IS 5; ");
 	return type;
 }
 
 static FoFiIdentifierType identify(Reader* reader)
 {
-	printf("identify: reader=%s", reader->getName());
+	// std::lock_guard<std::mutex> lock(access_mutex);
+	fprintf(stderr, "reader3=%d; ", reader->getId());
 
 	//----- PFA
 	if (reader->cmp(0, "%!PS-AdobeFont-1") || reader->cmp(0, "%!FontType1"))

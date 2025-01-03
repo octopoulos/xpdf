@@ -27,7 +27,7 @@ public:
 	virtual ~FoFiType1();
 
 	// Return the font name.
-	char* getName();
+	std::string_view getName();
 
 	// Return the encoding, as an array of 256 names (any of which may be nullptr).
 	char** getEncoding();
@@ -45,8 +45,8 @@ private:
 	void  parse();
 	void  undoPFB();
 
-	char*  name;
-	char** encoding;
-	double fontMatrix[6];
-	bool   parsed;
+	std::string name          = "";      //
+	char**      encoding      = nullptr; //
+	double      fontMatrix[6] = {};      //
+	bool        parsed        = false;   //
 };

@@ -78,42 +78,42 @@ public:
 private:
 	SplashState(SplashState* state);
 
-	SplashCoord            matrix[6];          //
-	SplashPattern*         strokePattern;      //
-	SplashPattern*         fillPattern;        //
-	SplashScreen*          screen;             //
-	SplashBlendFunc        blendFunc;          //
-	SplashCoord            strokeAlpha;        //
-	SplashCoord            fillAlpha;          //
-	SplashCoord            lineWidth;          //
-	int                    lineCap;            //
-	int                    lineJoin;           //
-	SplashCoord            miterLimit;         //
-	SplashCoord            flatness;           //
-	SplashCoord*           lineDash;           //
-	int                    lineDashLength;     //
-	SplashCoord            lineDashPhase;      //
-	SplashStrokeAdjustMode strokeAdjust;       //
-	SplashClip*            clip;               //
-	bool                   clipIsShared;       //
-	SplashBitmap*          softMask;           //
-	bool                   deleteSoftMask;     //
-	bool                   inNonIsolatedGroup; //
-	bool                   inKnockoutGroup;    //
-	uint8_t*               rgbTransferR;       //
-	uint8_t*               rgbTransferG;       //
-	uint8_t*               rgbTransferB;       //
-	uint8_t*               grayTransfer;       //
+	SplashCoord            matrix[6]          = {};                    //
+	SplashPattern*         strokePattern      = nullptr;               //
+	SplashPattern*         fillPattern        = nullptr;               //
+	SplashScreen*          screen             = nullptr;               //
+	SplashBlendFunc        blendFunc          = nullptr;               //
+	SplashCoord            strokeAlpha        = 1;                     //
+	SplashCoord            fillAlpha          = 1;                     //
+	SplashCoord            lineWidth          = 1;                     //
+	int                    lineCap            = splashLineCapButt;     //
+	int                    lineJoin           = splashLineJoinMiter;   //
+	SplashCoord            miterLimit         = 10;                    //
+	SplashCoord            flatness           = 1;                     //
+	SplashCoord*           lineDash           = nullptr;               //
+	int                    lineDashLength     = 0;                     //
+	SplashCoord            lineDashPhase      = 0;                     //
+	SplashStrokeAdjustMode strokeAdjust       = splashStrokeAdjustOff; //
+	SplashClip*            clip               = nullptr;               //
+	bool                   clipIsShared       = false;                 //
+	SplashBitmap*          softMask           = nullptr;               //
+	bool                   deleteSoftMask     = false;                 //
+	bool                   inNonIsolatedGroup = false;                 //
+	bool                   inKnockoutGroup    = false;                 //
+	uint8_t*               rgbTransferR       = nullptr;               //
+	uint8_t*               rgbTransferG       = nullptr;               //
+	uint8_t*               rgbTransferB       = nullptr;               //
+	uint8_t*               grayTransfer       = nullptr;               //
 #if SPLASH_CMYK
-	uint8_t* cmykTransferC;
-	uint8_t* cmykTransferM;
-	uint8_t* cmykTransferY;
-	uint8_t* cmykTransferK;
+	uint8_t* cmykTransferC = nullptr;
+	uint8_t* cmykTransferM = nullptr;
+	uint8_t* cmykTransferY = nullptr;
+	uint8_t* cmykTransferK = nullptr;
 #endif
-	bool         transferIsShared;         //
-	uint32_t     overprintMask;            //
-	bool         enablePathSimplification; //
-	SplashState* next;                     // used by Splash class
+	bool         transferIsShared         = false;      //
+	uint32_t     overprintMask            = 0xffffffff; //
+	bool         enablePathSimplification = false;      //
+	SplashState* next                     = nullptr;    // used by Splash class
 
 	friend class Splash;
 };

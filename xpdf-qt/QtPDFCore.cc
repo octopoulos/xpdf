@@ -55,31 +55,7 @@ QtPDFCore::QtPDFCore(QWidget* viewportA, QScrollBar* hScrollBarA, QScrollBar* vS
 	vScrollBar->setRange(0, 0);
 	vScrollBar->setSingleStep(16);
 	viewport->setMouseTracking(true);
-
 	state->setMatteColor(matteColor);
-
-	oldFirstPage       = -1;
-	oldMidPage         = -1;
-	linkAction         = nullptr;
-	lastLinkAction     = nullptr;
-	dragging           = false;
-	panning            = false;
-	inUpdateScrollbars = false;
-	updateCbk          = nullptr;
-	midPageChangedCbk  = nullptr;
-	preLoadCbk         = nullptr;
-	postLoadCbk        = nullptr;
-	actionCbk          = nullptr;
-	linkCbk            = nullptr;
-	selectDoneCbk      = nullptr;
-
-	// optional features default to on
-	hyperlinksEnabled         = true;
-	externalHyperlinksEnabled = true;
-	selectEnabled             = true;
-	panEnabled                = true;
-	showPasswordDialog        = true;
-
 	scaleFactor = computeScaleFactor();
 	displayDpi  = computeDisplayDpi();
 }
@@ -113,9 +89,7 @@ int QtPDFCore::computeDisplayDpi()
 
 int QtPDFCore::loadFile(const std::string& fileName, const std::string& ownerPassword, const std::string& userPassword)
 {
-	int err;
-
-	err = PDFCore::loadFile(fileName, ownerPassword, userPassword);
+	int err = PDFCore::loadFile(fileName, ownerPassword, userPassword);
 	if (err == errNone)
 	{
 		// save the modification time
@@ -128,26 +102,6 @@ int QtPDFCore::loadFile(const std::string& fileName, const std::string& ownerPas
 	}
 	return err;
 }
-
-#ifdef _WIN32
-int QtPDFCore::loadFile(wchar_t* fileName, int fileNameLen, const std::string& ownerPassword, const std::string& userPassword)
-{
-	int err;
-
-	err = PDFCore::loadFile(fileName, fileNameLen, ownerPassword, userPassword);
-	if (err == errNone)
-	{
-		// save the modification time
-		modTime = QFileInfo(doc->getFileName().c_str()).lastModified();
-
-		// update the parent window
-		if (updateCbk)
-			(*updateCbk)(updateCbkData, doc->getFileName(), -1, doc->getNumPages(), nullptr);
-		oldFirstPage = oldMidPage = -1;
-	}
-	return err;
-}
-#endif
 
 int QtPDFCore::loadFile(BaseStream* stream, const std::string& ownerPassword, const std::string& userPassword)
 {

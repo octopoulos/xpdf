@@ -427,33 +427,22 @@ bool GfxResources::lookupPropertiesNF(const char* name, Object* obj)
 
 Gfx::Gfx(PDFDoc* docA, OutputDev* outA, int pageNum, Dict* resDict, double hDPI, double vDPI, PDFRectangle* box, PDFRectangle* cropBox, int rotate, bool (*abortCheckCbkA)(void* data), void* abortCheckCbkDataA)
 {
-	int i;
-
 	doc           = docA;
 	xref          = doc->getXRef();
-	subPage       = false;
 	printCommands = globalParams->getPrintCommands();
-	defaultFont   = nullptr;
 
 	// start the resource stack
 	res = new GfxResources(xref, resDict, nullptr);
 
 	// initialize
-	out               = outA;
-	state             = new GfxState(hDPI, vDPI, box, rotate, out->upsideDown());
-	fontChanged       = false;
-	haveSavedClipPath = false;
-	clip              = clipNone;
-	ignoreUndef       = 0;
+	out   = outA;
+	state = new GfxState(hDPI, vDPI, box, rotate, out->upsideDown());
 	out->startPage(pageNum, state);
 	out->setDefaultCTM(state->getCTM());
 	out->updateAll(state);
-	for (i = 0; i < 6; ++i)
+	for (int i = 0; i < 6; ++i)
 		baseMatrix[i] = state->getCTM()[i];
-	formDepth          = 0;
 	markedContentStack = new GList();
-	ocState            = true;
-	parser             = nullptr;
 	contentStreamStack = new GList();
 	abortCheckCbk      = abortCheckCbkA;
 	abortCheckCbkData  = abortCheckCbkDataA;
@@ -474,30 +463,21 @@ Gfx::Gfx(PDFDoc* docA, OutputDev* outA, int pageNum, Dict* resDict, double hDPI,
 
 Gfx::Gfx(PDFDoc* docA, OutputDev* outA, Dict* resDict, PDFRectangle* box, PDFRectangle* cropBox, bool (*abortCheckCbkA)(void* data), void* abortCheckCbkDataA)
 {
-	int i;
-
 	doc           = docA;
 	xref          = doc->getXRef();
 	subPage       = true;
 	printCommands = globalParams->getPrintCommands();
-	defaultFont   = nullptr;
 
 	// start the resource stack
 	res = new GfxResources(xref, resDict, nullptr);
 
 	// initialize
-	out               = outA;
-	state             = new GfxState(72, 72, box, 0, false);
-	fontChanged       = false;
-	haveSavedClipPath = false;
-	clip              = clipNone;
-	ignoreUndef       = 0;
-	for (i = 0; i < 6; ++i)
+	out   = outA;
+	state = new GfxState(72, 72, box, 0, false);
+	for (int i = 0; i < 6; ++i)
 		baseMatrix[i] = state->getCTM()[i];
 	formDepth          = 0;
 	markedContentStack = new GList();
-	ocState            = true;
-	parser             = nullptr;
 	contentStreamStack = new GList();
 	abortCheckCbk      = abortCheckCbkA;
 	abortCheckCbkData  = abortCheckCbkDataA;
@@ -843,7 +823,7 @@ bool Gfx::checkArg(Object* arg, TchkType type)
 	return false;
 }
 
-GFileOffset Gfx::getPos()
+int64_t Gfx::getPos()
 {
 	return parser ? parser->getPos() : -1;
 }
@@ -3719,13 +3699,12 @@ void Gfx::doSetFont(GfxFont* font, double size)
 {
 	if (!font)
 	{
-		if (!defaultFont)
-			defaultFont = GfxFont::makeDefaultFont(xref);
+		if (!defaultFont) defaultFont = GfxFont::makeDefaultFont(xref);
 		font = defaultFont;
 	}
 	if (printCommands)
 	{
-		printf("  font: tag=%s name='%s' %g\n", font->getTag().c_str(), font->getName().size() ? font->getName().c_str() : "???", size);
+		fmt::print("  font: tag={} name='{}' {}\n", font->getTag(), font->getName(), size);
 		fflush(stdout);
 	}
 	state->setFont(font, size);
@@ -3962,7 +3941,7 @@ void Gfx::doShowText(const std::string& s)
 	GfxFont* font  = state->getFont();
 	int      wMode = font->getWMode();
 
-	if (globalParams->isDroppedFont(font->getName().size() ? font->getName().c_str() : ""))
+	if (globalParams->isDroppedFont(font->getName()))
 	{
 		doIncCharCount(s);
 		return;
@@ -5403,7 +5382,7 @@ Stream* Gfx::buildImageStream(bool* haveLength)
 		dict.free();
 		return nullptr;
 	}
-	str = new EmbedStream(str, &dict, *haveLength, (GFileOffset)length);
+	str = new EmbedStream(str, &dict, *haveLength, (int64_t)length);
 	str = str->addFilters(&dict);
 
 	return str;

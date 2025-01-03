@@ -38,8 +38,8 @@ public:
 private:
 	int findSMap(Unicode u);
 
-	Unicode                 page0[256]; //
-	UnicodeRemappingString* sMap;       //
-	int                     sMapLen;    //
-	int                     sMapSize;   //
+	Unicode                 page0[256] = {};      //
+	UnicodeRemappingString* sMap       = nullptr; //
+	int                     sMapLen    = 0;       //
+	int                     sMapSize   = 0;       //
 };

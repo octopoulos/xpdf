@@ -35,22 +35,17 @@ FoFiType1* FoFiType1::load(char* fileName)
 FoFiType1::FoFiType1(char* fileA, int lenA, bool freeFileDataA)
     : FoFiBase(fileA, lenA, freeFileDataA)
 {
-	name          = nullptr;
-	encoding      = nullptr;
 	fontMatrix[0] = 0.001;
 	fontMatrix[1] = 0;
 	fontMatrix[2] = 0;
 	fontMatrix[3] = 0.001;
 	fontMatrix[4] = 0;
 	fontMatrix[5] = 0;
-	parsed        = false;
 	undoPFB();
 }
 
 FoFiType1::~FoFiType1()
 {
-	if (name)
-		gfree(name);
 	if (encoding && encoding != (char**)fofiType1StandardEncoding)
 	{
 		for (int i = 0; i < 256; ++i) gfree(encoding[i]);
@@ -58,24 +53,21 @@ FoFiType1::~FoFiType1()
 	}
 }
 
-char* FoFiType1::getName()
+std::string_view FoFiType1::getName()
 {
-	if (!parsed)
-		parse();
+	if (!parsed) parse();
 	return name;
 }
 
 char** FoFiType1::getEncoding()
 {
-	if (!parsed)
-		parse();
+	if (!parsed) parse();
 	return encoding;
 }
 
 void FoFiType1::getFontMatrix(double* mat)
 {
-	if (!parsed)
-		parse();
+	if (!parsed) parse();
 	for (int i = 0; i < 6; ++i)
 		mat[i] = fontMatrix[i];
 }
@@ -169,8 +161,7 @@ void FoFiType1::writeEncoded(const char** newEncoding, FoFiOutputFunc outputFunc
 
 char* FoFiType1::getNextLine(char* line)
 {
-	while (line < (char*)file + len && *line != '\x0a' && *line != '\x0d')
-		++line;
+	while (line < (char*)file + len && *line != '\x0a' && *line != '\x0d') ++line;
 	if (line < (char*)file + len && *line == '\x0d') ++line;
 	if (line < (char*)file + len && *line == '\x0a') ++line;
 	if (line >= (char*)file + len) return nullptr;
@@ -181,15 +172,13 @@ void FoFiType1::parse()
 {
 	char *line, *line1, *p, *p2;
 	char  buf[256];
-	char  c;
-	int   n, code, base, i, j;
-	bool  gotMatrix, startsWithDup, endsWithDup;
+	int   n, code, base, i;
 
-	gotMatrix = false;
-	for (i = 1, line = (char*)file; i <= 100 && line && (!name || !encoding || !gotMatrix); ++i)
+	bool gotMatrix = false;
+	for (i = 1, line = (char*)file; i <= 100 && line && (name.empty() || !encoding || !gotMatrix); ++i)
 	{
 		// get font name
-		if (!name && line + 9 <= (char*)file + len && !strncmp(line, "/FontName", 9))
+		if (name.empty() && line + 9 <= (char*)file + len && !strncmp(line, "/FontName", 9))
 		{
 			n = 255;
 			if (line + n > (char*)file + len)
@@ -209,22 +198,21 @@ void FoFiType1::parse()
 		else if (!encoding && line + 19 <= (char*)file + len && !strncmp(line, "/Encoding 256 array", 19))
 		{
 			encoding = (char**)gmallocn(256, sizeof(char*));
-			for (j = 0; j < 256; ++j)
+			for (int j = 0; j < 256; ++j)
 				encoding[j] = nullptr;
+			int j;
 			for (j = 0, line = getNextLine(line); j < 300 && line && (line1 = getNextLine(line)); ++j, line = line1)
 			{
-				if ((n = (int)(line1 - line)) > 255)
-					n = 255;
+				if ((n = (int)(line1 - line)) > 255) n = 255;
 				strncpy(buf, line, n);
 				buf[n] = '\0';
 				for (p = buf; *p == ' ' || *p == '\t'; ++p)
 					;
-				endsWithDup   = !strncmp(line - 4, "dup\x0a", 4) || !strncmp(line - 5, "dup\x0d", 4);
-				startsWithDup = !strncmp(p, "dup", 3);
+				const bool endsWithDup   = !strncmp(line - 4, "dup\x0a", 4) || !strncmp(line - 5, "dup\x0d", 4);
+				const bool startsWithDup = !strncmp(p, "dup", 3);
 				if (endsWithDup || startsWithDup)
 				{
-					if (startsWithDup)
-						p += 3;
+					if (startsWithDup) p += 3;
 					while (1)
 					{
 						for (; *p == ' ' || *p == '\t'; ++p)
@@ -254,8 +242,8 @@ void FoFiType1::parse()
 							;
 						if (code >= 0 && code < 256)
 						{
-							c   = *p2;
-							*p2 = '\0';
+							const char c = *p2;
+							*p2          = '\0';
 							gfree(encoding[code]);
 							encoding[code] = copyString(p);
 							*p2            = c;
@@ -292,7 +280,7 @@ void FoFiType1::parse()
 				if ((p2 = strchr(p, ']')))
 				{
 					*p2 = '\0';
-					for (j = 0; j < 6; ++j)
+					for (int j = 0; j < 6; ++j)
 						if ((p = strtok(j == 0 ? p : (char*)nullptr, " \t\n\r")))
 							fontMatrix[j] = atof(p);
 						else
@@ -313,29 +301,25 @@ void FoFiType1::parse()
 // Undo the PFB encoding, i.e., remove the PFB headers.
 void FoFiType1::undoPFB()
 {
-	bool     ok;
-	uint8_t* file2;
-	int      pos1, pos2, type;
-	uint32_t segLen;
-
-	ok = true;
+	bool ok = true;
 	if (getU8(0, &ok) != 0x80 || !ok) return;
-	file2 = (uint8_t*)gmalloc(TO_INT(len));
-	pos1 = pos2 = 0;
+	uint8_t* file2 = (uint8_t*)gmalloc(TO_INT(len));
+	int      pos1  = 0;
+	int      pos2  = 0;
 	while (getU8(pos1, &ok) == 0x80 && ok)
 	{
-		type = getU8(pos1 + 1, &ok);
+		const int type = getU8(pos1 + 1, &ok);
 		if (type < 1 || type > 2 || !ok) break;
-		segLen = getU32LE(pos1 + 2, &ok);
+		const uint32_t segLen = getU32LE(pos1 + 2, &ok);
 		pos1 += 6;
 		if (!ok || !checkRegion(pos1, segLen)) break;
 		memcpy(file2 + pos2, file + pos1, segLen);
 		pos1 += segLen;
 		pos2 += segLen;
 	}
-	if (freeFileData)
-		gfree(fileData);
-	file = fileData = file2;
-	freeFileData    = true;
-	len             = pos2;
+	if (freeFileData) gfree(fileData);
+	file         = file2;
+	fileData     = file2;
+	freeFileData = true;
+	len          = pos2;
 }

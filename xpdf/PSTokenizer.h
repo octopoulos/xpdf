@@ -25,7 +25,7 @@ private:
 	int lookChar();
 	int getChar();
 
-	int (*getCharFunc)(void*); //
-	void* data;                //
-	int   charBuf;             //
+	int (*getCharFunc)(void*) = nullptr; //
+	void* data                = nullptr; //
+	int   charBuf             = 0;       //
 };

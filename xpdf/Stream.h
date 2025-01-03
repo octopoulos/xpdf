@@ -112,12 +112,12 @@ public:
 	virtual uint32_t discardChars(uint32_t n);
 
 	// Get current position in file.
-	virtual GFileOffset getPos() = 0;
+	virtual int64_t getPos() = 0;
 
 	// Go to a position in the stream.  If <dir> is negative, the
 	// position is from the end of the file; otherwise the position is
 	// from the start of the file.
-	virtual void setPos(GFileOffset pos, int dir = 0) = 0;
+	virtual void setPos(int64_t pos, int dir = 0) = 0;
 
 	// Get PostScript command for the filter(s).
 	virtual std::string getPSFilter(int psLevel, const char* indent, bool okToReadStream);
@@ -167,8 +167,8 @@ class BaseStream : public Stream
 public:
 	BaseStream(Object* dictA);
 	virtual ~BaseStream();
-	virtual Stream* makeSubStream(GFileOffset start, bool limited, GFileOffset length, Object* dict) = 0;
-	virtual void    setPos(GFileOffset pos, int dir = 0)                                             = 0;
+	virtual Stream* makeSubStream(int64_t start, bool limited, int64_t length, Object* dict) = 0;
+	virtual void    setPos(int64_t pos, int dir = 0)                                         = 0;
 
 	virtual bool isBinary(bool last = true) { return last; }
 
@@ -181,11 +181,11 @@ public:
 	virtual std::string getFileName() { return nullptr; }
 
 	// Get/set position of first byte of stream within the file.
-	virtual GFileOffset getStart()           = 0;
-	virtual void        moveStart(int delta) = 0;
+	virtual int64_t getStart()           = 0;
+	virtual void    moveStart(int delta) = 0;
 
 protected:
-	Object dict;
+	Object dict = {}; //
 };
 
 //------------------------------------------------------------------------
@@ -207,9 +207,9 @@ public:
 
 	virtual void close();
 
-	virtual GFileOffset getPos() { return str->getPos(); }
+	virtual int64_t getPos() { return str->getPos(); }
 
-	virtual void setPos(GFileOffset pos, int dir = 0);
+	virtual void setPos(int64_t pos, int dir = 0);
 
 	virtual BaseStream* getBaseStream() { return str->getBaseStream(); }
 
@@ -220,7 +220,7 @@ public:
 	virtual Stream* getNextStream() { return str; }
 
 protected:
-	Stream* str;
+	Stream* str = nullptr; //
 };
 
 //------------------------------------------------------------------------
@@ -255,15 +255,15 @@ public:
 	void skipLine();
 
 private:
-	Stream*  str;           // base stream
-	int      width;         // pixels per line
-	int      nComps;        // components per pixel
-	int      nBits;         // bits per component
-	int      nVals;         // components per line
-	int      inputLineSize; // input line buffer size
-	char*    inputLine;     // input line buffer
-	uint8_t* imgLine;       // line buffer
-	int      imgIdx;        // current index in imgLine
+	Stream*  str           = nullptr; // base stream
+	int      width         = 0;       // pixels per line
+	int      nComps        = 0;       // components per pixel
+	int      nBits         = 0;       // bits per component
+	int      nVals         = 0;       // components per line
+	int      inputLineSize = 0;       // input line buffer size
+	char*    inputLine     = nullptr; // input line buffer
+	uint8_t* imgLine       = nullptr; // line buffer
+	int      imgIdx        = 0;       // current index in imgLine
 };
 
 //------------------------------------------------------------------------
@@ -298,17 +298,17 @@ public:
 private:
 	bool getNextLine();
 
-	Stream*  str;       // base stream
-	int      predictor; // predictor
-	int      width;     // pixels per line
-	int      nComps;    // components per pixel
-	int      nBits;     // bits per component
-	int      nVals;     // components per line
-	int      pixBytes;  // bytes per pixel
-	int      rowBytes;  // bytes per line
-	uint8_t* predLine;  // line buffer
-	int      predIdx;   // current index in predLine
-	bool     ok;        //
+	Stream*  str       = nullptr; // base stream
+	int      predictor = 0;       // predictor
+	int      width     = 0;       // pixels per line
+	int      nComps    = 0;       // components per pixel
+	int      nBits     = 0;       // bits per component
+	int      nVals     = 0;       // components per line
+	int      pixBytes  = 0;       // bytes per pixel
+	int      rowBytes  = 0;       // bytes per line
+	uint8_t* predLine  = nullptr; // line buffer
+	int      predIdx   = 0;       // current index in predLine
+	bool     ok        = false;   //
 };
 
 //------------------------------------------------------------------------
@@ -320,10 +320,10 @@ private:
 class FileStream : public BaseStream
 {
 public:
-	FileStream(FILE* fA, GFileOffset startA, bool limitedA, GFileOffset lengthA, Object* dictA);
+	FileStream(FILE* fA, int64_t startA, bool limitedA, int64_t lengthA, Object* dictA);
 	virtual ~FileStream();
 	virtual Stream* copy();
-	virtual Stream* makeSubStream(GFileOffset startA, bool limitedA, GFileOffset lengthA, Object* dictA);
+	virtual Stream* makeSubStream(int64_t startA, bool limitedA, int64_t lengthA, Object* dictA);
 
 	virtual StreamKind getKind() { return strFile; }
 
@@ -341,26 +341,26 @@ public:
 
 	virtual int getBlock(char* blk, int size);
 
-	virtual GFileOffset getPos() { return bufPos + (int)(bufPtr - buf); }
+	virtual int64_t getPos() { return bufPos + (int)(bufPtr - buf); }
 
-	virtual void setPos(GFileOffset pos, int dir = 0);
+	virtual void setPos(int64_t pos, int dir = 0);
 
-	virtual GFileOffset getStart() { return start; }
+	virtual int64_t getStart() { return start; }
 
 	virtual void moveStart(int delta);
 
 private:
-	FileStream(SharedFile* fA, GFileOffset startA, bool limitedA, GFileOffset lengthA, Object* dictA);
+	FileStream(SharedFile* fA, int64_t startA, bool limitedA, int64_t lengthA, Object* dictA);
 	bool fillBuf();
 
-	SharedFile* f;                      //
-	GFileOffset start;                  //
-	bool        limited;                //
-	GFileOffset length;                 //
-	char        buf[fileStreamBufSize]; //
-	char*       bufPtr;                 //
-	char*       bufEnd;                 //
-	GFileOffset bufPos;                 //
+	SharedFile* f                      = nullptr; //
+	int64_t     start                  = 0;       //
+	bool        limited                = false;   //
+	int64_t     length                 = 0;       //
+	char        buf[fileStreamBufSize] = {};      //
+	char*       bufPtr                 = nullptr; //
+	char*       bufEnd                 = nullptr; //
+	int64_t     bufPos                 = 0;       //
 };
 
 //------------------------------------------------------------------------
@@ -370,10 +370,10 @@ private:
 class MemStream : public BaseStream
 {
 public:
-	MemStream(char* bufA, GFileOffset startA, GFileOffset lengthA, Object* dictA);
+	MemStream(char* bufA, int64_t startA, int64_t lengthA, Object* dictA);
 	virtual ~MemStream();
 	virtual Stream* copy();
-	virtual Stream* makeSubStream(GFileOffset start, bool limited, GFileOffset lengthA, Object* dictA);
+	virtual Stream* makeSubStream(int64_t start, bool limited, int64_t lengthA, Object* dictA);
 
 	virtual StreamKind getKind() { return strWeird; }
 
@@ -392,21 +392,21 @@ public:
 
 	virtual int getBlock(char* blk, int size);
 
-	virtual GFileOffset getPos() { return (GFileOffset)(bufPtr - buf); }
+	virtual int64_t getPos() { return (int64_t)(bufPtr - buf); }
 
-	virtual void setPos(GFileOffset pos, int dir = 0);
+	virtual void setPos(int64_t pos, int dir = 0);
 
-	virtual GFileOffset getStart() { return start; }
+	virtual int64_t getStart() { return start; }
 
 	virtual void moveStart(int delta);
 
 private:
-	char*       buf;      //
-	GFileOffset start;    //
-	GFileOffset length;   //
-	char*       bufEnd;   //
-	char*       bufPtr;   //
-	bool        needFree; //
+	char*   buf      = nullptr; //
+	int64_t start    = 0;       //
+	int64_t length   = 0;       //
+	char*   bufEnd   = nullptr; //
+	char*   bufPtr   = nullptr; //
+	bool    needFree = false;   //
 };
 
 //------------------------------------------------------------------------
@@ -422,10 +422,10 @@ private:
 class EmbedStream : public BaseStream
 {
 public:
-	EmbedStream(Stream* strA, Object* dictA, bool limitedA, GFileOffset lengthA);
+	EmbedStream(Stream* strA, Object* dictA, bool limitedA, int64_t lengthA);
 	virtual ~EmbedStream();
 	virtual Stream* copy();
-	virtual Stream* makeSubStream(GFileOffset start, bool limitedA, GFileOffset lengthA, Object* dictA);
+	virtual Stream* makeSubStream(int64_t start, bool limitedA, int64_t lengthA, Object* dictA);
 
 	virtual StreamKind getKind() { return str->getKind(); }
 
@@ -437,16 +437,16 @@ public:
 	virtual int lookChar();
 	virtual int getBlock(char* blk, int size);
 
-	virtual GFileOffset getPos() { return str->getPos(); }
+	virtual int64_t getPos() { return str->getPos(); }
 
-	virtual void        setPos(GFileOffset pos, int dir = 0);
-	virtual GFileOffset getStart();
-	virtual void        moveStart(int delta);
+	virtual void    setPos(int64_t pos, int dir = 0);
+	virtual int64_t getStart();
+	virtual void    moveStart(int delta);
 
 private:
-	Stream*     str;     //
-	bool        limited; //
-	GFileOffset length;  //
+	Stream* str     = nullptr; //
+	bool    limited = false;   //
+	int64_t length  = 0;       //
 };
 
 //------------------------------------------------------------------------
@@ -476,8 +476,8 @@ public:
 	virtual bool        isBinary(bool last = true);
 
 private:
-	int  buf; //
-	bool eof; //
+	int  buf = 0;     //
+	bool eof = false; //
 };
 
 //------------------------------------------------------------------------
@@ -507,11 +507,11 @@ public:
 	virtual bool        isBinary(bool last = true);
 
 private:
-	int  c[5]; //
-	int  b[4]; //
-	int  index;
-	int  n;   //
-	bool eof; //
+	int  c[5]  = {};    //
+	int  b[4]  = {};    //
+	int  index = 0;     //
+	int  n     = 0;     //
+	bool eof   = false; //
 };
 
 //------------------------------------------------------------------------
@@ -539,30 +539,31 @@ public:
 	virtual bool hasStrongCompression() { return true; }
 
 private:
-	StreamPredictor* pred;      // predictor
-	int              early;     // early parameter
-	bool             eof;       // true if at eof
-	int              inputBuf;  // input buffer
-	int              inputBits; // number of bits in input buffer
+	StreamPredictor* pred      = nullptr; // predictor
+	int              early     = 0;       // early parameter
+	bool             eof       = false;   // true if at eof
+	int              inputBuf  = 0;       // input buffer
+	int              inputBits = 0;       // number of bits in input buffer
 
+	// decoding table
 	struct
-	{                   // decoding table
+	{
 		int     length; //
 		int     head;   //
 		uint8_t tail;   //
 	} table[4097];
 
-	int                nextCode;                   // next code to be used
-	int                nextBits;                   // number of bits in next code word
-	int                prevCode;                   // previous code used in stream
-	int                newChar;                    // next char to be added to table
-	uint8_t            seqBuf[4097];               // buffer for current sequence
-	int                seqLength;                  // length of current sequence
-	int                seqIndex;                   // index into current sequence
-	bool               first;                      // first code after a table clear
-	bool               checkForDecompressionBombs; //
-	unsigned long long totalIn;                    // total number of encoded bytes read so far
-	unsigned long long totalOut;                   // total number of bytes decoded so far
+	int      nextCode                   = 0;     // next code to be used
+	int      nextBits                   = 0;     // number of bits in next code word
+	int      prevCode                   = 0;     // previous code used in stream
+	int      newChar                    = 0;     // next char to be added to table
+	uint8_t  seqBuf[4097]               = {};    // buffer for current sequence
+	int      seqLength                  = 0;     // length of current sequence
+	int      seqIndex                   = 0;     // index into current sequence
+	bool     first                      = false; // first code after a table clear
+	bool     checkForDecompressionBombs = false; //
+	uint64_t totalIn                    = 0;     // total number of encoded bytes read so far
+	uint64_t totalOut                   = 0;     // total number of bytes decoded so far
 
 	bool processNextCode();
 	void clearTable();
@@ -599,10 +600,10 @@ public:
 	virtual bool        isBinary(bool last = true);
 
 private:
-	char  buf[128]; // buffer
-	char* bufPtr;   // next char to read
-	char* bufEnd;   // end of buffer
-	bool  eof;      //
+	char  buf[128] = {};      // buffer
+	char* bufPtr   = nullptr; // next char to read
+	char* bufEnd   = nullptr; // end of buffer
+	bool  eof      = false;   //
 
 	bool fillBuf();
 };
@@ -632,25 +633,25 @@ public:
 	virtual bool hasStrongCompression() { return true; }
 
 private:
-	int      encoding;   // 'K' parameter
-	bool     endOfLine;  // 'EndOfLine' parameter
-	bool     byteAlign;  // 'EncodedByteAlign' parameter
-	int      columns;    // 'Columns' parameter
-	int      rows;       // 'Rows' parameter
-	bool     endOfBlock; // 'EndOfBlock' parameter
-	bool     black;      // 'BlackIs1' parameter
-	int      blackXOR;   //
-	bool     eof;        // true if at eof
-	bool     nextLine2D; // true if next line uses 2D encoding
-	int      row;        // current row
-	uint32_t inputBuf;   // input buffer
-	int      inputBits;  // number of bits in input buffer
-	int*     codingLine; // coding line changing elements
-	int*     refLine;    // reference line changing elements
-	int      nextCol;    // next column to read
-	int      a0i;        // index into codingLine
-	bool     err;        // error on current line
-	int      nErrors;    // number of errors so far in this stream
+	int      encoding   = 0;       // 'K' parameter
+	bool     endOfLine  = false;   // 'EndOfLine' parameter
+	bool     byteAlign  = false;   // 'EncodedByteAlign' parameter
+	int      columns    = 0;       // 'Columns' parameter
+	int      rows       = 0;       // 'Rows' parameter
+	bool     endOfBlock = false;   // 'EndOfBlock' parameter
+	bool     black      = false;   // 'BlackIs1' parameter
+	int      blackXOR   = 0;       //
+	bool     eof        = false;   // true if at eof
+	bool     nextLine2D = false;   // true if next line uses 2D encoding
+	int      row        = 0;       // current row
+	uint32_t inputBuf   = 0;       // input buffer
+	int      inputBits  = 0;       // number of bits in input buffer
+	int*     codingLine = nullptr; // coding line changing elements
+	int*     refLine    = nullptr; // reference line changing elements
+	int      nextCol    = 0;       // next column to read
+	int      a0i        = 0;       // index into codingLine
+	bool     err        = false;   // error on current line
+	int      nErrors    = 0;       // number of errors so far in this stream
 
 	void  addPixels(int a1, int blackPixels);
 	void  addPixelsNeg(int a1, int blackPixels);
@@ -678,15 +679,15 @@ class DCTStream;
 
 struct DCTSourceMgr
 {
-	jpeg_source_mgr src;
-	DCTStream*      str;
-	char            buf[dctStreamBufSize];
+	jpeg_source_mgr src                   = {};      //
+	DCTStream*      str                   = nullptr; //
+	char            buf[dctStreamBufSize] = {};      //
 };
 
 struct DCTErrorMgr
 {
-	struct jpeg_error_mgr err;
-	jmp_buf               setjmpBuf;
+	struct jpeg_error_mgr err       = {}; //
+	jmp_buf               setjmpBuf = {}; //
 };
 
 #else // HAVE_JPEGLIB
@@ -694,31 +695,32 @@ struct DCTErrorMgr
 // DCT component info
 struct DCTCompInfo
 {
-	int id;               // component ID
-	int hSample, vSample; // horiz/vert sampling resolutions
-	int quantTable;       // quantization table number
-	int prevDC;           // DC coefficient accumulator
+	int id         = 0; // component ID
+	int hSample    = 0; //
+	int vSample    = 0; // horiz/vert sampling resolutions
+	int quantTable = 0; // quantization table number
+	int prevDC     = 0; // DC coefficient accumulator
 };
 
 struct DCTScanInfo
 {
-	bool comp[4];        // comp[i] is set if component i is included in this scan
-	int  numComps;       // number of components in the scan
-	int  dcHuffTable[4]; // DC Huffman table numbers
-	int  acHuffTable[4]; // AC Huffman table numbers
-	int  firstCoeff;     //
-	int  lastCoeff;      // first and last DCT coefficient
-	int  ah;             //
-	int  al;             // successive approximation parameters
+	bool comp[4]        = {}; // comp[i] is set if component i is included in this scan
+	int  numComps       = 0;  // number of components in the scan
+	int  dcHuffTable[4] = {}; // DC Huffman table numbers
+	int  acHuffTable[4] = {}; // AC Huffman table numbers
+	int  firstCoeff     = 0;  //
+	int  lastCoeff      = 0;  // first and last DCT coefficient
+	int  ah             = 0;  //
+	int  al             = 0;  // successive approximation parameters
 };
 
 // DCT Huffman decoding table
 struct DCTHuffTable
 {
-	uint8_t  firstSym[17];  // first symbol for this bit length
-	uint16_t firstCode[17]; // first code for this bit length
-	uint16_t numCodes[17];  // number of codes of this bit length
-	uint8_t  sym[256];      // symbols
+	uint8_t  firstSym[17]  = {}; // first symbol for this bit length
+	uint16_t firstCode[17] = {}; // first code for this bit length
+	uint16_t numCodes[17]  = {}; // number of codes of this bit length
+	uint8_t  sym[256]      = {}; // symbols
 };
 
 #endif // HAVE_JPEGLIB
@@ -749,17 +751,17 @@ private:
 
 #if HAVE_JPEGLIB
 
-	int                    colorXform;     // color transform: -1 = unspecified, 0 = none, 1 = YUV/YUVK -> RGB/CMYK
-	jpeg_decompress_struct decomp;         //
-	DCTErrorMgr            errorMgr;       //
-	DCTSourceMgr           sourceMgr;      //
-	bool                   error;          //
-	char*                  lineBuf;        //
-	int                    lineBufHeight;  //
-	char*                  lineBufRows[4]; //
-	char*                  bufPtr;         //
-	char*                  bufEnd;         //
-	bool                   inlineImage;    //
+	int                    colorXform     = -1;      // color transform: -1 = unspecified, 0 = none, 1 = YUV/YUVK -> RGB/CMYK
+	jpeg_decompress_struct decomp         = {};      //
+	DCTErrorMgr            errorMgr       = {};      //
+	DCTSourceMgr           sourceMgr      = {};      //
+	bool                   error          = false;   //
+	char*                  lineBuf        = nullptr; //
+	int                    lineBufHeight  = 0;       //
+	char*                  lineBufRows[4] = {};      //
+	char*                  bufPtr         = nullptr; //
+	char*                  bufEnd         = nullptr; //
+	bool                   inlineImage    = false;   //
 
 	bool           fillBuf();
 	static void    errorExit(j_common_ptr d);
@@ -771,35 +773,40 @@ private:
 
 #else // HAVE_JPEGLIB
 
-	bool         prepared;            // set after prepare() is called
-	bool         progressive;         // set if in progressive mode
-	bool         interleaved;         // set if in interleaved mode
-	int          width, height;       // image size
-	int          mcuWidth, mcuHeight; // size of min coding unit, in data units
-	int          bufWidth, bufHeight; // frameBuf size
-	DCTCompInfo  compInfo[4];         // info for each component
-	DCTScanInfo  scanInfo;            // info for the current scan
-	int          numComps;            // number of components in image
-	int          colorXform;          // color transform: -1 = unspecified, 0 = none, 1 = YUV/YUVK -> RGB/CMYK
-	bool         gotJFIFMarker;       // set if APP0 JFIF marker was present
-	bool         gotAdobeMarker;      // set if APP14 Adobe marker was present
-	int          restartInterval;     // restart interval, in MCUs
-	uint16_t     quantTables[4][64];  // quantization tables
-	int          numQuantTables;      // number of quantization tables
-	DCTHuffTable dcHuffTables[4];     // DC Huffman tables
-	DCTHuffTable acHuffTables[4];     // AC Huffman tables
-	int          numDCHuffTables;     // number of DC Huffman tables
-	int          numACHuffTables;     // number of AC Huffman tables
-	uint8_t*     rowBuf;              //
-	uint8_t*     rowBufPtr;           // current position within rowBuf
-	uint8_t*     rowBufEnd;           // end of valid data in rowBuf
-	int*         frameBuf[4];         // buffer for frame (progressive mode)
-	int          comp, x, y;          // current position within image/MCU
-	int          restartCtr;          // MCUs left until restart
-	int          restartMarker;       // next restart marker
-	int          eobRun;              // number of EOBs left in the current run
-	int          inputBuf;            // input buffer for variable length codes
-	int          inputBits;           // number of valid bits in input buffer
+	bool         prepared           = false;   // set after prepare() is called
+	bool         progressive        = false;   // set if in progressive mode
+	bool         interleaved        = false;   // set if in interleaved mode
+	int          width              = 0;       //
+	int          height             = 0;       // // image size
+	int          mcuWidth           = 0;       //
+	int          mcuHeight          = 0;       // size of min coding unit, in data units
+	int          bufWidth           = 0;       //
+	int          bufHeight          = 0;       // frameBuf size
+	DCTCompInfo  compInfo[4]        = {};      // info for each component
+	DCTScanInfo  scanInfo           = {};      // info for the current scan
+	int          numComps           = 0;       // number of components in image
+	int          colorXform         = 0;       // color transform: -1 = unspecified, 0 = none, 1 = YUV/YUVK -> RGB/CMYK
+	bool         gotJFIFMarker      = false;   // set if APP0 JFIF marker was present
+	bool         gotAdobeMarker     = false;   // set if APP14 Adobe marker was present
+	int          restartInterval    = 0;       // restart interval, in MCUs
+	uint16_t     quantTables[4][64] = {};      // quantization tables
+	int          numQuantTables     = 0;       // number of quantization tables
+	DCTHuffTable dcHuffTables[4]    = {};      // DC Huffman tables
+	DCTHuffTable acHuffTables[4]    = {};      // AC Huffman tables
+	int          numDCHuffTables    = 0;       // number of DC Huffman tables
+	int          numACHuffTables    = 0;       // number of AC Huffman tables
+	uint8_t*     rowBuf             = nullptr; //
+	uint8_t*     rowBufPtr          = nullptr; // current position within rowBuf
+	uint8_t*     rowBufEnd          = nullptr; // end of valid data in rowBuf
+	int*         frameBuf[4]        = {};      // buffer for frame (progressive mode)
+	int          comp               = 0;       //
+	int          x                  = 0;       //
+	int          y                  = 0;       // current position within image/MCU
+	int          restartCtr         = 0;       // MCUs left until restart
+	int          restartMarker      = 0;       // next restart marker
+	int          eobRun             = 0;       // number of EOBs left in the current run
+	int          inputBuf           = 0;       // input buffer for variable length codes
+	int          inputBits          = 0;       // number of valid bits in input buffer
 
 	void prepare();
 	void restart();
@@ -842,21 +849,21 @@ private:
 // Huffman code table entry
 struct FlateCode
 {
-	uint16_t len; // code length, in bits
-	uint16_t val; // value represented by this code
+	uint16_t len = 0; // code length, in bits
+	uint16_t val = 0; // value represented by this code
 };
 
 struct FlateHuffmanTab
 {
-	FlateCode* codes;
-	int        maxLen;
+	FlateCode* codes  = nullptr; //
+	int        maxLen = 0;       //
 };
 
 // Decoding info for length and distance code words
 struct FlateDecode
 {
-	int bits;  // # extra bits
-	int first; // first length/distance
+	int bits  = 0; // # extra bits
+	int first = 0; // first length/distance
 };
 
 class FlateStream : public FilterStream
@@ -880,22 +887,22 @@ public:
 	virtual bool hasStrongCompression() { return true; }
 
 private:
-	StreamPredictor*   pred;                                              // predictor
-	uint8_t            buf[flateWindow];                                  // output data buffer
-	int                index;                                             // current index into output buffer
-	int                remain;                                            // number valid bytes in output buffer
-	int                codeBuf;                                           // input buffer
-	int                codeSize;                                          // number of bits in input buffer
-	int                codeLengths[flateMaxLitCodes + flateMaxDistCodes]; // literal and distance code lengths
-	FlateHuffmanTab    litCodeTab;                                        // literal code table
-	FlateHuffmanTab    distCodeTab;                                       // distance code table
-	bool               compressedBlock;                                   // set if reading a compressed block
-	int                blockLen;                                          // remaining length of uncompressed block
-	bool               endOfBlock;                                        // set when end of block is reached
-	bool               eof;                                               // set when end of stream is reached
-	bool               checkForDecompressionBombs;                        //
-	unsigned long long totalIn;                                           // total number of encoded bytes read so far
-	unsigned long long totalOut;                                          // total number of bytes decoded so far
+	StreamPredictor* pred                                              = nullptr; // predictor
+	uint8_t          buf[flateWindow]                                  = {};      // output data buffer
+	int              index                                             = 0;       // current index into output buffer
+	int              remain                                            = 0;       // number valid bytes in output buffer
+	int              codeBuf                                           = 0;       // input buffer
+	int              codeSize                                          = 0;       // number of bits in input buffer
+	int              codeLengths[flateMaxLitCodes + flateMaxDistCodes] = {};      // literal and distance code lengths
+	FlateHuffmanTab  litCodeTab                                        = {};      // literal code table
+	FlateHuffmanTab  distCodeTab                                       = {};      // distance code table
+	bool             compressedBlock                                   = false;   // set if reading a compressed block
+	int              blockLen                                          = 0;       // remaining length of uncompressed block
+	bool             endOfBlock                                        = false;   // set when end of block is reached
+	bool             eof                                               = false;   // set when end of stream is reached
+	bool             checkForDecompressionBombs                        = false;   //
+	uint64_t         totalIn                                           = 0;       // total number of encoded bytes read so far
+	uint64_t         totalOut                                          = 0;       // total number of bytes decoded so far
 
 	static int             codeLenCodeMap[flateMaxCodeLenCodes]; // code length code reordering
 	static FlateDecode     lengthDecode[flateMaxLitCodes - 257]; // length decoding info
@@ -962,8 +969,8 @@ public:
 	int lookChar(int idx);
 
 private:
-	int* buf;     //
-	int  bufSize; //
+	int* buf     = nullptr; //
+	int  bufSize = 0;       //
 };
 
 //------------------------------------------------------------------------
@@ -990,8 +997,8 @@ public:
 	virtual bool isEncoder() { return true; }
 
 private:
-	int length; //
-	int count;  //
+	int length = 0; //
+	int count  = 0; //
 };
 
 //------------------------------------------------------------------------
@@ -1026,11 +1033,11 @@ public:
 	virtual bool isEncoder() { return true; }
 
 private:
-	char  buf[4];  //
-	char* bufPtr;  //
-	char* bufEnd;  //
-	int   lineLen; //
-	bool  eof;     //
+	char  buf[4]  = {};      //
+	char* bufPtr  = nullptr; //
+	char* bufEnd  = nullptr; //
+	int   lineLen = 0;       //
+	bool  eof     = false;   //
 
 	bool fillBuf();
 };
@@ -1067,11 +1074,11 @@ public:
 	virtual bool isEncoder() { return true; }
 
 private:
-	char  buf[8];  //
-	char* bufPtr;  //
-	char* bufEnd;  //
-	int   lineLen; //
-	bool  eof;     //
+	char  buf[8]  = {};      //
+	char* bufPtr  = nullptr; //
+	char* bufEnd  = nullptr; //
+	int   lineLen = 0;       //
+	bool  eof     = false;   //
 
 	bool fillBuf();
 };
@@ -1108,11 +1115,11 @@ public:
 	virtual bool isEncoder() { return true; }
 
 private:
-	char  buf[131]; //
-	char* bufPtr;   //
-	char* bufEnd;   //
-	char* nextEnd;  //
-	bool  eof;      //
+	char  buf[131] = {};      //
+	char* bufPtr   = nullptr; //
+	char* bufEnd   = nullptr; //
+	char* nextEnd  = nullptr; //
+	bool  eof      = false;   //
 
 	bool fillBuf();
 };
@@ -1123,9 +1130,9 @@ private:
 
 struct LZWEncoderNode
 {
-	int             byte;     //
-	LZWEncoderNode* next;     // next sibling
-	LZWEncoderNode* children; // first child
+	int             byte     = 0;       //
+	LZWEncoderNode* next     = nullptr; // next sibling
+	LZWEncoderNode* children = nullptr; // first child
 };
 
 class LZWEncoder : public FilterStream
@@ -1148,15 +1155,15 @@ public:
 	virtual bool isEncoder() { return true; }
 
 private:
-	LZWEncoderNode table[4096]; //
-	int            nextSeq;     //
-	int            codeLen;     //
-	uint8_t        inBuf[8192]; //
-	int            inBufStart;  //
-	int            inBufLen;    //
-	int            outBuf;      //
-	int            outBufLen;   //
-	bool           needEOD;     //
+	LZWEncoderNode table[4096] = {};    //
+	int            nextSeq     = 0;     //
+	int            codeLen     = 0;     //
+	uint8_t        inBuf[8192] = {};    //
+	int            inBufStart  = 0;     //
+	int            inBufLen    = 0;     //
+	int            outBuf      = 0;     //
+	int            outBufLen   = 0;     //
+	bool           needEOD     = false; //
 
 	void fillBuf();
 };

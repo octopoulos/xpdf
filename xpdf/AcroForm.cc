@@ -480,8 +480,6 @@ AcroForm::AcroForm(PDFDoc* docA, Object* acroFormObjA)
 	needAppearances = false;
 	annotPages      = new GList();
 	fields          = new GList();
-	xfaScanner      = nullptr;
-	isStaticXFA     = false;
 }
 
 AcroForm::~AcroForm()
@@ -2833,10 +2831,8 @@ void AcroFormField::drawBarcode(const std::string& value, const std::string& da,
 	std::string value2 = value;
 	if (barcodeInfo->barcodeType == "code3Of9")
 	{
-		if (value2.size() >= 1 && value2.at(0) == '*')
-			value2.erase(0);
-		if (value2.size() >= 1 && value2.at(value2.size() - 1) == '*')
-			value2.erase(value2.size() - 1);
+		if (value2.size() >= 1 && value2.at(0) == '*') value2.erase(0, 1);
+		if (value2.size() >= 1 && value2.back() == '*') value2.pop_back();
 	}
 
 	//--- draw the bar code
@@ -3647,8 +3643,8 @@ std::string AcroFormField::pictureFormatNumber(const std::string& value, const s
 	//  |   |    +------ trailingZero
 	//  |   +----------- decPt
 	//  +--------------- start
-	int start = 0;
-	int neg   = false;
+	int  start = 0;
+	bool neg   = false;
 	if (value.at(start) == '-')
 	{
 		neg = true;

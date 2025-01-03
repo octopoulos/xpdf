@@ -26,23 +26,27 @@ struct SplashPathHint;
 
 struct SplashXPathSeg
 {
-	SplashCoord x0, y0; // first endpoint (y0 <= y1)
-	SplashCoord x1, y1; // second endpoint
-	SplashCoord dxdy;   // slope: delta-x / delta-y
-	SplashCoord dydx;   // slope: delta-y / delta-x
-	int         count;  // EO/NZWN counter increment
+	SplashCoord x0    = 0;
+	SplashCoord y0    = 0; // first endpoint (y0 <= y1)
+	SplashCoord x1    = 0;
+	SplashCoord y1    = 0; // second endpoint
+	SplashCoord dxdy  = 0; // slope: delta-x / delta-y
+	SplashCoord dydx  = 0; // slope: delta-y / delta-x
+	int         count = 0; // EO/NZWN counter increment
 
 	//----- used by SplashXPathScanner
-	int             iy;
-	SplashCoord     sx0, sx1, mx;
-	SplashXPathSeg *prev, *next;
+	int             iy   = 0; //
+	SplashCoord     sx0  = 0;
+	SplashCoord     sx1  = 0;       //
+	SplashCoord     mx   = 0;       //
+	SplashXPathSeg* prev = nullptr; //
+	SplashXPathSeg* next = nullptr; //
 
 #if HAVE_STD_SORT
 
 	static bool cmpMX(const SplashXPathSeg& s0, const SplashXPathSeg& s1)
 	{
-		if (s0.iy != s1.iy)
-			return s0.iy < s1.iy;
+		if (s0.iy != s1.iy) return s0.iy < s1.iy;
 		return s0.mx < s1.mx;
 	}
 
@@ -59,21 +63,17 @@ struct SplashXPathSeg
 		SplashXPathSeg* s1 = (SplashXPathSeg*)p1;
 		SplashCoord     cmp;
 
-		if (s0->iy != s1->iy)
-			return s0->iy - s1->iy;
+		if (s0->iy != s1->iy) return s0->iy - s1->iy;
 		cmp = s0->mx - s1->mx;
-		return (cmp < 0) ? -1 : (cmp > 0) ? 1
-		                                  : 0;
+		return (cmp < 0) ? -1 : ((cmp > 0) ? 1 : 0);
 	}
 
 	static int cmpY(const void* seg0, const void* seg1)
 	{
 		SplashCoord cmp;
 
-		cmp = ((SplashXPathSeg*)seg0)->y0
-		    - ((SplashXPathSeg*)seg1)->y0;
-		return (cmp > 0) ? 1 : (cmp < 0) ? -1
-		                                 : 0;
+		cmp = ((SplashXPathSeg*)seg0)->y0 - ((SplashXPathSeg*)seg1)->y0;
+		return (cmp > 0) ? 1 : ((cmp < 0) ? -1 : 0);
 	}
 
 #endif
@@ -86,10 +86,9 @@ struct SplashXPathSeg
 class SplashXPath
 {
 public:
-	// Expands (converts to segments) and flattens (converts curves to
-	// lines) <path>.  Transforms all points from user space to device
-	// space, via <matrix>.  If <closeSubpaths> is true, closes all open
-	// subpaths.
+	// Expands (converts to segments) and flattens (converts curves to lines) <path>.
+	// Transforms all points from user space to device space, via <matrix>.
+	// If <closeSubpaths> is true, closes all open subpaths.
 	SplashXPath(SplashPath* path, SplashCoord* matrix, SplashCoord flatness, bool closeSubpaths, bool simplify, SplashStrokeAdjustMode strokeAdjMode, SplashClip* clip);
 
 	// Copy an expanded path.
@@ -117,18 +116,18 @@ private:
 	void        addSegment(SplashCoord x0, SplashCoord y0, SplashCoord x1, SplashCoord y1);
 	void        finishSegments();
 
-	SplashXPathSeg* segs;   //
-	int             length; //
-	int             size;   // length and size of segs array
-	int             xMin;   //
-	int             xMax;   //
-	int             yMin;   //
-	int             yMax;   //
-	bool            isRect; //
-	SplashCoord     rectX0; //
-	SplashCoord     rectY0; //
-	SplashCoord     rectX1; //
-	SplashCoord     rectY1; //
+	SplashXPathSeg* segs   = nullptr; //
+	int             length = 0;       //
+	int             size   = 0;       // length and size of segs array
+	int             xMin   = 0;       //
+	int             xMax   = 0;       //
+	int             yMin   = 0;       //
+	int             yMax   = 0;       //
+	bool            isRect = false;   //
+	SplashCoord     rectX0 = 0;       //
+	SplashCoord     rectY0 = 0;       //
+	SplashCoord     rectX1 = 0;       //
+	SplashCoord     rectY1 = 0;       //
 
 	friend class SplashXPathScanner;
 	friend class SplashClip;

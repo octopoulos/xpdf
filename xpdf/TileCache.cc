@@ -32,12 +32,10 @@
 
 enum CachedTileState
 {
-	cachedTileUnstarted, // worker thread hasn't started
-	                     //   rasterization yet
+	cachedTileUnstarted, // worker thread hasn't started rasterization yet
 	cachedTileStarted,   // worker thread is rasterizing the tile
 	cachedTileFinished,  // rasterization is done
-	cachedTileCanceled   // worker thread should stop rasterizing
-	                     //   and remove this tile from the cache
+	cachedTileCanceled   // worker thread should stop rasterizing and remove this tile from the cache
 };
 
 class CachedTileDesc : public TileDesc
@@ -62,8 +60,7 @@ public:
 
 CachedTileDesc::~CachedTileDesc()
 {
-	if (freeBitmap)
-		delete bitmap;
+	if (freeBitmap) delete bitmap;
 }
 
 //------------------------------------------------------------------------
@@ -282,8 +279,6 @@ TileCache::TileCache(DisplayState* stateA)
 	state->setTileCache(this);
 	cache           = new GList();
 	threadPool      = new TileCacheThreadPool(this, state->getNWorkerThreads());
-	tileDoneCbk     = nullptr;
-	tileDoneCbkData = nullptr;
 }
 
 TileCache::~TileCache()

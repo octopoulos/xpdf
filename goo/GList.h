@@ -80,10 +80,10 @@ private:
 	void expand();
 	void shrink();
 
-	void** data;   // the list elements
-	int    size;   // size of data array
-	int    length; // number of elements on list
-	int    inc;    // allocation increment
+	void** data   = nullptr; // the list elements
+	int    size   = 8;       // size of data array
+	int    length = 0;       // number of elements on list
+	int    inc    = 0;       // allocation increment
 };
 
 #define deleteGList(list, T)                            \

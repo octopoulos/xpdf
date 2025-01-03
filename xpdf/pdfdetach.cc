@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
 				fwrite(uBuf, 1, n, stdout);
 			}
 			fputc('\n', stdout);
-		}		
+		}
 	}
 
 	// save all embedded files

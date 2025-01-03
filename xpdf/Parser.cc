@@ -26,7 +26,6 @@ Parser::Parser(XRef* xrefA, Lexer* lexerA, bool allowStreamsA)
 {
 	xref         = xrefA;
 	lexer        = lexerA;
-	inlineImg    = 0;
 	allowStreams = allowStreamsA;
 	lexer->getObj(&buf1);
 	lexer->getObj(&buf2);
@@ -164,11 +163,11 @@ Stream* Parser::makeStream(Object* dict, uint8_t* fileKey, CryptAlgorithm encAlg
 	lexer->skipToNextLine();
 	Stream* curStr = lexer->getStream();
 	if (!curStr) return nullptr;
-	GFileOffset pos = curStr->getPos();
+	int64_t pos = curStr->getPos();
 
-	bool        haveLength = false;
-	GFileOffset length     = 0;
-	GFileOffset endPos;
+	bool    haveLength = false;
+	int64_t length     = 0;
+	int64_t endPos;
 
 	// check for length in damaged file
 	if (xref && xref->getStreamEnd(pos, &endPos))
@@ -184,7 +183,7 @@ Stream* Parser::makeStream(Object* dict, uint8_t* fileKey, CryptAlgorithm encAlg
 		dict->dictLookup("Length", &obj, recursion);
 		if (obj.isInt())
 		{
-			length     = (GFileOffset)(uint32_t)obj.getInt();
+			length     = (int64_t)(uint32_t)obj.getInt();
 			haveLength = true;
 		}
 		else

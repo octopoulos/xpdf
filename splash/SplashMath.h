@@ -29,9 +29,8 @@ static inline SplashCoord splashAbs(SplashCoord x)
 #endif
 }
 
-// floor() and (int)() are implemented separately, which results
-// in changing the FPCW multiple times - so we optimize it with
-// some inline assembly or SSE intrinsics.
+// floor() and (int)() are implemented separately, which results in changing the FPCW multiple times
+// - so we optimize it with some inline assembly or SSE intrinsics.
 static inline int splashFloor(SplashCoord x)
 {
 #if USE_FIXEDPOINT
@@ -94,9 +93,8 @@ static inline int splashFloor(SplashCoord x)
 #endif
 }
 
-// ceil() and (int)() are implemented separately, which results
-// in changing the FPCW multiple times - so we optimize it with
-// some inline assembly or SSE intrinsics.
+// ceil() and (int)() are implemented separately, which results in changing the FPCW multiple times
+// - so we optimize it with some inline assembly or SSE intrinsics.
 static inline int splashCeil(SplashCoord x)
 {
 #if USE_FIXEDPOINT
@@ -144,9 +142,8 @@ static inline int splashCeil(SplashCoord x)
 
 	//--- x87 inline assembly (VC)
 
-	// ceil() and (int)() are implemented separately, which results
-	// in changing the FPCW multiple times - so we optimize it with
-	// some inline assembly
+	// ceil() and (int)() are implemented separately, which results in changing the FPCW multiple times
+	// - so we optimize it with some inline assembly
 	uint16_t oldCW, newCW;
 	int      result;
 
@@ -212,8 +209,7 @@ static inline SplashCoord splashDist(SplashCoord x0, SplashCoord y0, SplashCoord
 	dx = x1 - x0;
 	dy = y1 - y0;
 #if USE_FIXEDPOINT
-	// this handles the situation where dx*dx or dy*dy is too large to
-	// fit in the 16.16 fixed point format
+	// this handles the situation where dx*dx or dy*dy is too large to fit in the 16.16 fixed point format
 	SplashCoord dxa, dya, d;
 	dxa = splashAbs(dx);
 	dya = splashAbs(dy);
@@ -251,10 +247,8 @@ static inline bool splashCheckDet(SplashCoord m11, SplashCoord m12, SplashCoord 
 // There are several options:
 //
 // 1. Round both edge coordinates.
-//    Pro: adjacent strokes/fills line up without any gaps or
-//         overlaps
-//    Con: lines with the same original floating point width can
-//         end up with different integer widths, e.g.:
+//    Pro: adjacent strokes/fills line up without any gaps or overlaps
+//    Con: lines with the same original floating point width can end up with different integer widths, e.g.:
 //               xMin  = 10.1   xMax  = 11.3   (width = 1.2)
 //           --> xMinI = 10     xMaxI = 11     (width = 1)
 //         but
@@ -262,37 +256,26 @@ static inline bool splashCheckDet(SplashCoord m11, SplashCoord m12, SplashCoord 
 //           --> xMinI = 10     xMaxI = 12     (width = 2)
 //
 // 2. Round the min coordinate; add the ceiling of the width.
-//    Pro: lines with the same original floating point width will
-//         always end up with the same integer width
-//    Con: adjacent strokes/fills can have overlaps (which is
-//         problematic with transparency)
-//    (This could use floor on the min coordinate, instead of
-//    rounding, with similar results.)
-//    (If the width is rounded instead of using ceiling, the results
-//    Are similar, except that adjacent strokes/fills can have gaps
-//    as well as overlaps.)
+//    Pro: lines with the same original floating point width will always end up with the same integer width
+//    Con: adjacent strokes/fills can have overlaps (which is problematic with transparency)
+//    (This could use floor on the min coordinate, instead of rounding, with similar results.)
+//    (If the width is rounded instead of using ceiling, the results Are similar, except that adjacent strokes/fills can have gaps as well as overlaps.)
 //
-// 3. Use floor on the min coordinate and ceiling on the max
-//    coordinate.
-//    Pro: lines always end up at least as wide as the original
-//         floating point width
-//    Con: adjacent strokes/fills can have overlaps, and lines with
-//         the same original floating point width can end up with
-//         different integer widths; the integer width can be more
-//         than one pixel wider than the original width, e.g.:
+// 3. Use floor on the min coordinate and ceiling on the max coordinate.
+//    Pro: lines always end up at least as wide as the original floating point width
+//    Con: adjacent strokes/fills can have overlaps, and lines with the same original floating point width can end up with different integer widths;
+//         the integer width can be more than one pixel wider than the original width, e.g.:
 //               xMin  = 10.9   xMax  = 12.1   (width = 1.2)
 //           --> xMinI = 10     xMaxI = 13     (width = 3)
 //         but
 //               xMin  = 10.1   xMax  = 11.3   (width = 1.2)
 //           --> xMinI = 10     xMaxI = 12     (width = 2)
 //
-// 4. Use a hybrid approach, choosing between two of the above
-//    options, based on width.  E.g., use #2 if width <= 4, and use #1
-//    if width > 4.
+// 4. Use a hybrid approach, choosing between two of the above options, based on width.
+//    E.g., use #2 if width <= 4, and use #1 if width > 4.
 //
-// If w >= 0 and strokeAdjMode is splashStrokeAdjustCAD then a special
-// mode for projecting line caps is enabled, with w being the
-// transformed line width.
+// If w >= 0 and strokeAdjMode is splashStrokeAdjustCAD then a special mode for projecting line caps is enabled,
+// with w being the transformed line width.
 
 static inline void splashStrokeAdjust(SplashCoord xMin, SplashCoord xMax, int* xMinI, int* xMaxI, SplashStrokeAdjustMode strokeAdjMode, SplashCoord w = -1)
 {

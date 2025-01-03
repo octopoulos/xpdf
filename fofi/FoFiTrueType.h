@@ -148,17 +148,17 @@ private:
 	void     readPostTable();
 	int      seekTable(const char* tag);
 
-	TrueTypeTable* tables;      //
-	int            nTables;     //
-	TrueTypeCmap*  cmaps;       //
-	int            nCmaps;      //
-	int            nGlyphs;     //
-	int            locaFmt;     //
-	int            bbox[4];     //
-	GHash*         nameToGID;   //
-	bool           openTypeCFF; //
-	bool           headlessCFF; //
-	bool           isDfont;     //
-	bool           isTTC;       //
-	bool           parsedOk;    //
+	TrueTypeTable* tables      = nullptr; //
+	int            nTables     = 0;       //
+	TrueTypeCmap*  cmaps       = nullptr; //
+	int            nCmaps      = 0;       //
+	int            nGlyphs     = 0;       //
+	int            locaFmt     = 0;       //
+	int            bbox[4]     = {};      //
+	GHash*         nameToGID   = nullptr; //
+	bool           openTypeCFF = false;   //
+	bool           headlessCFF = false;   //
+	bool           isDfont     = false;   //
+	bool           isTTC       = false;   //
+	bool           parsedOk    = false;   //
 };

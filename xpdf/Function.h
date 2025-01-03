@@ -31,9 +31,9 @@ public:
 
 	virtual ~Function();
 
-	// Construct a function, with [expectedInputs] inputs and
-	// [expectedOutputs] outputs.  [expectedOutputs] can be -1 to
-	// indicate unknown.  Returns nullptr if unsuccessful.
+	// Construct a function, with [expectedInputs] inputs and [expectedOutputs] outputs.
+	// [expectedOutputs] can be -1 to indicate unknown.
+	// Returns nullptr if unsuccessful.
 	static Function* parse(Object* funcObj, int expectedInputs, int expectedOutputs, int recursion = 0);
 
 	// Initialize the entries common to all function types.
@@ -70,10 +70,11 @@ public:
 	virtual bool isOk() = 0;
 
 protected:
-	int    m, n;                     // size of input and output tuples
-	double domain[funcMaxInputs][2]; // min and max values for function domain
-	double range[funcMaxOutputs][2]; // min and max values for function range
-	bool   hasRange;                 // set if range is defined
+	int    m                        = 0;     // size of input and output tuples
+	int    n                        = 0;     //
+	double domain[funcMaxInputs][2] = {};    // min and max values for function domain
+	double range[funcMaxOutputs][2] = {};    // min and max values for function range
+	bool   hasRange                 = false; // set if range is defined
 };
 
 //------------------------------------------------------------------------
@@ -130,17 +131,17 @@ public:
 private:
 	SampledFunction(SampledFunction* func);
 
-	int     sampleSize[funcMaxInputs]; // number of samples for each domain element
-	double  encode[funcMaxInputs][2];  // min and max values for domain encoder
-	double  decode[funcMaxOutputs][2]; // min and max values for range decoder
-	double  inputMul[funcMaxInputs];   // input multipliers
-	int*    idxOffset;                 //
-	double* samples;                   // the samples
-	int     nSamples;                  // size of the samples array
-	double* sBuf;                      // buffer for the transform function
-	double  cacheIn[funcMaxInputs];    //
-	double  cacheOut[funcMaxOutputs];  //
-	bool    ok;                        //
+	int     sampleSize[funcMaxInputs] = {};      // number of samples for each domain element
+	double  encode[funcMaxInputs][2]  = {};      // min and max values for domain encoder
+	double  decode[funcMaxOutputs][2] = {};      // min and max values for range decoder
+	double  inputMul[funcMaxInputs]   = {};      // input multipliers
+	int*    idxOffset                 = nullptr; //
+	double* samples                   = nullptr; // the samples
+	int     nSamples                  = 0;       // size of the samples array
+	double* sBuf                      = nullptr; // buffer for the transform function
+	double  cacheIn[funcMaxInputs]    = {};      //
+	double  cacheOut[funcMaxOutputs]  = {};      //
+	bool    ok                        = false;   //
 };
 
 //------------------------------------------------------------------------
@@ -170,10 +171,10 @@ public:
 private:
 	ExponentialFunction(ExponentialFunction* func);
 
-	double c0[funcMaxOutputs]; //
-	double c1[funcMaxOutputs]; //
-	double e;                  //
-	bool   ok;                 //
+	double c0[funcMaxOutputs] = {};    //
+	double c1[funcMaxOutputs] = {};    //
+	double e                  = 0;     //
+	bool   ok                 = false; //
 };
 
 //------------------------------------------------------------------------
@@ -207,12 +208,12 @@ public:
 private:
 	StitchingFunction(StitchingFunction* func);
 
-	int        k;      //
-	Function** funcs;  //
-	double*    bounds; //
-	double*    encode; //
-	double*    scale;  //
-	bool       ok;     //
+	int        k      = 0;       //
+	Function** funcs  = nullptr; //
+	double*    bounds = nullptr; //
+	double*    encode = nullptr; //
+	double*    scale  = nullptr; //
+	bool       ok     = false;   //
 };
 
 //------------------------------------------------------------------------
@@ -244,11 +245,11 @@ private:
 	std::string getToken(Stream* str);
 	int         exec(double* stack, int sp0);
 
-	std::string codeString;               //
-	PSCode*     code;                     //
-	int         codeLen;                  //
-	int         codeSize;                 //
-	double      cacheIn[funcMaxInputs];   //
-	double      cacheOut[funcMaxOutputs]; //
-	bool        ok;                       //
+	std::string codeString               = "";      //
+	PSCode*     code                     = nullptr; //
+	int         codeLen                  = 0;       //
+	int         codeSize                 = 0;       //
+	double      cacheIn[funcMaxInputs]   = {};      //
+	double      cacheOut[funcMaxOutputs] = {};      //
+	bool        ok                       = false;   //
 };

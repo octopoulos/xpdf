@@ -31,10 +31,10 @@ extern void setErrorCallback(void (*cbk)(void* data, ErrorCategory category, int
 
 extern void* getErrorCallbackData();
 
-void errorText(ErrorCategory category, GFileOffset pos, std::string text);
+void errorText(ErrorCategory category, int64_t pos, std::string text);
 
 template <typename... T>
-extern void CDECL error(ErrorCategory category, GFileOffset pos, fmt::format_string<T...> fmt, T&&... args)
+extern void CDECL error(ErrorCategory category, int64_t pos, fmt::format_string<T...> fmt, T&&... args)
 {
 	const auto& vargs = fmt::make_format_args(args...);
 	auto        text  = fmt::vformat(fmt, vargs);

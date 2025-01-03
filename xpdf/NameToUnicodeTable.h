@@ -8,8 +8,8 @@
 
 static struct
 {
-	Unicode     u;
-	const char* name;
+	Unicode     u    = 0;       //
+	const char* name = nullptr; //
 } nameToUnicodeTab[] = {
 	{0x0021,  "!"	                                  },
 	{ 0x0023, "#"	                                  },
@@ -4254,5 +4254,5 @@ static struct
 	{ 0x007c, "|"	                                  },
 	{ 0x007d, "}"	                                  },
 	{ 0x007e, "~"	                                  },
-	{ 0,      nullptr	                                 }
+	{ 0,      nullptr	                              }
 };

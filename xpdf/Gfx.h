@@ -53,10 +53,10 @@ enum TchkType
 
 struct Operator
 {
-	char     name[4];
-	int      numArgs;
-	TchkType tchk[maxArgs];
-	void (Gfx::*func)(Object args[], int numArgs);
+	char     name[4]                              = {};      //
+	int      numArgs                              = 0;       //
+	TchkType tchk[maxArgs]                        = {};      //
+	void (Gfx::*func)(Object args[], int numArgs) = nullptr; //
 };
 
 //------------------------------------------------------------------------
@@ -80,15 +80,15 @@ public:
 	GfxResources* getNext() { return next; }
 
 private:
-	bool          valid;
-	GfxFontDict*  fonts;
-	Object        xObjDict;
-	Object        colorSpaceDict;
-	Object        patternDict;
-	Object        shadingDict;
-	Object        gStateDict;
-	Object        propsDict;
-	GfxResources* next;
+	bool          valid          = false;   //
+	GfxFontDict*  fonts          = nullptr; //
+	Object        xObjDict       = {};      //
+	Object        colorSpaceDict = {};      //
+	Object        patternDict    = {};      //
+	Object        shadingDict    = {};      //
+	Object        gStateDict     = {};      //
+	Object        propsDict      = {};      //
+	GfxResources* next           = nullptr; //
 };
 
 //------------------------------------------------------------------------
@@ -115,8 +115,8 @@ public:
 
 	~GfxMarkedContent() {}
 
-	GfxMarkedContentKind kind;
-	bool                 ocState; // true if drawing is enabled, false if disabled
+	GfxMarkedContentKind kind    = gfxMCOptionalContent; //
+	bool                 ocState = false;                // true if drawing is enabled, false if disabled
 };
 
 //------------------------------------------------------------------------
@@ -160,38 +160,38 @@ public:
 	void endOfPage();
 
 private:
-	PDFDoc*       doc;                //
-	XRef*         xref;               // the xref table for this PDF file
-	OutputDev*    out;                // output device
-	bool          subPage;            // is this a sub-page object?
-	bool          printCommands;      // print the drawing commands (for debugging)
-	GfxResources* res;                // resource stack
-	GfxFont*      defaultFont;        // font substituted for undefined fonts
-	int           opCounter;          // operation counter (used to decide when to check for an abort)
-	GfxState*     state;              // current graphics state
-	bool          fontChanged;        // set if font or text matrix has changed
-	bool          haveSavedClipPath;  //
-	GfxClipType   clip;               // do a clip?
-	int           ignoreUndef;        // current BX/EX nesting level
-	double        baseMatrix[6];      // default matrix for most recent page/form/pattern
-	int           formDepth;          //
-	bool          ocState;            // true if drawing is enabled, false if disabled
-	GList*        markedContentStack; // BMC/BDC/EMC stack [GfxMarkedContent]
-	Parser*       parser;             // parser for page content stream(s)
-	GList*        contentStreamStack; // stack of open content streams, used for loop-checking
+	PDFDoc*       doc                = nullptr;  //
+	XRef*         xref               = nullptr;  // the xref table for this PDF file
+	OutputDev*    out                = nullptr;  // output device
+	bool          subPage            = false;    // is this a sub-page object?
+	bool          printCommands      = false;    // print the drawing commands (for debugging)
+	GfxResources* res                = nullptr;  // resource stack
+	GfxFont*      defaultFont        = nullptr;  // font substituted for undefined fonts
+	int           opCounter          = 0;        // operation counter (used to decide when to check for an abort)
+	GfxState*     state              = nullptr;  // current graphics state
+	bool          fontChanged        = false;    // set if font or text matrix has changed
+	bool          haveSavedClipPath  = false;    //
+	GfxClipType   clip               = clipNone; // do a clip?
+	int           ignoreUndef        = 0;        // current BX/EX nesting level
+	double        baseMatrix[6]      = {};       // default matrix for most recent page/form/pattern
+	int           formDepth          = 0;        //
+	bool          ocState            = true;     // true if drawing is enabled, false if disabled
+	GList*        markedContentStack = nullptr;  // BMC/BDC/EMC stack [GfxMarkedContent]
+	Parser*       parser             = nullptr;  // parser for page content stream(s)
+	GList*        contentStreamStack = nullptr;  // stack of open content streams, used for loop-checking
 
-	bool (*abortCheckCbk)(void* data); // callback to check for an abort
-	void* abortCheckCbkData;
+	bool (*abortCheckCbk)(void* data) = nullptr; // callback to check for an abort
+	void* abortCheckCbkData           = nullptr; //
 
 	static Operator opTab[]; // table of operators
 
-	bool        checkForContentStreamLoop(Object* ref);
-	void        go(bool topLevel);
-	void        getContentObj(Object* obj);
-	bool        execOp(Object* cmd, Object args[], int numArgs);
-	Operator*   findOp(char* name);
-	bool        checkArg(Object* arg, TchkType type);
-	GFileOffset getPos();
+	bool      checkForContentStreamLoop(Object* ref);
+	void      go(bool topLevel);
+	void      getContentObj(Object* obj);
+	bool      execOp(Object* cmd, Object args[], int numArgs);
+	Operator* findOp(char* name);
+	bool      checkArg(Object* arg, TchkType type);
+	int64_t   getPos();
 
 	// graphics state operators
 	void               opSave(Object args[], int numArgs);

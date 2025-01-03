@@ -26,10 +26,11 @@
 
 typedef struct _GMemHdr
 {
-	unsigned int     magic;
-	int              index;
-	size_t           size;
-	struct _GMemHdr *next, *prev;
+	uint32_t         magic = 0;       //
+	int              index = 0;       //
+	size_t           size  = 0;       //
+	struct _GMemHdr* next  = nullptr; //
+	struct _GMemHdr* prev  = nullptr; //
 } GMemHdr;
 
 #	define gMemHdrSize ((sizeof(GMemHdr) + 7) & ~7)

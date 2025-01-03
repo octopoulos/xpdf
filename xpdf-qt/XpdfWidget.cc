@@ -316,31 +316,14 @@ void XpdfWidget::unsetCursor()
 XpdfWidget::ErrorCode XpdfWidget::loadFile(const QString& fileName, const QString& password)
 {
 	std::string passwordStr;
-#ifdef _WIN32
-	wchar_t* fileNameStr;
-#else
 	std::string fileNameStr;
-#endif
-	int err;
+	int         err;
 
 	try
 	{
-		if (!password.isEmpty())
-			passwordStr = password.toStdString();
-#ifdef _WIN32
-		// this should use QString::toWCharArray(), but Qt builds their
-		// library with /Zc:wchar_t-, which confuses things
-		const int n = fileName.length();
-		fileNameStr = (wchar_t*)gmallocn(n, sizeof(wchar_t));
-		for (int i = 0; i < n; ++i)
-			fileNameStr[i] = (wchar_t)fileName[i].unicode();
-		err = core->loadFile(fileNameStr, n, passwordStr, passwordStr);
-		gfree(fileNameStr);
-#else
+		if (!password.isEmpty()) passwordStr = password.toStdString();
 		fileNameStr = fileName.toStdString();
 		err         = core->loadFile(fileNameStr, passwordStr, passwordStr);
-		delete fileNameStr;
-#endif
 		if (!err) core->displayPage(1, true, false);
 		return (ErrorCode)err;
 	}
@@ -350,7 +333,7 @@ XpdfWidget::ErrorCode XpdfWidget::loadFile(const QString& fileName, const QStrin
 	}
 }
 
-XpdfWidget::ErrorCode XpdfWidget::loadMem(const char* buffer, unsigned int bufferLength, const QString& password)
+XpdfWidget::ErrorCode XpdfWidget::loadMem(const char* buffer, uint32_t bufferLength, const QString& password)
 {
 	Object     obj;
 	MemStream* stream;
@@ -466,13 +449,8 @@ QString XpdfWidget::getFileName() const
 {
 	try
 	{
-		if (!core->getDoc() || core->getDoc()->getFileName().empty())
-			return QString();
-#ifdef _WIN32
-		return QString::fromWCharArray(core->getDoc()->getFileNameU());
-#else
+		if (!core->getDoc() || core->getDoc()->getFileName().empty()) return QString();
 		return QString::fromLocal8Bit(core->getDoc()->getFileName().c_str());
-#endif
 	}
 	catch (GMemException e)
 	{

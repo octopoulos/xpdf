@@ -56,7 +56,7 @@ static std::string Printify(std::string_view text, size_t count = std::string_vi
 	return clean;
 }
 
-void errorText(ErrorCategory category, GFileOffset pos, std::string text)
+void errorText(ErrorCategory category, int64_t pos, std::string text)
 {
 	// NB: this can be called before the globalParams object is created
 	if (!errorCbk && globalParams && globalParams->getErrQuiet())

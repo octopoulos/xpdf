@@ -68,10 +68,10 @@ public:
 	SplashFont* getFont(SplashFontFile* fontFile, SplashCoord* textMat, SplashCoord* ctm);
 
 private:
-	SplashFont* fontCache[splashFontCacheSize]; //
-	GList*      badFontFiles;                   // [SplashFontFileID]
+	SplashFont* fontCache[splashFontCacheSize] = {};      //
+	GList*      badFontFiles                   = nullptr; // [SplashFontFileID]
 
 #if HAVE_FREETYPE_H
-	SplashFTFontEngine* ftEngine;
+	SplashFTFontEngine* ftEngine = nullptr;
 #endif
 };

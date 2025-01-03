@@ -57,23 +57,23 @@ public:
 
 	~TextOutputControl() {}
 
-	TextOutputMode            mode;                 // formatting mode
-	double                    fixedPitch;           // if this is non-zero, assume fixed-pitch characters with this width (only relevant for PhysLayout, Table, and LinePrinter modes)
-	double                    fixedLineSpacing;     // fixed line spacing (only relevant for LinePrinter mode)
-	bool                      html;                 // enable extra processing for HTML
-	bool                      clipText;             // separate clipped text and add it back in after forming columns
-	bool                      discardDiagonalText;  // discard all text that's not close to 0/90/180/270 degrees
-	bool                      discardRotatedText;   // discard all text that's not horizontal (0 degrees)
-	bool                      discardInvisibleText; // discard all invisible characters
-	bool                      discardClippedText;   // discard all clipped characters
-	bool                      splitRotatedWords;    // do not combine horizontal and non-horizontal chars in a single word
-	TextOutputOverlapHandling overlapHandling;      // how to handle overlapping text
-	bool                      separateLargeChars;   // separate "large" characters from "regular" characters
-	bool                      insertBOM;            // insert a Unicode BOM at the start of the text output
-	double                    marginLeft;           // characters outside the margins are discarded
-	double                    marginRight;          //
-	double                    marginTop;            //
-	double                    marginBottom;         //
+	TextOutputMode            mode                 = textOutReadingOrder;   // formatting mode
+	double                    fixedPitch           = 0;                     // if this is non-zero, assume fixed-pitch characters with this width (only relevant for PhysLayout, Table, and LinePrinter modes)
+	double                    fixedLineSpacing     = 0;                     // fixed line spacing (only relevant for LinePrinter mode)
+	bool                      html                 = false;                 // enable extra processing for HTML
+	bool                      clipText             = false;                 // separate clipped text and add it back in after forming columns
+	bool                      discardDiagonalText  = false;                 // discard all text that's not close to 0/90/180/270 degrees
+	bool                      discardRotatedText   = false;                 // discard all text that's not horizontal (0 degrees)
+	bool                      discardInvisibleText = false;                 // discard all invisible characters
+	bool                      discardClippedText   = false;                 // discard all clipped characters
+	bool                      splitRotatedWords    = false;                 // do not combine horizontal and non-horizontal chars in a single word
+	TextOutputOverlapHandling overlapHandling      = textOutIgnoreOverlaps; // how to handle overlapping text
+	bool                      separateLargeChars   = true;                  // separate "large" characters from "regular" characters
+	bool                      insertBOM            = false;                 // insert a Unicode BOM at the start of the text output
+	double                    marginLeft           = 0;                     // characters outside the margins are discarded
+	double                    marginRight          = 0;                     //
+	double                    marginTop            = 0;                     //
+	double                    marginBottom         = 0;                     //
 };
 
 //------------------------------------------------------------------------
@@ -198,28 +198,28 @@ private:
 	static int cmpYX(const void* p1, const void* p2);
 	static int cmpCharPos(const void* p1, const void* p2);
 
-	double        xMin;      //
-	double        xMax;      // bounding box x coordinates
-	double        yMin;      //
-	double        yMax;      // bounding box y coordinates
-	Unicode*      text;      // the text
-	int*          charPos;   // character position (within content stream) of each char (plus one extra entry for the last char)
-	double*       edge;      // "near" edge x or y coord of each char (plus one extra entry for the last char)
-	int           len;       // number of characters
-	TextFontInfo* font;      // font information
-	double        fontSize;  // font size
-	TextLink*     link;      //
-	double        colorR;    // word color
-	double        colorG;    //
-	double        colorB;    //
-	bool          invisible; // set for invisible text (render mode 3)
+	double        xMin      = 0;       //
+	double        xMax      = 0;       // bounding box x coordinates
+	double        yMin      = 0;       //
+	double        yMax      = 0;       // bounding box y coordinates
+	Unicode*      text      = nullptr; // the text
+	int*          charPos   = nullptr; // character position (within content stream) of each char (plus one extra entry for the last char)
+	double*       edge      = nullptr; // "near" edge x or y coord of each char (plus one extra entry for the last char)
+	int           len       = 0;       // number of characters
+	TextFontInfo* font      = nullptr; // font information
+	double        fontSize  = 0;       // font size
+	TextLink*     link      = nullptr; //
+	double        colorR    = 0;       // word color
+	double        colorG    = 0;       //
+	double        colorB    = 0;       //
+	bool          invisible = false;   // set for invisible text (render mode 3)
 
 	// group the byte-size fields to minimize object size
-	uint8_t rot;        // rotation, multiple of 90 degrees (0, 1, 2, or 3)
-	char    rotated;    // set if this word is non-horizontal
-	char    dir;        // character direction (+1 = left-to-right; -1 = right-to-left; 0 = neither)
-	char    spaceAfter; // set if there is a space between this word and the next word on the line
-	char    underlined;
+	uint8_t rot        = 0; // rotation, multiple of 90 degrees (0, 1, 2, or 3)
+	char    rotated    = 0; // set if this word is non-horizontal
+	char    dir        = 0; // character direction (+1 = left-to-right; -1 = right-to-left; 0 = neither)
+	char    spaceAfter = 0; // set if there is a space between this word and the next word on the line
+	char    underlined = 0; //
 
 	friend class TextBlock;
 	friend class TextLine;
@@ -261,17 +261,19 @@ public:
 private:
 	static int cmpX(const void* p1, const void* p2);
 
-	GList*   words;      // [TextWord]
-	int      rot;        // rotation, multiple of 90 degrees (0, 1, 2, or 3)
-	double   xMin, xMax; // bounding box x coordinates
-	double   yMin, yMax; // bounding box y coordinates
-	double   fontSize;   // main (max) font size for this line
-	Unicode* text;       // Unicode text of the line, including spaces between words
-	double*  edge;       // "near" edge x or y coord of each char (plus one extra entry for the last char)
-	int      len;        // number of Unicode chars
-	bool     hyphenated; // set if last char is a hyphen
-	int      px;         // x offset (in characters, relative to containing column) in physical layout mode
-	int      pw;         // line width (in characters) in physical layout mode
+	GList*   words      = nullptr; // [TextWord]
+	int      rot        = 0;       // rotation, multiple of 90 degrees (0, 1, 2, or 3)
+	double   xMin       = 0;       //
+	double   xMax       = 0;       // bounding box x coordinates
+	double   yMin       = 0;       //
+	double   yMax       = 0;       // bounding box y coordinates
+	double   fontSize   = 0;       // main (max) font size for this line
+	Unicode* text       = nullptr; // Unicode text of the line, including spaces between words
+	double*  edge       = nullptr; // "near" edge x or y coord of each char (plus one extra entry for the last char)
+	int      len        = 0;       // number of Unicode chars
+	bool     hyphenated = false;   // set if last char is a hyphen
+	int      px         = 0;       // x offset (in characters, relative to containing column) in physical layout mode
+	int      pw         = 0;       // line width (in characters) in physical layout mode
 
 	friend class TextSuperLine;
 	friend class TextPage;
@@ -302,12 +304,12 @@ public:
 	double getYMax() { return yMax; }
 
 private:
-	GList* lines;   // [TextLine]
-	bool   dropCap; // paragraph starts with a drop capital
-	double xMin;    //
-	double xMax;    // bounding box x coordinates
-	double yMin;    //
-	double yMax;    // bounding box y coordinates
+	GList* lines   = nullptr; // [TextLine]
+	bool   dropCap = false;   // paragraph starts with a drop capital
+	double xMin    = 0;       //
+	double xMax    = 0;       // bounding box x coordinates
+	double yMin    = 0;       //
+	double yMax    = 0;       // bounding box y coordinates
 
 	friend class TextPage;
 };
@@ -340,11 +342,15 @@ private:
 	static int cmpY(const void* p1, const void* p2);
 	static int cmpPX(const void* p1, const void* p2);
 
-	GList* paragraphs; // [TextParagraph]
-	double xMin, xMax; // bounding box x coordinates
-	double yMin, yMax; // bounding box y coordinates
-	int    px, py;     // x, y position (in characters) in physical layout mode
-	int    pw, ph;     // column width, height (in characters) in physical layout mode
+	GList* paragraphs = nullptr; // [TextParagraph]
+	double xMin       = 0;       //
+	double xMax       = 0;       // bounding box x coordinates
+	double yMin       = 0;       //
+	double yMax       = 0;       // bounding box y coordinates
+	int    px         = 0;       //
+	int    py         = 0;       // x, y position (in characters) in physical layout mode
+	int    pw         = 0;
+	int    ph         = 0; // column width, height (in characters) in physical layout mode
 
 	friend class TextPage;
 };
@@ -371,8 +377,8 @@ public:
 	bool getPrimaryLR() { return primaryLR; }
 
 private:
-	GList* words;     // [TextWord]
-	bool   primaryLR; //
+	GList* words     = nullptr; // [TextWord]
+	bool   primaryLR = false;   //
 };
 
 //------------------------------------------------------------------------
@@ -593,39 +599,39 @@ private:
 	// word list
 	TextWordList* makeWordListForChars(GList* charList);
 
-	TextOutputControl         control;          // formatting parameters
-	UnicodeRemapping*         remapping;        //
-	Unicode*                  uBuf;             //
-	int                       uBufSize;         //
-	double                    pageWidth;        //
-	double                    pageHeight;       // width and height of current page
-	int                       charPos;          // next character position (within content stream)
-	TextFontInfo*             curFont;          // current font
-	double                    curFontSize;      // current font size
-	int                       curRot;           // current rotation
-	bool                      diagonal;         // set if rotation is not close to 0/90/180/270 degrees
-	bool                      rotated;          // set if text is not horizontal (0 degrees)
-	int                       nTinyChars;       // number of "tiny" chars seen so far
-	Unicode*                  actualText;       // current "ActualText" span
-	int                       actualTextLen;    //
-	double                    actualTextX0;     //
-	double                    actualTextY0;     //
-	double                    actualTextX1;     //
-	double                    actualTextY1;     //
-	int                       actualTextNBytes; //
-	GList*                    chars;            // [TextChar]
-	std::vector<TextFontInfo> fonts;            // all font info objects used on this page [TextFontInfo]
-	int                       primaryRot;       // primary rotation
-	GList*                    underlines;       // [TextUnderline]
-	GList*                    links;            // [TextLink]
-	int                       nVisibleChars;    // number of visible chars on the page
-	int                       nInvisibleChars;  // number of invisible chars on the page
-	int                       nRemovedDupChars; // number of duplicate chars removed
-	GList*                    findCols;         // text used by the findText**/findPoint** functions [TextColumn]
-	double                    lastFindXMin;     // coordinates of the last "find" result
-	double                    lastFindYMin;     //
-	bool                      haveLastFind;     //
-	bool                      problematic;      // true if any of the fonts used on this page are marked as problematic for Unicode conversion
+	TextOutputControl         control          = {};      // formatting parameters
+	UnicodeRemapping*         remapping        = nullptr; //
+	Unicode*                  uBuf             = nullptr; //
+	int                       uBufSize         = 0;       //
+	double                    pageWidth        = 0;       //
+	double                    pageHeight       = 0;       // width and height of current page
+	int                       charPos          = 0;       // next character position (within content stream)
+	TextFontInfo*             curFont          = nullptr; // current font
+	double                    curFontSize      = 0;       // current font size
+	int                       curRot           = 0;       // current rotation
+	bool                      diagonal         = false;   // set if rotation is not close to 0/90/180/270 degrees
+	bool                      rotated          = false;   // set if text is not horizontal (0 degrees)
+	int                       nTinyChars       = 0;       // number of "tiny" chars seen so far
+	Unicode*                  actualText       = nullptr; // current "ActualText" span
+	int                       actualTextLen    = 0;       //
+	double                    actualTextX0     = 0;       //
+	double                    actualTextY0     = 0;       //
+	double                    actualTextX1     = 0;       //
+	double                    actualTextY1     = 0;       //
+	int                       actualTextNBytes = 0;       //
+	GList*                    chars            = nullptr; // [TextChar]
+	std::vector<TextFontInfo> fonts            = {};      // all font info objects used on this page [TextFontInfo]
+	int                       primaryRot       = 0;       // primary rotation
+	GList*                    underlines       = nullptr; // [TextUnderline]
+	GList*                    links            = nullptr; // [TextLink]
+	int                       nVisibleChars    = 0;       // number of visible chars on the page
+	int                       nInvisibleChars  = 0;       // number of invisible chars on the page
+	int                       nRemovedDupChars = 0;       // number of duplicate chars removed
+	GList*                    findCols         = nullptr; // text used by the findText**/findPoint** functions [TextColumn]
+	double                    lastFindXMin     = 0;       // coordinates of the last "find" result
+	double                    lastFindYMin     = 0;       //
+	bool                      haveLastFind     = false;   //
+	bool                      problematic      = false;   // true if any of the fonts used on this page are marked as problematic for Unicode conversion
 
 	friend class TextOutputDev;
 };
@@ -745,10 +751,10 @@ public:
 private:
 	void generateBOM();
 
-	TextOutputFunc    outputFunc;   // output function
-	void*             outputStream; // output stream
-	bool              needClose;    // need to close the output file? (only if outputStream is a FILE*)
-	TextPage*         text;         // text for the current page
-	TextOutputControl control;      // formatting parameters
-	bool              ok;           // set up ok?
+	TextOutputFunc    outputFunc   = nullptr; // output function
+	void*             outputStream = nullptr; // output stream
+	bool              needClose    = false;   // need to close the output file? (only if outputStream is a FILE*)
+	TextPage*         text         = nullptr; // text for the current page
+	TextOutputControl control      = {};      // formatting parameters
+	bool              ok           = false;   // set up ok?
 };

@@ -114,7 +114,7 @@ static inline uint16_t colToWord(GfxColorComp x)
 
 struct GfxColor
 {
-	GfxColorComp c[gfxColorMaxComps];
+	GfxColorComp c[gfxColorMaxComps] = {}; //
 };
 
 //------------------------------------------------------------------------
@@ -208,8 +208,8 @@ public:
 	static const char* getColorSpaceModeName(int idx);
 
 protected:
-	uint32_t overprintMask;
-	bool     defaultColorSpace;
+	uint32_t overprintMask     = 0;     //
+	bool     defaultColorSpace = false; //
 };
 
 //------------------------------------------------------------------------
@@ -277,9 +277,13 @@ public:
 	double getGamma() { return gamma; }
 
 private:
-	double whiteX, whiteY, whiteZ; // white point
-	double blackX, blackY, blackZ; // black point
-	double gamma;                  // gamma value
+	double whiteX = 0;
+	double whiteY = 0;
+	double whiteZ = 0; // white point
+	double blackX = 0;
+	double blackY = 0;
+	double blackZ = 0; // black point
+	double gamma  = 0; // gamma value
 };
 
 //------------------------------------------------------------------------
@@ -353,10 +357,16 @@ public:
 	double* getMatrix() { return mat; }
 
 private:
-	double whiteX, whiteY, whiteZ; // white point
-	double blackX, blackY, blackZ; // black point
-	double gammaR, gammaG, gammaB; // gamma values
-	double mat[9];                 // ABC -> XYZ transform matrix
+	double whiteX = 0;  //
+	double whiteY = 0;  //
+	double whiteZ = 0;  // white point
+	double blackX = 0;  //
+	double blackY = 0;  //
+	double blackZ = 0;  // black point
+	double gammaR = 0;  //
+	double gammaG = 0;  //
+	double gammaB = 0;  // gamma values
+	double mat[9] = {}; // ABC -> XYZ transform matrix
 };
 
 //------------------------------------------------------------------------
@@ -431,10 +441,19 @@ public:
 	double getBMax() { return bMax; }
 
 private:
-	double whiteX, whiteY, whiteZ; // white point
-	double blackX, blackY, blackZ; // black point
-	double aMin, aMax, bMin, bMax; // range for the a and b components
-	double kr, kg, kb;             // gamut mapping mulitpliers
+	double whiteX = 0; //
+	double whiteY = 0; //
+	double whiteZ = 0; // white point
+	double blackX = 0; //
+	double blackY = 0; //
+	double blackZ = 0; // black point
+	double aMin   = 0; //
+	double aMax   = 0; //
+	double bMin   = 0; //
+	double bMax   = 0; // range for the a and b components
+	double kr     = 0; //
+	double kg     = 0; //
+	double kb     = 0; // gamut mapping mulitpliers
 };
 
 //------------------------------------------------------------------------
@@ -469,11 +488,11 @@ public:
 	Ref getICCProfileStreamRef() { return iccProfileStream; }
 
 private:
-	int            nComps;           // number of color components (1, 3, or 4)
-	GfxColorSpace* alt;              // alternate color space
-	double         rangeMin[4];      // min values for each component
-	double         rangeMax[4];      // max values for each component
-	Ref            iccProfileStream; // the ICC profile
+	int            nComps           = 0;       // number of color components (1, 3, or 4)
+	GfxColorSpace* alt              = nullptr; // alternate color space
+	double         rangeMin[4]      = {};      // min values for each component
+	double         rangeMax[4]      = {};      // max values for each component
+	Ref            iccProfileStream = {};      // the ICC profile
 };
 
 //------------------------------------------------------------------------
@@ -512,9 +531,9 @@ public:
 	GfxColor* mapColorToBase(GfxColor* color, GfxColor* baseColor);
 
 private:
-	GfxColorSpace* base;      // base color space
-	int            indexHigh; // max pixel value
-	uint8_t*       lookup;    // lookup table
+	GfxColorSpace* base      = nullptr; // base color space
+	int            indexHigh = 0;       // max pixel value
+	uint8_t*       lookup    = nullptr; // lookup table
 };
 
 //------------------------------------------------------------------------
@@ -544,7 +563,7 @@ public:
 	virtual bool isNonMarking() { return nonMarking; }
 
 	// Separation-specific access.
-	std::string getName() { return name; }
+	std::string_view getName() { return name; }
 
 	GfxColorSpace* getAlt() { return alt; }
 
@@ -553,10 +572,10 @@ public:
 private:
 	GfxSeparationColorSpace(const std::string& nameA, GfxColorSpace* altA, Function* funcA, bool nonMarkingA, uint32_t overprintMaskA);
 
-	std::string    name; // colorant name
-	GfxColorSpace* alt;  // alternate color space
-	Function*      func; // tint transform (into alternate color space)
-	bool           nonMarking;
+	std::string    name       = "";      // colorant name
+	GfxColorSpace* alt        = nullptr; // alternate color space
+	Function*      func       = nullptr; // tint transform (into alternate color space)
+	bool           nonMarking = false;   //
 };
 
 //------------------------------------------------------------------------
@@ -597,12 +616,12 @@ public:
 private:
 	GfxDeviceNColorSpace(int nCompsA, std::string* namesA, GfxColorSpace* alt, Function* func, Object* attrsA, bool nonMarkingA, uint32_t overprintMaskA);
 
-	int            nComps;                  // number of components
-	std::string    names[gfxColorMaxComps]; // colorant names
-	GfxColorSpace* alt;                     // alternate color space
-	Function*      func;                    // tint transform (into alternate color space)
-	Object         attrs;
-	bool           nonMarking;
+	int            nComps                  = 0;       // number of components
+	std::string    names[gfxColorMaxComps] = {};      // colorant names
+	GfxColorSpace* alt                     = nullptr; // alternate color space
+	Function*      func                    = nullptr; // tint transform (into alternate color space)
+	Object         attrs                   = {};      //
+	bool           nonMarking              = false;   //
 };
 
 //------------------------------------------------------------------------
@@ -633,8 +652,7 @@ public:
 	GfxColorSpace* getUnder() { return under; }
 
 private:
-	GfxColorSpace* under; // underlying color space (for uncolored
-	                      //   patterns)
+	GfxColorSpace* under = nullptr; // underlying color space (for uncolored patterns)
 };
 
 //------------------------------------------------------------------------
@@ -654,7 +672,7 @@ public:
 	int getType() { return type; }
 
 private:
-	int type;
+	int type = 0;
 };
 
 //------------------------------------------------------------------------
@@ -698,13 +716,14 @@ private:
 	bool scanPatternForBlendMode(Object* patternObj, char* scannedObjs, XRef* xref);
 	bool scanXObjectForBlendMode(Object* xObj, char* scannedObjs, XRef* xref);
 
-	int    paintType;
-	int    tilingType;
-	double bbox[4];
-	double xStep, yStep;
-	Object resDict;
-	double matrix[6];
-	Object contentStreamRef;
+	int    paintType        = 0;  //
+	int    tilingType       = 0;  //
+	double bbox[4]          = {}; //
+	double xStep            = 0;  //
+	double yStep            = 0;  //
+	Object resDict          = {}; //
+	double matrix[6]        = {}; //
+	Object contentStreamRef = {}; //
 };
 
 //------------------------------------------------------------------------
@@ -726,8 +745,8 @@ public:
 private:
 	GfxShadingPattern(GfxShading* shadingA, double* matrixA);
 
-	GfxShading* shading;
-	double      matrix[6];
+	GfxShading* shading   = nullptr;
+	double      matrix[6] = {};
 };
 
 //------------------------------------------------------------------------
@@ -766,12 +785,15 @@ public:
 protected:
 	bool init(Dict* dict);
 
-	int            type;
-	GfxColorSpace* colorSpace;
-	GfxColor       background;
-	bool           hasBackground;
-	double         xMin, yMin, xMax, yMax;
-	bool           hasBBox;
+	int            type          = 0;       //
+	GfxColorSpace* colorSpace    = nullptr; //
+	GfxColor       background    = {};      //
+	bool           hasBackground = false;   //
+	double         xMin          = 0;       //
+	double         yMin          = 0;       //
+	double         xMax          = 0;       //
+	double         yMax          = 0;       //
+	bool           hasBBox       = false;   //
 };
 
 //------------------------------------------------------------------------
@@ -806,10 +828,13 @@ public:
 	void getColor(double x, double y, GfxColor* color);
 
 private:
-	double    x0, y0, x1, y1;
-	double    matrix[6];
-	Function* funcs[gfxColorMaxComps];
-	int       nFuncs;
+	double    x0                      = 0;  //
+	double    y0                      = 0;  //
+	double    x1                      = 0;  //
+	double    y1                      = 0;  //
+	double    matrix[6]               = {}; //
+	Function* funcs[gfxColorMaxComps] = {}; //
+	int       nFuncs                  = 0;  //
 };
 
 //------------------------------------------------------------------------
@@ -850,11 +875,16 @@ public:
 	void getColor(double t, GfxColor* color);
 
 private:
-	double    x0, y0, x1, y1;
-	double    t0, t1;
-	Function* funcs[gfxColorMaxComps];
-	int       nFuncs;
-	bool      extend0, extend1;
+	double    x0                      = 0;     //
+	double    y0                      = 0;     //
+	double    x1                      = 0;     //
+	double    y1                      = 0;     //
+	double    t0                      = 0;     //
+	double    t1                      = 0;     //
+	Function* funcs[gfxColorMaxComps] = {};    //
+	int       nFuncs                  = 0;     //
+	bool      extend0                 = false; //
+	bool      extend1                 = false; //
 };
 
 //------------------------------------------------------------------------
@@ -897,11 +927,18 @@ public:
 	void getColor(double t, GfxColor* color);
 
 private:
-	double    x0, y0, r0, x1, y1, r1;
-	double    t0, t1;
-	Function* funcs[gfxColorMaxComps];
-	int       nFuncs;
-	bool      extend0, extend1;
+	double    x0                      = 0;     //
+	double    y0                      = 0;     //
+	double    r0                      = 0;     //
+	double    x1                      = 0;     //
+	double    y1                      = 0;     //
+	double    r1                      = 0;     //
+	double    t0                      = 0;     //
+	double    t1                      = 0;     //
+	Function* funcs[gfxColorMaxComps] = {};    //
+	int       nFuncs                  = 0;     //
+	bool      extend0                 = false; //
+	bool      extend1                 = false; //
 };
 
 //------------------------------------------------------------------------
@@ -910,8 +947,9 @@ private:
 
 struct GfxGouraudVertex
 {
-	double x, y;
-	double color[gfxColorMaxComps];
+	double x                       = 0;  //
+	double y                       = 0;  //
+	double color[gfxColorMaxComps] = {}; //
 };
 
 class GfxGouraudTriangleShading : public GfxShading
@@ -934,13 +972,13 @@ public:
 	void getColor(double* in, GfxColor* out);
 
 private:
-	GfxGouraudVertex* vertices;
-	int               nVertices;
-	int (*triangles)[3];
-	int       nTriangles;
-	Function* funcs[gfxColorMaxComps];
-	int       nComps; // number of color components (1 if nFuncs > 0)
-	int       nFuncs;
+	GfxGouraudVertex* vertices        = nullptr; //
+	int               nVertices       = 0;       //
+	int (*triangles)[3]               = {};      //
+	int       nTriangles              = 0;       //
+	Function* funcs[gfxColorMaxComps] = {};      //
+	int       nComps                  = 0;       // number of color components (1 if nFuncs > 0)
+	int       nFuncs                  = 0;       //
 };
 
 //------------------------------------------------------------------------
@@ -949,9 +987,9 @@ private:
 
 struct GfxPatch
 {
-	double x[4][4];
-	double y[4][4];
-	double color[2][2][gfxColorMaxComps];
+	double x[4][4]                       = {}; //
+	double y[4][4]                       = {}; //
+	double color[2][2][gfxColorMaxComps] = {}; //
 };
 
 class GfxPatchMeshShading : public GfxShading
@@ -975,11 +1013,11 @@ public:
 	void getColor(double* in, GfxColor* out);
 
 private:
-	GfxPatch* patches;
-	int       nPatches;
-	Function* funcs[gfxColorMaxComps];
-	int       nComps; // number of color components (1 if nFuncs > 0)
-	int       nFuncs;
+	GfxPatch* patches                 = nullptr; //
+	int       nPatches                = 0;       //
+	Function* funcs[gfxColorMaxComps] = {};      //
+	int       nComps                  = 0;       // number of color components (1 if nFuncs > 0)
+	int       nFuncs                  = 0;       //
 };
 
 //------------------------------------------------------------------------
@@ -1028,20 +1066,16 @@ public:
 private:
 	GfxImageColorMap(GfxImageColorMap* colorMap);
 
-	GfxColorSpace* colorSpace;  // the image color space
-	int            bits;        // bits per component
-	int            nComps;      // number of components in a pixel
-	GfxColorSpace* colorSpace2; // secondary color space
-	int            nComps2;     // number of components in colorSpace2
-	GfxColorComp*               // lookup table
-	    lookup[gfxColorMaxComps];
-	GfxColorComp* // optimized case lookup table
-	    lookup2[gfxColorMaxComps];
-	double // minimum values for each component
-	    decodeLow[gfxColorMaxComps];
-	double // max - min value for each component
-	     decodeRange[gfxColorMaxComps];
-	bool ok;
+	GfxColorSpace* colorSpace                    = nullptr; // the image color space
+	int            bits                          = 0;       // bits per component
+	int            nComps                        = 0;       // number of components in a pixel
+	GfxColorSpace* colorSpace2                   = nullptr; // secondary color space
+	int            nComps2                       = 0;       // number of components in colorSpace2
+	GfxColorComp*  lookup[gfxColorMaxComps]      = {};      // lookup table
+	GfxColorComp*  lookup2[gfxColorMaxComps]     = {};      // optimized case lookup table
+	double         decodeLow[gfxColorMaxComps]   = {};      // minimum values for each component
+	double         decodeRange[gfxColorMaxComps] = {};      // max - min value for each component
+	bool           ok                            = false;   //
 };
 
 //------------------------------------------------------------------------
@@ -1089,12 +1123,12 @@ public:
 	void offset(double dx, double dy);
 
 private:
-	double *x, *y;  // points
-	bool*   curve;  // curve[i] => point i is a control point
-	                //   for a Bezier curve
-	int     n;      // number of points
-	int     size;   // size of x/y arrays
-	bool    closed; // set if path is closed
+	double* x      = nullptr; //
+	double* y      = nullptr; // points
+	bool*   curve  = nullptr; // curve[i] => point i is a control point for a Bezier curve
+	int     n      = 0;       // number of points
+	int     size   = 0;       // size of x/y arrays
+	bool    closed = false;   // set if path is closed
 
 	GfxSubpath(GfxSubpath* subpath);
 };
@@ -1153,11 +1187,12 @@ public:
 	void offset(double dx, double dy);
 
 private:
-	bool         justMoved;      // set if a new subpath was just started
-	double       firstX, firstY; // first point in new subpath
-	GfxSubpath** subpaths;       // subpaths
-	int          n;              // number of subpaths
-	int          size;           // size of subpaths array
+	bool         justMoved = false;   // set if a new subpath was just started
+	double       firstX    = 0;       //
+	double       firstY    = 0;       // first point in new subpath
+	GfxSubpath** subpaths  = nullptr; // subpaths
+	int          n         = 0;       // number of subpaths
+	int          size      = 0;       // size of subpaths array
 
 	GfxPath(bool justMoved1, double firstX1, double firstY1, GfxSubpath** subpaths1, int n1, int size1);
 };
@@ -1522,59 +1557,59 @@ public:
 	bool parseBlendMode(Object* obj, GfxBlendMode* mode);
 
 private:
-	double             hDPI;             //
-	double             vDPI;             // resolution
-	double             ctm[6];           // coord transform matrix
-	double             px1;              //
-	double             py1;              //
-	double             px2;              //
-	double             py2;              // page corners (user coords)
-	double             pageWidth;        //
-	double             pageHeight;       // page size (pixels)
-	int                rotate;           // page rotation angle
-	GfxColorSpace*     fillColorSpace;   // fill color space
-	GfxColorSpace*     strokeColorSpace; // stroke color space
-	GfxColor           fillColor;        // fill color
-	GfxColor           strokeColor;      // stroke color
-	GfxPattern*        fillPattern;      // fill pattern
-	GfxPattern*        strokePattern;    // stroke pattern
-	GfxBlendMode       blendMode;        // transparency blend mode
-	double             fillOpacity;      // fill opacity
-	double             strokeOpacity;    // stroke opacity
-	bool               fillOverprint;    // fill overprint
-	bool               strokeOverprint;  // stroke overprint
-	int                overprintMode;    // overprint mode ("OPM")
-	GfxRenderingIntent renderingIntent;  // rendering intent
-	Function*          transfer[4];      // transfer function (entries may be: all nullptr = identity; last three nullptr = single function; all four non-nullptr = R,G,B,gray functions)
-	double             lineWidth;        // line width
-	double*            lineDash;         // line dash
-	int                lineDashLength;   //
-	double             lineDashStart;    //
-	double             flatness;         // curve flatness
-	int                lineJoin;         // line join style
-	int                lineCap;          // line cap style
-	double             miterLimit;       // line miter limit
-	bool               strokeAdjust;     // stroke adjustment
-	GfxFont*           font;             // font
-	double             fontSize;         // font size
-	double             textMat[6];       // text matrix
-	double             charSpace;        // character spacing
-	double             wordSpace;        // word spacing
-	double             horizScaling;     // horizontal scaling
-	double             leading;          // text leading
-	double             rise;             // text rise
-	int                render;           // text rendering mode
-	GfxPath*           path;             // array of path elements
-	double             curX;             //
-	double             curY;             // current point (user coords)
-	double             lineX;            //
-	double             lineY;            // start of current text line (text coords)
-	double             clipXMin;         //
-	double             clipYMin;         // bounding box for clip region
-	double             clipXMax;         //
-	double             clipYMax;         //
-	bool               ignoreColorOps;   // ignore color ops (in cached/uncolored Type 3 chars, and uncolored tiling patterns)
-	GfxState*          saved;            // next GfxState on stack
+	double             hDPI             = 0;                            //
+	double             vDPI             = 0;                            // resolution
+	double             ctm[6]           = {};                           // coord transform matrix
+	double             px1              = 0;                            //
+	double             py1              = 0;                            //
+	double             px2              = 0;                            //
+	double             py2              = 0;                            // page corners (user coords)
+	double             pageWidth        = 0;                            //
+	double             pageHeight       = 0;                            // page size (pixels)
+	int                rotate           = 0;                            // page rotation angle
+	GfxColorSpace*     fillColorSpace   = nullptr;                      // fill color space
+	GfxColorSpace*     strokeColorSpace = nullptr;                      // stroke color space
+	GfxColor           fillColor        = {};                           // fill color
+	GfxColor           strokeColor      = {};                           // stroke color
+	GfxPattern*        fillPattern      = nullptr;                      // fill pattern
+	GfxPattern*        strokePattern    = nullptr;                      // stroke pattern
+	GfxBlendMode       blendMode        = gfxBlendNormal;               // transparency blend mode
+	double             fillOpacity      = 0;                            // fill opacity
+	double             strokeOpacity    = 0;                            // stroke opacity
+	bool               fillOverprint    = false;                        // fill overprint
+	bool               strokeOverprint  = false;                        // stroke overprint
+	int                overprintMode    = 0;                            // overprint mode ("OPM")
+	GfxRenderingIntent renderingIntent  = gfxRenderingIntentPerceptual; // rendering intent
+	Function*          transfer[4]      = {};                           // transfer function (entries may be: all nullptr = identity; last three nullptr = single function; all four non-nullptr = R,G,B,gray functions)
+	double             lineWidth        = 0;                            // line width
+	double*            lineDash         = nullptr;                      // line dash
+	int                lineDashLength   = 0;                            //
+	double             lineDashStart    = 0;                            //
+	double             flatness         = 0;                            // curve flatness
+	int                lineJoin         = 0;                            // line join style
+	int                lineCap          = 0;                            // line cap style
+	double             miterLimit       = 0;                            // line miter limit
+	bool               strokeAdjust     = false;                        // stroke adjustment
+	GfxFont*           font             = nullptr;                      // font
+	double             fontSize         = 0;                            // font size
+	double             textMat[6]       = {};                           // text matrix
+	double             charSpace        = 0;                            // character spacing
+	double             wordSpace        = 0;                            // word spacing
+	double             horizScaling     = 0;                            // horizontal scaling
+	double             leading          = 0;                            // text leading
+	double             rise             = 0;                            // text rise
+	int                render           = 0;                            // text rendering mode
+	GfxPath*           path             = nullptr;                      // array of path elements
+	double             curX             = 0;                            //
+	double             curY             = 0;                            // current point (user coords)
+	double             lineX            = 0;                            //
+	double             lineY            = 0;                            // start of current text line (text coords)
+	double             clipXMin         = 0;                            //
+	double             clipYMin         = 0;                            // bounding box for clip region
+	double             clipXMax         = 0;                            //
+	double             clipYMax         = 0;                            //
+	bool               ignoreColorOps   = false;                        // ignore color ops (in cached/uncolored Type 3 chars, and uncolored tiling patterns)
+	GfxState*          saved            = nullptr;                      // next GfxState on stack
 
 	GfxState(GfxState* state, bool copyPath);
 };

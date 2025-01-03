@@ -381,7 +381,7 @@ void FilterStream::close()
 	str->close();
 }
 
-void FilterStream::setPos(GFileOffset pos, int dir)
+void FilterStream::setPos(int64_t pos, int dir)
 {
 	error(errInternal, -1, "Called setPos() on FilterStream");
 }
@@ -731,8 +731,8 @@ public:
 	SharedFile(FILE* fA);
 	SharedFile* copy();
 	void        free();
-	int         readBlock(char* buf, GFileOffset pos, int size);
-	GFileOffset getSize();
+	int         readBlock(char* buf, int64_t pos, int size);
+	int64_t     getSize();
 
 private:
 	~SharedFile();
@@ -785,7 +785,7 @@ void SharedFile::free()
 		delete this;
 }
 
-int SharedFile::readBlock(char* buf, GFileOffset pos, int size)
+int SharedFile::readBlock(char* buf, int64_t pos, int size)
 {
 #if MULTITHREADED
 	gLockMutex(&mutex);
@@ -798,13 +798,13 @@ int SharedFile::readBlock(char* buf, GFileOffset pos, int size)
 	return n;
 }
 
-GFileOffset SharedFile::getSize()
+int64_t SharedFile::getSize()
 {
 #if MULTITHREADED
 	gLockMutex(&mutex);
 #endif
 	gfseek(f, 0, SEEK_END);
-	GFileOffset size = gftell(f);
+	int64_t size = gftell(f);
 #if MULTITHREADED
 	gUnlockMutex(&mutex);
 #endif
@@ -815,7 +815,7 @@ GFileOffset SharedFile::getSize()
 // FileStream
 //------------------------------------------------------------------------
 
-FileStream::FileStream(FILE* fA, GFileOffset startA, bool limitedA, GFileOffset lengthA, Object* dictA)
+FileStream::FileStream(FILE* fA, int64_t startA, bool limitedA, int64_t lengthA, Object* dictA)
     : BaseStream(dictA)
 {
 	f       = new SharedFile(fA);
@@ -827,7 +827,7 @@ FileStream::FileStream(FILE* fA, GFileOffset startA, bool limitedA, GFileOffset 
 	bufPos  = start;
 }
 
-FileStream::FileStream(SharedFile* fA, GFileOffset startA, bool limitedA, GFileOffset lengthA, Object* dictA)
+FileStream::FileStream(SharedFile* fA, int64_t startA, bool limitedA, int64_t lengthA, Object* dictA)
     : BaseStream(dictA)
 {
 	f       = fA->copy();
@@ -851,7 +851,7 @@ Stream* FileStream::copy()
 	return new FileStream(f, start, limited, length, &dictA);
 }
 
-Stream* FileStream::makeSubStream(GFileOffset startA, bool limitedA, GFileOffset lengthA, Object* dictA)
+Stream* FileStream::makeSubStream(int64_t startA, bool limitedA, int64_t lengthA, Object* dictA)
 {
 	return new FileStream(f, startA, limitedA, lengthA, dictA);
 }
@@ -901,9 +901,9 @@ bool FileStream::fillBuf()
 	return true;
 }
 
-void FileStream::setPos(GFileOffset pos, int dir)
+void FileStream::setPos(int64_t pos, int dir)
 {
-	GFileOffset size;
+	int64_t size;
 
 	if (dir >= 0)
 	{
@@ -931,7 +931,7 @@ void FileStream::moveStart(int delta)
 // MemStream
 //------------------------------------------------------------------------
 
-MemStream::MemStream(char* bufA, GFileOffset startA, GFileOffset lengthA, Object* dictA)
+MemStream::MemStream(char* bufA, int64_t startA, int64_t lengthA, Object* dictA)
     : BaseStream(dictA)
 {
 	buf      = bufA;
@@ -954,10 +954,10 @@ Stream* MemStream::copy()
 	return new MemStream(buf, start, length, &dictA);
 }
 
-Stream* MemStream::makeSubStream(GFileOffset startA, bool limited, GFileOffset lengthA, Object* dictA)
+Stream* MemStream::makeSubStream(int64_t startA, bool limited, int64_t lengthA, Object* dictA)
 {
-	GFileOffset newStart;
-	GFileOffset newLength;
+	int64_t newStart;
+	int64_t newLength;
 
 	if (startA < start)
 		newStart = start;
@@ -996,9 +996,9 @@ int MemStream::getBlock(char* blk, int size)
 	return n;
 }
 
-void MemStream::setPos(GFileOffset pos, int dir)
+void MemStream::setPos(int64_t pos, int dir)
 {
-	GFileOffset i;
+	int64_t i;
 	if (dir >= 0)
 		i = (uint32_t)pos;
 	else if (pos > start + length)
@@ -1023,7 +1023,7 @@ void MemStream::moveStart(int delta)
 // EmbedStream
 //------------------------------------------------------------------------
 
-EmbedStream::EmbedStream(Stream* strA, Object* dictA, bool limitedA, GFileOffset lengthA)
+EmbedStream::EmbedStream(Stream* strA, Object* dictA, bool limitedA, int64_t lengthA)
     : BaseStream(dictA)
 {
 	str     = strA;
@@ -1042,7 +1042,7 @@ Stream* EmbedStream::copy()
 	return new EmbedStream(str, &dictA, limited, length);
 }
 
-Stream* EmbedStream::makeSubStream(GFileOffset start, bool limitedA, GFileOffset lengthA, Object* dictA)
+Stream* EmbedStream::makeSubStream(int64_t start, bool limitedA, int64_t lengthA, Object* dictA)
 {
 	error(errInternal, -1, "Called makeSubStream() on EmbedStream");
 	return nullptr;
@@ -1070,12 +1070,12 @@ int EmbedStream::getBlock(char* blk, int size)
 	return str->getBlock(blk, size);
 }
 
-void EmbedStream::setPos(GFileOffset pos, int dir)
+void EmbedStream::setPos(int64_t pos, int dir)
 {
 	error(errInternal, -1, "Called setPos() on EmbedStream");
 }
 
-GFileOffset EmbedStream::getStart()
+int64_t EmbedStream::getStart()
 {
 	error(errInternal, -1, "Called getStart() on EmbedStream");
 	return 0;
@@ -1125,7 +1125,8 @@ int ASCIIHexStream::lookChar()
 		buf = EOF;
 		return EOF;
 	}
-	do {
+	do
+	{
 		c1 = str->getChar();
 	}
 	while (isspace(c1));
@@ -1135,7 +1136,8 @@ int ASCIIHexStream::lookChar()
 		buf = EOF;
 		return buf;
 	}
-	do {
+	do
+	{
 		c2 = str->getChar();
 	}
 	while (isspace(c2));
@@ -1244,10 +1246,10 @@ int ASCII85Stream::lookChar()
 
 	if (index >= n)
 	{
-		if (eof)
-			return EOF;
+		if (eof) return EOF;
 		index = 0;
-		do {
+		do
+		{
 			c[0] = str->getChar();
 		}
 		while (Lexer::isSpace(c[0]));
@@ -1266,7 +1268,8 @@ int ASCII85Stream::lookChar()
 		{
 			for (k = 1; k < 5; ++k)
 			{
-				do {
+				do
+				{
 					c[k] = str->getChar();
 				}
 				while (Lexer::isSpace(c[k]));
@@ -1772,7 +1775,8 @@ int CCITTFaxStream::getChar()
 	{
 		c          = 0;
 		bitsNeeded = 8;
-		do {
+		do
+		{
 			bitsUsed = (bitsAvail < bitsNeeded) ? bitsAvail : bitsNeeded;
 			c <<= bitsUsed;
 			if (!(a0i & 1))
@@ -1818,7 +1822,8 @@ int CCITTFaxStream::lookChar()
 		i          = a0i;
 		c          = 0;
 		bitsNeeded = 8;
-		do {
+		do
+		{
 			bitsUsed = (bitsAvail < bitsNeeded) ? bitsAvail : bitsNeeded;
 			c <<= bitsUsed;
 			if (!(i & 1))
@@ -1867,7 +1872,8 @@ int CCITTFaxStream::getBlock(char* blk, int size)
 		{
 			c          = 0;
 			bitsNeeded = 8;
-			do {
+			do
+			{
 				bitsUsed = (bitsAvail < bitsNeeded) ? bitsAvail : bitsNeeded;
 				c <<= bitsUsed;
 				c |= byte >> (8 - bitsUsed);
@@ -1985,22 +1991,26 @@ bool CCITTFaxStream::readRow()
 				code1 = code2 = 0;
 				if (blackPixels)
 				{
-					do {
+					do
+					{
 						code1 += code3 = getBlackCode();
 					}
 					while (code3 >= 64);
-					do {
+					do
+					{
 						code2 += code3 = getWhiteCode();
 					}
 					while (code3 >= 64);
 				}
 				else
 				{
-					do {
+					do
+					{
 						code1 += code3 = getWhiteCode();
 					}
 					while (code3 >= 64);
-					do {
+					do
+					{
 						code2 += code3 = getBlackCode();
 					}
 					while (code3 >= 64);
@@ -2115,14 +2125,16 @@ bool CCITTFaxStream::readRow()
 			code1 = 0;
 			if (blackPixels)
 			{
-				do {
+				do
+				{
 					code1 += code3 = getBlackCode();
 				}
 				while (code3 >= 64);
 			}
 			else
 			{
-				do {
+				do
+				{
 					code1 += code3 = getWhiteCode();
 				}
 				while (code3 >= 64);
@@ -3156,7 +3168,8 @@ void DCTStream::prepare()
 #	endif
 
 		// read the image data
-		do {
+		do
+		{
 			restartMarker = 0xd0;
 			restart();
 			readScan();
@@ -4074,7 +4087,8 @@ int DCTStream::readHuffSym(DCTHuffTable* table)
 
 	code     = 0;
 	codeBits = 0;
-	do {
+	do
+	{
 		// add a bit to the code
 		if ((bit = readBit()) == EOF)
 			return 9999;
@@ -4120,11 +4134,11 @@ int DCTStream::readBit()
 
 	if (inputBits == 0)
 	{
-		if ((c = str->getChar()) == EOF)
-			return EOF;
+		if ((c = str->getChar()) == EOF) return EOF;
 		if (c == 0xff)
 		{
-			do {
+			do
+			{
 				c2 = str->getChar();
 			}
 			while (c2 == 0xff);
@@ -4596,12 +4610,15 @@ int DCTStream::readMarker()
 {
 	int c;
 
-	do {
-		do {
+	do
+	{
+		do
+		{
 			c = str->getChar();
 		}
 		while (c != 0xff && c != EOF);
-		do {
+		do
+		{
 			c = str->getChar();
 		}
 		while (c == 0xff);

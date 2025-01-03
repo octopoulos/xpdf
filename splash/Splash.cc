@@ -4947,7 +4947,6 @@ void Splash::setEnablePathSimplification(bool en)
 void Splash::saveState()
 {
 	SplashState* newState;
-
 	newState       = state->copy();
 	newState->next = state;
 	state          = newState;
@@ -4955,12 +4954,10 @@ void Splash::saveState()
 
 SplashError Splash::restoreState()
 {
-	SplashState* oldState;
+	if (!state->next) return splashErrNoSave;
 
-	if (!state->next)
-		return splashErrNoSave;
-	oldState = state;
-	state    = state->next;
+	SplashState* oldState = state;
+	state                 = state->next;
 	delete oldState;
 	return splashOk;
 }
@@ -5673,7 +5670,8 @@ SplashPath* Splash::makeDashedPath(SplashPath* path)
 			else if (nDashes > 1)
 			{
 				k = subpathStart;
-				do {
+				do
+				{
 					++k;
 					dPath->lineTo(dPath->pts[k].x, dPath->pts[k].y);
 				}

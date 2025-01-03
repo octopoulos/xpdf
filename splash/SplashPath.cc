@@ -30,14 +30,6 @@
 
 SplashPath::SplashPath()
 {
-	pts         = nullptr;
-	flags       = nullptr;
-	length      = 0;
-	size        = 0;
-	curSubpath  = 0;
-	hints       = nullptr;
-	hintsLength = 0;
-	hintsSize   = 0;
 }
 
 SplashPath::SplashPath(SplashPath* path)
@@ -74,10 +66,8 @@ void SplashPath::grow(int nPts)
 {
 	if (length + nPts > size)
 	{
-		if (size == 0)
-			size = 32;
-		while (size < length + nPts)
-			size *= 2;
+		if (size == 0) size = 32;
+		while (size < length + nPts) size *= 2;
 		pts   = (SplashPathPoint*)greallocn(pts, size, sizeof(SplashPathPoint));
 		flags = (uint8_t*)greallocn(flags, size, sizeof(uint8_t));
 	}
@@ -85,11 +75,9 @@ void SplashPath::grow(int nPts)
 
 void SplashPath::append(SplashPath* path)
 {
-	int i;
-
 	curSubpath = length + path->curSubpath;
 	grow(path->length);
-	for (i = 0; i < path->length; ++i)
+	for (int i = 0; i < path->length; ++i)
 	{
 		pts[length]   = path->pts[i];
 		flags[length] = path->flags[i];

@@ -22,7 +22,10 @@ class Links;
 class PDFRectangle
 {
 public:
-	double x1, y1, x2, y2;
+	double x1 = 0; //
+	double y1 = 0; //
+	double x2 = 0; //
+	double y2 = 0; //
 
 	PDFRectangle() { x1 = y1 = x2 = y2 = 0; }
 
@@ -118,21 +121,21 @@ public:
 private:
 	bool readBox(Dict* dict, const char* key, PDFRectangle* box);
 
-	PDFRectangle mediaBox;
-	PDFRectangle cropBox;
-	bool         haveCropBox;
-	PDFRectangle bleedBox;
-	PDFRectangle trimBox;
-	PDFRectangle artBox;
-	int          rotate;
-	Object       lastModified;
-	Object       boxColorInfo;
-	Object       group;
-	Object       metadata;
-	Object       pieceInfo;
-	Object       separationInfo;
-	double       userUnit;
-	Object       resources;
+	PDFRectangle mediaBox       = {};    //
+	PDFRectangle cropBox        = {};    //
+	bool         haveCropBox    = false; //
+	PDFRectangle bleedBox       = {};    //
+	PDFRectangle trimBox        = {};    //
+	PDFRectangle artBox         = {};    //
+	int          rotate         = 0;     //
+	Object       lastModified   = {};    //
+	Object       boxColorInfo   = {};    //
+	Object       group          = {};    //
+	Object       metadata       = {};    //
+	Object       pieceInfo      = {};    //
+	Object       separationInfo = {};    //
+	double       userUnit       = 1;     //
+	Object       resources      = {};    //
 };
 
 //------------------------------------------------------------------------
@@ -237,12 +240,12 @@ public:
 	void getDefaultCTM(double* ctm, double hDPI, double vDPI, int rotate, bool useMediaBox, bool upsideDown);
 
 private:
-	PDFDoc*    doc;
-	XRef*      xref;      // the xref table for this PDF file
-	int        num;       // page number
-	PageAttrs* attrs;     // page attributes
-	Object     annots;    // annotations array
-	Object     contents;  // page contents
-	Object     thumbnail; // reference to thumbnail image
-	bool       ok;        // true if page is valid
+	PDFDoc*    doc       = nullptr; //
+	XRef*      xref      = nullptr; // the xref table for this PDF file
+	int        num       = 0;       // page number
+	PageAttrs* attrs     = nullptr; // page attributes
+	Object     annots    = {};      // annotations array
+	Object     contents  = {};      // page contents
+	Object     thumbnail = {};      // reference to thumbnail image
+	bool       ok        = false;   // true if page is valid
 };

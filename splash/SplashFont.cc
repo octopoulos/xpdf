@@ -26,10 +26,14 @@
 
 struct SplashFontCacheTag
 {
-	int   c;
-	short xFrac, yFrac; // x and y fractions
-	int   mru;          // valid bit (0x80000000) and MRU index
-	int   x, y, w, h;   // offset and size of glyph
+	int   c     = 0;
+	short xFrac = 0;
+	short yFrac = 0; // x and y fractions
+	int   mru   = 0; // valid bit (0x80000000) and MRU index
+	int   x     = 0;
+	int   y     = 0;
+	int   w     = 0;
+	int   h     = 0; // offset and size of glyph
 };
 
 //------------------------------------------------------------------------
@@ -49,11 +53,6 @@ SplashFont::SplashFont(SplashFontFile* fontFileA, SplashCoord* matA, SplashCoord
 	textMat[2] = textMatA[2];
 	textMat[3] = textMatA[3];
 	aa         = aaA;
-
-	cache     = nullptr;
-	cacheTags = nullptr;
-
-	xMin = yMin = xMax = yMax = 0;
 }
 
 void SplashFont::initCache()
@@ -91,10 +90,8 @@ void SplashFont::initCache()
 SplashFont::~SplashFont()
 {
 	fontFile->decRefCnt();
-	if (cache)
-		gfree(cache);
-	if (cacheTags)
-		gfree(cacheTags);
+	if (cache) gfree(cache);
+	if (cacheTags) gfree(cacheTags);
 }
 
 bool SplashFont::getGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitmap)
@@ -178,7 +175,6 @@ bool SplashFont::getGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitmap
 	*bitmap          = bitmap2;
 	bitmap->data     = p;
 	bitmap->freeData = false;
-	if (bitmap2.freeData)
-		gfree(bitmap2.data);
+	if (bitmap2.freeData) gfree(bitmap2.data);
 	return true;
 }

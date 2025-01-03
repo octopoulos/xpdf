@@ -40,14 +40,6 @@ SplashClip::SplashClip(int hardXMinA, int hardYMinA, int hardXMaxA, int hardYMax
 	yMin           = hardYMin;
 	xMax           = hardXMax;
 	yMax           = hardYMax;
-	intBoundsValid = false;
-	paths          = nullptr;
-	eo             = nullptr;
-	scanners       = nullptr;
-	length         = 0;
-	size           = 0;
-	isSimple       = true;
-	prev           = nullptr;
 
 	int w;
 	if ((w = hardXMax + 1) <= 0) w = 1;
@@ -70,11 +62,6 @@ SplashClip::SplashClip(SplashClip* clip)
 	yMaxI                 = clip->yMaxI;
 	intBoundsValid        = clip->intBoundsValid;
 	intBoundsStrokeAdjust = clip->intBoundsStrokeAdjust;
-	paths                 = nullptr;
-	eo                    = nullptr;
-	scanners              = nullptr;
-	length                = 0;
-	size                  = 0;
 	isSimple              = clip->isSimple;
 	prev                  = clip;
 
@@ -392,8 +379,7 @@ bool SplashClip::clipSpanBinary(uint8_t* line, int y, int x0, int x1, SplashStro
 
 	if (y < yMinI || y > yMaxI || x1 < xMinI || x0 > xMaxI)
 	{
-		if (x0 <= x1)
-			memset(line + x0, 0, x1 - x0 + 1);
+		if (x0 <= x1) memset(line + x0, 0, x1 - x0 + 1);
 		return false;
 	}
 
@@ -473,10 +459,8 @@ int SplashClip::getYMaxI(SplashStrokeAdjustMode strokeAdjust)
 
 int SplashClip::getNumPaths()
 {
-	SplashClip* clip;
-
 	int n = 0;
-	for (clip = this; clip; clip = clip->prev)
+	for (SplashClip* clip = this; clip; clip = clip->prev)
 		n += clip->length;
 	return n;
 }
@@ -496,14 +480,10 @@ void SplashClip::updateIntBounds(SplashStrokeAdjustMode strokeAdjust)
 		xMaxI = splashCeil(xMax);
 		yMaxI = splashCeil(yMax);
 	}
-	if (xMinI < hardXMin)
-		xMinI = hardXMin;
-	if (yMinI < hardYMin)
-		yMinI = hardYMin;
-	if (xMaxI > hardXMax)
-		xMaxI = hardXMax;
-	if (yMaxI > hardYMax)
-		yMaxI = hardYMax;
+	if (xMinI < hardXMin) xMinI = hardXMin;
+	if (yMinI < hardYMin) yMinI = hardYMin;
+	if (xMaxI > hardXMax) xMaxI = hardXMax;
+	if (yMaxI > hardYMax) yMaxI = hardYMax;
 	// the clipping code uses [xMinI, xMaxI] instead of [xMinI, xMaxI)
 	--xMaxI;
 	--yMaxI;

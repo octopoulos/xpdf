@@ -28,7 +28,7 @@ public:
 	GList* getItems() { return items; }
 
 private:
-	GList* items; // nullptr if document has no outline [OutlineItem]
+	GList* items = nullptr; // nullptr if document has no outline [OutlineItem]
 };
 
 //------------------------------------------------------------------------
@@ -62,15 +62,15 @@ public:
 private:
 	friend class PDFDoc;
 
-	XRef*        xref;       //
-	TextString*  title;      // may be nullptr
-	LinkAction*  action;     //
-	Object       itemRef;    //
-	Object       firstRef;   //
-	Object       lastRef;    //
-	Object       nextRef;    //
-	bool         startsOpen; //
-	int          pageNum;    // page number (used by PDFDoc::getOutlineTargetPage)
-	GList*       kids;       // nullptr unless this item is open [OutlineItem]
-	OutlineItem* parent;     //
+	XRef*        xref       = nullptr; //
+	TextString*  title      = nullptr; // may be nullptr
+	LinkAction*  action     = nullptr; //
+	Object       itemRef    = {};      //
+	Object       firstRef   = {};      //
+	Object       lastRef    = {};      //
+	Object       nextRef    = {};      //
+	bool         startsOpen = false;   //
+	int          pageNum    = 0;       // page number (used by PDFDoc::getOutlineTargetPage)
+	GList*       kids       = nullptr; // nullptr unless this item is open [OutlineItem]
+	OutlineItem* parent     = nullptr; //
 };

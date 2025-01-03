@@ -585,43 +585,18 @@ SplashOutputDev::SplashOutputDev(SplashColorMode colorModeA, int bitmapRowPadA, 
 	colorMode        = colorModeA;
 	bitmapRowPad     = bitmapRowPadA;
 	bitmapTopDown    = bitmapTopDownA;
-	bitmapUpsideDown = false;
-	noComposite      = false;
 	allowAntialias   = allowAntialiasA;
 	vectorAntialias  = allowAntialias && globalParams->getVectorAntialias() && colorMode != splashModeMono1;
 	setupScreenParams(72.0, 72.0);
 	reverseVideo = reverseVideoA;
 	splashColorCopy(paperColor, paperColorA);
-	skipHorizText   = false;
-	skipRotatedText = false;
-
-	xref = nullptr;
 
 	bitmap = new SplashBitmap(1, 1, bitmapRowPad, colorMode, colorMode != splashModeMono1, bitmapTopDown, nullptr);
 	splash = new Splash(bitmap, vectorAntialias, nullptr, &screenParams);
 	splash->setMinLineWidth(globalParams->getMinLineWidth());
-	splash->setStrokeAdjust(
-	    mapStrokeAdjustMode[globalParams->getStrokeAdjust()]);
-	splash->setEnablePathSimplification(
-	    globalParams->getEnablePathSimplification());
+	splash->setStrokeAdjust(mapStrokeAdjustMode[globalParams->getStrokeAdjust()]);
+	splash->setEnablePathSimplification(globalParams->getEnablePathSimplification());
 	splash->clear(paperColor, 0);
-
-	fontEngine = nullptr;
-
-	nT3Fonts     = 0;
-	t3GlyphStack = nullptr;
-
-	font           = nullptr;
-	needFontUpdate = false;
-	savedTextPath  = nullptr;
-	savedClipPath  = nullptr;
-
-	transpGroupStack = nullptr;
-
-	nestCount = 0;
-
-	startPageCbk     = nullptr;
-	startPageCbkData = nullptr;
 }
 
 void SplashOutputDev::setupScreenParams(double hDPI, double vDPI)
@@ -635,20 +610,16 @@ void SplashOutputDev::setupScreenParams(double hDPI, double vDPI)
 	{
 	case screenDispersed:
 		screenParams.type = splashScreenDispersed;
-		if (screenParams.size < 0)
-			screenParams.size = 4;
+		if (screenParams.size < 0) screenParams.size = 4;
 		break;
 	case screenClustered:
 		screenParams.type = splashScreenClustered;
-		if (screenParams.size < 0)
-			screenParams.size = 10;
+		if (screenParams.size < 0) screenParams.size = 10;
 		break;
 	case screenStochasticClustered:
 		screenParams.type = splashScreenStochasticClustered;
-		if (screenParams.size < 0)
-			screenParams.size = 64;
-		if (screenParams.dotRadius < 0)
-			screenParams.dotRadius = 2;
+		if (screenParams.size < 0) screenParams.size = 64;
+		if (screenParams.dotRadius < 0) screenParams.dotRadius = 2;
 		break;
 	case screenUnset:
 	default:
@@ -657,16 +628,13 @@ void SplashOutputDev::setupScreenParams(double hDPI, double vDPI)
 		if (hDPI > 299.9 && vDPI > 299.9)
 		{
 			screenParams.type = splashScreenStochasticClustered;
-			if (screenParams.size < 0)
-				screenParams.size = 64;
-			if (screenParams.dotRadius < 0)
-				screenParams.dotRadius = 2;
+			if (screenParams.size < 0) screenParams.size = 64;
+			if (screenParams.dotRadius < 0) screenParams.dotRadius = 2;
 		}
 		else
 		{
 			screenParams.type = splashScreenDispersed;
-			if (screenParams.size < 0)
-				screenParams.size = 4;
+			if (screenParams.size < 0) screenParams.size = 4;
 		}
 	}
 }
@@ -1172,9 +1140,8 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 	fontType = gfxFont->getType();
 	if (fontType == fontType3) goto err1;
 
-	// sanity-check the font size: skip anything larger than 10k x 10k,
-	// to avoid problems allocating a bitmap (note that code in
-	// SplashFont disables caching at a smaller size than this)
+	// sanity-check the font size: skip anything larger than 10k x 10k, to avoid problems allocating a bitmap
+	// (note that code in SplashFont disables caching at a smaller size than this)
 	state->textTransformDelta(state->getFontSize(), state->getFontSize(), &fsx, &fsy);
 	state->transformDelta(fsx, fsy, &fsx, &fsy);
 	if (fabs(fsx) > 20000 || fabs(fsy) > 20000)
@@ -1194,7 +1161,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 
 		if (!(fontLoc = gfxFont->locateFont(xref, false)))
 		{
-			error(errSyntaxError, -1, "Couldn't find a font for '{}'", gfxFont->getName().size() ? gfxFont->getName().c_str() : "(unnamed)");
+			error(errSyntaxError, -1, "Couldn't find a font for '{}'", gfxFont->getName());
 			goto err2;
 		}
 
@@ -1248,7 +1215,8 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 			// external font
 		}
 		else
-		{ // gfxFontLocExternal
+		{
+			// gfxFontLocExternal
 #if LOAD_FONTS_FROM_MEM
 			if (!(extFontFile = fopen(fontLoc->path.string().c_str(), "rb")))
 			{
@@ -1273,8 +1241,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 		switch (fontLoc->fontType)
 		{
 		case fontType1:
-			if (!(fontFile = fontEngine->loadType1Font(
-			          id,
+			if (!(fontFile = fontEngine->loadType1Font(id,
 #if LOAD_FONTS_FROM_MEM
 			          fontBuf,
 #else
@@ -1283,7 +1250,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 #endif
 			          (const char**)((Gfx8BitFont*)gfxFont)->getEncoding())))
 			{
-				error(errSyntaxError, -1, "1/Couldn't create a font for '{}'", gfxFont->getName().size() ? gfxFont->getName().c_str() : "(unnamed)");
+				error(errSyntaxError, -1, "1/Couldn't create a font for '{}'", gfxFont->getName());
 				delete fontLoc;
 				goto err1;
 			}
@@ -1291,11 +1258,10 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 		case fontType1C:
 #if LOAD_FONTS_FROM_MEM
 			if ((ffT1C = FoFiType1C::make(fontBuf.c_str(), fontBuf.size())))
-			{
 #else
 			if ((ffT1C = FoFiType1C::load(fileName.c_str())))
-			{
 #endif
+			{
 				codeToGID = ((Gfx8BitFont*)gfxFont)->getCodeToGIDMap(ffT1C);
 				delete ffT1C;
 			}
@@ -1323,11 +1289,10 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 			codeToGID = nullptr;
 #if LOAD_FONTS_FROM_MEM
 			if ((ff = FoFiTrueType::make(fontBuf.c_str(), fontBuf.size(), fontNum, true)))
-			{
 #else
 			if ((ff = FoFiTrueType::load(fileName.c_str(), fontNum, true)))
-			{
 #endif
+			{
 				if (ff->getCFFBlock(&start, &length) && (ffT1C = FoFiType1C::make(start, length)))
 				{
 					codeToGID = ((Gfx8BitFont*)gfxFont)->getCodeToGIDMap(ffT1C);
@@ -1355,11 +1320,10 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 		case fontTrueTypeOT:
 #if LOAD_FONTS_FROM_MEM
 			if ((ff = FoFiTrueType::make(fontBuf.c_str(), fontBuf.size(), fontNum)))
-			{
 #else
 			if ((ff = FoFiTrueType::load(fileName.c_str(), fontNum)))
-			{
 #endif
+			{
 				codeToGID = ((Gfx8BitFont*)gfxFont)->getCodeToGIDMap(ff);
 				n         = 256;
 				delete ff;
@@ -1369,8 +1333,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 				if (gfxFont->getType() != fontTrueType && gfxFont->getType() != fontTrueTypeOT)
 				{
 					for (i = 0; i < 256; ++i)
-						if (codeToGID[i] == 0)
-							codeToGID[i] = -1;
+						if (codeToGID[i] == 0) codeToGID[i] = -1;
 				}
 			}
 			else
@@ -1477,8 +1440,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 					error(errSyntaxError, -1, "Couldn't find a mapping to Unicode for font '{}'", gfxFont->getName().size() ? gfxFont->getName().c_str() : "(unnamed)");
 				}
 			}
-			if (!(fontFile = fontEngine->loadOpenTypeCFFFont(
-			          id,
+			if (!(fontFile = fontEngine->loadOpenTypeCFFFont(id,
 #if LOAD_FONTS_FROM_MEM
 			          fontBuf,
 #else
@@ -1548,8 +1510,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 					error(errSyntaxError, -1, "Couldn't find a mapping to Unicode for font '{}'", gfxFont->getName().size() ? gfxFont->getName().c_str() : "(unnamed)");
 				}
 			}
-			if (!(fontFile = fontEngine->loadTrueTypeFont(
-			          id,
+			if (!(fontFile = fontEngine->loadTrueTypeFont(id,
 #if LOAD_FONTS_FROM_MEM
 			          fontBuf,
 #else
@@ -2948,7 +2909,7 @@ void SplashOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int w
 		case splashModeMono1:
 		case splashModeMono8:
 			imgData.lookup = (SplashColorPtr)gmalloc(n);
-			for (i = 0; i < n; ++i)
+			for (int i = 0; i < n; ++i)
 			{
 				pix = (uint8_t)i;
 				colorMap->getGray(&pix, &gray, state->getRenderingIntent());
@@ -2970,7 +2931,7 @@ void SplashOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int w
 #if SPLASH_CMYK
 		case splashModeCMYK8:
 			imgData.lookup = (SplashColorPtr)gmallocn(n, 4);
-			for (i = 0; i < n; ++i)
+			for (int i = 0; i < n; ++i)
 			{
 				pix = (uint8_t)i;
 				colorMap->getCMYK(&pix, &cmyk, state->getRenderingIntent());
@@ -4276,7 +4237,7 @@ SplashFont* SplashOutputDev::getFont(const std::string& name, SplashCoord* textM
 #if LOAD_FONTS_FROM_MEM
 			                                     fontBuf,
 #else
-			                                     fontLoc->path.c_str(), false,
+			                                     fontLoc->path, false,
 #endif
 			                                     winAnsiEncoding);
 		}
@@ -4319,7 +4280,7 @@ SplashFont* SplashOutputDev::getFont(const std::string& name, SplashCoord* textM
 #if LOAD_FONTS_FROM_MEM
 			                                        fontBuf,
 #else
-			                                        fontLoc->path.c_str(), false,
+			                                        fontLoc->path, false,
 #endif
 			                                        fontLoc->fontNum, codeToGID, 256, nullptr);
 		}

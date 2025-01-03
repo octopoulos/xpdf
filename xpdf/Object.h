@@ -28,8 +28,8 @@ class Stream;
 
 struct Ref
 {
-	int num; // object number
-	int gen; // generation number
+	int num = 0; // object number
+	int gen = 0; // generation number
 };
 
 //------------------------------------------------------------------------
@@ -56,7 +56,7 @@ enum ObjType
 	objCmd,   // command name
 	objError, // error return from Lexer
 	objEOF,   // end of file return from Lexer
-	objNone   // uninitialized object
+	objNone,  // uninitialized object
 };
 
 #define numObjTypes 14 // total number of object types
@@ -261,16 +261,16 @@ public:
 	Object* dictGetValNF(int i, Object* obj);
 
 	// Stream accessors.
-	bool        streamIs(char* dictType);
-	void        streamReset();
-	void        streamClose();
-	int         streamGetChar();
-	int         streamLookChar();
-	int         streamGetBlock(char* blk, int size);
-	char*       streamGetLine(char* buf, int size);
-	GFileOffset streamGetPos();
-	void        streamSetPos(GFileOffset pos, int dir = 0);
-	Dict*       streamGetDict();
+	bool    streamIs(char* dictType);
+	void    streamReset();
+	void    streamClose();
+	int     streamGetChar();
+	int     streamLookChar();
+	int     streamGetBlock(char* blk, int size);
+	char*   streamGetLine(char* buf, int size);
+	int64_t streamGetPos();
+	void    streamSetPos(int64_t pos, int dir = 0);
+	Dict*   streamGetDict();
 
 	// Output.
 	const char* getTypeName();
@@ -280,7 +280,7 @@ public:
 	static void memCheck(FILE* f);
 
 private:
-	ObjType type; // object type
+	ObjType type = objNone; // object type
 
 	union
 	{                        // value for each type:
@@ -297,13 +297,7 @@ private:
 	};
 
 #ifdef DEBUG_OBJECT_MEM
-#	if MULTITHREADED
-	static GAtomicCounter      // number of each type of object
-	    numAlloc[numObjTypes]; // currently allocated
-#	else
-	static int                 // number of each type of object
-	    numAlloc[numObjTypes]; // currently allocated
-#	endif
+	static REFCNT_TYPE numAlloc[numObjTypes] = {}; // number of each type of object currently allocated
 #endif
 };
 
@@ -430,12 +424,12 @@ inline char* Object::streamGetLine(char* buf, int size)
 	return stream->getLine(buf, size);
 }
 
-inline GFileOffset Object::streamGetPos()
+inline int64_t Object::streamGetPos()
 {
 	return stream->getPos();
 }
 
-inline void Object::streamSetPos(GFileOffset pos, int dir)
+inline void Object::streamSetPos(int64_t pos, int dir)
 {
 	stream->setPos(pos, dir);
 }

@@ -47,11 +47,11 @@ class XpdfViewer;
 
 struct XpdfViewerCmd
 {
-	const char* name;
-	int         nArgs;
-	bool        requiresDoc;
-	bool        requiresEvent;
-	void (XpdfViewer::*func)(const VEC_STR& args, QInputEvent* event);
+	const char* name                                                         = nullptr; //
+	int         nArgs                                                        = 0;       //
+	bool        requiresDoc                                                  = false;   //
+	bool        requiresEvent                                                = false;   //
+	void        (XpdfViewer::*func)(const VEC_STR& args, QInputEvent* event) = nullptr; //
 };
 
 //------------------------------------------------------------------------
@@ -70,7 +70,7 @@ private slots:
 	void btnPressed();
 
 private:
-	QMenu* menu;
+	QMenu* menu = nullptr; //
 };
 
 //------------------------------------------------------------------------
@@ -97,10 +97,10 @@ private:
 	static void errorCbk(void* data, ErrorCategory category, int pos, const char* msg);
 	static void dummyErrorCbk(void* data, ErrorCategory category, int pos, const char* msg);
 
-	XpdfViewer*  viewer;
-	int          errorEventType;
-	QListWidget* list;
-	QSize        lastSize;
+	XpdfViewer*  viewer         = nullptr; //
+	int          errorEventType = 0;       //
+	QListWidget* list           = nullptr; //
+	QSize        lastSize       = {};      //
 };
 
 //------------------------------------------------------------------------
@@ -429,72 +429,63 @@ private:
 
 	static XpdfViewerCmd cmdTab[];
 
-	XpdfApp* app;
-
+	XpdfApp*                app                           = nullptr; //
 	// menu
-	QMenuBar* mainMenu;
-	QMenu*    displayModeSubmenu;
-	QAction*  fullScreenMenuItem;
-	QAction*  toggleToolbarMenuItem;
-	QAction*  toggleSidebarMenuItem;
-	QAction*  viewPageLabelsMenuItem;
-
+	QMenuBar*               mainMenu                      = nullptr; //
+	QMenu*                  displayModeSubmenu            = nullptr; //
+	QAction*                fullScreenMenuItem            = nullptr; //
+	QAction*                toggleToolbarMenuItem         = nullptr; //
+	QAction*                toggleSidebarMenuItem         = nullptr; //
+	QAction*                viewPageLabelsMenuItem        = nullptr; //
 	// popup menu
-	QMenu*         popupMenu;
-	QSignalMapper* popupMenuSignalMapper;
-
+	QMenu*                  popupMenu                     = nullptr; //
+	QSignalMapper*          popupMenuSignalMapper         = nullptr; //
 	// toolbar
-	int                    toolBarFontSize; // used for HiDPI scaling
-	QToolBar*              toolBar;
-	QLineEdit*             pageNumber;
-	QLabel*                pageCount;
-	QComboBox*             zoomComboBox;
-	QToolButton*           fitWidthBtn;
-	QToolButton*           fitPageBtn;
-	QToolButton*           selectModeBtn;
-	PropertyListAnimation* indicatorAnimation;
-	QList<QVariant>        indicatorIcons;
-	QList<QVariant>        indicatorErrIcons;
-	QLineEdit*             findEdit;
-	QAction*               findCaseInsensitiveAction;
-	QAction*               findCaseSensitiveAction;
-	QAction*               findSmartCaseAction;
-	QAction*               findWholeWordsAction;
-
+	int                     toolBarFontSize               = 0;       // used for HiDPI scaling
+	QToolBar*               toolBar                       = nullptr; //
+	QLineEdit*              pageNumber                    = nullptr; //
+	QLabel*                 pageCount                     = nullptr; //
+	QComboBox*              zoomComboBox                  = nullptr; //
+	QToolButton*            fitWidthBtn                   = nullptr; //
+	QToolButton*            fitPageBtn                    = nullptr; //
+	QToolButton*            selectModeBtn                 = nullptr; //
+	PropertyListAnimation*  indicatorAnimation            = nullptr; //
+	QList<QVariant>         indicatorIcons                = {};      //
+	QList<QVariant>         indicatorErrIcons             = {};      //
+	QLineEdit*              findEdit                      = nullptr; //
+	QAction*                findCaseInsensitiveAction     = nullptr; //
+	QAction*                findCaseSensitiveAction       = nullptr; //
+	QAction*                findSmartCaseAction           = nullptr; //
+	QAction*                findWholeWordsAction          = nullptr; //
 	// sidebar pane
-	QSplitter*      sidebarSplitter;
-	int             initialSidebarWidth;
-	int             sidebarWidth;
-	QListWidget*    tabList;
-	QComboBox*      infoComboBox;
-	QStackedLayout* infoStack;
-
+	QSplitter*              sidebarSplitter               = nullptr; //
+	int                     initialSidebarWidth           = 0;       //
+	int                     sidebarWidth                  = 0;       //
+	QListWidget*            tabList                       = nullptr; //
+	QComboBox*              infoComboBox                  = nullptr; //
+	QStackedLayout*         infoStack                     = nullptr; //
 	// viewer pane
-	QStackedWidget* viewerStack;
+	QStackedWidget*         viewerStack                   = nullptr; //
+	//
+	QLabel*                 linkTargetBar                 = nullptr;                      //
+	QString                 linkTargetInfo                = "";                           //
+	GList*                  tabInfo                       = nullptr;                      // [XpdfTabInfo]
+	XpdfTabInfo*            currentTab                    = nullptr;                      //
+	XpdfTabInfo*            lastOpenedTab                 = nullptr;                      //
+	double                  scaleFactor                   = 0;                            //
+	XpdfWidget::DisplayMode fullScreenPreviousDisplayMode = XpdfWidget::pdfDisplaySingle; //
+	double                  fullScreenPreviousZoom        = 0;                            //
+	QTimer*                 findErrorTimer                = nullptr;                      //
+	XpdfErrorWindow*        errorWindow                   = nullptr;                      //
+	QDialog*                documentInfoDialog            = nullptr;                      //
+	QTextBrowser*           documentInfoMetadataTab       = nullptr;                      //
+	QTextBrowser*           documentInfoFontsTab          = nullptr;                      //
+	QDialog*                keyBindingsDialog             = nullptr;                      //
+	QDialog*                aboutDialog                   = nullptr;                      //
 
-	QLabel* linkTargetBar;
-	QString linkTargetInfo;
-
-	GList*       tabInfo; // [XpdfTabInfo]
-	XpdfTabInfo* currentTab;
-	XpdfTabInfo* lastOpenedTab;
-
-	double scaleFactor;
-
-	XpdfWidget::DisplayMode fullScreenPreviousDisplayMode;
-	double                  fullScreenPreviousZoom;
-
-	QTimer*          findErrorTimer;
-	XpdfErrorWindow* errorWindow;
-	QDialog*         documentInfoDialog;
-	QTextBrowser*    documentInfoMetadataTab;
-	QTextBrowser*    documentInfoFontsTab;
-	QDialog*         keyBindingsDialog;
-	QDialog*         aboutDialog;
 #if XPDFWIDGET_PRINTING
-	QProgressDialog* printStatusDialog;
+	QProgressDialog* printStatusDialog = nullptr; //
 #endif
-
-	QString       lastFileOpened;
-	QLocalServer* remoteServer;
+	QString       lastFileOpened = "";      //
+	QLocalServer* remoteServer   = nullptr; //
 };

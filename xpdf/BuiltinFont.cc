@@ -54,8 +54,8 @@ bool BuiltinFontWidths::getWidth(const char* name, uint16_t* width)
 
 int BuiltinFontWidths::hash(const char* name)
 {
-	const char*  p;
-	unsigned int h = 0;
+	const char* p;
+	uint32_t    h = 0;
 	for (p = name; *p; ++p)
 		h = 17 * h + (int)(*p & 0xff);
 	return (int)(h % size);

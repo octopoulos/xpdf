@@ -69,9 +69,6 @@ SplashXPathScanner::SplashXPathScanner(SplashXPath* xPathA, bool eo, int yMinA, 
 	post     = &postSeg;
 	pre->mx  = xPath->xMin - 1;
 	post->mx = xPath->xMax + 1;
-
-	resetDone = false;
-	resetAA   = false;
 }
 
 SplashXPathScanner::~SplashXPathScanner()
@@ -81,7 +78,6 @@ SplashXPathScanner::~SplashXPathScanner()
 void SplashXPathScanner::insertSegmentBefore(SplashXPathSeg* s, SplashXPathSeg* sNext)
 {
 	SplashXPathSeg* sPrev;
-
 	sPrev       = sNext->prev;
 	sPrev->next = s;
 	s->prev     = sPrev;
@@ -92,7 +88,6 @@ void SplashXPathScanner::insertSegmentBefore(SplashXPathSeg* s, SplashXPathSeg* 
 void SplashXPathScanner::removeSegment(SplashXPathSeg* s)
 {
 	SplashXPathSeg *sPrev, *sNext;
-
 	sPrev       = s->prev;
 	sNext       = s->next;
 	sPrev->next = sNext;
@@ -102,11 +97,10 @@ void SplashXPathScanner::removeSegment(SplashXPathSeg* s)
 
 void SplashXPathScanner::moveSegmentAfter(SplashXPathSeg* s, SplashXPathSeg* sPrev)
 {
-	SplashXPathSeg* sNext;
-
 	s->prev->next = s->next;
 	s->next->prev = s->prev;
 
+	SplashXPathSeg* sNext;
 	sNext       = sPrev->next;
 	sPrev->next = s;
 	s->prev     = sPrev;
@@ -118,22 +112,19 @@ void SplashXPathScanner::reset(bool aa, bool aaChanged)
 {
 	SplashXPathSeg* seg;
 	SplashCoord     y;
-	int             i;
 
 	//--- initialize segment parameters
-	for (i = 0; i < xPath->length; ++i)
+	for (int i = 0; i < xPath->length; ++i)
 	{
 		seg = &xPath->segs[i];
 		if (aa)
 		{
-			if (aaChanged)
-				seg->iy = splashFloor(seg->y0 * aaVert);
+			if (aaChanged) seg->iy = splashFloor(seg->y0 * aaVert);
 			y = (SplashCoord)(seg->iy + 1) / (SplashCoord)aaVert;
 		}
 		else
 		{
-			if (aaChanged)
-				seg->iy = splashFloor(seg->y0);
+			if (aaChanged) seg->iy = splashFloor(seg->y0);
 			y = (SplashCoord)(seg->iy + 1);
 		}
 		seg->sx0 = seg->x0;
@@ -166,8 +157,7 @@ void SplashXPathScanner::reset(bool aa, bool aaChanged)
 	if (xPath->length)
 	{
 		yBottomI = xPath->segs[0].iy;
-		if (aa)
-			yBottomI -= yBottomI % aaVert;
+		if (aa) yBottomI -= yBottomI % aaVert;
 	}
 	else
 	{
@@ -265,7 +255,8 @@ void SplashXPathScanner::skip(int newYBottomI, bool aa)
 		// the first inactive segment determines the next scanline to process
 		iy = xPath->segs[nextSeg].iy;
 		s0 = pre->next;
-		do {
+		do
+		{
 			s1 = &xPath->segs[nextSeg];
 			++nextSeg;
 			if (s1->y1 < yTop)
@@ -361,15 +352,11 @@ void SplashXPathScanner::generatePixels(int x0, int x1, uint8_t* line, int* xMin
 		}
 		if (!(fillCount & eoMask))
 		{
-			if (ix0 > x)
-				x = ix0;
+			if (ix0 > x) x = ix0;
 		}
-		if (ix1 >= xEnd)
-			ix1 = xEnd - 1;
-		if (x / aaHoriz < *xMin)
-			*xMin = x / aaHoriz;
-		if (ix1 / aaHoriz > *xMax)
-			*xMax = ix1 / aaHoriz;
+		if (ix1 >= xEnd) ix1 = xEnd - 1;
+		if (x / aaHoriz < *xMin) *xMin = x / aaHoriz;
+		if (ix1 / aaHoriz > *xMax) *xMax = ix1 / aaHoriz;
 		for (; x <= ix1; ++x)
 			++line[x / aaHoriz];
 		if (s->y0 <= yTop && s->y1 > yTop)
@@ -397,15 +384,11 @@ void SplashXPathScanner::generatePixelsBinary(int x0, int x1, uint8_t* line, int
 		}
 		if (!(fillCount & eoMask))
 		{
-			if (ix0 > x)
-				x = ix0;
+			if (ix0 > x) x = ix0;
 		}
-		if (ix1 >= xEnd)
-			ix1 = xEnd - 1;
-		if (x < *xMin)
-			*xMin = x;
-		if (ix1 > *xMax)
-			*xMax = ix1;
+		if (ix1 >= xEnd) ix1 = xEnd - 1;
+		if (x < *xMin) *xMin = x;
+		if (ix1 > *xMax) *xMax = ix1;
 		for (; x <= ix1; ++x)
 			line[x] = 255;
 		if (s->y0 <= yTop && s->y1 > yTop)
@@ -419,8 +402,7 @@ void SplashXPathScanner::drawRectangleSpan(uint8_t* line, int y, int x0, int x1,
 	uint8_t     pix;
 	int         xe, x;
 
-	if (rectX0I > x1 || rectX1I < x0)
-		return;
+	if (rectX0I > x1 || rectX1I < x0) return;
 
 	*xMin = x0 <= rectX0I ? rectX0I : x0;
 	*xMax = rectX1I <= x1 ? rectX1I : x1;
@@ -438,8 +420,7 @@ void SplashXPathScanner::drawRectangleSpan(uint8_t* line, int y, int x0, int x1,
 		if (x0 <= rectX0I)
 		{
 			pix = (uint8_t)splashCeil(edge * ((SplashCoord)1 - (xPath->rectX0 - rectX0I)) * 255);
-			if (pix < 16)
-				pix = 16;
+			if (pix < 16) pix = 16;
 			line[rectX0I] = pix;
 			x             = rectX0I + 1;
 		}
@@ -452,8 +433,7 @@ void SplashXPathScanner::drawRectangleSpan(uint8_t* line, int y, int x0, int x1,
 		if (rectX1I <= x1)
 		{
 			pix = (uint8_t)splashCeil(edge * (xPath->rectX1 - rectX1I) * 255);
-			if (pix < 16)
-				pix = 16;
+			if (pix < 16) pix = 16;
 			line[rectX1I] = pix;
 			xe            = rectX1I - 1;
 		}
@@ -464,8 +444,7 @@ void SplashXPathScanner::drawRectangleSpan(uint8_t* line, int y, int x0, int x1,
 
 		// upper edge
 		pix = (uint8_t)splashCeil(edge * 255);
-		if (pix < 16)
-			pix = 16;
+		if (pix < 16) pix = 16;
 		for (; x <= xe; ++x)
 			line[x] = pix;
 
@@ -479,8 +458,7 @@ void SplashXPathScanner::drawRectangleSpan(uint8_t* line, int y, int x0, int x1,
 		if (x0 <= rectX0I)
 		{
 			pix = (uint8_t)splashCeil(edge * ((SplashCoord)1 - (xPath->rectX0 - rectX0I)) * 255);
-			if (pix < 16)
-				pix = 16;
+			if (pix < 16) pix = 16;
 			line[rectX0I] = pix;
 			x             = rectX0I + 1;
 		}
@@ -493,8 +471,7 @@ void SplashXPathScanner::drawRectangleSpan(uint8_t* line, int y, int x0, int x1,
 		if (rectX1I <= x1)
 		{
 			pix = (uint8_t)splashCeil(edge * (xPath->rectX1 - rectX1I) * 255);
-			if (pix < 16)
-				pix = 16;
+			if (pix < 16) pix = 16;
 			line[rectX1I] = pix;
 			xe            = rectX1I - 1;
 		}
@@ -505,8 +482,7 @@ void SplashXPathScanner::drawRectangleSpan(uint8_t* line, int y, int x0, int x1,
 
 		// lower edge
 		pix = (uint8_t)splashCeil(edge * 255);
-		if (pix < 16)
-			pix = 16;
+		if (pix < 16) pix = 16;
 		for (; x <= xe; ++x)
 			line[x] = pix;
 
@@ -518,8 +494,7 @@ void SplashXPathScanner::drawRectangleSpan(uint8_t* line, int y, int x0, int x1,
 		if (x0 <= rectX0I)
 		{
 			pix = (uint8_t)splashCeil(((SplashCoord)1 - (xPath->rectX0 - rectX0I)) * 255);
-			if (pix < 16)
-				pix = 16;
+			if (pix < 16) pix = 16;
 			line[rectX0I] = pix;
 			x             = rectX0I + 1;
 		}
@@ -532,8 +507,7 @@ void SplashXPathScanner::drawRectangleSpan(uint8_t* line, int y, int x0, int x1,
 		if (rectX1I <= x1)
 		{
 			pix = (uint8_t)splashCeil((xPath->rectX1 - rectX1I) * 255);
-			if (pix < 16)
-				pix = 16;
+			if (pix < 16) pix = 16;
 			line[rectX1I] = pix;
 			xe            = rectX1I - 1;
 		}

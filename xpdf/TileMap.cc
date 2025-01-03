@@ -34,12 +34,6 @@ TileMap::TileMap(DisplayState* stateA)
 {
 	state = stateA;
 	state->setTileMap(this);
-	pageDPI = nullptr;
-	pageW = pageH = nullptr;
-	tileW = tileH = nullptr;
-	pageBoxW = pageBoxH = nullptr;
-	pageX = pageY = nullptr;
-	tiles         = nullptr;
 }
 
 TileMap::~TileMap()
@@ -59,9 +53,7 @@ GList* TileMap::getTileList()
 	int    offsetX, offsetY, offsetX2;
 	int    x0, y0, x1, y1, x, y, tx, ty, tw, th, page;
 
-	if (tiles)
-		return tiles;
-
+	if (tiles) return tiles;
 	tiles = new GList();
 
 	if (!state->getDoc() || !state->getDoc()->getNumPages())

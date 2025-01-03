@@ -26,8 +26,7 @@
 
 //------------------------------------------------------------------------
 
-#define xrefSearchSize 1024 // read this many bytes at end of file
-// to look for 'startxref'
+#define xrefSearchSize 1024 // read this many bytes at end of file to look for 'startxref'
 
 //------------------------------------------------------------------------
 // Permission bits
@@ -48,26 +47,26 @@ class XRefPosSet
 public:
 	XRefPosSet();
 	~XRefPosSet();
-	void add(GFileOffset pos);
-	bool check(GFileOffset pos);
+	void add(int64_t pos);
+	bool check(int64_t pos);
 
 	int getLength() { return len; }
 
-	GFileOffset get(int idx) { return tab[idx]; }
+	int64_t get(int idx) { return tab[idx]; }
 
 private:
-	int find(GFileOffset pos);
+	int find(int64_t pos);
 
-	GFileOffset* tab;
-	int          size;
-	int          len;
+	int64_t* tab  = nullptr; //
+	int      size = 0;       //
+	int      len  = 0;       //
 };
 
 XRefPosSet::XRefPosSet()
 {
 	size = 16;
 	len  = 0;
-	tab  = (GFileOffset*)gmallocn(size, sizeof(GFileOffset));
+	tab  = (int64_t*)gmallocn(size, sizeof(int64_t));
 }
 
 XRefPosSet::~XRefPosSet()
@@ -75,7 +74,7 @@ XRefPosSet::~XRefPosSet()
 	gfree(tab);
 }
 
-void XRefPosSet::add(GFileOffset pos)
+void XRefPosSet::add(int64_t pos)
 {
 	int i;
 
@@ -87,15 +86,15 @@ void XRefPosSet::add(GFileOffset pos)
 		if (size > INT_MAX / 2)
 			gMemError("Integer overflow in XRefPosSet::add()");
 		size *= 2;
-		tab = (GFileOffset*)greallocn(tab, size, sizeof(GFileOffset));
+		tab = (int64_t*)greallocn(tab, size, sizeof(int64_t));
 	}
 	if (i < len)
-		memmove(&tab[i + 1], &tab[i], (len - i) * sizeof(GFileOffset));
+		memmove(&tab[i + 1], &tab[i], (len - i) * sizeof(int64_t));
 	tab[i] = pos;
 	++len;
 }
 
-bool XRefPosSet::check(GFileOffset pos)
+bool XRefPosSet::check(int64_t pos)
 {
 	int i;
 
@@ -103,7 +102,7 @@ bool XRefPosSet::check(GFileOffset pos)
 	return i < len && tab[i] == pos;
 }
 
-int XRefPosSet::find(GFileOffset pos)
+int XRefPosSet::find(int64_t pos)
 {
 	int a, b, m;
 
@@ -146,11 +145,11 @@ public:
 	Object* getObject(int objIdx, int objNum, Object* obj);
 
 private:
-	int     objStrNum; // object number of the object stream
-	int     nObjects;  // number of objects in the stream
-	Object* objs;      // the objects (length = nObjects)
-	int*    objNums;   // the object numbers (length = nObjects)
-	bool    ok;
+	int     objStrNum = 0;       // object number of the object stream
+	int     nObjects  = 0;       // number of objects in the stream
+	Object* objs      = nullptr; // the objects (length = nObjects)
+	int*    objNums   = nullptr; // the object numbers (length = nObjects)
+	bool    ok        = false;   //
 };
 
 ObjectStream::ObjectStream(XRef* xref, int objStrNumA, int recursion)
@@ -289,32 +288,16 @@ Object* ObjectStream::getObject(int objIdx, int objNum, Object* obj)
 
 XRef::XRef(BaseStream* strA, bool repair)
 {
-	GFileOffset pos;
+	int64_t     pos;
 	Object      obj;
 	XRefPosSet* posSet;
 
-	ok               = true;
-	errCode          = errNone;
-	repaired         = false;
-	size             = 0;
-	last             = -1;
-	entries          = nullptr;
-	lastStartxrefPos = 0;
-	xrefTablePos     = nullptr;
-	xrefTablePosLen  = 0;
-	streamEnds       = nullptr;
-	streamEndsLen    = 0;
 	for (int i = 0; i < objStrCacheSize; ++i)
 	{
 		objStrs[i]       = nullptr;
 		objStrLastUse[i] = 0;
 	}
-	objStrCacheLength = 0;
-	objStrTime        = 0;
-
-	encrypted       = false;
-	permFlags       = defPermFlags;
-	ownerPasswordOk = false;
+	permFlags = defPermFlags;
 
 	for (int i = 0; i < xrefCacheSize; ++i)
 		cache[i].num = -1;
@@ -355,7 +338,7 @@ XRef::XRef(BaseStream* strA, bool repair)
 		while (readXRef(&pos, posSet, false))
 			;
 		xrefTablePosLen = posSet->getLength();
-		xrefTablePos    = (GFileOffset*)gmallocn(xrefTablePosLen, sizeof(GFileOffset));
+		xrefTablePos    = (int64_t*)gmallocn(xrefTablePosLen, sizeof(int64_t));
 		for (int i = 0; i < xrefTablePosLen; ++i)
 			xrefTablePos[i] = posSet->get(i);
 		delete posSet;
@@ -396,10 +379,8 @@ XRef::~XRef()
 			cache[i].obj.free();
 	gfree(entries);
 	trailerDict.free();
-	if (xrefTablePos)
-		gfree(xrefTablePos);
-	if (streamEnds)
-		gfree(streamEnds);
+	if (xrefTablePos) gfree(xrefTablePos);
+	if (streamEnds) gfree(streamEnds);
 	for (int i = 0; i < objStrCacheSize; ++i)
 		if (objStrs[i])
 			delete objStrs[i];
@@ -410,7 +391,7 @@ XRef::~XRef()
 }
 
 // Read the 'startxref' position.
-GFileOffset XRef::getStartXref()
+int64_t XRef::getStartXref()
 {
 	char  buf[xrefSearchSize + 1];
 	char* p;
@@ -439,7 +420,7 @@ GFileOffset XRef::getStartXref()
 // dictionary, and returns the prev pointer (if any).  The [hybrid]
 // flag is true when following the XRefStm link in a hybrid-reference
 // file.
-bool XRef::readXRef(GFileOffset* pos, XRefPosSet* posSet, bool hybrid)
+bool XRef::readXRef(int64_t* pos, XRefPosSet* posSet, bool hybrid)
 {
 	Parser* parser;
 	Object  obj;
@@ -455,9 +436,8 @@ bool XRef::readXRef(GFileOffset* pos, XRefPosSet* posSet, bool hybrid)
 	}
 	posSet->add(*pos);
 
-	// the xref data should either be "xref ..." (for an xref table) or
-	// "nn gg obj << ... >> stream ..." (for an xref stream); possibly
-	// preceded by whitespace
+	// the xref data should either be "xref ..." (for an xref table) or "nn gg obj << ... >> stream ..." (for an xref stream);
+	// possibly preceded by whitespace
 	str->setPos(start + *pos);
 	n = str->getBlock(buf, 100);
 	for (i = 0; i < n && Lexer::isSpace(buf[i]); ++i)
@@ -499,21 +479,22 @@ err:
 	return false;
 }
 
-bool XRef::readXRefTable(GFileOffset* pos, int offset, XRefPosSet* posSet)
+bool XRef::readXRefTable(int64_t* pos, int offset, XRefPosSet* posSet)
 {
-	XRefEntry   entry;
-	Parser*     parser;
-	Object      obj, obj2;
-	char        buf[6];
-	GFileOffset off, pos2;
-	bool        more;
-	int         first, n, digit, newSize, gen, c;
+	XRefEntry entry;
+	Parser*   parser;
+	Object    obj, obj2;
+	char      buf[6];
+	int64_t   off, pos2;
+	bool      more;
+	int       first, n, digit, newSize, gen, c;
 
 	str->setPos(start + *pos + offset);
 
 	while (1)
 	{
-		do {
+		do
+		{
 			c = str->getChar();
 		}
 		while (Lexer::isSpace(c));
@@ -524,7 +505,8 @@ bool XRef::readXRefTable(GFileOffset* pos, int offset, XRefPosSet* posSet)
 		}
 		if (c < '0' || c > '9') goto err1;
 		first = 0;
-		do {
+		do
+		{
 			digit = c - '0';
 			if (first > (INT_MAX - digit) / 10)
 				goto err1;
@@ -534,12 +516,14 @@ bool XRef::readXRefTable(GFileOffset* pos, int offset, XRefPosSet* posSet)
 		while (c >= '0' && c <= '9');
 		if (!Lexer::isSpace(c))
 			goto err1;
-		do {
+		do
+		{
 			c = str->getChar();
 		}
 		while (Lexer::isSpace(c));
 		n = 0;
-		do {
+		do
+		{
 			digit = c - '0';
 			if (n > (INT_MAX - digit) / 10) goto err1;
 			n = (n * 10) + digit;
@@ -557,19 +541,21 @@ bool XRef::readXRefTable(GFileOffset* pos, int offset, XRefPosSet* posSet)
 			entries = (XRefEntry*)greallocn(entries, newSize, sizeof(XRefEntry));
 			for (int i = size; i < newSize; ++i)
 			{
-				entries[i].offset = (GFileOffset)-1;
+				entries[i].offset = (int64_t)-1;
 				entries[i].type   = xrefEntryFree;
 			}
 			size = newSize;
 		}
 		for (int i = first; i < first + n; ++i)
 		{
-			do {
+			do
+			{
 				c = str->getChar();
 			}
 			while (Lexer::isSpace(c));
 			off = 0;
-			do {
+			do
+			{
 				off = (off * 10) + (c - '0');
 				c   = str->getChar();
 			}
@@ -577,12 +563,14 @@ bool XRef::readXRefTable(GFileOffset* pos, int offset, XRefPosSet* posSet)
 			if (!Lexer::isSpace(c))
 				goto err1;
 			entry.offset = off;
-			do {
+			do
+			{
 				c = str->getChar();
 			}
 			while (Lexer::isSpace(c));
 			gen = 0;
-			do {
+			do
+			{
 				gen = (gen * 10) + (c - '0');
 				c   = str->getChar();
 			}
@@ -590,7 +578,8 @@ bool XRef::readXRefTable(GFileOffset* pos, int offset, XRefPosSet* posSet)
 			if (!Lexer::isSpace(c))
 				goto err1;
 			entry.gen = gen;
-			do {
+			do
+			{
 				c = str->getChar();
 			}
 			while (Lexer::isSpace(c));
@@ -603,7 +592,7 @@ bool XRef::readXRefTable(GFileOffset* pos, int offset, XRefPosSet* posSet)
 			c = str->getChar();
 			if (!Lexer::isSpace(c))
 				goto err1;
-			if (entries[i].offset == (GFileOffset)-1)
+			if (entries[i].offset == (int64_t)-1)
 			{
 				entries[i] = entry;
 				// PDF files of patents from the IBM Intellectual Property
@@ -613,7 +602,7 @@ bool XRef::readXRefTable(GFileOffset* pos, int offset, XRefPosSet* posSet)
 				{
 					i = first         = 0;
 					entries[0]        = entries[1];
-					entries[1].offset = (GFileOffset)-1;
+					entries[1].offset = (int64_t)-1;
 				}
 				if (i > last)
 					last = i;
@@ -637,14 +626,14 @@ bool XRef::readXRefTable(GFileOffset* pos, int offset, XRefPosSet* posSet)
 	obj.getDict()->lookupNF("Prev", &obj2);
 	if (obj2.isInt())
 	{
-		*pos = (GFileOffset)(uint32_t)obj2.getInt();
+		*pos = (int64_t)(uint32_t)obj2.getInt();
 		more = true;
 	}
 	else if (obj2.isRef())
 	{
 		// certain buggy PDF generators generate "/Prev NNN 0 R" instead
 		// of "/Prev NNN"
-		*pos = (GFileOffset)(uint32_t)obj2.getRefNum();
+		*pos = (int64_t)(uint32_t)obj2.getRefNum();
 		more = true;
 	}
 	else
@@ -661,7 +650,7 @@ bool XRef::readXRefTable(GFileOffset* pos, int offset, XRefPosSet* posSet)
 	//~ this can be a 64-bit int (?)
 	if (obj.getDict()->lookup("XRefStm", &obj2)->isInt())
 	{
-		pos2 = (GFileOffset)(uint32_t)obj2.getInt();
+		pos2 = (int64_t)(uint32_t)obj2.getInt();
 		readXRef(&pos2, posSet, true);
 		if (!ok)
 		{
@@ -680,7 +669,7 @@ err1:
 	return false;
 }
 
-bool XRef::readXRefStream(Stream* xrefStr, GFileOffset* pos, bool hybrid)
+bool XRef::readXRefStream(Stream* xrefStr, int64_t* pos, bool hybrid)
 {
 	Dict*  dict;
 	int    w[3];
@@ -701,7 +690,7 @@ bool XRef::readXRefStream(Stream* xrefStr, GFileOffset* pos, bool hybrid)
 		entries = (XRefEntry*)greallocn(entries, newSize, sizeof(XRefEntry));
 		for (int i = size; i < newSize; ++i)
 		{
-			entries[i].offset = (GFileOffset)-1;
+			entries[i].offset = (int64_t)-1;
 			entries[i].type   = xrefEntryFree;
 		}
 		size = newSize;
@@ -761,7 +750,7 @@ bool XRef::readXRefStream(Stream* xrefStr, GFileOffset* pos, bool hybrid)
 	dict->lookupNF("Prev", &obj);
 	if (obj.isInt())
 	{
-		*pos = (GFileOffset)(uint32_t)obj.getInt();
+		*pos = (int64_t)(uint32_t)obj.getInt();
 		more = true;
 	}
 	else
@@ -795,7 +784,7 @@ bool XRef::readXRefStreamSection(Stream* xrefStr, int* w, int first, int n)
 		entries = (XRefEntry*)greallocn(entries, newSize, sizeof(XRefEntry));
 		for (int i = size; i < newSize; ++i)
 		{
-			entries[i].offset = (GFileOffset)-1;
+			entries[i].offset = (int64_t)-1;
 			entries[i].type   = xrefEntryFree;
 		}
 		size = newSize;
@@ -827,22 +816,22 @@ bool XRef::readXRefStreamSection(Stream* xrefStr, int* w, int first, int n)
 		}
 		// some PDF generators include a free entry with gen=0xffffffff
 		if ((gen < 0 || gen > INT_MAX) && type != 0) return false;
-		if (entries[i].offset == (GFileOffset)-1)
+		if (entries[i].offset == (int64_t)-1)
 		{
 			switch (type)
 			{
 			case 0:
-				entries[i].offset = (GFileOffset)offset;
+				entries[i].offset = (int64_t)offset;
 				entries[i].gen    = (int)gen;
 				entries[i].type   = xrefEntryFree;
 				break;
 			case 1:
-				entries[i].offset = (GFileOffset)offset;
+				entries[i].offset = (int64_t)offset;
 				entries[i].gen    = (int)gen;
 				entries[i].type   = xrefEntryUncompressed;
 				break;
 			case 2:
-				entries[i].offset = (GFileOffset)offset;
+				entries[i].offset = (int64_t)offset;
 				entries[i].gen    = (int)gen;
 				entries[i].type   = xrefEntryCompressed;
 				break;
@@ -868,12 +857,12 @@ bool XRef::constructXRef()
 	streamEndsLen          = 0;
 	char buf[4096 + 1];
 	str->reset();
-	GFileOffset bufPos      = start;
-	char*       p           = buf;
-	char*       end         = buf;
-	bool        startOfLine = true;
-	bool        space       = true;
-	bool        eof         = false;
+	int64_t bufPos      = start;
+	char*   p           = buf;
+	char*   end         = buf;
+	bool    startOfLine = true;
+	bool    space       = true;
+	bool    eof         = false;
 	while (1)
 	{
 		if (end - p < 256 && !eof)
@@ -892,7 +881,7 @@ bool XRef::constructXRef()
 			break;
 		if (startOfLine && !strncmp(p, "trailer", 7))
 		{
-			constructTrailerDict((GFileOffset)(bufPos + (p + 7 - buf)));
+			constructTrailerDict((int64_t)(bufPos + (p + 7 - buf)));
 			p += 7;
 			startOfLine = false;
 			space       = false;
@@ -902,16 +891,16 @@ bool XRef::constructXRef()
 			if (streamEndsLen == streamEndsSize)
 			{
 				streamEndsSize += 64;
-				streamEnds = (GFileOffset*)greallocn(streamEnds, streamEndsSize, sizeof(GFileOffset));
+				streamEnds = (int64_t*)greallocn(streamEnds, streamEndsSize, sizeof(int64_t));
 			}
-			streamEnds[streamEndsLen++] = (GFileOffset)(bufPos + (p - buf));
+			streamEnds[streamEndsLen++] = (int64_t)(bufPos + (p - buf));
 			p += 9;
 			startOfLine = false;
 			space       = false;
 		}
 		else if (space && *p >= '0' && *p <= '9')
 		{
-			p           = constructObjectEntry(p, (GFileOffset)(bufPos + (p - buf)), &lastObjNum);
+			p           = constructObjectEntry(p, (int64_t)(bufPos + (p - buf)), &lastObjNum);
 			startOfLine = false;
 			space       = false;
 		}
@@ -1006,7 +995,7 @@ bool XRef::constructXRef()
 }
 
 // Attempt to construct a trailer dict at [pos] in the stream.
-void XRef::constructTrailerDict(GFileOffset pos)
+void XRef::constructTrailerDict(int64_t pos)
 {
 	Object newTrailerDict, obj;
 	obj.initNull();
@@ -1041,39 +1030,41 @@ void XRef::saveTrailerDict(Dict* dict, bool isXRefStream)
 	obj.free();
 }
 
-// Look for an object header ("nnn ggg obj") at [p].  The first
-// character at *[p] is a digit.  [pos] is the position of *[p].
-char* XRef::constructObjectEntry(char* p, GFileOffset pos, int* objNum)
+// Look for an object header ("nnn ggg obj") at [p].
+// The first character at *[p] is a digit.  [pos] is the position of *[p].
+char* XRef::constructObjectEntry(char* p, int64_t pos, int* objNum)
 {
-	// we look for non-end-of-line space characters here, to deal with
-	// situations like:
+	// we look for non-end-of-line space characters here, to deal with situations like:
 	//    nnn          <-- garbage digits on a line
 	//    nnn nnn obj  <-- actual object
-	// and we also ignore '\0' (because it's used to terminate the
-	// buffer in this damage-scanning code)
+	// and we also ignore '\0' (because it's used to terminate the buffer in this damage-scanning code)
 	int num = 0;
-	do {
+	do
+	{
 		num = (num * 10) + (*p - '0');
 		++p;
 	}
 	while (*p >= '0' && *p <= '9' && num < 100000000);
 	if (*p != '\t' && *p != '\x0c' && *p != ' ')
 		return p;
-	do {
+	do
+	{
 		++p;
 	}
 	while (*p == '\t' || *p == '\x0c' || *p == ' ');
 	if (!(*p >= '0' && *p <= '9'))
 		return p;
 	int gen = 0;
-	do {
+	do
+	{
 		gen = (gen * 10) + (*p - '0');
 		++p;
 	}
 	while (*p >= '0' && *p <= '9' && gen < 100000000);
 	if (*p != '\t' && *p != '\x0c' && *p != ' ')
 		return p;
-	do {
+	do
+	{
 		++p;
 	}
 	while (*p == '\t' || *p == '\x0c' || *p == ' ');
@@ -1121,17 +1112,16 @@ void XRef::constructObjectStreamEntries(Object* objStr, int objStrObjNum)
 	delete parser;
 }
 
-bool XRef::constructXRefEntry(int num, int gen, GFileOffset pos, XRefEntryType type)
+bool XRef::constructXRefEntry(int num, int gen, int64_t pos, XRefEntryType type)
 {
 	if (num >= size)
 	{
 		int newSize = (num + 1 + 255) & ~255;
-		if (newSize < 0)
-			return false;
+		if (newSize < 0) return false;
 		entries = (XRefEntry*)greallocn(entries, newSize, sizeof(XRefEntry));
 		for (int i = size; i < newSize; ++i)
 		{
-			entries[i].offset = (GFileOffset)-1;
+			entries[i].offset = (int64_t)-1;
 			entries[i].type   = xrefEntryFree;
 		}
 		size = newSize;
@@ -1166,8 +1156,7 @@ void XRef::setEncryption(int permFlagsA, bool ownerPasswordOkA, uint8_t* fileKey
 
 bool XRef::getEncryption(int* permFlagsA, bool* ownerPasswordOkA, int* keyLengthA, int* encVersionA, CryptAlgorithm* encAlgorithmA)
 {
-	if (!encrypted)
-		return false;
+	if (!encrypted) return false;
 	*permFlagsA       = permFlags;
 	*ownerPasswordOkA = ownerPasswordOk;
 	*keyLengthA       = keyLength;
@@ -1268,7 +1257,7 @@ Object* XRef::fetch(int num, int gen, Object* obj, int recursion)
 			goto err;
 		}
 #endif
-		if (e->offset >= (GFileOffset)size || entries[e->offset].type != xrefEntryUncompressed)
+		if (e->offset >= (int64_t)size || entries[e->offset].type != xrefEntryUncompressed)
 		{
 			error(errSyntaxError, -1, "Invalid object stream");
 			goto err;
@@ -1320,8 +1309,7 @@ bool XRef::getObjectStreamObject(int objStrNum, int objIdx, int objNum, Object* 
 #if MULTITHREADED
 	gUnlockMutex(&objStrsMutex);
 #endif
-	if (found)
-		return true;
+	if (found) return true;
 
 	// load a new ObjectStream
 	objStr = new ObjectStream(this, objStrNum, recursion);
@@ -1392,16 +1380,13 @@ void XRef::addObjectStreamToCache(ObjectStream* objStr)
 	objStrLastUse[0] = objStrTime++;
 }
 
-// If the oldest (least recently used) entry in the object stream
-// cache is more than objStrCacheTimeout accesses old (hasn't been
-// used in the last objStrCacheTimeout accesses), eject it from the
-// cache.
+// If the oldest (least recently used) entry in the object stream cache is more than objStrCacheTimeout accesses old
+// (hasn't been used in the last objStrCacheTimeout accesses), eject it from the cache.
 // NB: objStrsMutex must be locked when calling this function.
 void XRef::cleanObjectStreamCache()
 {
-	// NB: objStrTime and objStrLastUse[] are unsigned ints, so the
-	// mod-2^32 arithmetic makes the subtraction work out, even if the
-	// time wraps around.
+	// NB: objStrTime and objStrLastUse[] are unsigned ints,
+	// so the mod-2^32 arithmetic makes the subtraction work out, even if the time wraps around.
 	if (objStrCacheLength > 1 && objStrTime - objStrLastUse[objStrCacheLength - 1] > objStrCacheTimeout)
 	{
 		delete objStrs[objStrCacheLength - 1];
@@ -1421,7 +1406,7 @@ Object* XRef::getDocInfoNF(Object* obj)
 	return trailerDict.dictLookupNF("Info", obj);
 }
 
-bool XRef::getStreamEnd(GFileOffset streamStart, GFileOffset* streamEnd)
+bool XRef::getStreamEnd(int64_t streamStart, int64_t* streamEnd)
 {
 	int a, b, m;
 
@@ -1443,10 +1428,10 @@ bool XRef::getStreamEnd(GFileOffset streamStart, GFileOffset* streamEnd)
 	return true;
 }
 
-GFileOffset XRef::strToFileOffset(char* s)
+int64_t XRef::strToFileOffset(char* s)
 {
-	GFileOffset x, d;
-	char*       p;
+	int64_t x, d;
+	char*   p;
 
 	x = 0;
 	for (p = s; *p && isdigit(*p & 0xff); ++p)

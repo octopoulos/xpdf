@@ -54,23 +54,23 @@ private:
 	void drawRectangleSpan(uint8_t* line, int y, int x0, int x1, int* xMin, int* xMax);
 	void drawRectangleSpanBinary(uint8_t* line, int y, int x0, int x1, int* xMin, int* xMax);
 
-	SplashXPath*    xPath;     //
-	int             eoMask;    //
-	int             yMin;      //
-	int             yMax;      //
-	int             rectX0I;   //
-	int             rectY0I;   //
-	int             rectX1I;   //
-	int             rectY1I;   //
-	SplashXPathSeg  preSeg;    //
-	SplashXPathSeg  postSeg;   //
-	SplashXPathSeg* pre;       //
-	SplashXPathSeg* post;      //
-	bool            resetDone; //
-	bool            resetAA;   //
-	int             nextSeg;   //
-	int             yTopI;     //
-	int             yBottomI;  //
-	SplashCoord     yTop;      //
-	SplashCoord     yBottom;   //
+	SplashXPath*    xPath     = nullptr; //
+	int             eoMask    = 0;       //
+	int             yMin      = 0;       //
+	int             yMax      = 0;       //
+	int             rectX0I   = 0;       //
+	int             rectY0I   = 0;       //
+	int             rectX1I   = 0;       //
+	int             rectY1I   = 0;       //
+	SplashXPathSeg  preSeg    = {};      //
+	SplashXPathSeg  postSeg   = {};      //
+	SplashXPathSeg* pre       = nullptr; //
+	SplashXPathSeg* post      = nullptr; //
+	bool            resetDone = false;   //
+	bool            resetAA   = false;   //
+	int             nextSeg   = 0;       //
+	int             yTopI     = 0;       //
+	int             yBottomI  = 0;       //
+	SplashCoord     yTop      = 0;       //
+	SplashCoord     yBottom   = 0;       //
 };

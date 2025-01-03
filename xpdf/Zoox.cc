@@ -424,10 +424,10 @@ void ZxDoc::parseElement(ZxNode* par)
 
 ZxAttr* ZxDoc::parseAttr()
 {
-	const char*  start;
-	char         quote, c;
-	unsigned int x;
-	int          n;
+	const char* start;
+	char        quote, c;
+	uint32_t    x;
+	int         n;
 
 	const auto name = parseName();
 	parseSpace();
@@ -572,10 +572,10 @@ void ZxDoc::parseCharData(ZxElement* par)
 				if (parsePtr < parseEnd && *parsePtr == 'x')
 				{
 					++parsePtr;
-					unsigned int x = 0;
+					uint32_t x = 0;
 					while (parsePtr < parseEnd)
 					{
-						unsigned int c = *parsePtr;
+						uint32_t c = *parsePtr;
 						if (c >= '0' && c <= '9')
 							x = (x << 4) + (c - '0');
 						else if (c >= 'a' && c <= 'f')
@@ -592,7 +592,7 @@ void ZxDoc::parseCharData(ZxElement* par)
 				}
 				else
 				{
-					unsigned int x = 0;
+					uint32_t x = 0;
 					while (parsePtr < parseEnd)
 					{
 						const char c = *parsePtr;
@@ -640,7 +640,7 @@ void ZxDoc::parseCharData(ZxElement* par)
 	par->addChild(new ZxCharData(data, true));
 }
 
-void ZxDoc::appendUTF8(std::string& s, unsigned int c)
+void ZxDoc::appendUTF8(std::string& s, uint32_t c)
 {
 	if (c <= 0x7f)
 	{

@@ -13,8 +13,8 @@
 
 struct CCITTCode
 {
-	short bits;
-	short n;
+	short bits = 0; //
+	short n    = 0; //
 };
 
 #define ccittEOL -2

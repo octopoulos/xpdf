@@ -44,24 +44,20 @@ static char specialChars[256] = {
 
 Lexer::Lexer(XRef* xref, Stream* str)
 {
-	Object obj;
-
 	curStr.initStream(str);
 	streams = new Array(xref);
+	Object obj;
 	streams->add(curStr.copy(&obj));
-	strPtr    = 0;
-	freeArray = true;
 	curStr.streamReset();
 }
 
 Lexer::Lexer(XRef* xref, Object* obj)
 {
-	Object obj2;
-
 	if (obj->isStream())
 	{
 		streams   = new Array(xref);
 		freeArray = true;
+		Object obj2;
 		streams->add(obj->copy(&obj2));
 	}
 	else
@@ -84,15 +80,12 @@ Lexer::~Lexer()
 		curStr.streamClose();
 		curStr.free();
 	}
-	if (freeArray)
-		delete streams;
+	if (freeArray) delete streams;
 }
 
 int Lexer::getChar()
 {
-	int c;
-
-	c = EOF;
+	int c = EOF;
 	while (!curStr.isNone() && (c = curStr.streamGetChar()) == EOF)
 	{
 		curStr.streamClose();
@@ -109,8 +102,7 @@ int Lexer::getChar()
 
 int Lexer::lookChar()
 {
-	if (curStr.isNone())
-		return EOF;
+	if (curStr.isNone()) return EOF;
 	return curStr.streamLookChar();
 }
 
@@ -190,7 +182,8 @@ Object* Lexer::getObj(Object* obj)
 			if (lookChar() == '-')
 			{
 				doubleMinus = true;
-				do {
+				do
+				{
 					getChar();
 				}
 				while (lookChar() == '-');
@@ -262,7 +255,8 @@ doReal:
 		n        = 0;
 		numParen = 1;
 		done     = false;
-		do {
+		do
+		{
 			c2 = EOF;
 			switch (c = getChar())
 			{
@@ -363,10 +357,7 @@ doReal:
 			{
 				if (n == tokBufSize)
 				{
-					if (s.empty())
-						s.assign(tokBuf, tokBufSize);
-					else
-						s.append(tokBuf, tokBufSize);
+					s.append(tokBuf, tokBufSize);
 					p = tokBuf;
 					n = 0;
 				}
@@ -375,10 +366,7 @@ doReal:
 			}
 		}
 		while (!done);
-		if (s.empty())
-			s.assign(tokBuf, n);
-		else
-			s.append(tokBuf, n);
+		s.append(tokBuf, n);
 		obj->initString(s);
 		break;
 
@@ -434,9 +422,7 @@ doReal:
 					invalid = true;
 			}
 notEscChar:
-			// the PDF spec claims that names are limited to 127 chars, but
-			// Distiller 8 will produce longer names, and Acrobat 8 will
-			// accept longer names
+			// the PDF spec claims that names are limited to 127 chars, but Distiller 8 will produce longer names, and Acrobat 8 will accept longer names
 			++n;
 			if (n < tokBufSize)
 			{
@@ -533,10 +519,7 @@ notEscChar:
 					{
 						if (n == tokBufSize)
 						{
-							if (s.empty())
-								s.assign(tokBuf, tokBufSize);
-							else
-								s.append(tokBuf, tokBufSize);
+							s.append(tokBuf, tokBufSize);
 							p = tokBuf;
 							n = 0;
 						}
@@ -547,10 +530,7 @@ notEscChar:
 					}
 				}
 			}
-			if (s.empty())
-				s.assign(tokBuf, n);
-			else
-				s.append(tokBuf, n);
+			s.append(tokBuf, n);
 			if (m == 1)
 				s += (char)(c2 << 4);
 			obj->initString(s);
@@ -617,8 +597,7 @@ void Lexer::skipToNextLine()
 	while (1)
 	{
 		int c = getChar();
-		if (c == EOF || c == '\n')
-			return;
+		if (c == EOF || c == '\n') return;
 		if (c == '\r')
 		{
 			if ((c = lookChar()) == '\n')

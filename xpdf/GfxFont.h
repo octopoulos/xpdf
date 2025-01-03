@@ -52,28 +52,29 @@ enum GfxFontType
 
 struct GfxFontCIDWidthExcep
 {
-	CID    first; // this record applies to
-	CID    last;  // CIDs <first>..<last>
-	double width; // char width
+	CID    first = 0; // this record applies to
+	CID    last  = 0; // CIDs <first>..<last>
+	double width = 0; // char width
 };
 
 struct GfxFontCIDWidthExcepV
 {
-	CID    first;  // this record applies to
-	CID    last;   // CIDs <first>..<last>
-	double height; // char height
-	double vx, vy; // origin position
+	CID    first  = 0; // this record applies to
+	CID    last   = 0; // CIDs <first>..<last>
+	double height = 0; // char height
+	double vx     = 0; //
+	double vy     = 0; // origin position
 };
 
 struct GfxFontCIDWidths
 {
-	double                 defWidth;  // default char width
-	double                 defHeight; // default char height
-	double                 defVY;     // default origin position
-	GfxFontCIDWidthExcep*  exceps;    // exceptions
-	int                    nExceps;   // number of valid entries in exceps
-	GfxFontCIDWidthExcepV* excepsV;   // exceptions for vertical font
-	int                    nExcepsV;  // number of valid entries in excepsV
+	double                 defWidth  = 0;       // default char width
+	double                 defHeight = 0;       // default char height
+	double                 defVY     = 0;       // default origin position
+	GfxFontCIDWidthExcep*  exceps    = nullptr; // exceptions
+	int                    nExceps   = 0;       // number of valid entries in exceps
+	GfxFontCIDWidthExcepV* excepsV   = nullptr; // exceptions for vertical font
+	int                    nExcepsV  = 0;       // number of valid entries in excepsV
 };
 
 //------------------------------------------------------------------------
@@ -118,12 +119,12 @@ class GfxFont
 {
 public:
 	// Build a GfxFont object.
-	static GfxFont* makeFont(XRef* xref, const char* tagA, Ref idA, Dict* fontDict);
+	static GfxFont* makeFont(XRef* xref, std::string_view tagA, Ref idA, Dict* fontDict);
 
 	// Create a simple default font, to substitute for an undefined font object.
 	static GfxFont* makeDefaultFont(XRef* xref);
 
-	GfxFont(const char* tagA, Ref idA, const std::string& nameA, GfxFontType typeA, Ref embFontIDA);
+	GfxFont(std::string_view tagA, Ref idA, std::string_view nameA, GfxFontType typeA, Ref embFontIDA);
 
 	virtual ~GfxFont();
 
@@ -234,7 +235,7 @@ protected:
 class Gfx8BitFont : public GfxFont
 {
 public:
-	Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::string& nameA, GfxFontType typeA, Ref embFontIDA, Dict* fontDict);
+	Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string_view nameA, GfxFontType typeA, Ref embFontIDA, Dict* fontDict);
 
 	virtual ~Gfx8BitFont();
 
@@ -279,17 +280,17 @@ public:
 	virtual bool problematicForUnicode();
 
 private:
-	Base14FontMapEntry* base14;               // for Base-14 fonts only; nullptr otherwise
-	char*               enc[256];             // char code --> char name
-	char                encFree[256];         // boolean for each char name: if set, the string is malloc'ed
-	CharCodeToUnicode*  ctu;                  // char code --> Unicode
-	bool                hasEncoding;          //
-	bool                usesMacRomanEnc;      //
-	bool                baseEncFromFontFile;  //
-	bool                usedNumericHeuristic; //
-	double              widths[256];          // character widths
-	Object              charProcs;            // Type 3 CharProcs dictionary
-	Object              resources;            // Type 3 Resources dictionary
+	Base14FontMapEntry* base14               = nullptr; // for Base-14 fonts only; nullptr otherwise
+	char*               enc[256]             = {};      // char code --> char name
+	char                encFree[256]         = {};      // boolean for each char name: if set, the string is malloc'ed
+	CharCodeToUnicode*  ctu                  = nullptr; // char code --> Unicode
+	bool                hasEncoding          = false;   //
+	bool                usesMacRomanEnc      = false;   //
+	bool                baseEncFromFontFile  = false;   //
+	bool                usedNumericHeuristic = false;   //
+	double              widths[256]          = {};      // character widths
+	Object              charProcs            = {};      // Type 3 CharProcs dictionary
+	Object              resources            = {};      // Type 3 Resources dictionary
 
 	friend class GfxFont;
 };
@@ -301,7 +302,7 @@ private:
 class GfxCIDFont : public GfxFont
 {
 public:
-	GfxCIDFont(XRef* xref, const char* tagA, Ref idA, const std::string& nameA, GfxFontType typeA, Ref embFontIDA, Dict* fontDict);
+	GfxCIDFont(XRef* xref, std::string_view tagA, Ref idA, std::string_view nameA, GfxFontType typeA, Ref embFontIDA, Dict* fontDict);
 
 	virtual ~GfxCIDFont();
 
@@ -337,16 +338,16 @@ private:
 	void getHorizontalMetrics(CID cid, double* w);
 	void getVerticalMetrics(CID cid, double* h, double* vx, double* vy);
 
-	std::string        collection;          // collection name
-	CMap*              cMap;                // char code --> CID
-	CharCodeToUnicode* ctu;                 // CID/char code --> Unicode
-	bool               ctuUsesCharCode;     // true: ctu maps char code to Unicode; false: ctu maps CID to Unicode
-	GfxFontCIDWidths   widths;              // character widths
-	int*               cidToGID;            // CID --> GID mapping (for embedded TrueType fonts)
-	int                cidToGIDLen;         //
-	bool               hasKnownCollection;  //
-	bool               hasIdentityCIDToGID; //
-	bool               identityEnc;         //
+	std::string        collection          = "";      // collection name
+	CMap*              cMap                = nullptr; // char code --> CID
+	CharCodeToUnicode* ctu                 = nullptr; // CID/char code --> Unicode
+	bool               ctuUsesCharCode     = true;    // true: ctu maps char code to Unicode; false: ctu maps CID to Unicode
+	GfxFontCIDWidths   widths              = {};      // character widths
+	int*               cidToGID            = nullptr; // CID --> GID mapping (for embedded TrueType fonts)
+	int                cidToGIDLen         = 0;       //
+	bool               hasKnownCollection  = false;   //
+	bool               hasIdentityCIDToGID = false;   //
+	bool               identityEnc         = false;   //
 };
 
 //------------------------------------------------------------------------
@@ -391,9 +392,8 @@ private:
 	static int  hashFontObject(Object* obj);
 	static void hashFontObject1(Object* obj, FNVHash* h);
 
-	XRef*  xref        = nullptr; //
-	GHash* fonts2      = nullptr; // hash table of fonts, mapping from tag to GfxFontDictEntry; this may contain duplicates, i.e., two tags that map to the same font
-	GList* uniqueFonts = nullptr; // list of all unique font objects (no dups) that have been loaded
-
-	UMAP<std::string, GfxFontDictEntry> fonts;
+	XRef*                               xref        = nullptr; //
+	GHash*                              fonts2      = nullptr; // hash table of fonts, mapping from tag to GfxFontDictEntry; this may contain duplicates, i.e., two tags that map to the same font
+	GList*                              uniqueFonts = nullptr; // list of all unique font objects (no dups) that have been loaded
+	UMAP<std::string, GfxFontDictEntry> fonts       = {};      //
 };

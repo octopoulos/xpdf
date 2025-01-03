@@ -18,24 +18,20 @@
 // fields have two names:
 //
 // name:
-//   - nodes with bind=global set the index to 0 ("foo[0]") regardless
-//     of the number of nodes with the same name
+//   - nodes with bind=global set the index to 0 ("foo[0]") regardless of the number of nodes with the same name
 //   - nodes with bind=none are dropped from the name
 //   - <area> nodes are dropped from the name
 //   - used for field value lookup in <xfa:datasets>
 //
 // fullName:
-//   - all named nodes are treated the same, regardless of bind=global
-//     or bind=none
-//   - <area> nodes are included in the name, but don't reset the
-//     numbering (i.e., <area> nodes are "transparent" with respect to
-//     node numbering)
+//   - all named nodes are treated the same, regardless of bind=global or bind=none
+//   - <area> nodes are included in the name, but don't reset the numbering
+//     (i.e., <area> nodes are "transparent" with respect to node numbering)
 //   - used for field value lookup in <form>
 //   - used for matching with AcroForm names
 //
-// Both names use indexes on all nodes, even if there's only one node
-// with the name -- this isn't correct for XFA naming, but it matches
-// the AcroForm behavior.
+// Both names use indexes on all nodes, even if there's only one node with the name
+// -- this isn't correct for XFA naming, but it matches the AcroForm behavior.
 
 //------------------------------------------------------------------------
 
@@ -208,7 +204,7 @@ void XFAScanner::scanFormNode(ZxElement* elem, const std::string& fullName, UMAP
 			ZxAttr* nameAttr = ((ZxElement*)node)->findAttr("name");
 			if (nameAttr && (node->isElement("subform") || node->isElement("field")))
 			{
-				auto        nodeName = nameAttr->getValue();
+				const auto  nodeName = nameAttr->getValue();
 				std::string childFullName;
 				if (fullName.size())
 					childFullName = fmt::format("{}.{}", fullName, nodeName);

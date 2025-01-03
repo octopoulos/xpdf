@@ -46,9 +46,9 @@ public:
 private:
 	bool evalOCVisibilityExpr(Object* expr, int recursion);
 
-	XRef*          xref;    //
-	GList*         ocgs;    // all OCGs [OptionalContentGroup]
-	OCDisplayNode* display; // root node of display tree
+	XRef*          xref    = nullptr; //
+	GList*         ocgs    = nullptr; // all OCGs [OptionalContentGroup]
+	OCDisplayNode* display = nullptr; // root node of display tree
 };
 
 //------------------------------------------------------------------------
@@ -89,12 +89,12 @@ public:
 private:
 	OptionalContentGroup(Ref* refA, TextString* nameA, OCUsageState viewStateA, OCUsageState printStateA);
 
-	Ref          ref;                //
-	TextString*  name;               //
-	OCUsageState viewState;          // suggested state when viewing
-	OCUsageState printState;         // suggested state when printing
-	bool         state;              // current state (on/off)
-	bool         inViewUsageAppDict; // true if this OCG is listed in a usage app dict with Event=View
+	Ref          ref                = {};           //
+	TextString*  name               = nullptr;      //
+	OCUsageState viewState          = ocUsageUnset; // suggested state when viewing
+	OCUsageState printState         = ocUsageUnset; // suggested state when printing
+	bool         state              = false;        // current state (on/off)
+	bool         inViewUsageAppDict = false;        // true if this OCG is listed in a usage app dict with Event=View
 
 	friend class OCDisplayNode;
 };
@@ -125,8 +125,8 @@ private:
 	void   addChildren(GList* childrenA);
 	GList* takeChildren();
 
-	TextString*           name;     // display name
-	OptionalContentGroup* ocg;      // nullptr for display labels
-	OCDisplayNode*        parent;   // parent node; nullptr at root
-	GList*                children; // nullptr if there are no children [OCDisplayNode]
+	TextString*           name     = nullptr; // display name
+	OptionalContentGroup* ocg      = nullptr; // nullptr for display labels
+	OCDisplayNode*        parent   = nullptr; // parent node; nullptr at root
+	GList*                children = nullptr; // nullptr if there are no children [OCDisplayNode]
 };

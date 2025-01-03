@@ -34,8 +34,8 @@ class XFAFieldLayoutInfo
 public:
 	XFAFieldLayoutInfo(XFAFieldLayoutHAlign hAlignA, XFAFieldLayoutVAlign vAlignA);
 
-	XFAFieldLayoutHAlign hAlign;
-	XFAFieldLayoutVAlign vAlign;
+	XFAFieldLayoutHAlign hAlign = xfaFieldLayoutHAlignLeft; //
+	XFAFieldLayoutVAlign vAlign = xfaFieldLayoutVAlignTop;  //
 };
 
 //------------------------------------------------------------------------
@@ -53,8 +53,8 @@ public:
 	XFAFieldPictureInfo(XFAFieldPictureSubtype subtypeA, const std::string& formatA);
 	~XFAFieldPictureInfo();
 
-	XFAFieldPictureSubtype subtype;
-	std::string            format; // picture format string
+	XFAFieldPictureSubtype subtype = xfaFieldPictureDateTime; //
+	std::string            format  = "";                      // picture format string
 };
 
 //------------------------------------------------------------------------
@@ -65,13 +65,13 @@ public:
 	XFAFieldBarcodeInfo(const std::string& barcodeTypeA, double wideNarrowRatioA, double moduleWidthA, double moduleHeightA, int dataLengthA, int errorCorrectionLevelA, const std::string& textLocationA);
 	~XFAFieldBarcodeInfo();
 
-	std::string barcodeType;
-	double      wideNarrowRatio;
-	double      moduleWidth;
-	double      moduleHeight;
-	int         dataLength;
-	int         errorCorrectionLevel;
-	std::string textLocation;
+	std::string barcodeType          = ""; //
+	double      wideNarrowRatio      = 0;  //
+	double      moduleWidth          = 0;  //
+	double      moduleHeight         = 0;  //
+	int         dataLength           = 0;  //
+	int         errorCorrectionLevel = 0;  //
+	std::string textLocation         = ""; //
 };
 
 //------------------------------------------------------------------------
@@ -101,12 +101,12 @@ public:
 private:
 	friend class XFAScanner;
 
-	std::string          name;     // UTF-8
-	std::string          fullName; // UTF-8
-	std::string          value;    // UTF-8
-	XFAFieldLayoutInfo*  layoutInfo;
-	XFAFieldPictureInfo* pictureInfo;
-	XFAFieldBarcodeInfo* barcodeInfo;
+	std::string          name        = "";      // UTF-8
+	std::string          fullName    = "";      // UTF-8
+	std::string          value       = "";      // UTF-8
+	XFAFieldLayoutInfo*  layoutInfo  = nullptr; //
+	XFAFieldPictureInfo* pictureInfo = nullptr; //
+	XFAFieldBarcodeInfo* barcodeInfo = nullptr; //
 };
 
 //------------------------------------------------------------------------
@@ -141,5 +141,5 @@ private:
 	bool                 nodeIsBindNone(ZxElement* elem);
 
 	// GHash* fields; // [XFAField]
-	UMAP<std::string, XFAField> fields;
+	UMAP<std::string, XFAField> fields = {}; //
 };

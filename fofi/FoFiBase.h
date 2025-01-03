@@ -41,8 +41,8 @@ protected:
 
 	bool checkRegion(int pos, int size);
 
-	uint8_t* fileData;     //
-	uint8_t* file;         //
-	size_t   len;          //
-	bool     freeFileData; //
+	uint8_t* fileData     = nullptr; //
+	uint8_t* file         = nullptr; //
+	size_t   len          = 0;       //
+	bool     freeFileData = false;   //
 };

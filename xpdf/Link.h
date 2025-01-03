@@ -109,8 +109,8 @@ public:
 	bool getChangeZoom() { return changeZoom; }
 
 private:
-	LinkDestKind kind;      // destination type
-	bool         pageIsRef; // is the page a reference or number?
+	LinkDestKind kind      = destXYZ; // destination type
+	bool         pageIsRef = false;   // is the page a reference or number?
 
 	union
 	{
@@ -118,15 +118,15 @@ private:
 		int pageNum; // one-relative page number
 	};
 
-	double left;       //
-	double bottom;     // position
-	double right;      //
-	double top;        //
-	double zoom;       // zoom factor
-	bool   changeLeft; //
-	bool   changeTop;  // which position components to change:
-	bool   changeZoom; // destXYZ uses all three; destFitH/BH use changeTop; destFitV/BV use changeLeft
-	bool   ok;         // set if created successfully
+	double left       = 0;     //
+	double bottom     = 0;     // position
+	double right      = 0;     //
+	double top        = 0;     //
+	double zoom       = 0;     // zoom factor
+	bool   changeLeft = false; //
+	bool   changeTop  = false; // which position components to change:
+	bool   changeZoom = false; // destXYZ uses all three; destFitH/BH use changeTop; destFitV/BV use changeLeft
+	bool   ok         = false; // set if created successfully
 
 	LinkDest(LinkDest* dest);
 };
@@ -155,8 +155,8 @@ public:
 	std::string getNamedDest() { return namedDest; }
 
 private:
-	LinkDest*   dest;      // regular destination (nullptr for remote link with bad destination)
-	std::string namedDest; // named destination (only one of dest and and namedDest may be non-nullptr)
+	LinkDest*   dest      = nullptr; // regular destination (nullptr for remote link with bad destination)
+	std::string namedDest = "";      // named destination (only one of dest and and namedDest may be non-nullptr)
 };
 
 //------------------------------------------------------------------------
@@ -186,9 +186,9 @@ public:
 	std::string getNamedDest() { return namedDest; }
 
 private:
-	std::string fileName;  // file name
-	LinkDest*   dest;      // regular destination (nullptr for remote link with bad destination)
-	std::string namedDest; // named destination (only one of dest and and namedDest may be non-nullptr)
+	std::string fileName  = "";      // file name
+	LinkDest*   dest      = nullptr; // regular destination (nullptr for remote link with bad destination)
+	std::string namedDest = "";      // named destination (only one of dest and and namedDest may be non-nullptr)
 };
 
 //------------------------------------------------------------------------
@@ -215,8 +215,8 @@ public:
 	std::string getParams() { return params; }
 
 private:
-	std::string fileName; // file name
-	std::string params;   // parameters
+	std::string fileName = ""; // file name
+	std::string params   = ""; // parameters
 };
 
 //------------------------------------------------------------------------
@@ -241,7 +241,7 @@ public:
 	std::string getURI() { return uri; }
 
 private:
-	std::string uri; // the URI
+	std::string uri = ""; // the URI
 };
 
 //------------------------------------------------------------------------
@@ -265,7 +265,7 @@ public:
 	std::string getName() { return name; }
 
 private:
-	std::string name;
+	std::string name = ""; //
 };
 
 //------------------------------------------------------------------------
@@ -292,8 +292,8 @@ public:
 	std::string getTitle() { return title; }
 
 private:
-	Ref         annotRef; //
-	std::string title;    //
+	Ref         annotRef = {}; //
+	std::string title    = ""; //
 };
 
 //------------------------------------------------------------------------
@@ -316,7 +316,7 @@ public:
 	std::string getJS() { return js; }
 
 private:
-	std::string js;
+	std::string js = ""; //
 };
 
 //------------------------------------------------------------------------
@@ -343,9 +343,9 @@ public:
 	int getFlags() { return flags; }
 
 private:
-	std::string url;    //
-	Object      fields; //
-	int         flags;  //
+	std::string url    = ""; //
+	Object      fields = {}; //
+	int         flags  = 0;  //
 };
 
 //------------------------------------------------------------------------
@@ -370,8 +370,8 @@ public:
 	bool getHideFlag() { return hideFlag; }
 
 private:
-	Object fields;   //
-	bool   hideFlag; //
+	Object fields   = {};    //
+	bool   hideFlag = false; //
 };
 
 //------------------------------------------------------------------------
@@ -382,7 +382,7 @@ class LinkUnknown : public LinkAction
 {
 public:
 	// Build a LinkUnknown with the specified action type.
-	LinkUnknown(char* actionA);
+	LinkUnknown(std::string_view actionA);
 
 	// Destructor.
 	virtual ~LinkUnknown();
@@ -396,7 +396,7 @@ public:
 	std::string getAction() { return action; }
 
 private:
-	std::string action; // action subtype
+	std::string action = ""; // action subtype
 };
 
 //------------------------------------------------------------------------
@@ -434,12 +434,12 @@ public:
 	}
 
 private:
-	double      x1;     //
-	double      y1;     // lower left corner
-	double      x2;     //
-	double      y2;     // upper right corner
-	LinkAction* action; // action
-	bool        ok;     // is link valid?
+	double      x1     = 0;       //
+	double      y1     = 0;       // lower left corner
+	double      x2     = 0;       //
+	double      y2     = 0;       // upper right corner
+	LinkAction* action = nullptr; // action
+	bool        ok     = false;   // is link valid?
 };
 
 //------------------------------------------------------------------------
@@ -468,6 +468,6 @@ public:
 	bool onLink(double x, double y);
 
 private:
-	Link** links;    //
-	int    numLinks; //
+	Link** links    = nullptr; //
+	int    numLinks = 0;       //
 };

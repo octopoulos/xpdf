@@ -839,8 +839,8 @@ static const char* cmapProlog[] = {
 
 struct PSSubstFont
 {
-	const char* psName; // PostScript name
-	double      mWidth; // width of 'm' character
+	std::string psName = ""; // PostScript name
+	double      mWidth = 0;  // width of 'm' character
 };
 
 // NB: must be in same order as base14SubstFonts in GfxFont.cc
@@ -881,8 +881,6 @@ PSFontFileInfo::PSFontFileInfo(const std::string& psNameA, GfxFontType typeA, PS
 	loc           = locA;
 	embFontID.num = -1;
 	embFontID.gen = -1;
-	codeToGID     = nullptr;
-	codeToGIDLen  = 0;
 }
 
 PSFontFileInfo::~PSFontFileInfo()
@@ -907,15 +905,18 @@ PSFontFileInfo::~PSFontFileInfo()
 class PSOutCustomColor
 {
 public:
-	PSOutCustomColor(double cA, double mA, double yA, double kA, const std::string& nameA);
+	PSOutCustomColor(double cA, double mA, double yA, double kA, std::string_view nameA);
 	~PSOutCustomColor();
 
-	double            c, m, y, k;
-	std::string       name;
-	PSOutCustomColor* next;
+	double            c    = 0;       //
+	double            m    = 0;       //
+	double            y    = 0;       //
+	double            k    = 0;       //
+	std::string       name = "";      //
+	PSOutCustomColor* next = nullptr; //
 };
 
-PSOutCustomColor::PSOutCustomColor(double cA, double mA, double yA, double kA, const std::string& nameA)
+PSOutCustomColor::PSOutCustomColor(double cA, double mA, double yA, double kA, std::string_view nameA)
 {
 	c    = cA;
 	m    = mA;
@@ -2177,9 +2178,9 @@ void PSOutputDev::setupFont(GfxFont* font, Dict* parentResDict)
 		if (!fi->ff)
 		{
 			if (font->isCIDFont())
-				error(errSyntaxError, -1, "Couldn't find a font for '{}' ('{}' character collection)", font->getName().size() ? font->getName().c_str() : "(unnamed)", ((GfxCIDFont*)font)->getCollection().size() ? ((GfxCIDFont*)font)->getCollection().c_str() : "(unknown)");
+				error(errSyntaxError, -1, "Couldn't find a font for '{}' ('{}' character collection)", font->getName(), ((GfxCIDFont*)font)->getCollection());
 			else
-				error(errSyntaxError, -1, "Couldn't find a font for '{}'", font->getName().size() ? font->getName().c_str() : "(unnamed)");
+				error(errSyntaxError, -1, "Couldn't find a font for '{}'", font->getName());
 			delete fontLoc;
 			return;
 		}
@@ -2798,7 +2799,7 @@ sPSFontFileInfo PSOutputDev::setupExternalCIDTrueTypeFont(GfxFont* font, const s
 	if (!(ffTT = FoFiTrueType::load(fileName.c_str(), fontNum))) return nullptr;
 	if (!(ctu = ((GfxCIDFont*)font)->getToUnicode()))
 	{
-		error(errSyntaxError, -1, "Couldn't find a mapping to Unicode for font '{}'", font->getName().size() ? font->getName().c_str() : "(unnamed)");
+		error(errSyntaxError, -1, "Couldn't find a mapping to Unicode for font '{}'", font->getName());
 		delete ffTT;
 		return nullptr;
 	}
@@ -2812,7 +2813,7 @@ sPSFontFileInfo PSOutputDev::setupExternalCIDTrueTypeFont(GfxFont* font, const s
 	}
 	if (cmap >= ffTT->getNumCmaps())
 	{
-		error(errSyntaxError, -1, "Couldn't find a Unicode cmap in font '{}'", font->getName().size() ? font->getName().c_str() : "(unnamed)");
+		error(errSyntaxError, -1, "Couldn't find a Unicode cmap in font '{}'", font->getName().size());
 		ctu->decRefCnt();
 		delete ffTT;
 		return nullptr;
@@ -2842,7 +2843,7 @@ sPSFontFileInfo PSOutputDev::setupExternalCIDTrueTypeFont(GfxFont* font, const s
 	// check for embedding permission
 	if (ffTT->getEmbeddingRights() < 1)
 	{
-		error(errSyntaxError, -1, "TrueType font '{}' does not allow embedding", font->getName().size() ? font->getName().c_str() : "(unnamed)");
+		error(errSyntaxError, -1, "TrueType font '{}' does not allow embedding", font->getName());
 		gfree(codeToGID);
 		delete ffTT;
 		return nullptr;
@@ -2961,7 +2962,7 @@ sPSFontFileInfo PSOutputDev::setupExternalOpenTypeCFFFont(GfxFont* font, const s
 	}
 	if (!(ctu = ((GfxCIDFont*)font)->getToUnicode()))
 	{
-		error(errSyntaxError, -1, "Couldn't find a mapping to Unicode for font '{}'", font->getName().size() ? font->getName().c_str() : "(unnamed)");
+		error(errSyntaxError, -1, "Couldn't find a mapping to Unicode for font '{}'", font->getName());
 		delete ffTT;
 		return nullptr;
 	}
@@ -2975,7 +2976,7 @@ sPSFontFileInfo PSOutputDev::setupExternalOpenTypeCFFFont(GfxFont* font, const s
 	}
 	if (cmap >= ffTT->getNumCmaps())
 	{
-		error(errSyntaxError, -1, "Couldn't find a Unicode cmap in font '{}'", font->getName().size() ? font->getName().c_str() : "(unnamed)");
+		error(errSyntaxError, -1, "Couldn't find a Unicode cmap in font '{}'", font->getName());
 		ctu->decRefCnt();
 		delete ffTT;
 		return nullptr;
@@ -3291,12 +3292,10 @@ bool PSOutputDev::splitType1PFA(uint8_t* font, int fontSize, int length1, int le
 	}
 
 	binSection.append((char*)(font + binStart), binLength);
-
 	return true;
 }
 
-// Split a Type 1 font in PFB format into a text section and a binary
-// section.
+// Split a Type 1 font in PFB format into a text section and a binary section.
 bool PSOutputDev::splitType1PFB(uint8_t* font, int fontSize, std::string& textSection, std::string& binSection)
 {
 	uint8_t* p;
@@ -3819,8 +3818,10 @@ void PSOutputDev::setupImage(Ref id, Stream* str, bool mask, Array* colorKeyMask
 	// compute image data size
 	str->reset();
 	col = size = 0;
-	do {
-		do {
+	do
+	{
+		do
+		{
 			c = str->getChar();
 		}
 		while (c == '\n' || c == '\r');
@@ -3835,7 +3836,8 @@ void PSOutputDev::setupImage(Ref id, Stream* str, bool mask, Array* colorKeyMask
 			++col;
 			for (i = 1; i <= (useASCIIHex ? 1 : 4); ++i)
 			{
-				do {
+				do
+				{
 					c = str->getChar();
 				}
 				while (c == '\n' || c == '\r');
@@ -3863,8 +3865,10 @@ void PSOutputDev::setupImage(Ref id, Stream* str, bool mask, Array* colorKeyMask
 	str->reset();
 	line = col = 0;
 	writePS((char*)(useASCIIHex ? "dup 0 <" : "dup 0 <~"));
-	do {
-		do {
+	do
+	{
+		do
+		{
 			c = str->getChar();
 		}
 		while (c == '\n' || c == '\r');
@@ -3881,7 +3885,8 @@ void PSOutputDev::setupImage(Ref id, Stream* str, bool mask, Array* colorKeyMask
 			++col;
 			for (i = 1; i <= (useASCIIHex ? 1 : 4); ++i)
 			{
-				do {
+				do
+				{
 					c = str->getChar();
 				}
 				while (c == '\n' || c == '\r');
@@ -4883,8 +4888,7 @@ void PSOutputDev::addCustomColor(GfxState* state, GfxSeparationColorSpace* sepCS
 	GfxCMYK           cmyk;
 
 	for (cc = customColors; cc; cc = cc->next)
-		if (cc->name == sepCS->getName())
-			return;
+		if (cc->name == sepCS->getName()) return;
 	color.c[0] = gfxColorComp1;
 	sepCS->getCMYK(&color, &cmyk, state->getRenderingIntent());
 	cc           = new PSOutCustomColor(colToDbl(cmyk.c), colToDbl(cmyk.m), colToDbl(cmyk.y), colToDbl(cmyk.k), sepCS->getName());
@@ -5824,7 +5828,8 @@ void PSOutputDev::drawString(GfxState* state, const std::string& s, bool fill, b
 			{
 				if (nChars + uLen > dxdySize)
 				{
-					do {
+					do
+					{
 						dxdySize *= 2;
 					}
 					while (nChars + uLen > dxdySize);
@@ -5836,9 +5841,8 @@ void PSOutputDev::drawString(GfxState* state, const std::string& s, bool fill, b
 					int m = uMap->mapUnicode(u[i], buf, (int)sizeof(buf));
 					for (int j = 0; j < m; ++j)
 						s2 += buf[j];
-					//~ this really needs to get the number of chars in the target
-					//~ encoding - which may be more than the number of Unicode
-					//~ chars
+					//~ this really needs to get the number of chars in the target encoding
+					// - which may be more than the number of Unicode chars
 					dxdy[2 * nChars]     = dx;
 					dxdy[2 * nChars + 1] = dy;
 					++nChars;
@@ -6077,8 +6081,10 @@ void PSOutputDev::doImageL1(Object* ref, GfxState* state, GfxImageColorMap* colo
 			str->reset();
 			col = 0;
 			writePS("[<");
-			do {
-				do {
+			do
+			{
+				do
+				{
 					c = str->getChar();
 				}
 				while (c == '\n' || c == '\r');
@@ -6284,8 +6290,10 @@ void PSOutputDev::doImageL2(Object* ref, GfxState* state, GfxImageColorMap* colo
 			str2->reset();
 			col = 0;
 			writePS((char*)(useASCIIHex ? "[<" : "[<~"));
-			do {
-				do {
+			do
+			{
+				do
+				{
 					c = str2->getChar();
 				}
 				while (c == '\n' || c == '\r');
@@ -6302,7 +6310,8 @@ void PSOutputDev::doImageL2(Object* ref, GfxState* state, GfxImageColorMap* colo
 					++col;
 					for (i = 1; i <= (useASCIIHex ? 1 : 4); ++i)
 					{
-						do {
+						do
+						{
 							c = str2->getChar();
 						}
 						while (c == '\n' || c == '\r');
@@ -6505,7 +6514,8 @@ void PSOutputDev::doImageL2(Object* ref, GfxState* state, GfxImageColorMap* colo
 				// filters)
 				str->reset();
 				n = 0;
-				do {
+				do
+				{
 					i = str->discardChars(4096);
 					n += i;
 				}
@@ -6989,8 +6999,10 @@ void PSOutputDev::doImageL3(Object* ref, GfxState* state, GfxImageColorMap* colo
 			str2->reset();
 			col = 0;
 			writePS((char*)(useASCIIHex ? "[<" : "[<~"));
-			do {
-				do {
+			do
+			{
+				do
+				{
 					c = str2->getChar();
 				}
 				while (c == '\n' || c == '\r');
@@ -7007,7 +7019,8 @@ void PSOutputDev::doImageL3(Object* ref, GfxState* state, GfxImageColorMap* colo
 					++col;
 					for (i = 1; i <= (useASCIIHex ? 1 : 4); ++i)
 					{
-						do {
+						do
+						{
 							c = str2->getChar();
 						}
 						while (c == '\n' || c == '\r');
@@ -7494,10 +7507,8 @@ void PSOutputDev::dumpSeparationColorSpace(GfxState* state, GfxSeparationColorSp
 	writePS("\n");
 	cvtFunction(cs->getFunc());
 	writePS("]");
-	if (genXform)
-		writePS(" {}");
-	if (updateColors)
-		addCustomColor(state, cs);
+	if (genXform) writePS(" {}");
+	if (updateColors) addCustomColor(state, cs);
 }
 
 void PSOutputDev::dumpDeviceNColorSpaceL2(GfxState* state, GfxDeviceNColorSpace* cs, bool genXform, bool updateColors, bool map01)
@@ -8310,12 +8321,12 @@ void PSOutputDev::writePSFmt(fmt::format_string<T...> fmt, T&&... args)
 		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 }
 
-void PSOutputDev::writePSString(const std::string& s)
+void PSOutputDev::writePSString(std::string_view sv)
 {
 	writePSChar('(');
 	int      line = 1;
-	int      n    = TO_INT(s.size());
-	uint8_t* p    = (uint8_t*)s.c_str();
+	int      n    = TO_INT(sv.size());
+	uint8_t* p    = (uint8_t*)sv.data();
 	for (; n; ++p, --n)
 	{
 		if (line >= 64)

@@ -19,11 +19,9 @@
 
 Outline::Outline(Object* outlineObj, XRef* xref)
 {
-	Object first, last;
+	if (!outlineObj->isDict()) return;
 
-	items = nullptr;
-	if (!outlineObj->isDict())
-		return;
+	Object first, last;
 	outlineObj->dictLookupNF("First", &first);
 	outlineObj->dictLookupNF("Last", &last);
 	if (first.isRef() && last.isRef())
@@ -34,22 +32,17 @@ Outline::Outline(Object* outlineObj, XRef* xref)
 
 Outline::~Outline()
 {
-	if (items)
-		deleteGList(items, OutlineItem);
+	if (items) deleteGList(items, OutlineItem);
 }
 
 //------------------------------------------------------------------------
 
 OutlineItem::OutlineItem(Object* itemRefA, Dict* dict, OutlineItem* parentA, XRef* xrefA)
 {
-	Object obj1;
-
 	xref   = xrefA;
-	title  = nullptr;
-	action = nullptr;
-	kids   = nullptr;
 	parent = parentA;
 
+	Object obj1;
 	if (dict->lookup("Title", &obj1)->isString())
 		title = new TextString(obj1.getString());
 	obj1.free();
@@ -85,10 +78,8 @@ OutlineItem::OutlineItem(Object* itemRefA, Dict* dict, OutlineItem* parentA, XRe
 OutlineItem::~OutlineItem()
 {
 	close();
-	if (title)
-		delete title;
-	if (action)
-		delete action;
+	if (title) delete title;
+	if (action) delete action;
 	itemRef.free();
 	firstRef.free();
 	lastRef.free();
@@ -105,10 +96,10 @@ GList* OutlineItem::readItemList(Object* firstItemRef, Object* lastItemRef, Outl
 	int          i;
 
 	items = new GList();
-	if (!firstItemRef->isRef() || !lastItemRef->isRef())
-		return items;
+	if (!firstItemRef->isRef() || !lastItemRef->isRef()) return items;
 	p = firstItemRef;
-	do {
+	do
+	{
 		if (!p->fetch(xrefA, &obj)->isDict())
 		{
 			obj.free();
@@ -152,8 +143,7 @@ GList* OutlineItem::readItemList(Object* firstItemRef, Object* lastItemRef, Outl
 		if (p->getRefNum() == lastItemRef->getRef().num && p->getRefGen() == lastItemRef->getRef().gen)
 			break;
 		p = &item->nextRef;
-		if (!p->isRef())
-			break;
+		if (!p->isRef()) break;
 	}
 	while (p);
 	return items;

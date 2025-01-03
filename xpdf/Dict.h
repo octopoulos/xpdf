@@ -66,16 +66,12 @@ public:
 	void setXRef(XRef* xrefA) { xref = xrefA; }
 
 private:
-	XRef*       xref;    // the xref table for this PDF file
-	DictEntry*  entries; // array of entries
-	DictEntry** hashTab; // hash table pointers
-	int         size;    // size of <entries> array
-	int         length;  // number of entries in dictionary
-#if MULTITHREADED
-	GAtomicCounter ref; // reference count
-#else
-	long ref; // reference count
-#endif
+	XRef*       xref    = nullptr; // the xref table for this PDF file
+	DictEntry*  entries = nullptr; // array of entries
+	DictEntry** hashTab = nullptr; // hash table pointers
+	int         size    = 0;       // size of <entries> array
+	int         length  = 0;       // number of entries in dictionary
+	REFCNT_TYPE ref     = 0;       // reference count
 
 	DictEntry* find(const char* key);
 	void       expand();

@@ -52,6 +52,14 @@
 // MISC
 ///////
 
+#define ASSIGN_CSTRING(str, cstr)     \
+	do                                \
+	{                                 \
+		const auto _x = cstr;         \
+		str           = _x ? _x : ""; \
+	}                                 \
+	while (0)
+
 /**
  * Find key in a container without exception
  */
@@ -67,5 +75,10 @@ inline T FindDefault_(const C& container, const K& key, const T& def)
 // clang-format off
 inline int         FindDefault(const UMAP_STR_INT& container, const std::string& key, const int& def        ) { return FindDefault_<UMAP_STR_INT, std::string, int        >(container, key, def); }
 inline std::string FindDefault(const UMAP_STR_STR& container, const std::string& key, const std::string& def) { return FindDefault_<UMAP_STR_STR, std::string, std::string>(container, key, def); }
-
 // clang-format on
+
+#if MULTITHREADED
+#	define REFCNT_TYPE GAtomicCounter
+#else
+#	define REFCNT_DEF int
+#endif

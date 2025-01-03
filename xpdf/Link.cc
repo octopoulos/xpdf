@@ -23,9 +23,7 @@
 
 LinkAction* LinkAction::parseDest(Object* obj)
 {
-	LinkAction* action;
-
-	action = new LinkGoTo(obj);
+	LinkAction* action = new LinkGoTo(obj);
 	if (!action->isOk())
 	{
 		delete action;
@@ -191,18 +189,16 @@ std::string LinkAction::getFileSpecName(Object* fileSpecObj)
 	if (name.size())
 	{
 #ifdef _WIN32
-		int i, j;
-
 		// "//...."             --> "\...."
 		// "/x/...."            --> "x:\...."
 		// "/server/share/...." --> "\\server\share\...."
 		// convert escaped slashes to slashes and unescaped slashes to backslashes
-		i = 0;
+		int i = 0;
 		if (name.at(0) == '/')
 		{
 			if (name.size() >= 2 && name.at(1) == '/')
 			{
-				name.erase(0);
+				name.erase(0, 1);
 				i = 0;
 			}
 			else if (name.size() >= 2 && ((name.at(1) >= 'a' && name.at(1) <= 'z') || (name.at(1) >= 'A' && name.at(1) <= 'Z')) && (name.size() == 2 || name.at(2) == '/'))
@@ -213,6 +209,7 @@ std::string LinkAction::getFileSpecName(Object* fileSpecObj)
 			}
 			else
 			{
+				int j;
 				for (j = 2; j < name.size(); ++j)
 					if (name.at(j - 1) != '\\' && name.at(j) == '/')
 						break;
@@ -228,7 +225,7 @@ std::string LinkAction::getFileSpecName(Object* fileSpecObj)
 			if (name.at(i) == '/')
 				name[i] = '\\';
 			else if (name.at(i) == '\\' && i + 1 < name.size() && name.at(i + 1) == '/')
-				name.erase(i);
+				name.erase(i, 1);
 #else
 		// no manipulation needed for Unix
 #endif
@@ -244,14 +241,6 @@ std::string LinkAction::getFileSpecName(Object* fileSpecObj)
 LinkDest::LinkDest(Array* a)
 {
 	Object obj1, obj2;
-
-	// initialize fields
-	left   = 0;
-	bottom = 0;
-	right  = 0;
-	top    = 0;
-	zoom   = 0;
-	ok     = false;
 
 	// get page
 	if (a->getLength() < 2)
@@ -572,7 +561,7 @@ LinkGoTo::LinkGoTo(Object* destObj)
 	// named destination
 	if (destObj->isName())
 	{
-		namedDest = destObj->getName();
+		ASSIGN_CSTRING(namedDest, destObj->getName());
 	}
 	else if (destObj->isString())
 	{
@@ -617,7 +606,7 @@ LinkGoToR::LinkGoToR(Object* fileSpecObj, Object* destObj)
 	// named destination
 	if (destObj->isName())
 	{
-		namedDest = destObj->getName();
+		ASSIGN_CSTRING(namedDest, destObj->getName());
 	}
 	else if (destObj->isString())
 	{
@@ -653,12 +642,11 @@ LinkGoToR::~LinkGoToR()
 
 LinkLaunch::LinkLaunch(Object* actionObj)
 {
-	Object obj1, obj2;
-
-	params = nullptr;
+	params.clear();
 
 	if (actionObj->isDict())
 	{
+		Object obj1;
 		if (!actionObj->dictLookup("F", &obj1)->isNull())
 		{
 			fileName = getFileSpecName(&obj1);
@@ -666,6 +654,7 @@ LinkLaunch::LinkLaunch(Object* actionObj)
 		else
 		{
 			obj1.free();
+			Object obj2;
 #ifdef _WIN32
 			if (actionObj->dictLookup("Win", &obj1)->isDict())
 			{
@@ -712,15 +701,11 @@ LinkLaunch::~LinkLaunch()
 
 LinkURI::LinkURI(Object* uriObj, const std::string& baseURI)
 {
-	std::string uri2;
-	int         n;
-	char        c;
-
-	uri = nullptr;
+	uri.clear();
 	if (uriObj->isString())
 	{
-		uri2 = uriObj->getString();
-		n    = (int)strcspn(uri2.c_str(), "/:");
+		const auto uri2 = uriObj->getString();
+		const int  n    = (int)strcspn(uri2.c_str(), "/:");
 		if (n < uri2.size() && uri2.at(n) == ':')
 		{
 			// "http:..." etc.
@@ -737,8 +722,8 @@ LinkURI::LinkURI(Object* uriObj, const std::string& baseURI)
 			// relative URI
 			if (baseURI.size())
 			{
-				uri = baseURI;
-				c   = uri.at(uri.size() - 1);
+				uri          = baseURI;
+				const char c = uri.back();
 				if (c != '/' && c != '?')
 					uri += '/';
 				if (uri2.at(0) == '/')
@@ -770,7 +755,7 @@ LinkNamed::LinkNamed(Object* nameObj)
 {
 	name.clear();
 	if (nameObj->isName())
-		name = nameObj->getName();
+		ASSIGN_CSTRING(name, nameObj->getName());
 }
 
 LinkNamed::~LinkNamed()
@@ -804,7 +789,6 @@ LinkMovie::~LinkMovie()
 LinkJavaScript::LinkJavaScript(Object* jsObj)
 {
 	char buf[4096];
-	int  n;
 
 	if (jsObj->isString())
 	{
@@ -814,6 +798,7 @@ LinkJavaScript::LinkJavaScript(Object* jsObj)
 	{
 		js.clear();
 		jsObj->streamReset();
+		int n;
 		while ((n = jsObj->getStream()->getBlock(buf, sizeof(buf))) > 0)
 			js.append(buf, n);
 		jsObj->streamClose();
@@ -821,7 +806,7 @@ LinkJavaScript::LinkJavaScript(Object* jsObj)
 	else
 	{
 		error(errSyntaxError, -1, "JavaScript action JS key is wrong type");
-		js = nullptr;
+		js.clear();
 	}
 }
 
@@ -842,7 +827,7 @@ LinkSubmitForm::LinkSubmitForm(Object* urlObj, Object* fieldsObj, Object* flagsO
 	else
 	{
 		error(errSyntaxError, -1, "SubmitForm action URL is wrong type");
-		url = nullptr;
+		url.clear();
 	}
 
 	if (fieldsObj->isArray())
@@ -909,7 +894,7 @@ LinkHide::~LinkHide()
 // LinkUnknown
 //------------------------------------------------------------------------
 
-LinkUnknown::LinkUnknown(char* actionA)
+LinkUnknown::LinkUnknown(std::string_view actionA)
 {
 	action = actionA;
 }

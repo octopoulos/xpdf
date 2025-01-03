@@ -32,8 +32,8 @@ struct XpdfSavedPageNumber
 	{
 	}
 
-	QString fileName;
-	int     pageNumber;
+	QString fileName   = ""; //
+	int     pageNumber = 0;  //
 };
 
 #define maxSavedPageNumbers 100
@@ -108,20 +108,18 @@ private:
 	void readPagesFile();
 	void writePagesFile();
 
-	int    errorEventType;
-	QColor paperColor;
-	QColor matteColor;
-	QColor fsMatteColor;
-	QColor selectionColor;
-	bool  reverseVideo;
-	double zoomScaleFactor;
-	int    zoomValues[maxZoomValues];
-	int    nZoomValues;
-
-	std::vector<XpdfViewer*> viewers;
-
-	QString             savedPagesFileName;
-	QDateTime           savedPagesFileTimestamp;
-	XpdfSavedPageNumber savedPageNumbers[maxSavedPageNumbers];
-	bool               savedPagesFileChanged;
+	int                      errorEventType                        = 0;     //
+	QColor                   paperColor                            = {};    //
+	QColor                   matteColor                            = {};    //
+	QColor                   fsMatteColor                          = {};    //
+	QColor                   selectionColor                        = {};    //
+	bool                     reverseVideo                          = false; //
+	double                   zoomScaleFactor                       = 0;     //
+	int                      zoomValues[maxZoomValues]             = {};    //
+	int                      nZoomValues                           = 0;     //
+	std::vector<XpdfViewer*> viewers                               = {};    //
+	QString                  savedPagesFileName                    = "";    //
+	QDateTime                savedPagesFileTimestamp               = {};    //
+	XpdfSavedPageNumber      savedPageNumbers[maxSavedPageNumbers] = {};    //
+	bool                     savedPagesFileChanged                 = false; //
 };

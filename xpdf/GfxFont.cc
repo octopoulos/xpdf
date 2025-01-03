@@ -40,73 +40,75 @@ struct Base14FontMapEntry
 	const char* base14Name;
 };
 
+// clang-format off
 static Base14FontMapEntry base14FontMap[] = {
-	{"Arial",	                     "Helvetica"            },
-	{ "Arial,Bold",                   "Helvetica-Bold"       },
-	{ "Arial,BoldItalic",             "Helvetica-BoldOblique"},
-	{ "Arial,Italic",                 "Helvetica-Oblique"    },
-	{ "Arial-Bold",                   "Helvetica-Bold"       },
-	{ "Arial-BoldItalic",             "Helvetica-BoldOblique"},
-	{ "Arial-BoldItalicMT",           "Helvetica-BoldOblique"},
-	{ "Arial-BoldMT",                 "Helvetica-Bold"       },
-	{ "Arial-Italic",                 "Helvetica-Oblique"    },
-	{ "Arial-ItalicMT",               "Helvetica-Oblique"    },
-	{ "ArialMT",	                  "Helvetica"            },
-	{ "Courier",	                  "Courier"              },
-	{ "Courier,Bold",                 "Courier-Bold"         },
-	{ "Courier,BoldItalic",           "Courier-BoldOblique"  },
-	{ "Courier,Italic",               "Courier-Oblique"      },
-	{ "Courier-Bold",                 "Courier-Bold"         },
-	{ "Courier-BoldOblique",          "Courier-BoldOblique"  },
-	{ "Courier-Oblique",              "Courier-Oblique"      },
-	{ "CourierNew",                   "Courier"              },
-	{ "CourierNew,Bold",              "Courier-Bold"         },
-	{ "CourierNew,BoldItalic",        "Courier-BoldOblique"  },
-	{ "CourierNew,Italic",            "Courier-Oblique"      },
-	{ "CourierNew-Bold",              "Courier-Bold"         },
-	{ "CourierNew-BoldItalic",        "Courier-BoldOblique"  },
-	{ "CourierNew-Italic",            "Courier-Oblique"      },
-	{ "CourierNewPS-BoldItalicMT",    "Courier-BoldOblique"  },
-	{ "CourierNewPS-BoldMT",          "Courier-Bold"         },
-	{ "CourierNewPS-ItalicMT",        "Courier-Oblique"      },
-	{ "CourierNewPSMT",               "Courier"              },
-	{ "Helvetica",	                "Helvetica"            },
-	{ "Helvetica,Bold",               "Helvetica-Bold"       },
-	{ "Helvetica,BoldItalic",         "Helvetica-BoldOblique"},
-	{ "Helvetica,Italic",             "Helvetica-Oblique"    },
-	{ "Helvetica-Bold",               "Helvetica-Bold"       },
-	{ "Helvetica-BoldItalic",         "Helvetica-BoldOblique"},
-	{ "Helvetica-BoldOblique",        "Helvetica-BoldOblique"},
-	{ "Helvetica-Italic",             "Helvetica-Oblique"    },
-	{ "Helvetica-Oblique",            "Helvetica-Oblique"    },
-	{ "Symbol",	                   "Symbol"               },
-	{ "Symbol,Bold",                  "Symbol"               },
-	{ "Symbol,BoldItalic",            "Symbol"               },
-	{ "Symbol,Italic",                "Symbol"               },
-	{ "Times-Bold",                   "Times-Bold"           },
-	{ "Times-BoldItalic",             "Times-BoldItalic"     },
-	{ "Times-Italic",                 "Times-Italic"         },
-	{ "Times-Roman",                  "Times-Roman"          },
-	{ "TimesNewRoman",                "Times-Roman"          },
-	{ "TimesNewRoman,Bold",           "Times-Bold"           },
-	{ "TimesNewRoman,BoldItalic",     "Times-BoldItalic"     },
-	{ "TimesNewRoman,Italic",         "Times-Italic"         },
-	{ "TimesNewRoman-Bold",           "Times-Bold"           },
-	{ "TimesNewRoman-BoldItalic",     "Times-BoldItalic"     },
-	{ "TimesNewRoman-Italic",         "Times-Italic"         },
-	{ "TimesNewRomanPS",              "Times-Roman"          },
-	{ "TimesNewRomanPS-Bold",         "Times-Bold"           },
-	{ "TimesNewRomanPS-BoldItalic",   "Times-BoldItalic"     },
-	{ "TimesNewRomanPS-BoldItalicMT", "Times-BoldItalic"     },
-	{ "TimesNewRomanPS-BoldMT",       "Times-Bold"           },
-	{ "TimesNewRomanPS-Italic",       "Times-Italic"         },
-	{ "TimesNewRomanPS-ItalicMT",     "Times-Italic"         },
-	{ "TimesNewRomanPSMT",            "Times-Roman"          },
-	{ "TimesNewRomanPSMT,Bold",       "Times-Bold"           },
-	{ "TimesNewRomanPSMT,BoldItalic", "Times-BoldItalic"     },
-	{ "TimesNewRomanPSMT,Italic",     "Times-Italic"         },
-	{ "ZapfDingbats",                 "ZapfDingbats"         }
+	{ "Arial"                       , "Helvetica"             },
+	{ "Arial,Bold"                  , "Helvetica-Bold"        },
+	{ "Arial,BoldItalic"            , "Helvetica-BoldOblique" },
+	{ "Arial,Italic"                , "Helvetica-Oblique"     },
+	{ "Arial-Bold"                  , "Helvetica-Bold"        },
+	{ "Arial-BoldItalic"            , "Helvetica-BoldOblique" },
+	{ "Arial-BoldItalicMT"          , "Helvetica-BoldOblique" },
+	{ "Arial-BoldMT"                , "Helvetica-Bold"        },
+	{ "Arial-Italic"                , "Helvetica-Oblique"     },
+	{ "Arial-ItalicMT"              , "Helvetica-Oblique"     },
+	{ "ArialMT"                     , "Helvetica"             },
+	{ "Courier"                     , "Courier"               },
+	{ "Courier,Bold"                , "Courier-Bold"          },
+	{ "Courier,BoldItalic"          , "Courier-BoldOblique"   },
+	{ "Courier,Italic"              , "Courier-Oblique"       },
+	{ "Courier-Bold"                , "Courier-Bold"          },
+	{ "Courier-BoldOblique"         , "Courier-BoldOblique"   },
+	{ "Courier-Oblique"             , "Courier-Oblique"       },
+	{ "CourierNew"                  , "Courier"               },
+	{ "CourierNew,Bold"             , "Courier-Bold"          },
+	{ "CourierNew,BoldItalic"       , "Courier-BoldOblique"   },
+	{ "CourierNew,Italic"           , "Courier-Oblique"       },
+	{ "CourierNew-Bold"             , "Courier-Bold"          },
+	{ "CourierNew-BoldItalic"       , "Courier-BoldOblique"   },
+	{ "CourierNew-Italic"           , "Courier-Oblique"       },
+	{ "CourierNewPS-BoldItalicMT"   , "Courier-BoldOblique"   },
+	{ "CourierNewPS-BoldMT"         , "Courier-Bold"          },
+	{ "CourierNewPS-ItalicMT"       , "Courier-Oblique"       },
+	{ "CourierNewPSMT"              , "Courier"               },
+	{ "Helvetica"                   , "Helvetica"             },
+	{ "Helvetica,Bold"              , "Helvetica-Bold"        },
+	{ "Helvetica,BoldItalic"        , "Helvetica-BoldOblique" },
+	{ "Helvetica,Italic"            , "Helvetica-Oblique"     },
+	{ "Helvetica-Bold"              , "Helvetica-Bold"        },
+	{ "Helvetica-BoldItalic"        , "Helvetica-BoldOblique" },
+	{ "Helvetica-BoldOblique"       , "Helvetica-BoldOblique" },
+	{ "Helvetica-Italic"            , "Helvetica-Oblique"     },
+	{ "Helvetica-Oblique"           , "Helvetica-Oblique"     },
+	{ "Symbol"                      , "Symbol"                },
+	{ "Symbol,Bold"                 , "Symbol"                },
+	{ "Symbol,BoldItalic"           , "Symbol"                },
+	{ "Symbol,Italic"               , "Symbol"                },
+	{ "Times-Bold"                  , "Times-Bold"            },
+	{ "Times-BoldItalic"            , "Times-BoldItalic"      },
+	{ "Times-Italic"                , "Times-Italic"          },
+	{ "Times-Roman"                 , "Times-Roman"           },
+	{ "TimesNewRoman"               , "Times-Roman"           },
+	{ "TimesNewRoman,Bold"          , "Times-Bold"            },
+	{ "TimesNewRoman,BoldItalic"    , "Times-BoldItalic"      },
+	{ "TimesNewRoman,Italic"        , "Times-Italic"          },
+	{ "TimesNewRoman-Bold"          , "Times-Bold"            },
+	{ "TimesNewRoman-BoldItalic"    , "Times-BoldItalic"      },
+	{ "TimesNewRoman-Italic"        , "Times-Italic"          },
+	{ "TimesNewRomanPS"             , "Times-Roman"           },
+	{ "TimesNewRomanPS-Bold"        , "Times-Bold"            },
+	{ "TimesNewRomanPS-BoldItalic"  , "Times-BoldItalic"      },
+	{ "TimesNewRomanPS-BoldItalicMT", "Times-BoldItalic"      },
+	{ "TimesNewRomanPS-BoldMT"      , "Times-Bold"            },
+	{ "TimesNewRomanPS-Italic"      , "Times-Italic"          },
+	{ "TimesNewRomanPS-ItalicMT"    , "Times-Italic"          },
+	{ "TimesNewRomanPSMT"           , "Times-Roman"           },
+	{ "TimesNewRomanPSMT,Bold"      , "Times-Bold"            },
+	{ "TimesNewRomanPSMT,BoldItalic", "Times-BoldItalic"      },
+	{ "TimesNewRomanPSMT,Italic"    , "Times-Italic"          },
+	{ "ZapfDingbats"                , "ZapfDingbats"          },
 };
+// clang-format on
 
 //------------------------------------------------------------------------
 
@@ -153,15 +155,11 @@ GfxFontLoc::~GfxFontLoc()
 // GfxFont
 //------------------------------------------------------------------------
 
-GfxFont* GfxFont::makeFont(XRef* xref, const char* tagA, Ref idA, Dict* fontDict)
+GfxFont* GfxFont::makeFont(XRef* xref, std::string_view tagA, Ref idA, Dict* fontDict)
 {
-	Ref         embFontIDA;
-	GfxFontType typeA;
-	GfxFont*    font;
-	Object      obj1;
-
 	// get base font name
 	std::string nameA;
+	Object      obj1;
 	fontDict->lookup("BaseFont", &obj1);
 	if (obj1.isName())
 		nameA = obj1.getName();
@@ -170,10 +168,11 @@ GfxFont* GfxFont::makeFont(XRef* xref, const char* tagA, Ref idA, Dict* fontDict
 	obj1.free();
 
 	// get embedded font ID and font type
-	typeA = getFontType(xref, fontDict, &embFontIDA);
+	Ref         embFontIDA;
+	GfxFontType typeA = getFontType(xref, fontDict, &embFontIDA);
 
 	// create the font object
-	font = nullptr;
+	GfxFont* font = nullptr;
 	if (typeA < fontCIDType0)
 		font = new Gfx8BitFont(xref, tagA, idA, nameA, typeA, embFontIDA, fontDict);
 	else
@@ -188,23 +187,24 @@ GfxFont* GfxFont::makeDefaultFont(XRef* xref)
 	type.initName("Font");
 	subtype.initName("Type1");
 	baseFont.initName("Helvetica");
+
 	Object fontDict;
 	fontDict.initDict(xref);
 	fontDict.dictAdd(copyString("Type"), &type);
 	fontDict.dictAdd(copyString("Subtype"), &subtype);
 	fontDict.dictAdd(copyString("BaseFont"), &baseFont);
 
-	Ref r = {
+	Ref ref = {
 		.num = GfxFontDict::hashFontObject(&fontDict),
 		.gen = 100000,
 	};
-	GfxFont* font = makeFont(xref, "undef", r, fontDict.getDict());
+	GfxFont* font = makeFont(xref, "undef", ref, fontDict.getDict());
 	fontDict.free();
 
 	return font;
 }
 
-GfxFont::GfxFont(const char* tagA, Ref idA, const std::string& nameA, GfxFontType typeA, Ref embFontIDA)
+GfxFont::GfxFont(std::string_view tagA, Ref idA, std::string_view nameA, GfxFontType typeA, Ref embFontIDA)
 {
 	tag       = tagA;
 	id        = idA;
@@ -225,19 +225,15 @@ GfxFont::~GfxFont()
 // The expected font type is not used for anything else.
 GfxFontType GfxFont::getFontType(XRef* xref, Dict* fontDict, Ref* embID)
 {
-	FoFiIdentifierType fft;
-	Dict*              fontDict2;
-	Object             subtype, fontDesc, obj1, obj2, obj3, obj4;
+	embID->num = -1;
+	embID->gen = -1;
 
-	int         err          = 0;
-	GfxFontType expectedType = fontUnknownType;
-	bool        isType0      = false;
-	GfxFontType t            = fontUnknownType;
-
-	embID->num = embID->gen = -1;
+	int    err     = 0;
+	bool   isType0 = false;
+	Object subtype;
 
 	fontDict->lookup("Subtype", &subtype);
-	expectedType = fontUnknownType;
+	GfxFontType expectedType = fontUnknownType;
 	if (subtype.isName("Type1") || subtype.isName("MMType1"))
 		expectedType = fontType1;
 	else if (subtype.isName("Type1C"))
@@ -252,7 +248,9 @@ GfxFontType GfxFont::getFontType(XRef* xref, Dict* fontDict, Ref* embID)
 		error(errSyntaxWarning, -1, "Unknown font type: '{}'", subtype.isName() ? subtype.getName() : "???");
 	subtype.free();
 
-	fontDict2 = fontDict;
+	Dict*  fontDict2 = fontDict;
+	Object obj1;
+	Object obj2;
 	if (fontDict->lookup("DescendantFonts", &obj1)->isArray())
 	{
 		if (obj1.arrayGetLength() == 0)
@@ -284,8 +282,10 @@ GfxFontType GfxFont::getFontType(XRef* xref, Dict* fontDict, Ref* embID)
 		obj2.initNull();
 	}
 
-	// NB: the PDF spec doesn't say anything about precedence, but Adobe
-	// uses FontFile3 over FontFile2 if both are present.
+	// NB: the PDF spec doesn't say anything about precedence, but Adobe uses FontFile3 over FontFile2 if both are present.
+	Object fontDesc;
+	Object obj3;
+	Object obj4;
 	if (fontDict2->lookup("FontDescriptor", &fontDesc)->isDict())
 	{
 		if (fontDesc.dictLookupNF("FontFile3", &obj3)->isRef())
@@ -381,7 +381,7 @@ GfxFontType GfxFont::getFontType(XRef* xref, Dict* fontDict, Ref* embID)
 	}
 	fontDesc.free();
 
-	t = fontUnknownType;
+	GfxFontType t = fontUnknownType;
 	if (embID->num >= 0)
 	{
 		obj3.initRef(embID->num, embID->gen);
@@ -389,7 +389,7 @@ GfxFontType GfxFont::getFontType(XRef* xref, Dict* fontDict, Ref* embID)
 		if (obj4.isStream())
 		{
 			obj4.streamReset();
-			fft = FoFiIdentifier::identifyStream(&readFromStream, obj4.getStream());
+			FoFiIdentifierType fft = FoFiIdentifier::identifyStream(&readFromStream, obj4.getStream());
 			obj4.streamClose();
 			switch (fft)
 			{
@@ -422,18 +422,13 @@ GfxFontType GfxFont::getFontType(XRef* xref, Dict* fontDict, Ref* embID)
 		obj3.free();
 	}
 
-	if (t == fontUnknownType)
-		t = expectedType;
+	if (t == fontUnknownType) t = expectedType;
+	if (t != expectedType) err |= 128;
 
-	if (t != expectedType)
-		err |= 128;
-
-	if (err)
-		error(errSyntaxWarning, -1, "Mismatch between font type and embedded font file: err={}", err);
+	if (err) error(errSyntaxWarning, -1, "Mismatch between font type and embedded font file: err={}", err);
 
 	obj2.free();
 	obj1.free();
-
 	return t;
 }
 
@@ -454,8 +449,7 @@ void GfxFont::readFontDescriptor(XRef* xref, Dict* fontDict)
 
 		// get name
 		obj1.dictLookup("FontName", &obj2);
-		if (obj2.isName())
-			embFontName = obj2.getName();
+		if (obj2.isName()) ASSIGN_CSTRING(embFontName, obj2.getName());
 		obj2.free();
 
 		// look for MissingWidth
@@ -566,7 +560,6 @@ CharCodeToUnicode* GfxFont::readToUnicodeCMap(Dict* fontDict, int nBits, CharCod
 {
 	Object obj1;
 	char   buf2[4096];
-	int    n;
 
 	if (!fontDict->lookup("ToUnicode", &obj1)->isStream())
 	{
@@ -575,6 +568,7 @@ CharCodeToUnicode* GfxFont::readToUnicodeCMap(Dict* fontDict, int nBits, CharCod
 	}
 	std::string buf;
 	obj1.streamReset();
+	int    n;
 	while ((n = obj1.streamGetBlock(buf2, sizeof(buf2))) > 0)
 		buf.append(buf2, n);
 	obj1.streamClose();
@@ -598,8 +592,7 @@ GfxFontLoc* GfxFont::locateFont(XRef* xref, bool ps)
 	double             oblique;
 	bool               embed;
 
-	if (type == fontType3)
-		return nullptr;
+	if (type == fontType3) return nullptr;
 
 	//----- embedded font
 	if (embFontID.num >= 0)
@@ -622,23 +615,14 @@ GfxFontLoc* GfxFont::locateFont(XRef* xref, bool ps)
 				{
 				case fontType1:
 				case fontType1C:
-				case fontType1COT:
-					embed = globalParams->getPSEmbedType1();
-					break;
+				case fontType1COT: embed = globalParams->getPSEmbedType1(); break;
 				case fontTrueType:
-				case fontTrueTypeOT:
-					embed = globalParams->getPSEmbedTrueType();
-					break;
+				case fontTrueTypeOT: embed = globalParams->getPSEmbedTrueType(); break;
 				case fontCIDType0C:
-				case fontCIDType0COT:
-					embed = globalParams->getPSEmbedCIDPostScript();
-					break;
+				case fontCIDType0COT: embed = globalParams->getPSEmbedCIDPostScript(); break;
 				case fontCIDType2:
-				case fontCIDType2OT:
-					embed = globalParams->getPSEmbedCIDTrueType();
-					break;
-				default:
-					break;
+				case fontCIDType2OT: embed = globalParams->getPSEmbedCIDTrueType(); break;
+				default: break;
 				}
 			}
 			if (embed)
@@ -769,10 +753,8 @@ GfxFontLoc* GfxFont::locateFont(XRef* xref, bool ps)
 			substIdx = 8;
 		else
 			substIdx = 4;
-		if (isBold())
-			substIdx += 2;
-		if (isItalic())
-			substIdx += 1;
+		if (isBold()) substIdx += 2;
+		if (isItalic()) substIdx += 1;
 
 		std::string substName = base14SubstFonts[substIdx];
 		if (ps)
@@ -848,11 +830,10 @@ GfxFontLoc* GfxFont::locateBase14Font(const std::string& base14Name)
 
 GfxFontLoc* GfxFont::getExternalFont(const std::filesystem::path& path, int fontNum, double oblique, bool cid)
 {
-	FoFiIdentifierType fft;
-	GfxFontType        fontType;
-	GfxFontLoc*        fontLoc;
+	GfxFontType fontType;
+	GfxFontLoc* fontLoc;
 
-	fft = FoFiIdentifier::identifyFile(path.string().c_str());
+	FoFiIdentifierType fft = FoFiIdentifier::identifyFile(path.string().c_str());
 	switch (fft)
 	{
 	case fofiIdType1PFA:
@@ -897,10 +878,9 @@ GfxFontLoc* GfxFont::getExternalFont(const std::filesystem::path& path, int font
 
 char* GfxFont::readEmbFontFile(XRef* xref, int* len)
 {
-	char*   buf;
 	Object  obj1, obj2;
 	Stream* str;
-	int     size, n;
+	int     n;
 
 	obj1.initRef(embFontID.num, embFontID.gen);
 	obj1.fetch(xref, &obj2);
@@ -914,11 +894,12 @@ char* GfxFont::readEmbFontFile(XRef* xref, int* len)
 	}
 	str = obj2.getStream();
 
-	size = 4096;
-	buf  = (char*)gmalloc(size);
-	*len = 0;
+	int   size = 4096;
+	char* buf  = (char*)gmalloc(size);
+	*len       = 0;
 	str->reset();
-	do {
+	do
+	{
 		if (*len > size - 4096)
 		{
 			if (size > INT_MAX / 2)
@@ -945,12 +926,11 @@ char* GfxFont::readEmbFontFile(XRef* xref, int* len)
 // Gfx8BitFont
 //------------------------------------------------------------------------
 
-Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::string& nameA, GfxFontType typeA, Ref embFontIDA, Dict* fontDict)
+Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string_view nameA, GfxFontType typeA, Ref embFontIDA, Dict* fontDict)
     : GfxFont(tagA, idA, nameA, typeA, embFontIDA)
 {
 	BuiltinFont*       builtinFont;
 	const char**       baseEnc;
-	char*              buf;
 	int                len;
 	FoFiType1*         ffT1;
 	FoFiType1C*        ffT1C;
@@ -968,8 +948,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 
 	ctu = nullptr;
 
-	// do font name substitution for various aliases of the Base 14 font
-	// names
+	// do font name substitution for various aliases of the Base 14 font names
 	base14 = nullptr;
 	std::string name2;
 
@@ -979,7 +958,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 		i     = 0;
 		while (i < name2.size())
 			if (name2.at(i) == ' ')
-				name2.erase(i);
+				name2.erase(i, 1);
 			else
 				++i;
 		a = 0;
@@ -1035,8 +1014,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 	// get info from font descriptor
 	readFontDescriptor(xref, fontDict);
 
-	// for Base-14 fonts (even if embedded), don't trust the
-	// ascent/descent/bbox values from the font descriptor
+	// for Base-14 fonts (even if embedded), don't trust the ascent/descent/bbox values from the font descriptor
 	if (builtinFont)
 	{
 		ascent         = 0.001 * builtinFont->ascent;
@@ -1086,8 +1064,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 
 	//----- build the font encoding -----
 
-	// Encodings start with a base encoding, which can come from
-	// (in order of priority):
+	// Encodings start with a base encoding, which can come from (in order of priority):
 	//   1. FontDict.Encoding or FontDict.Encoding.BaseEncoding
 	//        - MacRoman / MacExpert / WinAnsi / Standard
 	//   2. embedded or external font file
@@ -1095,8 +1072,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 	//        - builtin --> builtin encoding
 	//        - TrueType --> WinAnsiEncoding
 	//        - others --> StandardEncoding
-	// and then add a list of differences (if any) from
-	// FontDict.Encoding.Differences.
+	// and then add a list of differences (if any) from FontDict.Encoding.Differences.
 
 	// check FontDict for base encoding
 	hasEncoding         = false;
@@ -1143,19 +1119,16 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 	}
 
 	// check embedded font file for base encoding
-	// (only for Type 1 fonts - trying to get an encoding out of a
-	// TrueType font is a losing proposition)
+	// (only for Type 1 fonts - trying to get an encoding out of a TrueType font is a losing proposition)
 	ffT1  = nullptr;
 	ffT1C = nullptr;
-	buf   = nullptr;
 	if (type == fontType1 && embFontID.num >= 0)
 	{
-		if ((buf = readEmbFontFile(xref, &len)))
+		if (char* buf = readEmbFontFile(xref, &len))
 		{
 			if ((ffT1 = FoFiType1::make(buf, len)))
 			{
-				if (ffT1->getName())
-					embFontName = ffT1->getName();
+				embFontName = ffT1->getName();
 				if (!baseEnc)
 				{
 					baseEnc             = (const char**)ffT1->getEncoding();
@@ -1167,12 +1140,11 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 	}
 	else if (type == fontType1C && embFontID.num >= 0)
 	{
-		if ((buf = readEmbFontFile(xref, &len)))
+		if (char* buf = readEmbFontFile(xref, &len))
 		{
 			if ((ffT1C = FoFiType1C::make(buf, len)))
 			{
-				if (ffT1C->getName())
-					embFontName = ffT1C->getName();
+				embFontName = ffT1C->getName();
 				if (!baseEnc)
 				{
 					baseEnc             = (const char**)ffT1C->getEncoding();
@@ -1202,20 +1174,19 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 	}
 
 	// copy the base encoding
-	for (i = 0; i < 256; ++i)
+	for (int i = 0; i < 256; ++i)
 	{
 		enc[i] = (char*)baseEnc[i];
 		if ((encFree[i] = (char)baseEncFromFontFile) && enc[i])
 			enc[i] = copyString(baseEnc[i]);
 	}
 
-	// some Type 1C font files have empty encodings, which can break the
-	// T1C->T1 conversion (since the 'seac' operator depends on having
-	// the accents in the encoding), so we fill in any gaps from
-	// StandardEncoding
+	// some Type 1C font files have empty encodings, which can break the T1C->T1 conversion
+	// (since the 'seac' operator depends on having the accents in the encoding),
+	// so we fill in any gaps from StandardEncoding
 	if (type == fontType1C && embFontID.num >= 0 && baseEncFromFontFile)
 	{
-		for (i = 0; i < 256; ++i)
+		for (int i = 0; i < 256; ++i)
 		{
 			if (!enc[i] && standardEncoding[i])
 			{
@@ -1233,7 +1204,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 		{
 			hasEncoding = true;
 			code        = 0;
-			for (i = 0; i < obj2.arrayGetLength(); ++i)
+			for (int i = 0; i < obj2.arrayGetLength(); ++i)
 			{
 				obj2.arrayGet(i, &obj3);
 				if (obj3.isInt())
@@ -1261,10 +1232,8 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 		obj2.free();
 	}
 	obj1.free();
-	if (ffT1)
-		delete ffT1;
-	if (ffT1C)
-		delete ffT1C;
+	if (ffT1) delete ffT1;
+	if (ffT1C) delete ffT1C;
 
 	//----- build the mapping to Unicode -----
 
@@ -1276,9 +1245,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 		{
 			if (!(toUnicode[code] = globalParams->mapNameToUnicode(charName)) && strcmp(charName, ".notdef"))
 			{
-				// if it wasn't in the name-to-Unicode table, check for a
-				// name that looks like 'Axx' or 'xx', where 'A' is any letter
-				// and 'xx' is two hex digits
+				// if it wasn't in the name-to-Unicode table, check for a name that looks like 'Axx' or 'xx', where 'A' is any letter and 'xx' is two hex digits
 				if ((strlen(charName) == 3 && isalpha(charName[0] & 0xff) && isxdigit(charName[1] & 0xff) && isxdigit(charName[2] & 0xff) && ((charName[1] >= 'a' && charName[1] <= 'f') || (charName[1] >= 'A' && charName[1] <= 'F') || (charName[2] >= 'a' && charName[2] <= 'f') || (charName[2] >= 'A' && charName[2] <= 'F'))) || (strlen(charName) == 2 && isxdigit(charName[0] & 0xff) && isxdigit(charName[1] & 0xff) && ((charName[0] >= 'a' && charName[0] <= 'f') || (charName[0] >= 'A' && charName[0] <= 'F') || (charName[1] >= 'a' && charName[1] <= 'f') || (charName[1] >= 'A' && charName[1] <= 'F'))))
 					hex = true;
 				missing = true;
@@ -1290,17 +1257,14 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 		}
 	}
 
-	// pass 2: try to fill in the missing chars, looking for names of
-	// any of the following forms:
+	// pass 2: try to fill in the missing chars, looking for names of any of the following forms:
 	// - 'xx'
 	// - 'Axx'
 	// - 'nn'
 	// - 'Ann'
 	// - 'ABnn'
-	// - 'unixxxx' (possibly followed by garbage - some Arabic files
-	//             use 'uni0628.medi', etc.)
-	// where 'A' and 'B' are any letters, 'xx' is two hex digits, 'xxxx'
-	// is four hex digits, and 'nn' is 2-4 decimal digits
+	// - 'unixxxx' (possibly followed by garbage - some Arabic files use 'uni0628.medi', etc.)
+	// where 'A' and 'B' are any letters, 'xx' is two hex digits, 'xxxx' is four hex digits, and 'nn' is 2-4 decimal digits
 	usedNumericHeuristic = false;
 	if (missing && globalParams->getMapNumericCharNames())
 	{
@@ -1330,8 +1294,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 			}
 		}
 
-		// if the 'mapUnknownCharNames' flag is set, do a simple pass-through
-		// mapping for unknown character names
+		// if the 'mapUnknownCharNames' flag is set, do a simple pass-through mapping for unknown character names
 	}
 	else if (missing && globalParams->getMapUnknownCharNames())
 	{
@@ -1343,10 +1306,9 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 	// construct the char code -> Unicode mapping object
 	ctu = CharCodeToUnicode::make8BitToUnicode(toUnicode);
 
-	// merge in a ToUnicode CMap, if there is one -- this overwrites
-	// existing entries in ctu, i.e., the ToUnicode CMap takes
-	// precedence, but the other encoding info is allowed to fill in any
-	// holes
+	// merge in a ToUnicode CMap, if there is one
+	// -- this overwrites existing entries in ctu, i.e., the ToUnicode CMap takes precedence,
+	// but the other encoding info is allowed to fill in any holes
 	readToUnicodeCMap(fontDict, 8, ctu);
 
 	// look for a Unicode-to-Unicode mapping
@@ -1410,8 +1372,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 	}
 	else if (builtinFont)
 	{
-		// this is a kludge for broken PDF files that encode char 32
-		// as .notdef
+		// this is a kludge for broken PDF files that encode char 32 as .notdef
 		if (builtinFont->widths->getWidth("space", &w))
 			widths[32] = 0.001 * w;
 		for (code = 0; code < 256; ++code)
@@ -1422,9 +1383,9 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 	}
 	else
 	{
-		// this is technically an error -- the Widths entry is required
-		// for all but the Base-14 fonts -- but certain PDF generators
-		// apparently don't include widths for Arial and TimesNewRoman
+		// this is technically an error
+		// -- the Widths entry is required for all but the Base-14 fonts
+		// -- but certain PDF generators apparently don't include widths for Arial and TimesNewRoman
 		if (isFixedWidth())
 			i = 0;
 		else if (isSerif())
@@ -1436,8 +1397,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, const char* tagA, Ref idA, const std::strin
 		if (isItalic())
 			i += 1;
 		builtinFont = builtinFontSubst[i];
-		// this is a kludge for broken PDF files that encode char 32
-		// as .notdef
+		// this is a kludge for broken PDF files that encode char 32 as .notdef
 		if (builtinFont->widths->getWidth("space", &w))
 			widths[32] = 0.001 * w;
 		for (code = 0; code < 256; ++code)
@@ -1464,7 +1424,6 @@ Gfx8BitFont::~Gfx8BitFont()
 int Gfx8BitFont::getNextChar(const char* s, int len, CharCode* code, Unicode* u, int uSize, int* uLen, double* dx, double* dy, double* ox, double* oy)
 {
 	CharCode c;
-
 	*code = c = (CharCode)(*s & 0xff);
 	*uLen     = ctu->mapToUnicode(c, u, uSize);
 	*dx       = widths[c];
@@ -1492,9 +1451,8 @@ int* Gfx8BitFont::getCodeToGIDMap(FoFiTrueType* ff)
 	for (int i = 0; i < 256; ++i)
 		map[i] = 0;
 
-	// This is based on the cmap/encoding selection algorithm in the PDF
-	// 2.0 spec, but with some differences to match up with Adobe's
-	// behavior.
+	// This is based on the cmap/encoding selection algorithm in the PDF 2.0 spec,
+	// but with some differences to match up with Adobe's behavior.
 	unicodeCmap = macRomanCmap = macUnicodeCmap = msSymbolCmap = -1;
 	for (int i = 0; i < ff->getNumCmaps(); ++i)
 	{
@@ -1528,8 +1486,7 @@ int* Gfx8BitFont::getCodeToGIDMap(FoFiTrueType* ff)
 	}
 	else if (usesMacRomanEnc && macRomanCmap >= 0)
 	{
-		// MacRoman cmap has higher precedence than Mac Unicode only if
-		// the font uses the MacRoman encoding
+		// MacRoman cmap has higher precedence than Mac Unicode only if the font uses the MacRoman encoding
 		cmap        = macRomanCmap;
 		useMacRoman = true;
 	}
@@ -1548,9 +1505,8 @@ int* Gfx8BitFont::getCodeToGIDMap(FoFiTrueType* ff)
 		cmap = 0;
 	}
 
-	// reverse map the char names through MacRomanEncoding, then map the
-	// char codes through the cmap; fall back on Unicode if that doesn't
-	// work
+	// reverse map the char names through MacRomanEncoding, then map the char codes through the cmap;
+	// fall back on Unicode if that doesn't work
 	if (useMacRoman)
 	{
 		for (int i = 0; i < 256; ++i)
@@ -1582,8 +1538,7 @@ int* Gfx8BitFont::getCodeToGIDMap(FoFiTrueType* ff)
 			else
 				map[i] = -1;
 
-		// map the char codes through the cmap, possibly with an offset of
-		// 0xf000
+		// map the char codes through the cmap, possibly with an offset of 0xf000
 	}
 	else
 	{
@@ -1660,11 +1615,9 @@ bool Gfx8BitFont::problematicForUnicode()
 	// - Base-14 font (Gfx8BitFont.base14 != nullptr)
 	// - symbolic (GfxFont.flags & fontSymbolic)
 	// - has Encoding array (Gfx8BitFont.hasEncoding)
-	// - extracted base encoding from embedded font file
-	//   (Gfx8BitFont.baseEncFromFontFile)
+	// - extracted base encoding from embedded font file (Gfx8BitFont.baseEncFromFontFile)
 	// - has a ToUnicode map (GfxFont.hasToUnicode)
-	// - used the numeric glyph name heuristic
-	//   (Gfx8BitFont.usedNumericHeuristic)
+	// - used the numeric glyph name heuristic (Gfx8BitFont.usedNumericHeuristic)
 
 	if (name.size())
 	{
@@ -1695,9 +1648,8 @@ bool Gfx8BitFont::problematicForUnicode()
 	}
 	else
 	{
-		// NB: type will be fontTypeUnknown if the PDF specifies an
-		// invalid font type -- which is ok, if we have a ToUnicode map or
-		// an encoding
+		// NB: type will be fontTypeUnknown if the PDF specifies an invalid font type
+		// -- which is ok, if we have a ToUnicode map or an encoding
 		return !hasToUnicode && !hasEncoding;
 	}
 }
@@ -1706,7 +1658,7 @@ bool Gfx8BitFont::problematicForUnicode()
 // GfxCIDFont
 //------------------------------------------------------------------------
 
-GfxCIDFont::GfxCIDFont(XRef* xref, const char* tagA, Ref idA, const std::string& nameA, GfxFontType typeA, Ref embFontIDA, Dict* fontDict)
+GfxCIDFont::GfxCIDFont(XRef* xref, std::string_view tagA, Ref idA, std::string_view nameA, GfxFontType typeA, Ref embFontIDA, Dict* fontDict)
     : GfxFont(tagA, idA, nameA, typeA, embFontIDA)
 {
 	Dict*              desFontDict;
@@ -1726,10 +1678,6 @@ GfxCIDFont::GfxCIDFont(XRef* xref, const char* tagA, Ref idA, const std::string&
 	fontBBox[1]      = 0;
 	fontBBox[2]      = 0;
 	fontBBox[3]      = 0;
-	collection       = nullptr;
-	cMap             = nullptr;
-	ctu              = nullptr;
-	ctuUsesCharCode  = true;
 	widths.defWidth  = 1.0;
 	widths.defHeight = -1.0;
 	widths.defVY     = 0.880;
@@ -1737,8 +1685,6 @@ GfxCIDFont::GfxCIDFont(XRef* xref, const char* tagA, Ref idA, const std::string&
 	widths.nExceps   = 0;
 	widths.excepsV   = nullptr;
 	widths.nExcepsV  = 0;
-	cidToGID         = nullptr;
-	cidToGIDLen      = 0;
 
 	// get the descendant font
 	if (!fontDict->lookup("DescendantFonts", &obj1)->isArray() || obj1.arrayGetLength() == 0)
@@ -1787,16 +1733,14 @@ GfxCIDFont::GfxCIDFont(XRef* xref, const char* tagA, Ref idA, const std::string&
 	if (!(cMap = CMap::parse(nullptr, collection, &obj1)))
 		goto err2;
 
-	// check for fonts that use the Identity-H encoding (cmap), and the
-	// Adobe-Identity character collection
+	// check for fonts that use the Identity-H encoding (cmap), and the Adobe-Identity character collection
 	identityEnc = obj1.isName("Identity-H") && (collection == "Adobe-Identity");
 
 	obj1.free();
 
 	// CIDToGIDMap
-	// (the PDF 1.7 spec only allows these for TrueType fonts, but
-	// Acrobat apparently also allows them for OpenType CFF fonts -- and
-	// the PDF 2.0 spec has removed the prohibition)
+	// (the PDF 1.7 spec only allows these for TrueType fonts, but Acrobat apparently also allows them for OpenType CFF fonts
+	// -- and the PDF 2.0 spec has removed the prohibition)
 	hasIdentityCIDToGID = false;
 	desFontDict->lookup("CIDToGIDMap", &obj1);
 	if (obj1.isStream())
@@ -1837,8 +1781,7 @@ GfxCIDFont::GfxCIDFont(XRef* xref, const char* tagA, Ref idA, const std::string&
 	{
 		ctuUsesCharCode = false;
 
-		// use an identity mapping for the "Adobe-Identity" and
-		// "Adobe-UCS" collections
+		// use an identity mapping for the "Adobe-Identity" and "Adobe-UCS" collections
 		if (collection == "Adobe-Identity" || collection == "Adobe-UCS")
 		{
 			ctu = CharCodeToUnicode::makeIdentityMapping();
@@ -1876,8 +1819,7 @@ GfxCIDFont::GfxCIDFont(XRef* xref, const char* tagA, Ref idA, const std::string&
 					if (n >= 1)
 					{
 						n = utu->mapToUnicode((CharCode)uBuf[0], uBuf, 8);
-						if (n >= 1)
-							ctu->setMapping(c, uBuf, n);
+						if (n >= 1) ctu->setMapping(c, uBuf, n);
 					}
 				}
 				utu->decRefCnt();
@@ -1912,8 +1854,7 @@ GfxCIDFont::GfxCIDFont(XRef* xref, const char* tagA, Ref idA, const std::string&
 					if (widths.nExceps == excepsSize)
 					{
 						excepsSize += 16;
-						widths.exceps = (GfxFontCIDWidthExcep*)
-						    greallocn(widths.exceps, excepsSize, sizeof(GfxFontCIDWidthExcep));
+						widths.exceps = (GfxFontCIDWidthExcep*)greallocn(widths.exceps, excepsSize, sizeof(GfxFontCIDWidthExcep));
 					}
 					widths.exceps[widths.nExceps].first = obj2.getInt();
 					widths.exceps[widths.nExceps].last  = obj3.getInt();
@@ -1932,8 +1873,7 @@ GfxCIDFont::GfxCIDFont(XRef* xref, const char* tagA, Ref idA, const std::string&
 				if (widths.nExceps + obj3.arrayGetLength() > excepsSize)
 				{
 					excepsSize    = (widths.nExceps + obj3.arrayGetLength() + 15) & ~15;
-					widths.exceps = (GfxFontCIDWidthExcep*)
-					    greallocn(widths.exceps, excepsSize, sizeof(GfxFontCIDWidthExcep));
+					widths.exceps = (GfxFontCIDWidthExcep*)greallocn(widths.exceps, excepsSize, sizeof(GfxFontCIDWidthExcep));
 				}
 				j = obj2.getInt();
 				for (k = 0; k < obj3.arrayGetLength(); ++k)
@@ -1993,8 +1933,7 @@ GfxCIDFont::GfxCIDFont(XRef* xref, const char* tagA, Ref idA, const std::string&
 					if (widths.nExcepsV == excepsSize)
 					{
 						excepsSize += 16;
-						widths.excepsV = (GfxFontCIDWidthExcepV*)
-						    greallocn(widths.excepsV, excepsSize, sizeof(GfxFontCIDWidthExcepV));
+						widths.excepsV = (GfxFontCIDWidthExcepV*)greallocn(widths.excepsV, excepsSize, sizeof(GfxFontCIDWidthExcepV));
 					}
 					widths.excepsV[widths.nExcepsV].first  = obj2.getInt();
 					widths.excepsV[widths.nExcepsV].last   = obj3.getInt();
@@ -2017,8 +1956,7 @@ GfxCIDFont::GfxCIDFont(XRef* xref, const char* tagA, Ref idA, const std::string&
 				if (widths.nExcepsV + obj3.arrayGetLength() / 3 > excepsSize)
 				{
 					excepsSize     = (widths.nExcepsV + obj3.arrayGetLength() / 3 + 15) & ~15;
-					widths.excepsV = (GfxFontCIDWidthExcepV*)
-					    greallocn(widths.excepsV, excepsSize, sizeof(GfxFontCIDWidthExcepV));
+					widths.excepsV = (GfxFontCIDWidthExcepV*)greallocn(widths.excepsV, excepsSize, sizeof(GfxFontCIDWidthExcepV));
 				}
 				j = obj2.getInt();
 				for (k = 0; k + 2 < obj3.arrayGetLength(); k += 3)
@@ -2077,9 +2015,9 @@ GfxCIDFont::~GfxCIDFont()
 	if (cidToGID) gfree(cidToGID);
 }
 
-// Construct a code-to-Unicode mapping, based on the TrueType Unicode
-// cmap (if present).  Constructs ctu if succesful; leaves ctu = null
-// otherwise.  Always leaves ctu = null for non-TrueType fonts.
+// Construct a code-to-Unicode mapping, based on the TrueType Unicode cmap (if present).
+// Constructs ctu if succesful; leaves ctu = null otherwise.
+// Always leaves ctu = null for non-TrueType fonts.
 void GfxCIDFont::readTrueTypeUnicodeMapping(XRef* xref)
 {
 	char*         buf;
@@ -2200,10 +2138,9 @@ int GfxCIDFont::getNextChar(const char* s, int len, CharCode* code, Unicode* u, 
 	return n;
 }
 
-// NB: Section 9.7.4.3 in the PDF 2.0 spec says that, in the case of
-// duplicate entries in the metrics, the first entry should be used.
-// This means we need to leave the metrics in the original order and
-// perform a linear search.  (Or use a more complex data structure.)
+// NB: Section 9.7.4.3 in the PDF 2.0 spec says that, in the case of duplicate entries in the metrics, the first entry should be used.
+// This means we need to leave the metrics in the original order and perform a linear search.
+// (Or use a more complex data structure.)
 void GfxCIDFont::getHorizontalMetrics(CID cid, double* w)
 {
 	int i;
@@ -2218,10 +2155,9 @@ void GfxCIDFont::getHorizontalMetrics(CID cid, double* w)
 	*w = widths.defWidth;
 }
 
-// NB: Section 9.7.4.3 in the PDF 2.0 spec says that, in the case of
-// duplicate entries in the metrics, the first entry should be used.
-// This means we need to leave the metrics in the original order and
-// perform a linear search.  (Or use a more complex data structure.)
+// NB: Section 9.7.4.3 in the PDF 2.0 spec says that, in the case of duplicate entries in the metrics, the first entry should be used.
+// This means we need to leave the metrics in the original order and perform a linear search.
+// (Or use a more complex data structure.)
 void GfxCIDFont::getVerticalMetrics(CID cid, double* h, double* vx, double* vy)
 {
 	int i;
@@ -2274,12 +2210,10 @@ bool GfxCIDFont::problematicForUnicode()
 	// - font type (GfxFont.type)
 	// - symbolic (GfxFont.flags & fontSymbolic)
 	// - has a ToUnicode map (GfxFont.hasToUnicode)
-	// - collection is Adobe-Identity or Adobe-UCS
-	//   (GfxCIDFont.collection - compare string)
+	// - collection is Adobe-Identity or Adobe-UCS (GfxCIDFont.collection - compare string)
 	// - collection is known AdobeCJK (GfxCIDFont.hasKnownCollection)
 	// - has non-Identity CIDToGIDMap (GfxCIDFont.cidToGID != nullptr)
 	// - has Identity CIDToGIDMap (GfxCIDFont.hasIdentityCIDToGID)
-
 	if (name.size())
 	{
 		const auto nameLC   = LowerCase(name);
@@ -2322,8 +2256,7 @@ GfxFontDictEntry::GfxFontDictEntry(Ref refA, Object* fontObjA)
 
 GfxFontDictEntry::~GfxFontDictEntry()
 {
-	// NB: If the font has been loaded, font is non-nullptr and is owned by
-	// GfxFontDict.uniqueFonts.
+	// NB: If the font has been loaded, font is non-nullptr and is owned by GfxFontDict.uniqueFonts.
 	if (!loaded) fontObj.free();
 }
 
@@ -2351,15 +2284,13 @@ GfxFontDict::GfxFontDict(XRef* xrefA, Ref* fontDictRef, Dict* fontDict)
 		}
 		else if (fontDictRef)
 		{
-			// legal generation numbers are five digits, so we use a
-			// 6-digit number here
+			// legal generation numbers are five digits, so we use a 6-digit number here
 			r.gen = 100000 + fontDictRef->num;
 			r.num = i;
 		}
 		else
 		{
-			// no indirect reference for this font, or for the containing
-			// font dict, so hash the font and use that
+			// no indirect reference for this font, or for the containing font dict, so hash the font and use that
 			r.gen = 100000;
 			r.num = hashFontObject(&fontObj);
 		}

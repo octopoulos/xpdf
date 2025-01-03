@@ -54,11 +54,6 @@ public:
 	// Load a new file.  Returns pdfOk or error code.
 	virtual int loadFile(const std::string& fileName, const std::string& ownerPassword = nullptr, const std::string& userPassword = nullptr);
 
-#ifdef _WIN32
-	// Load a new file.  Returns pdfOk or error code.
-	virtual int loadFile(wchar_t* fileName, int fileNameLen, const std::string& ownerPassword = nullptr, const std::string& userPassword = nullptr);
-#endif
-
 	// Load a new file, via a Stream instead of a file name.  Returns
 	// pdfOk or error code.
 	virtual int loadFile(BaseStream* stream, const std::string& ownerPassword = nullptr, const std::string& userPassword = nullptr);
@@ -198,45 +193,42 @@ private:
 	virtual void preLoad();
 	virtual void postLoad();
 
-	QWidget*    viewport;   //
-	QScrollBar* hScrollBar; //
-	QScrollBar* vScrollBar; //
-
-	int    displayDpi;         //
-	double scaleFactor;        //
-	bool   dragging;           //
-	bool   panning;            //
-	int    panMX;              //
-	int    panMY;              //
-	bool   inUpdateScrollbars; //
-	int    oldFirstPage;       //
-	int    oldMidPage;         //
-
-	LinkAction* linkAction;         // mouse cursor is over this link
-	LinkAction* lastLinkAction;     // getLinkInfo() caches an action
-	QString     lastLinkActionInfo; //
-	QDateTime   modTime;            // last modification time of PDF file
-
-	QtPDFUpdateCbk         updateCbk;             //
-	void*                  updateCbkData;         //
-	QtPDFMidPageChangedCbk midPageChangedCbk;     //
-	void*                  midPageChangedCbkData; //
-	QtPDFLoadCbk           preLoadCbk;            //
-	void*                  preLoadCbkData;        //
-	QtPDFLoadCbk           postLoadCbk;           //
-	void*                  postLoadCbkData;       //
-	QtPDFActionCbk         actionCbk;             //
-	void*                  actionCbkData;         //
-	QtPDFLinkCbk           linkCbk;               //
-	void*                  linkCbkData;           //
-	QtPDFSelectDoneCbk     selectDoneCbk;         //
-	void*                  selectDoneCbkData;     //
-	QtPDFPaintDoneCbk      paintDoneCbk;          //
-	void*                  paintDoneCbkData;      //
-
-	bool hyperlinksEnabled;         //
-	bool externalHyperlinksEnabled; //
-	bool selectEnabled;             //
-	bool panEnabled;                //
-	bool showPasswordDialog;        //
+	QWidget*               viewport                  = nullptr; //
+	QScrollBar*            hScrollBar                = nullptr; //
+	QScrollBar*            vScrollBar                = nullptr; //
+	int                    displayDpi                = 0;       //
+	double                 scaleFactor               = 0;       //
+	bool                   dragging                  = false;   //
+	bool                   panning                   = false;   //
+	int                    panMX                     = 0;       //
+	int                    panMY                     = 0;       //
+	bool                   inUpdateScrollbars        = false;   //
+	int                    oldFirstPage              = -1;      //
+	int                    oldMidPage                = -1;      //
+	LinkAction*            linkAction                = nullptr; // mouse cursor is over this link
+	LinkAction*            lastLinkAction            = nullptr; // getLinkInfo() caches an action
+	QString                lastLinkActionInfo        = "";      //
+	QDateTime              modTime                   = {};      // last modification time of PDF file
+	QtPDFUpdateCbk         updateCbk                 = nullptr; //
+	void*                  updateCbkData             = nullptr; //
+	QtPDFMidPageChangedCbk midPageChangedCbk         = nullptr; //
+	void*                  midPageChangedCbkData     = nullptr; //
+	QtPDFLoadCbk           preLoadCbk                = nullptr; //
+	void*                  preLoadCbkData            = nullptr; //
+	QtPDFLoadCbk           postLoadCbk               = nullptr; //
+	void*                  postLoadCbkData           = nullptr; //
+	QtPDFActionCbk         actionCbk                 = nullptr; //
+	void*                  actionCbkData             = nullptr; //
+	QtPDFLinkCbk           linkCbk                   = nullptr; //
+	void*                  linkCbkData               = nullptr; //
+	QtPDFSelectDoneCbk     selectDoneCbk             = nullptr; //
+	void*                  selectDoneCbkData         = nullptr; //
+	QtPDFPaintDoneCbk      paintDoneCbk              = nullptr; //
+	void*                  paintDoneCbkData          = nullptr; //
+	// optional features default to on
+	bool                   hyperlinksEnabled         = true; //
+	bool                   externalHyperlinksEnabled = true; //
+	bool                   selectEnabled             = true; //
+	bool                   panEnabled                = true; //
+	bool                   showPasswordDialog        = true; //
 };

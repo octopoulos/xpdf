@@ -23,9 +23,9 @@
 
 struct UnicodeMapExt
 {
-	Unicode  u;                // Unicode char
-	char     code[maxExtCode]; //
-	uint32_t nBytes;           //
+	Unicode  u                = 0;  // Unicode char
+	char     code[maxExtCode] = {}; //
+	uint32_t nBytes           = 0;  //
 };
 
 //------------------------------------------------------------------------
@@ -116,9 +116,6 @@ UnicodeMap::UnicodeMap(const std::string& encodingNameA)
 	unicodeOut   = false;
 	kind         = unicodeMapUser;
 	ranges       = nullptr;
-	len          = 0;
-	eMaps        = nullptr;
-	eMapsLen     = 0;
 	refCnt       = 1;
 }
 
@@ -129,8 +126,6 @@ UnicodeMap::UnicodeMap(const char* encodingNameA, bool unicodeOutA, UnicodeMapRa
 	kind         = unicodeMapResident;
 	ranges       = rangesA;
 	len          = lenA;
-	eMaps        = nullptr;
-	eMapsLen     = 0;
 	refCnt       = 1;
 }
 
@@ -140,8 +135,6 @@ UnicodeMap::UnicodeMap(const char* encodingNameA, bool unicodeOutA, UnicodeMapFu
 	unicodeOut   = unicodeOutA;
 	kind         = unicodeMapFunc;
 	func         = funcA;
-	eMaps        = nullptr;
-	eMapsLen     = 0;
 	refCnt       = 1;
 }
 

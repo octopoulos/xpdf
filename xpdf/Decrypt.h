@@ -37,27 +37,28 @@ private:
 
 struct DecryptRC4State
 {
-	uint8_t state[256];
-	uint8_t x, y;
-	int     buf;
+	uint8_t state[256]; //
+	uint8_t x;          //
+	uint8_t y;          //
+	int     buf;        //
 };
 
 struct DecryptAESState
 {
-	uint32_t w[44];
-	uint8_t  state[16];
-	uint8_t  cbc[16];
-	uint8_t  buf[16];
-	int      bufIdx;
+	uint32_t w[44];     //
+	uint8_t  state[16]; //
+	uint8_t  cbc[16];   //
+	uint8_t  buf[16];   //
+	int      bufIdx;    //
 };
 
 struct DecryptAES256State
 {
-	uint32_t w[60];
-	uint8_t  state[16];
-	uint8_t  cbc[16];
-	uint8_t  buf[16];
-	int      bufIdx;
+	uint32_t w[60];     //
+	uint8_t  state[16]; //
+	uint8_t  cbc[16];   //
+	uint8_t  buf[16];   //
+	int      bufIdx;    //
 };
 
 class DecryptStream : public FilterStream
@@ -97,11 +98,14 @@ private:
 
 struct MD5State
 {
-	uint32_t a, b, c, d; //
-	uint8_t  buf[64];    //
-	int      bufLen;     //
-	int      msgLen;     //
-	uint8_t  digest[16]; //
+	uint32_t a          = 0;  //
+	uint32_t b          = 0;  //
+	uint32_t c          = 0;  //
+	uint32_t d          = 0;  //
+	uint8_t  buf[64]    = {}; //
+	int      bufLen     = 0;  //
+	int      msgLen     = 0;  //
+	uint8_t  digest[16] = {}; //
 };
 
 extern void    rc4InitKey(uint8_t* key, int keyLen, uint8_t* state);

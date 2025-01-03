@@ -55,12 +55,7 @@ SplashBitmap::SplashBitmap(int widthA, int heightA, int rowPad, SplashColorMode 
 
 	traceAlloc(this, "alloc bitmap: %d x %d x %d %s -> %lld bytes", width, height, splashColorModeNComps[mode], alphaA ? "with alpha" : "without alpha", height * rowSize + (alphaA ? height * width : 0));
 
-	parent          = parentA;
-	oldData         = nullptr;
-	oldAlpha        = nullptr;
-	oldRowSize      = 0;
-	oldAlphaRowSize = 0;
-	oldHeight       = 0;
+	parent = parentA;
 	if (parent && parent->oldData && parent->oldRowSize == rowSize && parent->oldHeight == height)
 	{
 		data            = parent->oldData;

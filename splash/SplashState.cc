@@ -98,35 +98,18 @@ SplashState::SplashState(int width, int height, bool vectorAntialias, SplashScre
 SplashState::SplashState(int width, int height, bool vectorAntialias, SplashScreen* screenA)
 {
 	SplashColor color;
-
-	matrix[0] = 1;
-	matrix[1] = 0;
-	matrix[2] = 0;
-	matrix[3] = 1;
-	matrix[4] = 0;
-	matrix[5] = 0;
 	memset(&color, 0, sizeof(SplashColor));
+
+	matrix[0]          = 1;
+	matrix[1]          = 0;
+	matrix[2]          = 0;
+	matrix[3]          = 1;
+	matrix[4]          = 0;
+	matrix[5]          = 0;
 	strokePattern      = new SplashSolidColor(color);
 	fillPattern        = new SplashSolidColor(color);
 	screen             = screenA->copy();
-	blendFunc          = nullptr;
-	strokeAlpha        = 1;
-	fillAlpha          = 1;
-	lineWidth          = 1;
-	lineCap            = splashLineCapButt;
-	lineJoin           = splashLineJoinMiter;
-	miterLimit         = 10;
-	flatness           = 1;
-	lineDash           = nullptr;
-	lineDashLength     = 0;
-	lineDashPhase      = 0;
-	strokeAdjust       = splashStrokeAdjustOff;
 	clip               = new SplashClip(0, 0, width, height);
-	clipIsShared       = false;
-	softMask           = nullptr;
-	deleteSoftMask     = false;
-	inNonIsolatedGroup = false;
-	inKnockoutGroup    = false;
 #if SPLASH_CMYK
 	rgbTransferR  = (uint8_t*)gmalloc(8 * 256);
 	rgbTransferG  = rgbTransferR + 256;
@@ -155,10 +138,6 @@ SplashState::SplashState(int width, int height, bool vectorAntialias, SplashScre
 		cmykTransferK[i] = (uint8_t)i;
 #endif
 	}
-	transferIsShared         = false;
-	overprintMask            = 0xffffffff;
-	enablePathSimplification = false;
-	next                     = nullptr;
 }
 
 SplashState::SplashState(SplashState* state)
@@ -216,12 +195,9 @@ SplashState::~SplashState()
 	delete fillPattern;
 	delete screen;
 	gfree(lineDash);
-	if (!clipIsShared)
-		delete clip;
-	if (!transferIsShared)
-		gfree(rgbTransferR);
-	if (deleteSoftMask && softMask)
-		delete softMask;
+	if (!clipIsShared) delete clip;
+	if (!transferIsShared) gfree(rgbTransferR);
+	if (deleteSoftMask && softMask) delete softMask;
 }
 
 void SplashState::setStrokePattern(SplashPattern* strokePatternA)
@@ -313,8 +289,7 @@ SplashError SplashState::clipToPath(SplashPath* path, bool eo)
 
 void SplashState::setSoftMask(SplashBitmap* softMaskA, bool deleteBitmap)
 {
-	if (deleteSoftMask)
-		delete softMask;
+	if (deleteSoftMask) delete softMask;
 	softMask       = softMaskA;
 	deleteSoftMask = deleteBitmap;
 }

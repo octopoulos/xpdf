@@ -75,13 +75,11 @@ struct XpdfFindResult
 
 	//! \endcond
 
-	/*! Page number. */
-	int page;
-
-	double xMin, /*!< Bounding box - minimum x coordinate. */
-	    yMin,    /*!< Bounding box - minimum y coordinate. */
-	    xMax,    /*!< Bounding box - maximum x coordinate. */
-	    yMax;    /*!< Bounding box - maximum y coordinate. */
+	int    page = 0; /*! Page number. */
+	double xMin = 0; /*!< Bounding box - minimum x coordinate. */
+	double yMin = 0; /*!< Bounding box - minimum y coordinate. */
+	double xMax = 0; /*!< Bounding box - maximum x coordinate. */
+	double yMax = 0; /*!< Bounding box - maximum y coordinate. */
 };
 
 //------------------------------------------------------------------------
@@ -95,13 +93,11 @@ public:
 	//! Error codes returned by certain XpdfViewer functions.
 	enum ErrorCode
 	{
-		pdfOk               = 0, //!< no error
-		pdfErrOpenFile      = 1, //!< couldn't open the PDF file
-		pdfErrBadCatalog    = 2, //!< couldn't read the page catalog
-		pdfErrDamaged       = 3, //!< PDF file was damaged and couldn't be
-		                   //!<   repaired
-		pdfErrEncrypted     = 4, //!< file was encrypted and password was
-		                     //!<   incorrect or not supplied
+		pdfOk               = 0,    //!< no error
+		pdfErrOpenFile      = 1,    //!< couldn't open the PDF file
+		pdfErrBadCatalog    = 2,    //!< couldn't read the page catalog
+		pdfErrDamaged       = 3,    //!< PDF file was damaged and couldn't be repaired
+		pdfErrEncrypted     = 4,    //!< file was encrypted and password was incorrect or not supplied
 		pdfErrHighlightFile = 5,    //!< nonexistent or invalid highlight file
 		pdfErrBadPrinter    = 6,    //!< invalid printer
 		pdfErrPrinting      = 7,    //!< error during printing
@@ -135,16 +131,12 @@ public:
 	//! \name Find flags
 	//! Flags to be passed to XpdfWidget::find()
 	//@{
-	//! search backward from the starting point
-	static const int findBackward      = 0x00000001;
-	//! perform a case-sensitive search (default is case-insensitive)
-	static const int findCaseSensitive = 0x00000002;
-	//! start searching from the previous search result
-	static const int findNext          = 0x00000004;
-	//! limit the search to the current page
-	static const int findOnePageOnly   = 0x00000008;
-	//! limit the search to whole words
-	static const int findWholeWord     = 0x00000010;
+
+	static const int findBackward      = 0x00000001; //! search backward from the starting point
+	static const int findCaseSensitive = 0x00000002; //! perform a case-sensitive search (default is case-insensitive)
+	static const int findNext          = 0x00000004; //! start searching from the previous search result
+	static const int findOnePageOnly   = 0x00000008; //! limit the search to the current page
+	static const int findWholeWord     = 0x00000010; //! limit the search to whole words
 
 	//@}
 
@@ -281,7 +273,7 @@ public:
 	//! \param password a string to be tried first as the owner password
 	//!        and then as the user password
 	//! \return \c pdfOk if successful; an error code otherwise
-	ErrorCode loadMem(const char* buffer, unsigned int bufferLength, const QString& password = "");
+	ErrorCode loadMem(const char* buffer, uint32_t bufferLength, const QString& password = "");
 
 	//! Load a PDF file and return a handle.
 
@@ -918,18 +910,11 @@ signals:
 
 	//! This signal is emitted whenever the user clicks on a hyperlink.
 	//! \param linkType the type of link - one of:
-	//!          - \c "goto": a link to another page in the same PDF
-	//!            file - \a dest is empty; \a page is the destination
-	//!            page number
-	//!          - \c "pdf": a link to another PDF file - \a dest is the
-	//!            target PDF file; \a page is 0
-	//!          - \c "launch": an arbitrary command to be run - \a dest
-	//!            is the command; \a page is 0
+	//!          - \c "goto": a link to another page in the same PDF file - \a dest is empty; \a page is the destination page number
+	//!          - \c "pdf": a link to another PDF file - \a dest is the target PDF file; \a page is 0
+	//!          - \c "launch": an arbitrary command to be run - \a dest is the command; \a page is 0
 	//!          - \c "url": a URL link - \a dest is the URL; \a page is 0
-	//!          - \c "named": a "named action" link - \a dest is the
-	//!            action (see the PDF spec for details); \a page is 0
-	//!          - \c "unknown": an unknown link type - \a dest is empty;
-	//!            \a page is 0
+	//!          - \c "named": a "named action" link - \a dest is the action (see the PDF spec for details); \a page is 0 \a page is 0
 	//! \param dest destination string
 	//! \param page destination page number
 	void linkClick(const QString& linkType, const QString& dest, int page);
@@ -940,19 +925,17 @@ signals:
 
 	//! This signal is emitted whenever the widget is repainted.  \a
 	//! finished is true if the painted view is complete, or false if
-	//! this was an incremental update, i.e., if the view is still being
-	//! rendered.
+	//! this was an incremental update, i.e., if the view is still being rendered.
 	void paintDone(bool finished);
 
 	//! This signal is emitted when the widget is resized.
 	void resized();
 
 #if XPDFWIDGET_PRINTING
-	//! This signal is called before each page is spooled, and after the
-	//! last page is spooled.  It is typically used to update a print
-	//! status dialog.  \a nextPage is the next page to be printed.
-	//! \a firstPage and \a lastPage specify the range of pages being
-	//! printed.
+	//! This signal is called before each page is spooled, and after the last page is spooled. 
+	//! It is typically used to update a print status dialog. 
+	//! \a nextPage is the next page to be printed.
+	//! \a firstPage and \a lastPage specify the range of pages being printed.
 	void printStatus(int nextPage, int firstPage, int lastPage);
 #endif
 
@@ -996,26 +979,25 @@ private:
 	bool getLinkTarget(int page, double xx, double yy, QString& targetFileName, int& targetPage, QString& targetDest);
 
 #if XPDFWIDGET_PRINTING
-	QPrinter*     printerForDialog;
-	QPrintDialog* printDialog;
-	int           printHDPI, printVDPI;
-	bool          printCanceled;
+	QPrinter*     printerForDialog = nullptr; //
+	QPrintDialog* printDialog      = nullptr; //
+	int           printHDPI        = 0;       //
+	int           printVDPI        = 0;       //
+	bool          printCanceled    = false;   //
 #endif
 
 	static QMutex initMutex;
 
-	QtPDFCore* core;
-	double     scaleFactor;
-
-	bool  keyPassthrough;
-	bool  mousePassthrough;
-	int   lastMousePressX[3], lastMousePressY[3];
-	ulong lastMousePressTime[3];
-	bool  lastMouseEventWasPress;
-
-	bool   touchPanEnabled;
-	bool   touchZoomEnabled;
-	double pinchZoomStart;
-
-	QTimer* tickTimer;
+	QtPDFCore* core                   = nullptr; //
+	double     scaleFactor            = 0;       //
+	bool       keyPassthrough         = false;   //
+	bool       mousePassthrough       = false;   //
+	int        lastMousePressX[3]     = {};      //
+	int        lastMousePressY[3]     = {};      //
+	ulong      lastMousePressTime[3]  = {};      //
+	bool       lastMouseEventWasPress = false;   //
+	bool       touchPanEnabled        = false;   //
+	bool       touchZoomEnabled       = false;   //
+	double     pinchZoomStart         = 0;       //
+	QTimer*    tickTimer              = nullptr; //
 };

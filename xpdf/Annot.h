@@ -52,12 +52,12 @@ public:
 	double* getColor() { return color; }
 
 private:
-	AnnotBorderType type;
-	double          width;
-	double*         dash;
-	int             dashLength;
-	double          color[4];
-	int             nColorComps;
+	AnnotBorderType type        = annotBorderSolid; //
+	double          width       = 0;                //
+	double*         dash        = nullptr;          //
+	int             dashLength  = 0;                //
+	double          color[4]    = {};               //
+	int             nColorComps = 0;                //
 };
 
 //------------------------------------------------------------------------
@@ -136,21 +136,21 @@ private:
 	void             drawCircleBottomRight(double cx, double cy, double r);
 	void             drawText(const std::string& text, const std::string& da, int quadding, double margin, int rot);
 
-	PDFDoc*           doc;             //
-	XRef*             xref;            // the xref table for this PDF file
-	Ref               ref;             // object ref identifying this annotation
-	std::string       type;            // annotation type
-	std::string       appearanceState; // appearance state name
-	Object            appearance;      // a reference to the Form XObject stream for the normal appearance
-	std::string       appearBuf;       //
-	double            xMin;            //
-	double            yMin;            // annotation rectangle
-	double            xMax;            //
-	double            yMax;            //
-	uint32_t          flags;           //
-	AnnotBorderStyle* borderStyle;     //
-	Object            ocObj;           // optional content entry
-	bool              ok;              //
+	PDFDoc*           doc             = nullptr; //
+	XRef*             xref            = nullptr; // the xref table for this PDF file
+	Ref               ref             = {};      // object ref identifying this annotation
+	std::string       type            = "";      // annotation type
+	std::string       appearanceState = "";      // appearance state name
+	Object            appearance      = {};      // a reference to the Form XObject stream for the normal appearance
+	std::string       appearBuf       = "";      //
+	double            xMin            = 0;       //
+	double            yMin            = 0;       // annotation rectangle
+	double            xMax            = 0;       //
+	double            yMax            = 0;       //
+	uint32_t          flags           = 0;       //
+	AnnotBorderStyle* borderStyle     = nullptr; //
+	Object            ocObj           = {};      // optional content entry
+	bool              ok              = false;   //
 };
 
 //------------------------------------------------------------------------
@@ -184,8 +184,8 @@ private:
 	void loadAnnots(int page);
 	void loadFormFieldRefs();
 
-	PDFDoc*      doc;               //
-	PageAnnots** pageAnnots;        // list of annots for each page
-	int          formFieldRefsSize; // number of entries in formFieldRefs[]
-	char*        formFieldRefs;     // set of AcroForm field refs
+	PDFDoc*      doc               = nullptr; //
+	PageAnnots** pageAnnots        = nullptr; // list of annots for each page
+	int          formFieldRefsSize = 0;       // number of entries in formFieldRefs[]
+	char*        formFieldRefs     = nullptr; // set of AcroForm field refs
 };

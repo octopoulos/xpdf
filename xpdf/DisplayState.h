@@ -67,8 +67,11 @@ public:
 		return page != r.page || x0 != r.x0 || y0 != r.y0 || x1 != r.x1 || y1 != r.y1;
 	}
 
-	int    page;           //
-	double x0, y0, x1, y1; // user coords
+	int    page = 0; //
+	double x0   = 0; //
+	double y0   = 0; //
+	double x1   = 0; //
+	double y1   = 0; // user coords
 };
 
 //------------------------------------------------------------------------
@@ -168,27 +171,27 @@ public:
 	void        optionalContentChanged();
 
 private:
-	int                     maxTileWidth;   //
-	int                     maxTileHeight;  //
-	int                     tileCacheSize;  //
-	int                     nWorkerThreads; //
-	SplashColorMode         colorMode;      //
-	int                     bitmapRowPad;   //
-	TileMap*                tileMap;        //
-	TileCache*              tileCache;      //
-	TileCompositor*         tileCompositor; //
-	SplashColor             paperColor;     //
-	SplashColor             matteColor;     //
-	SplashColor             selectColor;    //
-	bool                    reverseVideo;   //
-	PDFDoc*                 doc;            //
-	int                     winW;           //
-	int                     winH;           // window (draw area) size
-	DisplayMode             displayMode;    //
-	double                  zoom;           // zoom level (see zoom* defines, above)
-	int                     rotate;         // rotation (0, 90, 180, or 270)
-	int                     scrollPage;     // scroll page - only used in non-continuous modes
-	int                     scrollX;        //
-	int                     scrollY;        //
-	std::vector<SelectRect> selectRects;    // selection rectangles [SelectRect] (nullptr if there is no selection)
+	int                     maxTileWidth   = 0;                 //
+	int                     maxTileHeight  = 0;                 //
+	int                     tileCacheSize  = 0;                 //
+	int                     nWorkerThreads = 0;                 //
+	SplashColorMode         colorMode      = splashModeRGB8;    //
+	int                     bitmapRowPad   = 0;                 //
+	TileMap*                tileMap        = nullptr;           //
+	TileCache*              tileCache      = nullptr;           //
+	TileCompositor*         tileCompositor = nullptr;           //
+	SplashColor             paperColor     = {};                //
+	SplashColor             matteColor     = {};                //
+	SplashColor             selectColor    = {};                //
+	bool                    reverseVideo   = false;             //
+	PDFDoc*                 doc            = nullptr;           //
+	int                     winW           = 100;               //
+	int                     winH           = 100;               // window (draw area) size
+	DisplayMode             displayMode    = displayContinuous; //
+	double                  zoom           = 100;               // zoom level (see zoom* defines, above)
+	int                     rotate         = 0;                 // rotation (0, 90, 180, or 270)
+	int                     scrollPage     = 0;                 // scroll page - only used in non-continuous modes
+	int                     scrollX        = 0;                 //
+	int                     scrollY        = 0;                 //
+	std::vector<SelectRect> selectRects    = {};                // selection rectangles [SelectRect] (nullptr if there is no selection)
 };

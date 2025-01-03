@@ -63,15 +63,7 @@ PDFDoc::PDFDoc(const std::string& fileNameA, const std::string& ownerPassword, c
 
 	init(coreA);
 
-	fileName = fileNameA;
-#ifdef _WIN32
-	const int n = TO_INT(fileName.size());
-	fileNameU   = (wchar_t*)gmallocn(n + 1, sizeof(wchar_t));
-	for (int i = 0; i < n; ++i)
-		fileNameU[i] = (wchar_t)(fileName.at(i) & 0xff);
-	fileNameU[n] = L'\0';
-#endif
-
+	fileName  = fileNameA;
 	fileName1 = fileName;
 
 	// try to open file
@@ -106,86 +98,15 @@ PDFDoc::PDFDoc(const std::string& fileNameA, const std::string& ownerPassword, c
 	ok = setup(ownerPassword, userPassword);
 }
 
-#ifdef _WIN32
-PDFDoc::PDFDoc(wchar_t* fileNameA, int fileNameLen, const std::string& ownerPassword, const std::string& userPassword, PDFCore* coreA)
-{
-	OSVERSIONINFO version;
-	Object        obj;
-
-	init(coreA);
-
-	// handle a Windows shortcut
-	wchar_t wPath[winMaxLongPath + 1];
-	int     n = fileNameLen < winMaxLongPath ? fileNameLen : winMaxLongPath;
-	memcpy(wPath, fileNameA, n * sizeof(wchar_t));
-	wPath[n] = L'\0';
-	readWindowsShortcut(wPath, winMaxLongPath + 1);
-	int wPathLen = (int)wcslen(wPath);
-
-	// save both Unicode and 8-bit copies of the file name
-	fileName.clear();
-	fileNameU = (wchar_t*)gmallocn(wPathLen + 1, sizeof(wchar_t));
-	memcpy(fileNameU, wPath, (wPathLen + 1) * sizeof(wchar_t));
-	for (int i = 0; i < wPathLen; ++i)
-		fileName += (char)fileNameA[i];
-
-	// try to open file
-	// NB: _wfopen is only available in NT
-	version.dwOSVersionInfoSize = sizeof(version);
-	GetVersionEx(&version);
-	if (version.dwPlatformId == VER_PLATFORM_WIN32_NT)
-		file = _wfopen(fileNameU, wfopenReadMode);
-	else
-		file = fopen(fileName.c_str(), fopenReadMode);
-	if (!file)
-	{
-		error(errIO, -1, "Couldn't open file '{}'", fileName);
-		errCode = errOpenFile;
-		return;
-	}
-
-	// create stream
-	obj.initNull();
-	str = new FileStream(file, 0, false, 0, &obj);
-
-	ok = setup(ownerPassword, userPassword);
-}
-#endif
-
 PDFDoc::PDFDoc(char* fileNameA, const std::string& ownerPassword, const std::string& userPassword, PDFCore* coreA)
 {
-#ifdef _WIN32
-	OSVERSIONINFO version;
-#endif
 	Object obj;
-#ifdef _WIN32
-	Unicode u;
-#endif
 
 	init(coreA);
 
 	fileName = fileNameA;
 
-#if defined(_WIN32)
-	wchar_t wPath[winMaxLongPath + 1];
-	int     i = 0;
-	int     j = 0;
-	while (j < winMaxLongPath && getUTF8(fileName, &i, &u)) wPath[j++] = (wchar_t)u;
-	wPath[j] = L'\0';
-	readWindowsShortcut(wPath, winMaxLongPath + 1);
-	int wPathLen = (int)wcslen(wPath);
-
-	fileNameU = (wchar_t*)gmallocn(wPathLen + 1, sizeof(wchar_t));
-	memcpy(fileNameU, wPath, (wPathLen + 1) * sizeof(wchar_t));
-
-	// NB: _wfopen is only available in NT
-	version.dwOSVersionInfoSize = sizeof(version);
-	GetVersionEx(&version);
-	if (version.dwPlatformId == VER_PLATFORM_WIN32_NT)
-		file = _wfopen(fileNameU, wfopenReadMode);
-	else
-		file = fopen(fileName.c_str(), fopenReadMode);
-#elif defined(VMS)
+#if defined(VMS)
 	file = fopen(fileName.c_str(), fopenReadMode, "ctx=stm");
 #else
 	file = fopen(fileName.c_str(), fopenReadMode);
@@ -212,20 +133,10 @@ PDFDoc::PDFDoc(BaseStream* strA, const std::string& ownerPassword, const std::st
 	if (strA->getFileName().size())
 	{
 		fileName = strA->getFileName();
-#ifdef _WIN32
-		const int n = TO_INT(fileName.size());
-		fileNameU   = (wchar_t*)gmallocn(n + 1, sizeof(wchar_t));
-		for (int i = 0; i < n; ++i)
-			fileNameU[i] = (wchar_t)(fileName.at(i) & 0xff);
-		fileNameU[n] = L'\0';
-#endif
 	}
 	else
 	{
 		fileName.clear();
-#ifdef _WIN32
-		fileNameU = nullptr;
-#endif
 	}
 	str = strA;
 	ok  = setup(ownerPassword, userPassword);
@@ -334,9 +245,6 @@ PDFDoc::~PDFDoc()
 	if (xref) delete xref;
 	if (str) delete str;
 	if (file) fclose(file);
-#ifdef _WIN32
-	if (fileNameU) gfree(fileNameU);
-#endif
 }
 
 // Check for a PDF header on this stream.  Skip past some garbage
@@ -563,42 +471,6 @@ bool PDFDoc::saveEmbeddedFileU(int idx, const char* path)
 	fclose(f);
 	return ret;
 }
-
-#ifdef _WIN32
-bool PDFDoc::saveEmbeddedFile(int idx, const wchar_t* path, int pathLen)
-{
-	FILE*         f;
-	OSVERSIONINFO version;
-	wchar_t       path2w[winMaxLongPath + 1];
-	char          path2c[MAX_PATH + 1];
-	int           i;
-	bool          ret;
-
-	// NB: _wfopen is only available in NT
-	version.dwOSVersionInfoSize = sizeof(version);
-	GetVersionEx(&version);
-	if (version.dwPlatformId == VER_PLATFORM_WIN32_NT)
-	{
-		for (i = 0; i < pathLen && i < winMaxLongPath; ++i)
-			path2w[i] = path[i];
-		path2w[i] = 0;
-
-		f = _wfopen(path2w, L"wb");
-	}
-	else
-	{
-		for (i = 0; i < pathLen && i < MAX_PATH; ++i)
-			path2c[i] = (char)path[i];
-		path2c[i] = 0;
-
-		f = fopen(path2c, "wb");
-	}
-	if (!f) return false;
-	ret = saveEmbeddedFile2(idx, f);
-	fclose(f);
-	return ret;
-}
-#endif
 
 bool PDFDoc::saveEmbeddedFile2(int idx, FILE* f)
 {

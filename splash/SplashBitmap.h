@@ -36,10 +36,11 @@ typedef long long SplashBitmapRowSize;
 class SplashBitmap
 {
 public:
-	// Create a new bitmap.  It will have <widthA> x <heightA> pixels in
-	// color mode <modeA>.  Rows will be padded out to a multiple of
-	// <rowPad> bytes.  If <topDown> is false, the bitmap will be stored
-	// upside-down, i.e., with the last row first in memory.
+	// Create a new bitmap.
+	// It will have <widthA> x <heightA> pixels in color mode <modeA>.
+	// Rows will be padded out to a multiple of <rowPad> bytes.
+	// If <topDown> is false, the bitmap will be stored upside-down,
+	// i.e., with the last row first in memory.
 	SplashBitmap(int widthA, int heightA, int rowPad, SplashColorMode modeA, bool alphaA, bool topDown, SplashBitmap* parentA);
 
 	~SplashBitmap();
@@ -65,26 +66,26 @@ public:
 	void    getPixel(int x, int y, SplashColorPtr pixel);
 	uint8_t getAlpha(int x, int y);
 
-	// Caller takes ownership of the bitmap data.  The SplashBitmap
-	// object is no longer valid -- the next call should be to the
-	// destructor.
+	// Caller takes ownership of the bitmap data.
+	// The SplashBitmap object is no longer valid
+	// -- the next call should be to the destructor.
 	SplashColorPtr takeAlpha();
 	SplashColorPtr takeData();
 
 private:
-	int                 width;           //
-	int                 height;          // size of bitmap
-	SplashBitmapRowSize rowSize;         // size of one row of data, in bytes - negative for bottom-up bitmaps
-	size_t              alphaRowSize;    // size of one row of alpha, in bytes
-	SplashColorMode     mode;            // color mode
-	SplashColorPtr      data;            // pointer to row zero of the color data
-	uint8_t*            alpha;           // pointer to row zero of the alpha data (always top-down)
-	SplashBitmap*       parent;          // save the last-allocated (large) bitmap data and reuse if possible
-	SplashColorPtr      oldData;         //
-	uint8_t*            oldAlpha;        //
-	SplashBitmapRowSize oldRowSize;      //
-	size_t              oldAlphaRowSize; //
-	int                 oldHeight;       //
+	int                 width           = 0;              //
+	int                 height          = 0;              // size of bitmap
+	SplashBitmapRowSize rowSize         = 0;              // size of one row of data, in bytes - negative for bottom-up bitmaps
+	size_t              alphaRowSize    = 0;              // size of one row of alpha, in bytes
+	SplashColorMode     mode            = splashModeRGB8; // color mode
+	SplashColorPtr      data            = nullptr;        // pointer to row zero of the color data
+	uint8_t*            alpha           = nullptr;        // pointer to row zero of the alpha data (always top-down)
+	SplashBitmap*       parent          = nullptr;        // save the last-allocated (large) bitmap data and reuse if possible
+	SplashColorPtr      oldData         = nullptr;        //
+	uint8_t*            oldAlpha        = nullptr;        //
+	SplashBitmapRowSize oldRowSize      = 0;              //
+	size_t              oldAlphaRowSize = 0;              //
+	int                 oldHeight       = 0;              //
 
 	friend class Splash;
 };

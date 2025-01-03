@@ -27,7 +27,7 @@ public:
 private:
 	int hash(const char* name);
 
-	NameToCharCodeEntry* tab;  //
-	int                  size; //
-	int                  len;  //
+	NameToCharCodeEntry* tab  = nullptr; //
+	int                  size = 0;       //
+	int                  len  = 0;       //
 };

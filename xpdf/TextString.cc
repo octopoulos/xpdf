@@ -18,14 +18,10 @@
 
 TextString::TextString()
 {
-	u   = nullptr;
-	len = size = 0;
 }
 
 TextString::TextString(const std::string& s)
 {
-	u   = nullptr;
-	len = size = 0;
 	append(s);
 }
 
@@ -36,10 +32,6 @@ TextString::TextString(TextString* s)
 	{
 		u = (Unicode*)gmallocn(size, sizeof(Unicode));
 		memcpy(u, s->u, len * sizeof(Unicode));
-	}
-	else
-	{
-		u = nullptr;
 	}
 }
 
@@ -79,8 +71,7 @@ TextString* TextString::insert(int idx, Unicode* u2, int n)
 	if (idx >= 0 && idx <= len)
 	{
 		expand(n);
-		if (idx < len)
-			memmove(u + idx + n, u + idx, (len - idx) * sizeof(Unicode));
+		if (idx < len) memmove(u + idx + n, u + idx, (len - idx) * sizeof(Unicode));
 		memcpy(u + idx, u2, n * sizeof(Unicode));
 		len += n;
 	}
@@ -112,8 +103,7 @@ TextString* TextString::insert(int idx, const std::string& s)
 				insert(idx, uBuf, n);
 
 			// look for a UTF-16LE BOM
-			// (technically, this isn't allowed by the PDF spec, but some
-			// PDF files use it)
+			// (technically, this isn't allowed by the PDF spec, but some PDF files use it)
 		}
 		else if ((s.at(0) & 0xff) == 0xff && (s.at(1) & 0xff) == 0xfe)
 		{
@@ -169,9 +159,7 @@ TextString* TextString::insert(int idx, const std::string& s)
 
 void TextString::expand(int delta)
 {
-	int newLen;
-
-	newLen = len + delta;
+	const int newLen = len + delta;
 	if (delta > INT_MAX - len)
 	{
 		// trigger an out-of-memory error

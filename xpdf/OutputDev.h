@@ -277,6 +277,6 @@ public:
 	virtual void endStructureItem() {}
 
 private:
-	double defCTM[6];  // default coordinate transform matrix
-	double defICTM[6]; // inverse of default CTM
+	double defCTM[6]  = {}; // default coordinate transform matrix
+	double defICTM[6] = {}; // inverse of default CTM
 };

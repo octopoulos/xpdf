@@ -30,9 +30,7 @@ JArithmeticDecoderStats::~JArithmeticDecoderStats()
 
 JArithmeticDecoderStats* JArithmeticDecoderStats::copy()
 {
-	JArithmeticDecoderStats* stats;
-
-	stats = new JArithmeticDecoderStats(contextSize);
+	JArithmeticDecoderStats* stats = new JArithmeticDecoderStats(contextSize);
 	memcpy(stats->cxTab, cxTab, contextSize);
 	return stats;
 }
@@ -91,28 +89,20 @@ int JArithmeticDecoder::switchTab[47] = {
 
 JArithmeticDecoder::JArithmeticDecoder()
 {
-	str         = nullptr;
-	dataLen     = 0;
-	limitStream = false;
-	nBytesRead  = 0;
-	readBuf     = -1;
 }
 
 inline uint32_t JArithmeticDecoder::readByte()
 {
-	uint32_t x;
-
 	if (limitStream)
 	{
 		if (readBuf >= 0)
 		{
-			x       = (uint32_t)readBuf;
+			const uint32_t x = (uint32_t)readBuf;
 			readBuf = -1;
 			return x;
 		}
 		--dataLen;
-		if (dataLen < 0)
-			return 0xff;
+		if (dataLen < 0) return 0xff;
 	}
 	++nBytesRead;
 	return (uint32_t)str->getChar() & 0xff;
@@ -192,12 +182,11 @@ void JArithmeticDecoder::cleanup()
 {
 	if (limitStream)
 	{
-		// This saves one extra byte of data from the end of packet i, to
-		// be used in packet i+1.  It's not clear from the JPEG 2000 spec
-		// exactly how this should work, but this kludge does seem to fix
-		// decode of some problematic JPEG 2000 streams.  It may actually
-		// be necessary to buffer an arbitrary number of bytes (not just
-		// one byte), but I haven't run into that case yet.
+		// This saves one extra byte of data from the end of packet i, to be used in packet i+1.
+		// It's not clear from the JPEG 2000 spec exactly how this should work,
+		// but this kludge does seem to fix decode of some problematic JPEG 2000 streams.
+		// It may actually be necessary to buffer an arbitrary number of bytes (not just one byte),
+		// but I haven't run into that case yet.
 		while (dataLen > 0)
 		{
 			readBuf = -1;
@@ -239,9 +228,9 @@ int JArithmeticDecoder::decodeBit(uint32_t context, JArithmeticDecoderStats* sta
 				stats->cxTab[context] = (uint8_t)((nmpsTab[iCX] << 1) | mpsCX);
 			}
 			// RENORMD
-			do {
-				if (ct == 0)
-					byteIn();
+			do
+			{
+				if (ct == 0) byteIn();
 				a <<= 1;
 				c <<= 1;
 				--ct;
@@ -268,9 +257,9 @@ int JArithmeticDecoder::decodeBit(uint32_t context, JArithmeticDecoderStats* sta
 		}
 		a = qe;
 		// RENORMD
-		do {
-			if (ct == 0)
-				byteIn();
+		do
+		{
+			if (ct == 0) byteIn();
 			a <<= 1;
 			c <<= 1;
 			--ct;
@@ -380,13 +369,10 @@ int JArithmeticDecoder::decodeIntBit(JArithmeticDecoderStats* stats)
 
 uint32_t JArithmeticDecoder::decodeIAID(uint32_t codeLen, JArithmeticDecoderStats* stats)
 {
-	uint32_t i;
-	int      bit;
-
 	prev = 1;
-	for (i = 0; i < codeLen; ++i)
+	for (uint32_t i = 0; i < codeLen; ++i)
 	{
-		bit  = decodeBit(prev, stats);
+		const int bit  = decodeBit(prev, stats);
 		prev = (prev << 1) | bit;
 	}
 	return prev - (1 << codeLen);

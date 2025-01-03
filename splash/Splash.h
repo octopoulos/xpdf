@@ -88,15 +88,15 @@ public:
 	void incRefCount();
 	void decRefCount();
 
-	std::string     tag;         //
-	int             width;       //
-	int             height;      //
-	SplashColorMode mode;        //
-	bool            alpha;       //
-	bool            interpolate; //
-	uint8_t*        colorData;   //
-	uint8_t*        alphaData;   //
-	int             refCount;    //
+	std::string     tag         = "";              //
+	int             width       = 0;               //
+	int             height      = 0;               //
+	SplashColorMode mode        = splashModeMono1; //
+	bool            alpha       = false;           //
+	bool            interpolate = false;           //
+	uint8_t*        colorData   = nullptr;         //
+	uint8_t*        alphaData   = nullptr;         //
+	int             refCount    = 0;               //
 };
 
 //------------------------------------------------------------------------
@@ -364,26 +364,26 @@ private:
 	static SplashPipeResultColorCtrl pipeResultColorAlphaBlend[];
 	static int                       pipeNonIsoGroupCorrection[];
 
-	SplashBitmap*           bitmap;              //
-	int                     bitmapComps;         //
-	SplashState*            state;               //
-	uint8_t*                scanBuf;             //
-	uint8_t*                scanBuf2;            //
-	SplashBitmap*           groupBackBitmap;     // for transparency groups, this is the bitmap containing the alpha0/color0 values
-	int                     groupBackX;          //
-	int                     groupBackY;          // offset within groupBackBitmap
-	SplashGroupDestInitMode groupDestInitMode;   //
-	int                     groupDestInitYMin;   //
-	int                     groupDestInitYMax;   //
-	uint32_t*               overprintMaskBitmap; //
-	SplashCoord             minLineWidth;        //
-	int                     modXMin;             //
-	int                     modYMin;             //
-	int                     modXMax;             //
-	int                     modYMax;             //
-	SplashClipResult        opClipRes;           //
-	bool                    vectorAntialias;     //
-	bool                    inShading;           //
-	bool                    debugMode;           //
-	SplashImageCache*       imageCache;          //
+	SplashBitmap*           bitmap              = nullptr;                //
+	int                     bitmapComps         = 0;                      //
+	SplashState*            state               = nullptr;                //
+	uint8_t*                scanBuf             = nullptr;                //
+	uint8_t*                scanBuf2            = nullptr;                //
+	SplashBitmap*           groupBackBitmap     = nullptr;                // for transparency groups, this is the bitmap containing the alpha0/color0 values
+	int                     groupBackX          = 0;                      //
+	int                     groupBackY          = 0;                      // offset within groupBackBitmap
+	SplashGroupDestInitMode groupDestInitMode   = splashGroupDestPreInit; //
+	int                     groupDestInitYMin   = 0;                      //
+	int                     groupDestInitYMax   = 0;                      //
+	uint32_t*               overprintMaskBitmap = nullptr;                //
+	SplashCoord             minLineWidth        = 0;                      //
+	int                     modXMin             = 0;                      //
+	int                     modYMin             = 0;                      //
+	int                     modXMax             = 0;                      //
+	int                     modYMax             = 0;                      //
+	SplashClipResult        opClipRes           = splashClipAllInside;    //
+	bool                    vectorAntialias     = false;                  //
+	bool                    inShading           = false;                  //
+	bool                    debugMode           = false;                  //
+	SplashImageCache*       imageCache          = nullptr;                //
 };

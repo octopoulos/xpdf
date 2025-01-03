@@ -113,8 +113,7 @@ FoFiType1C* FoFiType1C::load(const char* fileName)
 	char*       fileA;
 	int         lenA;
 
-	if (!(fileA = FoFiBase::readFile(fileName, &lenA)))
-		return nullptr;
+	if (!(fileA = FoFiBase::readFile(fileName, &lenA))) return nullptr;
 	ff = new FoFiType1C(fileA, lenA, true);
 	if (!ff->parse())
 	{
@@ -143,17 +142,15 @@ FoFiType1C::~FoFiType1C()
 		for (int i = 0; i < 256; ++i) gfree(encoding[i]);
 		gfree(encoding);
 	}
-	if (privateDicts)
-		gfree(privateDicts);
-	if (fdSelect)
-		gfree(fdSelect);
+	if (privateDicts) gfree(privateDicts);
+	if (fdSelect) gfree(fdSelect);
 	if (charset && charset != fofiType1CISOAdobeCharset && charset != fofiType1CExpertCharset && charset != fofiType1CExpertSubsetCharset)
 		gfree(charset);
 }
 
-const char* FoFiType1C::getName()
+std::string_view FoFiType1C::getName()
 {
-	return name.size() ? name.c_str() : nullptr;
+	return name;
 }
 
 char** FoFiType1C::getEncoding()
@@ -323,7 +320,7 @@ void FoFiType1C::convertToType1(const char* psName, const char** newEncoding, bo
 	else
 		(*outputFunc)(outputStream, "/isFixedPitch false def\n", 24);
 	auto buf = fmt::format("/ItalicAngle {} def\n", Round4(topDict.italicAngle));
-	     (*outputFunc)(outputStream, buf.c_str(), buf.size());
+	(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	buf = fmt::format("/UnderlinePosition {} def\n", Round4(topDict.underlinePosition));
 	(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	buf = fmt::format("/UnderlineThickness {} def\n", Round4(topDict.underlineThickness));
@@ -664,13 +661,13 @@ void FoFiType1C::convertToCIDType0(const char* psName, int* codeMap, int nCodes,
 	}
 	{
 		const auto buf = fmt::format("  /Supplement {} def\n", topDict.supplement);
-		           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	}
 	(*outputFunc)(outputStream, "end def\n", 8);
 	if (topDict.hasFontMatrix)
 	{
 		const auto buf = fmt::format("/FontMatrix [{} {} {} {} {} {}] def\n", Round8(topDict.fontMatrix[0]), Round8(topDict.fontMatrix[1]), Round8(topDict.fontMatrix[2]), Round8(topDict.fontMatrix[3]), Round8(topDict.fontMatrix[4]), Round8(topDict.fontMatrix[5]));
-		           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	}
 	else if (privateDicts[0].hasFontMatrix)
 	{
@@ -682,7 +679,7 @@ void FoFiType1C::convertToCIDType0(const char* psName, int* codeMap, int nCodes,
 	}
 	{
 		const auto buf = fmt::format("/FontBBox [{} {} {} {}] def\n", Round4(topDict.fontBBox[0]), Round4(topDict.fontBBox[1]), Round4(topDict.fontBBox[2]), Round4(topDict.fontBBox[3]));
-		           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	}
 	(*outputFunc)(outputStream, "/FontInfo 1 dict dup begin\n", 27);
 	(*outputFunc)(outputStream, "  /FSType 8 def\n", 16);
@@ -691,18 +688,18 @@ void FoFiType1C::convertToCIDType0(const char* psName, int* codeMap, int nCodes,
 	// CIDFont-specific entries
 	{
 		const auto buf = fmt::format("/CIDCount {} def\n", nCIDs);
-		           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	}
 	(*outputFunc)(outputStream, "/FDBytes 1 def\n", 15);
 	{
 		const auto buf = fmt::format("/GDBytes {} def\n", gdBytes);
-		           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	}
 	(*outputFunc)(outputStream, "/CIDMapOffset 0 def\n", 20);
 	if (topDict.paintType != 0)
 	{
 		auto buf = fmt::format("/PaintType {} def\n", topDict.paintType);
-		     (*outputFunc)(outputStream, buf.c_str(), buf.size());
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		buf = fmt::format("/StrokeWidth {} def\n", Round4(topDict.strokeWidth));
 		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	}
@@ -710,17 +707,17 @@ void FoFiType1C::convertToCIDType0(const char* psName, int* codeMap, int nCodes,
 	// FDArray entry
 	{
 		const auto buf = fmt::format("/FDArray {} array\n", nFDs);
-		           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	}
 	for (int i = 0; i < nFDs; ++i)
 	{
 		auto buf = fmt::format("dup {} 10 dict begin\n", i);
-		     (*outputFunc)(outputStream, buf.c_str(), buf.size());
-		     (*outputFunc)(outputStream, "/FontType 1 def\n", 16);
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
+		(*outputFunc)(outputStream, "/FontType 1 def\n", 16);
 		if (privateDicts[i].hasFontMatrix)
 		{
 			const auto buf = fmt::format("/FontMatrix [{} {} {} {} {} {}] def\n", Round8(privateDicts[i].fontMatrix[0]), Round8(privateDicts[i].fontMatrix[1]), Round8(privateDicts[i].fontMatrix[2]), Round8(privateDicts[i].fontMatrix[3]), Round8(privateDicts[i].fontMatrix[4]), Round8(privateDicts[i].fontMatrix[5]));
-			           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		else
 		{
@@ -735,7 +732,7 @@ void FoFiType1C::convertToCIDType0(const char* psName, int* codeMap, int nCodes,
 			for (int j = 0; j < privateDicts[i].nBlueValues; ++j)
 			{
 				const auto buf = fmt::format("{}{}", j > 0 ? " " : "", privateDicts[i].blueValues[j]);
-				           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+				(*outputFunc)(outputStream, buf.c_str(), buf.size());
 			}
 			(*outputFunc)(outputStream, "] def\n", 6);
 		}
@@ -745,7 +742,7 @@ void FoFiType1C::convertToCIDType0(const char* psName, int* codeMap, int nCodes,
 			for (int j = 0; j < privateDicts[i].nOtherBlues; ++j)
 			{
 				const auto buf = fmt::format("{}{}", j > 0 ? " " : "", privateDicts[i].otherBlues[j]);
-				           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+				(*outputFunc)(outputStream, buf.c_str(), buf.size());
 			}
 			(*outputFunc)(outputStream, "] def\n", 6);
 		}
@@ -755,7 +752,7 @@ void FoFiType1C::convertToCIDType0(const char* psName, int* codeMap, int nCodes,
 			for (int j = 0; j < privateDicts[i].nFamilyBlues; ++j)
 			{
 				const auto buf = fmt::format("{}{}", j > 0 ? " " : "", privateDicts[i].familyBlues[j]);
-				           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+				(*outputFunc)(outputStream, buf.c_str(), buf.size());
 			}
 			(*outputFunc)(outputStream, "] def\n", 6);
 		}
@@ -765,34 +762,34 @@ void FoFiType1C::convertToCIDType0(const char* psName, int* codeMap, int nCodes,
 			for (int j = 0; j < privateDicts[i].nFamilyOtherBlues; ++j)
 			{
 				const auto buf = fmt::format("{}{}", j > 0 ? " " : "", privateDicts[i].familyOtherBlues[j]);
-				           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+				(*outputFunc)(outputStream, buf.c_str(), buf.size());
 			}
 			(*outputFunc)(outputStream, "] def\n", 6);
 		}
 		if (privateDicts[i].blueScale != 0.039625)
 		{
 			const auto buf = fmt::format("/BlueScale {} def\n", Round4(privateDicts[i].blueScale));
-			           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		if (privateDicts[i].blueShift != 7)
 		{
 			const auto buf = fmt::format("/BlueShift {} def\n", privateDicts[i].blueShift);
-			           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		if (privateDicts[i].blueFuzz != 1)
 		{
 			const auto buf = fmt::format("/BlueFuzz {} def\n", privateDicts[i].blueFuzz);
-			           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		if (privateDicts[i].hasStdHW)
 		{
 			const auto buf = fmt::format("/StdHW [{}] def\n", Round4(privateDicts[i].stdHW));
-			           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		if (privateDicts[i].hasStdVW)
 		{
 			const auto buf = fmt::format("/StdVW [{}] def\n", Round4(privateDicts[i].stdVW));
-			           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		if (privateDicts[i].nStemSnapH)
 		{
@@ -808,7 +805,7 @@ void FoFiType1C::convertToCIDType0(const char* psName, int* codeMap, int nCodes,
 				for (int j = 0; j < privateDicts[i].nStemSnapH; ++j)
 				{
 					const auto buf = fmt::format("{}{}", j > 0 ? " " : "", Round4(privateDicts[i].stemSnapH[j]));
-					           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+					(*outputFunc)(outputStream, buf.c_str(), buf.size());
 				}
 				(*outputFunc)(outputStream, "] def\n", 6);
 			}
@@ -827,7 +824,7 @@ void FoFiType1C::convertToCIDType0(const char* psName, int* codeMap, int nCodes,
 				for (j = 0; j < privateDicts[i].nStemSnapV; ++j)
 				{
 					const auto buf = fmt::format("{}{}", j > 0 ? " " : "", Round4(privateDicts[i].stemSnapV[j]));
-					           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+					(*outputFunc)(outputStream, buf.c_str(), buf.size());
 				}
 				(*outputFunc)(outputStream, "] def\n", 6);
 			}
@@ -835,22 +832,22 @@ void FoFiType1C::convertToCIDType0(const char* psName, int* codeMap, int nCodes,
 		if (privateDicts[i].hasForceBold)
 		{
 			const auto buf = fmt::format("/ForceBold {} def\n", privateDicts[i].forceBold ? "true" : "false");
-			           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		if (privateDicts[i].forceBoldThreshold != 0)
 		{
 			const auto buf = fmt::format("/ForceBoldThreshold {} def\n", Round4(privateDicts[i].forceBoldThreshold));
-			           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		if (privateDicts[i].languageGroup != 0)
 		{
 			const auto buf = fmt::format("/LanguageGroup {} def\n", privateDicts[i].languageGroup);
-			           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		if (privateDicts[i].expansionFactor != 0.06)
 		{
 			const auto buf = fmt::format("/ExpansionFactor {} def\n", Round4(privateDicts[i].expansionFactor));
-			           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		(*outputFunc)(outputStream, "currentdict end def\n", 20);
 		(*outputFunc)(outputStream, "currentdict end put\n", 20);
@@ -861,7 +858,7 @@ void FoFiType1C::convertToCIDType0(const char* psName, int* codeMap, int nCodes,
 	offset = (nCIDs + 1) * (1 + gdBytes);
 	{
 		const auto buf = fmt::format("(Hex) {} StartData\n", offset + charStrings.size());
-		           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	}
 
 	// write the charstring offset (CIDMap) table
@@ -882,7 +879,7 @@ void FoFiType1C::convertToCIDType0(const char* psName, int* codeMap, int nCodes,
 			for (int k = 0; k <= gdBytes; ++k)
 			{
 				const auto buf = fmt::format("{:02x}", buf2[k] & 0xff);
-				           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+				(*outputFunc)(outputStream, buf.c_str(), buf.size());
 			}
 		}
 		(*outputFunc)(outputStream, "\n", 1);
@@ -894,7 +891,7 @@ void FoFiType1C::convertToCIDType0(const char* psName, int* codeMap, int nCodes,
 		for (int j = 0; j < 32 && i + j < n; ++j)
 		{
 			const auto buf = fmt::format("{:02x}", charStrings.at(i + j) & 0xff);
-			           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		if (i + 32 >= n)
 			(*outputFunc)(outputStream, ">", 1);
@@ -972,16 +969,16 @@ void FoFiType1C::convertToType0(const char* psName, int* codeMap, int nCodes, Fo
 		}
 
 		// font dictionary (unencrypted section)
-		     (*outputFunc)(outputStream, "16 dict begin\n", 14);
-		     (*outputFunc)(outputStream, "/FontName /", 11);
-		     (*outputFunc)(outputStream, psName, (int)strlen(psName));
+		(*outputFunc)(outputStream, "16 dict begin\n", 14);
+		(*outputFunc)(outputStream, "/FontName /", 11);
+		(*outputFunc)(outputStream, psName, (int)strlen(psName));
 		auto buf = fmt::format("_{:02x} def\n", i >> 8);
-		     (*outputFunc)(outputStream, buf.c_str(), buf.size());
-		     (*outputFunc)(outputStream, "/FontType 1 def\n", 16);
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
+		(*outputFunc)(outputStream, "/FontType 1 def\n", 16);
 		if (privateDicts[fd].hasFontMatrix)
 		{
 			const auto buf = fmt::format("/FontMatrix [{} {} {} {} {} {}] def\n", Round8(privateDicts[fd].fontMatrix[0]), Round8(privateDicts[fd].fontMatrix[1]), Round8(privateDicts[fd].fontMatrix[2]), Round8(privateDicts[fd].fontMatrix[3]), Round8(privateDicts[fd].fontMatrix[4]), Round8(privateDicts[fd].fontMatrix[5]));
-			           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		else if (topDict.hasFontMatrix)
 		{
@@ -998,7 +995,7 @@ void FoFiType1C::convertToType0(const char* psName, int* codeMap, int nCodes, Fo
 		if (topDict.paintType != 0)
 		{
 			const auto buf = fmt::format("/StrokeWidth {} def\n", Round4(topDict.strokeWidth));
-			           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		(*outputFunc)(outputStream, "/Encoding 256 array\n", 20);
 		{
@@ -1006,12 +1003,12 @@ void FoFiType1C::convertToType0(const char* psName, int* codeMap, int nCodes, Fo
 			for (j = 0; j < 256 && i + j < nCIDs; ++j)
 			{
 				const auto buf = fmt::format("dup {} /c{:02x} put\n", j, j);
-				           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+				(*outputFunc)(outputStream, buf.c_str(), buf.size());
 			}
 			if (j < 256)
 			{
 				const auto buf = fmt::format("{} 1 255 {{ 1 index exch /.notdef put }} for\n", j);
-				           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+				(*outputFunc)(outputStream, buf.c_str(), buf.size());
 			}
 		}
 		(*outputFunc)(outputStream, "readonly def\n", 13);
@@ -1210,7 +1207,7 @@ void FoFiType1C::convertToType0(const char* psName, int* codeMap, int nCodes, Fo
 	if (topDict.hasFontMatrix)
 	{
 		const auto buf = fmt::format("/FontMatrix [{} {} {} {} {} {}] def\n", Round8(topDict.fontMatrix[0]), Round8(topDict.fontMatrix[1]), Round8(topDict.fontMatrix[2]), Round8(topDict.fontMatrix[3]), Round8(topDict.fontMatrix[4]), Round8(topDict.fontMatrix[5]));
-		           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	}
 	else
 	{
@@ -1221,16 +1218,16 @@ void FoFiType1C::convertToType0(const char* psName, int* codeMap, int nCodes, Fo
 	for (int i = 0; i < nCIDs; i += 256)
 	{
 		const auto buf = fmt::format("{}\n", i >> 8);
-		           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	}
 	(*outputFunc)(outputStream, "] def\n", 6);
 	(*outputFunc)(outputStream, "/FDepVector [\n", 14);
 	for (int i = 0; i < nCIDs; i += 256)
 	{
-		           (*outputFunc)(outputStream, "/", 1);
-		           (*outputFunc)(outputStream, psName, (int)strlen(psName));
+		(*outputFunc)(outputStream, "/", 1);
+		(*outputFunc)(outputStream, psName, (int)strlen(psName));
 		const auto buf = fmt::format("_{:02x} findfont\n", i >> 8);
-		           (*outputFunc)(outputStream, buf.c_str(), buf.size());
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	}
 	(*outputFunc)(outputStream, "] def\n", 6);
 	(*outputFunc)(outputStream, "FontName currentdict end definefont pop\n", 40);
@@ -2303,13 +2300,13 @@ void FoFiType1C::eexecWriteCharstring(Type1CEexecBuf* eb, uint8_t* s, size_t n)
 	}
 }
 
-void FoFiType1C::writePSString(char* s, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiType1C::writePSString(std::string_view sv, FoFiOutputFunc outputFunc, void* outputStream)
 {
 	char buf[80];
 
 	int i    = 0;
 	buf[i++] = '(';
-	for (char* p = s; *p; ++p)
+	for (const char* p = sv.data(); *p; ++p)
 	{
 		const char c = *p & 0xff;
 		if (c == '(' || c == ')' || c == '\\')
@@ -2792,8 +2789,7 @@ bool FoFiType1C::parse()
 
 	// read the first font name
 	getIndexVal(&nameIdx, 0, &val, &parsedOk);
-	if (!parsedOk)
-		return false;
+	if (!parsedOk) return false;
 	name.assign((char*)&file[val.pos], val.len);
 
 	// read the top dict for the first font
@@ -3410,7 +3406,8 @@ int FoFiType1C::getOp(int pos, bool charstring, bool* ok)
 	else if (!charstring && b0 == 30)
 	{
 		i = 0;
-		do {
+		do
+		{
 			b1   = getU8(pos++, ok);
 			nyb0 = b1 >> 4;
 			nyb1 = b1 & 0x0f;

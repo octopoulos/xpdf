@@ -77,19 +77,19 @@ public:
 	}
 
 protected:
-	SplashFontFile*     fontFile;   //
-	SplashCoord         mat[4];     // font transform matrix (text space -> device space)
-	SplashCoord         textMat[4]; // text transform matrix (text space -> user space)
-	bool                aa;         // anti-aliasing
-	int                 xMin;       //
-	int                 yMin;       //
-	int                 xMax;       //
-	int                 yMax;       // glyph bounding box
-	uint8_t*            cache;      // glyph bitmap cache
-	SplashFontCacheTag* cacheTags;  // cache tags
-	int                 glyphW;     //
-	int                 glyphH;     // size of glyph bitmaps
-	int                 glyphSize;  // size of glyph bitmaps, in bytes
-	int                 cacheSets;  // number of sets in cache
-	int                 cacheAssoc; // cache associativity (glyphs per set)
+	SplashFontFile*     fontFile   = nullptr; //
+	SplashCoord         mat[4]     = {};      // font transform matrix (text space -> device space)
+	SplashCoord         textMat[4] = {};      // text transform matrix (text space -> user space)
+	bool                aa         = false;   // anti-aliasing
+	int                 xMin       = 0;       //
+	int                 yMin       = 0;       //
+	int                 xMax       = 0;       //
+	int                 yMax       = 0;       // glyph bounding box
+	uint8_t*            cache      = nullptr; // glyph bitmap cache
+	SplashFontCacheTag* cacheTags  = nullptr; // cache tags
+	int                 glyphW     = 0;       //
+	int                 glyphH     = 0;       // size of glyph bitmaps
+	int                 glyphSize  = 0;       // size of glyph bitmaps, in bytes
+	int                 cacheSets  = 0;       // number of sets in cache
+	int                 cacheAssoc = 0;       // cache associativity (glyphs per set)
 };

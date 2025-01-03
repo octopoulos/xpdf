@@ -55,7 +55,7 @@ public:
 private:
 	void expand(int delta);
 
-	Unicode* u;    // NB: not null-terminated
-	int      len;  //
-	int      size; //
+	Unicode* u    = nullptr; // NB: not null-terminated
+	int      len  = 0;       //
+	int      size = 0;       //
 };

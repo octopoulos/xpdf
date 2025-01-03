@@ -26,26 +26,22 @@ FoFiBase::FoFiBase(const char* fileA, size_t lenA, bool freeFileDataA)
 
 FoFiBase::~FoFiBase()
 {
-	if (freeFileData)
-		gfree(fileData);
+	if (freeFileData) gfree(fileData);
 }
 
 char* FoFiBase::readFile(const char* fileName, int* fileLen)
 {
 	FILE* f;
-	char* buf;
-	int   n;
-
 	if (!(f = fopen(fileName, "rb"))) return nullptr;
 	fseek(f, 0, SEEK_END);
-	n = (int)ftell(f);
+	int n = (int)ftell(f);
 	if (n < 0)
 	{
 		fclose(f);
 		return nullptr;
 	}
 	fseek(f, 0, SEEK_SET);
-	buf = (char*)gmalloc(n);
+	char* buf = (char*)gmalloc(n);
 	if ((int)fread(buf, 1, n, f) != n)
 	{
 		gfree(buf);
@@ -59,16 +55,13 @@ char* FoFiBase::readFile(const char* fileName, int* fileLen)
 
 int FoFiBase::getS8(int pos, bool* ok)
 {
-	int x;
-
 	if (pos < 0 || pos >= len)
 	{
 		*ok = false;
 		return 0;
 	}
-	x = file[pos];
-	if (x & 0x80)
-		x |= ~0xff;
+	int x = file[pos];
+	if (x & 0x80) x |= ~0xff;
 	return x;
 }
 
@@ -84,14 +77,12 @@ int FoFiBase::getU8(int pos, bool* ok)
 
 int FoFiBase::getS16BE(int pos, bool* ok)
 {
-	int x;
-
 	if (pos < 0 || pos > INT_MAX - 1 || pos + 1 >= len)
 	{
 		*ok = false;
 		return 0;
 	}
-	x = file[pos];
+	int x = file[pos];
 	x = (x << 8) + file[pos + 1];
 	if (x & 0x8000)
 		x |= ~0xffff;
@@ -100,28 +91,24 @@ int FoFiBase::getS16BE(int pos, bool* ok)
 
 int FoFiBase::getU16BE(int pos, bool* ok)
 {
-	int x;
-
 	if (pos < 0 || pos > INT_MAX - 1 || pos + 1 >= len)
 	{
 		*ok = false;
 		return 0;
 	}
-	x = file[pos];
+	int x = file[pos];
 	x = (x << 8) + file[pos + 1];
 	return x;
 }
 
 int FoFiBase::getS32BE(int pos, bool* ok)
 {
-	int x;
-
 	if (pos < 0 || pos > INT_MAX - 3 || pos + 3 >= len)
 	{
 		*ok = false;
 		return 0;
 	}
-	x = file[pos];
+	int x = file[pos];
 	x = (x << 8) + file[pos + 1];
 	x = (x << 8) + file[pos + 2];
 	x = (x << 8) + file[pos + 3];
@@ -132,14 +119,12 @@ int FoFiBase::getS32BE(int pos, bool* ok)
 
 uint32_t FoFiBase::getU32BE(int pos, bool* ok)
 {
-	uint32_t x;
-
 	if (pos < 0 || pos > INT_MAX - 3 || pos + 3 >= len)
 	{
 		*ok = false;
 		return 0;
 	}
-	x = file[pos];
+	uint32_t x = file[pos];
 	x = (x << 8) + file[pos + 1];
 	x = (x << 8) + file[pos + 2];
 	x = (x << 8) + file[pos + 3];
@@ -148,14 +133,12 @@ uint32_t FoFiBase::getU32BE(int pos, bool* ok)
 
 uint32_t FoFiBase::getU32LE(int pos, bool* ok)
 {
-	uint32_t x;
-
 	if (pos < 0 || pos > INT_MAX - 3 || pos + 3 >= len)
 	{
 		*ok = false;
 		return 0;
 	}
-	x = file[pos + 3];
+	uint32_t x = file[pos + 3];
 	x = (x << 8) + file[pos + 2];
 	x = (x << 8) + file[pos + 1];
 	x = (x << 8) + file[pos];

@@ -21,9 +21,9 @@
 
 struct UnicodeRemappingString
 {
-	Unicode in;
-	Unicode out[maxUnicodeString];
-	int     len;
+	Unicode in                    = 0;  //
+	Unicode out[maxUnicodeString] = {}; //
+	int     len                   = 0;  //
 };
 
 //------------------------------------------------------------------------
@@ -67,8 +67,6 @@ UnicodeRemapping::UnicodeRemapping()
 {
 	for (int i = 0; i < 256; ++i)
 		page0[i] = (Unicode)i;
-	sMap    = nullptr;
-	sMapLen = sMapSize = 0;
 }
 
 UnicodeRemapping::~UnicodeRemapping()
@@ -78,8 +76,6 @@ UnicodeRemapping::~UnicodeRemapping()
 
 void UnicodeRemapping::addRemapping(Unicode in, Unicode* out, int len)
 {
-	int j;
-
 	if (in < 256 && len == 1)
 	{
 		page0[in] = out[0];
@@ -97,6 +93,7 @@ void UnicodeRemapping::addRemapping(Unicode in, Unicode* out, int len)
 		if (i < sMapLen)
 			memmove(sMap + i + 1, sMap + i, (sMapLen - i) * sizeof(UnicodeRemappingString));
 		sMap[i].in = in;
+		int j;
 		for (j = 0; j < len && j < maxUnicodeString; ++j)
 			sMap[i].out[j] = out[j];
 		sMap[i].len = j;

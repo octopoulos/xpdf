@@ -89,26 +89,26 @@ private:
 	void grow(int nPaths);
 	void updateIntBounds(SplashStrokeAdjustMode strokeAdjust);
 
-	int                    hardXMin;              //
-	int                    hardYMin;              // coordinates cannot fall outside of
-	int                    hardXMax;              //
-	int                    hardYMax;              // [hardXMin, hardXMax), [hardYMin, hardYMax)
-	SplashCoord            xMin;                  //
-	SplashCoord            yMin;                  // current clip bounding rectangle
-	SplashCoord            xMax;                  //
-	SplashCoord            yMax;                  //
-	int                    xMinI;                 //
-	int                    yMinI;                 // integer clip bounding rectangle (these coordinates are adjusted if stroke adjustment is enabled)
-	int                    xMaxI;                 //
-	int                    yMaxI;                 //
-	bool                   intBoundsValid;        // true if xMinI, etc. are valid
-	SplashStrokeAdjustMode intBoundsStrokeAdjust; // value of strokeAdjust used to compute xMinI, etc.
-	SplashXPath**          paths;                 //
-	uint8_t*               eo;                    //
-	SplashXPathScanner**   scanners;              //
-	int                    length;                //
-	int                    size;                  //
-	bool                   isSimple;              //
-	SplashClip*            prev;                  //
-	uint8_t*               buf;                   //
+	int                    hardXMin              = 0;                     //
+	int                    hardYMin              = 0;                     // coordinates cannot fall outside of
+	int                    hardXMax              = 0;                     //
+	int                    hardYMax              = 0;                     // [hardXMin, hardXMax), [hardYMin, hardYMax)
+	SplashCoord            xMin                  = 0;                     //
+	SplashCoord            yMin                  = 0;                     // current clip bounding rectangle
+	SplashCoord            xMax                  = 0;                     //
+	SplashCoord            yMax                  = 0;                     //
+	int                    xMinI                 = 0;                     //
+	int                    yMinI                 = 0;                     // integer clip bounding rectangle (these coordinates are adjusted if stroke adjustment is enabled)
+	int                    xMaxI                 = 0;                     //
+	int                    yMaxI                 = 0;                     //
+	bool                   intBoundsValid        = false;                 // true if xMinI, etc. are valid
+	SplashStrokeAdjustMode intBoundsStrokeAdjust = splashStrokeAdjustOff; // value of strokeAdjust used to compute xMinI, etc.
+	SplashXPath**          paths                 = nullptr;               //
+	uint8_t*               eo                    = nullptr;               //
+	SplashXPathScanner**   scanners              = nullptr;               //
+	int                    length                = 0;                     //
+	int                    size                  = 0;                     //
+	bool                   isSimple              = true ;                 //
+	SplashClip*            prev                  = nullptr;               //
+	uint8_t*               buf                   = nullptr;               //
 };

@@ -36,14 +36,15 @@ public:
 	Stream* getStream() { return lexer->getStream(); }
 
 	// Get current position in file.
-	GFileOffset getPos() { return lexer->getPos(); }
+	int64_t getPos() { return lexer->getPos(); }
 
 private:
-	XRef*  xref;         // the xref table for this PDF file
-	Lexer* lexer;        // input stream
-	bool   allowStreams; // parse stream objects?
-	Object buf1, buf2;   // next two tokens
-	int    inlineImg;    // set when inline image data is encountered
+	XRef*  xref         = nullptr; // the xref table for this PDF file
+	Lexer* lexer        = nullptr; // input stream
+	bool   allowStreams = false;   // parse stream objects?
+	Object buf1         = {};
+	Object buf2         = {}; // next two tokens
+	int    inlineImg    = 0;  // set when inline image data is encountered
 
 	Stream* makeStream(Object* dict, uint8_t* fileKey, CryptAlgorithm encAlgorithm, int keyLength, int objNum, int objGen, int recursion);
 	void    shift();

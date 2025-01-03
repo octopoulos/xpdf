@@ -50,13 +50,13 @@ private:
 	int  lookupAnnotPage(Object* annotRef);
 	void scanField(Object* fieldRef, char* touchedObjs);
 
-	PDFDoc*     doc;
-	Object      acroFormObj;
-	bool        needAppearances;
-	GList*      annotPages; // [AcroFormAnnotPage]
-	GList*      fields;     // [AcroFormField]
-	XFAScanner* xfaScanner;
-	bool        isStaticXFA;
+	PDFDoc*     doc             = nullptr; //
+	Object      acroFormObj     = {};      //
+	bool        needAppearances = false;   //
+	GList*      annotPages      = nullptr; // [AcroFormAnnotPage]
+	GList*      fields          = nullptr; // [AcroFormField]
+	XFAScanner* xfaScanner      = nullptr; //
+	bool        isStaticXFA     = false;   //
 
 	friend class AcroFormField;
 };
@@ -134,14 +134,14 @@ private:
 	bool        isValidInt(const std::string& s, int start, int len);
 	int         convertInt(const std::string& s, int start, int len);
 
-	AcroForm*         acroForm;       //
-	Object            fieldRef;       //
-	Object            fieldObj;       //
-	AcroFormFieldType type;           //
-	TextString*       name;           //
-	uint32_t          flags;          //
-	bool              typeFromParent; //
-	XFAField*         xfaField;       //
+	AcroForm*         acroForm       = nullptr;           //
+	Object            fieldRef       = {};                //
+	Object            fieldObj       = {};                //
+	AcroFormFieldType type           = acroFormFieldText; //
+	TextString*       name           = nullptr;           //
+	uint32_t          flags          = 0;                 //
+	bool              typeFromParent = false;             //
+	XFAField*         xfaField       = nullptr;           //
 
 	friend class AcroForm;
 };

@@ -73,41 +73,41 @@ private:
 	bool          readULong(uint32_t* x);
 	bool          readLong(int* x);
 
-	bool         decoded;        //
-	Object       globalsStream;  //
-	uint32_t     pageW;          //
-	uint32_t     pageH;          //
-	uint32_t     curPageH;       //
-	uint32_t     pageDefPixel;   //
-	JBIG2Bitmap* pageBitmap;     //
-	uint32_t     defCombOp;      //
-	GList*       segments;       // [JBIG2Segment]
-	GList*       globalSegments; // [JBIG2Segment]
-	Stream*      curStr;         //
-	uint8_t*     dataPtr;        //
-	uint8_t*     dataEnd;        //
-	uint32_t     byteCounter;    //
-	bool         done;           //
+	bool         decoded        = false;   //
+	Object       globalsStream  = {};      //
+	uint32_t     pageW          = 0;       //
+	uint32_t     pageH          = 0;       //
+	uint32_t     curPageH       = 0;       //
+	uint32_t     pageDefPixel   = 0;       //
+	JBIG2Bitmap* pageBitmap     = nullptr; //
+	uint32_t     defCombOp      = 0;       //
+	GList*       segments       = nullptr; // [JBIG2Segment]
+	GList*       globalSegments = nullptr; // [JBIG2Segment]
+	Stream*      curStr         = nullptr; //
+	uint8_t*     dataPtr        = nullptr; //
+	uint8_t*     dataEnd        = nullptr; //
+	uint32_t     byteCounter    = 0;       //
+	bool         done           = false;   //
 
-	JArithmeticDecoder*      arithDecoder;
-	JArithmeticDecoderStats* genericRegionStats;
-	JArithmeticDecoderStats* refinementRegionStats;
-	JArithmeticDecoderStats* iadhStats;
-	JArithmeticDecoderStats* iadwStats;
-	JArithmeticDecoderStats* iaexStats;
-	JArithmeticDecoderStats* iaaiStats;
-	JArithmeticDecoderStats* iadtStats;
-	JArithmeticDecoderStats* iaitStats;
-	JArithmeticDecoderStats* iafsStats;
-	JArithmeticDecoderStats* iadsStats;
-	JArithmeticDecoderStats* iardxStats;
-	JArithmeticDecoderStats* iardyStats;
-	JArithmeticDecoderStats* iardwStats;
-	JArithmeticDecoderStats* iardhStats;
-	JArithmeticDecoderStats* iariStats;
-	JArithmeticDecoderStats* iaidStats;
-	JBIG2HuffmanDecoder*     huffDecoder;
-	JBIG2MMRDecoder*         mmrDecoder;
+	JArithmeticDecoder*      arithDecoder          = nullptr; //
+	JArithmeticDecoderStats* genericRegionStats    = nullptr; //
+	JArithmeticDecoderStats* refinementRegionStats = nullptr; //
+	JArithmeticDecoderStats* iadhStats             = nullptr; //
+	JArithmeticDecoderStats* iadwStats             = nullptr; //
+	JArithmeticDecoderStats* iaexStats             = nullptr; //
+	JArithmeticDecoderStats* iaaiStats             = nullptr; //
+	JArithmeticDecoderStats* iadtStats             = nullptr; //
+	JArithmeticDecoderStats* iaitStats             = nullptr; //
+	JArithmeticDecoderStats* iafsStats             = nullptr; //
+	JArithmeticDecoderStats* iadsStats             = nullptr; //
+	JArithmeticDecoderStats* iardxStats            = nullptr; //
+	JArithmeticDecoderStats* iardyStats            = nullptr; //
+	JArithmeticDecoderStats* iardwStats            = nullptr; //
+	JArithmeticDecoderStats* iardhStats            = nullptr; //
+	JArithmeticDecoderStats* iariStats             = nullptr; //
+	JArithmeticDecoderStats* iaidStats             = nullptr; //
+	JBIG2HuffmanDecoder*     huffDecoder           = nullptr; //
+	JBIG2MMRDecoder*         mmrDecoder            = nullptr; //
 };
 
 #endif
