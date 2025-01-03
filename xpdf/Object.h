@@ -6,17 +6,13 @@
 //
 //========================================================================
 
-#ifndef OBJECT_H
-#define OBJECT_H
+#pragma once
 
 #include <aconf.h>
-
 #include <stdio.h>
 #include <string.h>
-#include "gtypes.h"
 #include "gmem.h"
 #include "gfile.h"
-#include "GString.h"
 #if MULTITHREADED
 #	include "GMutex.h"
 #endif
@@ -88,8 +84,10 @@ public:
 	{
 	}
 
+	~Object() {}
+
 	// Initialize an object.
-	Object* initBool(GBool boolnA)
+	Object* initBool(bool boolnA)
 	{
 		initObj(objBool);
 		booln = boolnA;
@@ -110,10 +108,10 @@ public:
 		return this;
 	}
 
-	Object* initString(GString* stringA)
+	Object* initString(const std::string& stringA)
 	{
 		initObj(objString);
-		string = stringA;
+		string = new std::string(stringA);
 		return this;
 	}
 
@@ -175,52 +173,52 @@ public:
 	// Type checking.
 	ObjType getType() { return type; }
 
-	GBool isBool() { return type == objBool; }
+	bool isBool() { return type == objBool; }
 
-	GBool isInt() { return type == objInt; }
+	bool isInt() { return type == objInt; }
 
-	GBool isReal() { return type == objReal; }
+	bool isReal() { return type == objReal; }
 
-	GBool isNum() { return type == objInt || type == objReal; }
+	bool isNum() { return type == objInt || type == objReal; }
 
-	GBool isString() { return type == objString; }
+	bool isString() { return type == objString; }
 
-	GBool isName() { return type == objName; }
+	bool isName() { return type == objName; }
 
-	GBool isNull() { return type == objNull; }
+	bool isNull() { return type == objNull; }
 
-	GBool isArray() { return type == objArray; }
+	bool isArray() { return type == objArray; }
 
-	GBool isDict() { return type == objDict; }
+	bool isDict() { return type == objDict; }
 
-	GBool isStream() { return type == objStream; }
+	bool isStream() { return type == objStream; }
 
-	GBool isRef() { return type == objRef; }
+	bool isRef() { return type == objRef; }
 
-	GBool isCmd() { return type == objCmd; }
+	bool isCmd() { return type == objCmd; }
 
-	GBool isError() { return type == objError; }
+	bool isError() { return type == objError; }
 
-	GBool isEOF() { return type == objEOF; }
+	bool isEOF() { return type == objEOF; }
 
-	GBool isNone() { return type == objNone; }
+	bool isNone() { return type == objNone; }
 
 	// Special type checking.
-	GBool isName(const char* nameA)
+	bool isName(const char* nameA)
 	{
 		return type == objName && !strcmp(name, nameA);
 	}
 
-	GBool isDict(const char* dictType);
-	GBool isStream(char* dictType);
+	bool isDict(const char* dictType);
+	bool isStream(char* dictType);
 
-	GBool isCmd(const char* cmdA)
+	bool isCmd(const char* cmdA)
 	{
 		return type == objCmd && !strcmp(cmd, cmdA);
 	}
 
 	// Accessors.  NB: these assume object is of correct type.
-	GBool getBool() { return booln; }
+	bool getBool() { return booln; }
 
 	int getInt() { return intg; }
 
@@ -228,7 +226,7 @@ public:
 
 	double getNum() { return type == objInt ? (double)intg : real; }
 
-	GString* getString() { return string; }
+	std::string getString() { return *string; }
 
 	char* getName() { return name; }
 
@@ -255,7 +253,7 @@ public:
 	// Dict accessors.
 	int     dictGetLength();
 	void    dictAdd(char* key, Object* val);
-	GBool   dictIs(const char* dictType);
+	bool    dictIs(const char* dictType);
 	Object* dictLookup(const char* key, Object* obj, int recursion = 0);
 	Object* dictLookupNF(const char* key, Object* obj);
 	char*   dictGetKey(int i);
@@ -263,7 +261,7 @@ public:
 	Object* dictGetValNF(int i, Object* obj);
 
 	// Stream accessors.
-	GBool       streamIs(char* dictType);
+	bool        streamIs(char* dictType);
 	void        streamReset();
 	void        streamClose();
 	int         streamGetChar();
@@ -285,17 +283,17 @@ private:
 	ObjType type; // object type
 
 	union
-	{                    // value for each type:
-		GBool    booln;  // boolean
-		int      intg;   // integer
-		double   real;   // real
-		GString* string; // string
-		char*    name;   // name
-		Array*   array;  // array
-		Dict*    dict;   // dictionary
-		Stream*  stream; // stream
-		Ref      ref;    // indirect reference
-		char*    cmd;    // command
+	{                        // value for each type:
+		bool         booln;  // boolean
+		int          intg;   // integer
+		double       real;   // real
+		char*        name;   // name
+		Array*       array;  // array
+		Dict*        dict;   // dictionary
+		Stream*      stream; // stream
+		std::string* string; // string
+		Ref          ref;    // indirect reference
+		char*        cmd;    // command
 	};
 
 #ifdef DEBUG_OBJECT_MEM
@@ -351,12 +349,12 @@ inline void Object::dictAdd(char* key, Object* val)
 	dict->add(key, val);
 }
 
-inline GBool Object::dictIs(const char* dictType)
+inline bool Object::dictIs(const char* dictType)
 {
 	return dict->is(dictType);
 }
 
-inline GBool Object::isDict(const char* dictType)
+inline bool Object::isDict(const char* dictType)
 {
 	return type == objDict && dictIs(dictType);
 }
@@ -392,12 +390,12 @@ inline Object* Object::dictGetValNF(int i, Object* obj)
 
 #include "Stream.h"
 
-inline GBool Object::streamIs(char* dictType)
+inline bool Object::streamIs(char* dictType)
 {
 	return stream->getDict()->is(dictType);
 }
 
-inline GBool Object::isStream(char* dictType)
+inline bool Object::isStream(char* dictType)
 {
 	return type == objStream && streamIs(dictType);
 }
@@ -446,5 +444,3 @@ inline Dict* Object::streamGetDict()
 {
 	return stream->getDict();
 }
-
-#endif

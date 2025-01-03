@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -23,20 +22,19 @@
 #include "Stream.h"
 #include "ImageOutputDev.h"
 
-ImageOutputDev::ImageOutputDev(char* fileRootA, GBool dumpJPEGA, GBool dumpRawA, GBool listA)
+ImageOutputDev::ImageOutputDev(std::string_view fileRootA, bool dumpJPEGA, bool dumpRawA, bool listA)
 {
-	fileRoot   = copyString(fileRootA);
+	fileRoot   = fileRootA;
 	dumpJPEG   = dumpJPEGA;
 	dumpRaw    = dumpRawA;
 	list       = listA;
 	imgNum     = 0;
 	curPageNum = 0;
-	ok         = gTrue;
+	ok         = true;
 }
 
 ImageOutputDev::~ImageOutputDev()
 {
-	gfree(fileRoot);
 }
 
 void ImageOutputDev::startPage(int pageNum, GfxState* state)
@@ -50,23 +48,22 @@ void ImageOutputDev::tilingPatternFill(GfxState* state, Gfx* gfx, Object* strRef
 	gfx->drawForm(strRef, resDict, mat, bbox);
 }
 
-void ImageOutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, int width, int height, GBool invert, GBool inlineImg, GBool interpolate)
+void ImageOutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, int width, int height, bool invert, bool inlineImg, bool interpolate)
 {
-	GString* fileName;
-	FILE*    f;
-	char     buf[4096];
-	int      size, n, i;
+	std::string fileName;
+	FILE*       f;
+	char        buf[4096];
+	int         size, n, i;
 
 	// dump raw file
 	if (dumpRaw && !inlineImg)
 	{
 		// open the image file
-		fileName = GString::format("{0:s}-{1:04d}.{2:s}", fileRoot, imgNum, getRawFileExtension(str));
+		fileName = fmt::format("{}-{:04}.{}", fileRoot, imgNum, getRawFileExtension(str));
 		++imgNum;
-		if (!(f = openFile(fileName->getCString(), "wb")))
+		if (!(f = openFile(fileName.c_str(), "wb")))
 		{
-			error(errIO, -1, "Couldn't open image file '{0:t}'", fileName);
-			delete fileName;
+			error(errIO, -1, "Couldn't open image file '{}'", fileName);
 			return;
 		}
 
@@ -86,12 +83,11 @@ void ImageOutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, in
 	else if (dumpJPEG && str->getKind() == strDCT && !inlineImg)
 	{
 		// open the image file
-		fileName = GString::format("{0:s}-{1:04d}.jpg", fileRoot, imgNum);
+		fileName = fmt::format("{}-{:04}.jpg", fileRoot, imgNum);
 		++imgNum;
-		if (!(f = openFile(fileName->getCString(), "wb")))
+		if (!(f = openFile(fileName.c_str(), "wb")))
 		{
-			error(errIO, -1, "Couldn't open image file '{0:t}'", fileName);
-			delete fileName;
+			error(errIO, -1, "Couldn't open image file '{}'", fileName);
 			return;
 		}
 
@@ -111,12 +107,11 @@ void ImageOutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, in
 	else
 	{
 		// open the image file and write the PBM header
-		fileName = GString::format("{0:s}-{1:04d}.pbm", fileRoot, imgNum);
+		fileName = fmt::format("{}-{:04}.pbm", fileRoot, imgNum);
 		++imgNum;
-		if (!(f = openFile(fileName->getCString(), "wb")))
+		if (!(f = openFile(fileName.c_str(), "wb")))
 		{
-			error(errIO, -1, "Couldn't open image file '{0:t}'", fileName);
-			delete fileName;
+			error(errIO, -1, "Couldn't open image file '{}'", fileName);
 			return;
 		}
 		fprintf(f, "P4\n");
@@ -143,39 +138,34 @@ void ImageOutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, in
 
 	if (list)
 		writeImageInfo(fileName, width, height, state, nullptr);
-
-	delete fileName;
 }
 
-void ImageOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int width, int height, GfxImageColorMap* colorMap, int* maskColors, GBool inlineImg, GBool interpolate)
+void ImageOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int width, int height, GfxImageColorMap* colorMap, int* maskColors, bool inlineImg, bool interpolate)
 {
 	GfxColorSpaceMode csMode;
-	GString*          fileName;
 	FILE*             f;
 	ImageStream*      imgStr;
-	Guchar*           p;
+	uint8_t*          p;
 	GfxRGB            rgb;
 	GfxGray           gray;
-	int               x, y;
 	char              buf[4096];
 	int               size, n, i, j;
 
+	std::string fileName;
+
 	csMode = colorMap->getColorSpace()->getMode();
 	if (csMode == csIndexed)
-		csMode = ((GfxIndexedColorSpace*)colorMap->getColorSpace())
-		             ->getBase()
-		             ->getMode();
+		csMode = ((GfxIndexedColorSpace*)colorMap->getColorSpace())->getBase()->getMode();
 
 	// dump raw file
 	if (dumpRaw && !inlineImg)
 	{
 		// open the image file
-		fileName = GString::format("{0:s}-{1:04d}.{2:s}", fileRoot, imgNum, getRawFileExtension(str));
+		fileName = fmt::format("{}-{:04}.{}", fileRoot, imgNum, getRawFileExtension(str));
 		++imgNum;
-		if (!(f = openFile(fileName->getCString(), "wb")))
+		if (!(f = openFile(fileName.c_str(), "wb")))
 		{
-			error(errIO, -1, "Couldn't open image file '{0:t}'", fileName);
-			delete fileName;
+			error(errIO, -1, "Couldn't open image file '{}'", fileName);
 			return;
 		}
 
@@ -195,12 +185,11 @@ void ImageOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int wi
 	else if (dumpJPEG && str->getKind() == strDCT && (colorMap->getNumPixelComps() == 1 || colorMap->getNumPixelComps() == 3) && !inlineImg)
 	{
 		// open the image file
-		fileName = GString::format("{0:s}-{1:04d}.jpg", fileRoot, imgNum);
+		fileName = fmt::format("{}-{:04}.jpg", fileRoot, imgNum);
 		++imgNum;
-		if (!(f = openFile(fileName->getCString(), "wb")))
+		if (!(f = openFile(fileName.c_str(), "wb")))
 		{
-			error(errIO, -1, "Couldn't open image file '{0:t}'", fileName);
-			delete fileName;
+			error(errIO, -1, "Couldn't open image file '{}'", fileName);
 			return;
 		}
 
@@ -220,12 +209,11 @@ void ImageOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int wi
 	else if (colorMap->getNumPixelComps() == 1 && colorMap->getBits() == 1)
 	{
 		// open the image file and write the PBM header
-		fileName = GString::format("{0:s}-{1:04d}.pbm", fileRoot, imgNum);
+		fileName = fmt::format("{}-{:04}.pbm", fileRoot, imgNum);
 		++imgNum;
-		if (!(f = openFile(fileName->getCString(), "wb")))
+		if (!(f = openFile(fileName.c_str(), "wb")))
 		{
-			error(errIO, -1, "Couldn't open image file '{0:t}'", fileName);
-			delete fileName;
+			error(errIO, -1, "Couldn't open image file '{}'", fileName);
 			return;
 		}
 		fprintf(f, "P4\n");
@@ -256,12 +244,11 @@ void ImageOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int wi
 	else if (colorMap->getNumPixelComps() == 1 && (csMode == csDeviceGray || csMode == csCalGray))
 	{
 		// open the image file and write the PGM header
-		fileName = GString::format("{0:s}-{1:04d}.pgm", fileRoot, imgNum);
+		fileName = fmt::format("{}-{:04}.pgm", fileRoot, imgNum);
 		++imgNum;
-		if (!(f = openFile(fileName->getCString(), "wb")))
+		if (!(f = openFile(fileName.c_str(), "wb")))
 		{
-			error(errIO, -1, "Couldn't open image file '{0:t}'", fileName);
-			delete fileName;
+			error(errIO, -1, "Couldn't open image file '{}'", fileName);
 			return;
 		}
 		fprintf(f, "P5\n");
@@ -273,12 +260,12 @@ void ImageOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int wi
 		imgStr->reset();
 
 		// for each line...
-		for (y = 0; y < height; ++y)
+		for (int y = 0; y < height; ++y)
 		{
 			// write the line
 			if ((p = imgStr->getLine()))
 			{
-				for (x = 0; x < width; ++x)
+				for (int x = 0; x < width; ++x)
 				{
 					colorMap->getGray(p, &gray, state->getRenderingIntent());
 					fputc(colToByte(gray), f);
@@ -287,7 +274,7 @@ void ImageOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int wi
 			}
 			else
 			{
-				for (x = 0; x < width; ++x)
+				for (int x = 0; x < width; ++x)
 					fputc(0, f);
 			}
 		}
@@ -302,12 +289,11 @@ void ImageOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int wi
 	else
 	{
 		// open the image file and write the PPM header
-		fileName = GString::format("{0:s}-{1:04d}.ppm", fileRoot, imgNum);
+		fileName = fmt::format("{}-{:04}.ppm", fileRoot, imgNum);
 		++imgNum;
-		if (!(f = openFile(fileName->getCString(), "wb")))
+		if (!(f = openFile(fileName.c_str(), "wb")))
 		{
-			error(errIO, -1, "Couldn't open image file '{0:t}'", fileName);
-			delete fileName;
+			error(errIO, -1, "Couldn't open image file '{}'", fileName);
 			return;
 		}
 		fprintf(f, "P6\n");
@@ -319,12 +305,12 @@ void ImageOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int wi
 		imgStr->reset();
 
 		// for each line...
-		for (y = 0; y < height; ++y)
+		for (int y = 0; y < height; ++y)
 		{
 			// write the line
 			if ((p = imgStr->getLine()))
 			{
-				for (x = 0; x < width; ++x)
+				for (int x = 0; x < width; ++x)
 				{
 					colorMap->getRGB(p, &rgb, state->getRenderingIntent());
 					fputc(colToByte(rgb.r), f);
@@ -335,7 +321,7 @@ void ImageOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int wi
 			}
 			else
 			{
-				for (x = 0; x < width; ++x)
+				for (int x = 0; x < width; ++x)
 				{
 					fputc(0, f);
 					fputc(0, f);
@@ -352,20 +338,18 @@ void ImageOutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int wi
 
 	if (list)
 		writeImageInfo(fileName, width, height, state, colorMap);
-
-	delete fileName;
 }
 
-void ImageOutputDev::drawMaskedImage(GfxState* state, Object* ref, Stream* str, int width, int height, GfxImageColorMap* colorMap, Object* maskRef, Stream* maskStr, int maskWidth, int maskHeight, GBool maskInvert, GBool interpolate)
+void ImageOutputDev::drawMaskedImage(GfxState* state, Object* ref, Stream* str, int width, int height, GfxImageColorMap* colorMap, Object* maskRef, Stream* maskStr, int maskWidth, int maskHeight, bool maskInvert, bool interpolate)
 {
-	drawImage(state, ref, str, width, height, colorMap, nullptr, gFalse, interpolate);
-	drawImageMask(state, maskRef, maskStr, maskWidth, maskHeight, maskInvert, gFalse, interpolate);
+	drawImage(state, ref, str, width, height, colorMap, nullptr, false, interpolate);
+	drawImageMask(state, maskRef, maskStr, maskWidth, maskHeight, maskInvert, false, interpolate);
 }
 
-void ImageOutputDev::drawSoftMaskedImage(GfxState* state, Object* ref, Stream* str, int width, int height, GfxImageColorMap* colorMap, Object* maskRef, Stream* maskStr, int maskWidth, int maskHeight, GfxImageColorMap* maskColorMap, double* matte, GBool interpolate)
+void ImageOutputDev::drawSoftMaskedImage(GfxState* state, Object* ref, Stream* str, int width, int height, GfxImageColorMap* colorMap, Object* maskRef, Stream* maskStr, int maskWidth, int maskHeight, GfxImageColorMap* maskColorMap, double* matte, bool interpolate)
 {
-	drawImage(state, ref, str, width, height, colorMap, nullptr, gFalse, interpolate);
-	drawImage(state, maskRef, maskStr, maskWidth, maskHeight, maskColorMap, nullptr, gFalse, interpolate);
+	drawImage(state, ref, str, width, height, colorMap, nullptr, false, interpolate);
+	drawImage(state, maskRef, maskStr, maskWidth, maskHeight, maskColorMap, nullptr, false, interpolate);
 }
 
 Stream* ImageOutputDev::getRawStream(Stream* str)
@@ -400,7 +384,7 @@ const char* ImageOutputDev::getRawFileExtension(Stream* str)
 	}
 }
 
-void ImageOutputDev::writeImageInfo(GString* fileName, int width, int height, GfxState* state, GfxImageColorMap* colorMap)
+void ImageOutputDev::writeImageInfo(const std::string& fileName, int width, int height, GfxState* state, GfxImageColorMap* colorMap)
 {
 	const char* mode;
 	double      hdpi, vdpi, x0, y0, x1, y1;
@@ -437,5 +421,5 @@ void ImageOutputDev::writeImageInfo(GString* fileName, int width, int height, Gf
 		bpc  = 1;
 	}
 
-	printf("%s: page=%d width=%d height=%d hdpi=%.2f vdpi=%.2f %s%s bpc=%d\n", fileName->getCString(), curPageNum, width, height, hdpi, vdpi, mode ? "colorspace=" : "mask", mode ? mode : "", bpc);
+	printf("%s: page=%d width=%d height=%d hdpi=%.2f vdpi=%.2f %s%s bpc=%d\n", fileName.c_str(), curPageNum, width, height, hdpi, vdpi, mode ? "colorspace=" : "mask", mode ? mode : "", bpc);
 }

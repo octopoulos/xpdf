@@ -16,11 +16,7 @@
 
 //! \file
 
-#ifndef XPDFWIDGET_H
-#define XPDFWIDGET_H
-
 #include <aconf.h>
-
 #include <QAbstractScrollArea>
 
 class QMutex;
@@ -30,7 +26,6 @@ class QPrinter;
 class QPrintDialog;
 #endif
 
-class GString;
 class PDFDoc;
 class QtPDFCore;
 
@@ -113,7 +108,7 @@ public:
 		pdfErrPermission    = 8,    //!< PDF file doesn't allow that operation
 		pdfErrBadPageNum    = 9,    //!< invalid page number
 		pdfErrFileIO        = 10,   //!< file I/O error
-		pdfErrNoHandle      = 1001, //!< NULL object handle
+		pdfErrNoHandle      = 1001, //!< nullptr object handle
 		pdfErrOutOfMemory   = 1002, //!< out of memory
 		pdfErrBusy          = 1003, //!< PDF component is busy
 		pdfErrBadArg        = 1004  //!< invalid argument
@@ -171,7 +166,7 @@ public:
 	//!
 	//! This function must be called before any other XpdfWidget functions
 	//! (including the constructor).  It will be called automatically
-	//! (with a NULL \a configFileName) if it hasn't already been
+	//! (with a nullptr \a configFileName) if it hasn't already been
 	//! called when the first XpdfWidget function is used.
 	static void init(const QString& configFileName = QString());
 
@@ -495,7 +490,7 @@ public:
 	bool gotoLinkAt(int page, double xx, double yy);
 
 	//! Check for an annotation containing the specified point.
-	//! Returns NULL if there is no annotation at this point.  Note:
+	//! Returns nullptr if there is no annotation at this point.  Note:
 	//! This function expects PDF coordinates, not window coordinates.
 	XpdfAnnotHandle onAnnot(int page, double xx, double yy);
 
@@ -507,7 +502,7 @@ public:
 	QString getAnnotContent(XpdfAnnotHandle annot);
 
 	//! Check for a form field containing the specified point.
-	//! Returns NULL if there is no annotation at this point.  Note:
+	//! Returns nullptr if there is no annotation at this point.  Note:
 	//! This function expects PDF coordinates, not window coordinates.
 	XpdfFormFieldHandle onFormField(int page, double xx, double yy);
 
@@ -752,16 +747,16 @@ public:
 
 	//! Return the number of children of an outline tree node.
 	//! This function returns the number of children of node \a outline,
-	//! or the number of root outline entries if \a outline is \c NULL.
+	//! or the number of root outline entries if \a outline is \c nullptr.
 	int getOutlineNumChildren(XpdfOutlineHandle outline);
 
 	//! Return a child of an outline tree node.
 	//! This function returns the \a idx 'th child of node \a outline,
-	//! or the \a idx 'th root entry if \a outline is \c NULL.
+	//! or the \a idx 'th root entry if \a outline is \c nullptr.
 	XpdfOutlineHandle getOutlineChild(XpdfOutlineHandle outline, int idx);
 
 	//! Return the parent of an outline tree node.
-	//! This function returns the parent of node \a outline, or NULL if
+	//! This function returns the parent of node \a outline, or nullptr if
 	//! \a outline is a root item.
 	XpdfOutlineHandle getOutlineParent(XpdfOutlineHandle outline);
 
@@ -837,7 +832,7 @@ public:
 	XpdfLayerOrderHandle getLayerOrderChild(XpdfLayerOrderHandle order, int idx);
 
 	//! Return the parent of a layer display order tree node.
-	//! This function returns the parent of node \a order, or NULL if \a
+	//! This function returns the parent of node \a order, or nullptr if \a
 	//! order is the root node.
 	XpdfLayerOrderHandle getLayerOrderParent(XpdfLayerOrderHandle order);
 
@@ -988,7 +983,7 @@ private slots:
 
 private:
 	void        setup(const QColor& paperColor, const QColor& matteColor, bool reverseVideo);
-	static void updateCbk(void* data, GString* fileName, int pageNum, int numPages, const char* linkLabel);
+	static void updateCbk(void* data, const std::string& fileName, int pageNum, int numPages, const char* linkLabel);
 	static void midPageChangedCbk(void* data, int pageNum);
 	static void preLoadCbk(void* data);
 	static void postLoadCbk(void* data);
@@ -1024,5 +1019,3 @@ private:
 
 	QTimer* tickTimer;
 };
-
-#endif

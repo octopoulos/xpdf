@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdlib.h>
 #include <string.h>
 #if HAVE_STD_SORT
@@ -23,16 +22,13 @@
 //------------------------------------------------------------------------
 
 #if ANTIALIAS_256
-
 #	define aaVert  15
 #	define aaHoriz 17
-
 #else
-
 #	define aaVert  4
 #	define aaHoriz 4
 
-static Guchar map16to255[17] = {
+static uint8_t map16to255[17] = {
 	0,
 	16,
 	32,
@@ -51,12 +47,11 @@ static Guchar map16to255[17] = {
 	239,
 	255
 };
-
 #endif
 
 //------------------------------------------------------------------------
 
-SplashXPathScanner::SplashXPathScanner(SplashXPath* xPathA, GBool eo, int yMinA, int yMaxA)
+SplashXPathScanner::SplashXPathScanner(SplashXPath* xPathA, bool eo, int yMinA, int yMaxA)
 {
 	xPath  = xPathA;
 	eoMask = eo ? 1 : 0xffffffff;
@@ -75,8 +70,8 @@ SplashXPathScanner::SplashXPathScanner(SplashXPath* xPathA, GBool eo, int yMinA,
 	pre->mx  = xPath->xMin - 1;
 	post->mx = xPath->xMax + 1;
 
-	resetDone = gFalse;
-	resetAA   = gFalse;
+	resetDone = false;
+	resetAA   = false;
 }
 
 SplashXPathScanner::~SplashXPathScanner()
@@ -102,7 +97,7 @@ void SplashXPathScanner::removeSegment(SplashXPathSeg* s)
 	sNext       = s->next;
 	sPrev->next = sNext;
 	sNext->prev = sPrev;
-	s->prev = s->next = NULL;
+	s->prev = s->next = nullptr;
 }
 
 void SplashXPathScanner::moveSegmentAfter(SplashXPathSeg* s, SplashXPathSeg* sPrev)
@@ -119,7 +114,7 @@ void SplashXPathScanner::moveSegmentAfter(SplashXPathSeg* s, SplashXPathSeg* sPr
 	sNext->prev = s;
 }
 
-void SplashXPathScanner::reset(GBool aa, GBool aaChanged)
+void SplashXPathScanner::reset(bool aa, bool aaChanged)
 {
 	SplashXPathSeg* seg;
 	SplashCoord     y;
@@ -147,7 +142,7 @@ void SplashXPathScanner::reset(GBool aa, GBool aaChanged)
 		else
 			seg->sx1 = seg->x0 + (y - seg->y0) * seg->dxdy;
 		seg->mx   = (seg->sx0 <= seg->sx1) ? seg->sx0 : seg->sx1;
-		seg->prev = seg->next = NULL;
+		seg->prev = seg->next = nullptr;
 	}
 
 	//--- sort the inactive segments by iy, mx
@@ -161,10 +156,10 @@ void SplashXPathScanner::reset(GBool aa, GBool aaChanged)
 	}
 
 	//--- initialize the active list
-	pre->prev  = NULL;
+	pre->prev  = nullptr;
 	pre->next  = post;
 	post->prev = pre;
-	post->next = NULL;
+	post->next = nullptr;
 
 	//--- initialize the scan state
 	nextSeg = 0;
@@ -190,11 +185,11 @@ void SplashXPathScanner::reset(GBool aa, GBool aaChanged)
 		yBottom = (SplashCoord)yBottomI;
 	}
 
-	resetDone = gTrue;
+	resetDone = true;
 	resetAA   = aa;
 }
 
-void SplashXPathScanner::skip(int newYBottomI, GBool aa)
+void SplashXPathScanner::skip(int newYBottomI, bool aa)
 {
 	SplashXPathSeg *s0, *s1, *s2;
 	int             iy;
@@ -290,7 +285,7 @@ void SplashXPathScanner::skip(int newYBottomI, GBool aa)
 	}
 }
 
-void SplashXPathScanner::advance(GBool aa)
+void SplashXPathScanner::advance(bool aa)
 {
 	SplashXPathSeg *s, *sNext, *s1;
 
@@ -346,7 +341,7 @@ void SplashXPathScanner::advance(GBool aa)
 	}
 }
 
-void SplashXPathScanner::generatePixels(int x0, int x1, Guchar* line, int* xMin, int* xMax)
+void SplashXPathScanner::generatePixels(int x0, int x1, uint8_t* line, int* xMin, int* xMax)
 {
 	SplashXPathSeg* s;
 	int             fillCount, x, xEnd, ix0, ix1, t;
@@ -382,7 +377,7 @@ void SplashXPathScanner::generatePixels(int x0, int x1, Guchar* line, int* xMin,
 	}
 }
 
-void SplashXPathScanner::generatePixelsBinary(int x0, int x1, Guchar* line, int* xMin, int* xMax)
+void SplashXPathScanner::generatePixelsBinary(int x0, int x1, uint8_t* line, int* xMin, int* xMax)
 {
 	SplashXPathSeg* s;
 	int             fillCount, x, xEnd, ix0, ix1, t;
@@ -418,10 +413,10 @@ void SplashXPathScanner::generatePixelsBinary(int x0, int x1, Guchar* line, int*
 	}
 }
 
-void SplashXPathScanner::drawRectangleSpan(Guchar* line, int y, int x0, int x1, int* xMin, int* xMax)
+void SplashXPathScanner::drawRectangleSpan(uint8_t* line, int y, int x0, int x1, int* xMin, int* xMax)
 {
 	SplashCoord edge;
-	Guchar      pix;
+	uint8_t     pix;
 	int         xe, x;
 
 	if (rectX0I > x1 || rectX1I < x0)
@@ -442,7 +437,7 @@ void SplashXPathScanner::drawRectangleSpan(Guchar* line, int y, int x0, int x1, 
 		// upper left corner
 		if (x0 <= rectX0I)
 		{
-			pix = (Guchar)splashCeil(edge * ((SplashCoord)1 - (xPath->rectX0 - rectX0I)) * 255);
+			pix = (uint8_t)splashCeil(edge * ((SplashCoord)1 - (xPath->rectX0 - rectX0I)) * 255);
 			if (pix < 16)
 				pix = 16;
 			line[rectX0I] = pix;
@@ -456,7 +451,7 @@ void SplashXPathScanner::drawRectangleSpan(Guchar* line, int y, int x0, int x1, 
 		// upper right corner
 		if (rectX1I <= x1)
 		{
-			pix = (Guchar)splashCeil(edge * (xPath->rectX1 - rectX1I) * 255);
+			pix = (uint8_t)splashCeil(edge * (xPath->rectX1 - rectX1I) * 255);
 			if (pix < 16)
 				pix = 16;
 			line[rectX1I] = pix;
@@ -468,7 +463,7 @@ void SplashXPathScanner::drawRectangleSpan(Guchar* line, int y, int x0, int x1, 
 		}
 
 		// upper edge
-		pix = (Guchar)splashCeil(edge * 255);
+		pix = (uint8_t)splashCeil(edge * 255);
 		if (pix < 16)
 			pix = 16;
 		for (; x <= xe; ++x)
@@ -483,7 +478,7 @@ void SplashXPathScanner::drawRectangleSpan(Guchar* line, int y, int x0, int x1, 
 		// lower left corner
 		if (x0 <= rectX0I)
 		{
-			pix = (Guchar)splashCeil(edge * ((SplashCoord)1 - (xPath->rectX0 - rectX0I)) * 255);
+			pix = (uint8_t)splashCeil(edge * ((SplashCoord)1 - (xPath->rectX0 - rectX0I)) * 255);
 			if (pix < 16)
 				pix = 16;
 			line[rectX0I] = pix;
@@ -497,7 +492,7 @@ void SplashXPathScanner::drawRectangleSpan(Guchar* line, int y, int x0, int x1, 
 		// lower right corner
 		if (rectX1I <= x1)
 		{
-			pix = (Guchar)splashCeil(edge * (xPath->rectX1 - rectX1I) * 255);
+			pix = (uint8_t)splashCeil(edge * (xPath->rectX1 - rectX1I) * 255);
 			if (pix < 16)
 				pix = 16;
 			line[rectX1I] = pix;
@@ -509,7 +504,7 @@ void SplashXPathScanner::drawRectangleSpan(Guchar* line, int y, int x0, int x1, 
 		}
 
 		// lower edge
-		pix = (Guchar)splashCeil(edge * 255);
+		pix = (uint8_t)splashCeil(edge * 255);
 		if (pix < 16)
 			pix = 16;
 		for (; x <= xe; ++x)
@@ -522,7 +517,7 @@ void SplashXPathScanner::drawRectangleSpan(Guchar* line, int y, int x0, int x1, 
 		// left edge
 		if (x0 <= rectX0I)
 		{
-			pix = (Guchar)splashCeil(((SplashCoord)1 - (xPath->rectX0 - rectX0I)) * 255);
+			pix = (uint8_t)splashCeil(((SplashCoord)1 - (xPath->rectX0 - rectX0I)) * 255);
 			if (pix < 16)
 				pix = 16;
 			line[rectX0I] = pix;
@@ -536,7 +531,7 @@ void SplashXPathScanner::drawRectangleSpan(Guchar* line, int y, int x0, int x1, 
 		// right edge
 		if (rectX1I <= x1)
 		{
-			pix = (Guchar)splashCeil((xPath->rectX1 - rectX1I) * 255);
+			pix = (uint8_t)splashCeil((xPath->rectX1 - rectX1I) * 255);
 			if (pix < 16)
 				pix = 16;
 			line[rectX1I] = pix;
@@ -553,7 +548,7 @@ void SplashXPathScanner::drawRectangleSpan(Guchar* line, int y, int x0, int x1, 
 	}
 }
 
-void SplashXPathScanner::drawRectangleSpanBinary(Guchar* line, int y, int x0, int x1, int* xMin, int* xMax)
+void SplashXPathScanner::drawRectangleSpanBinary(uint8_t* line, int y, int x0, int x1, int* xMin, int* xMax)
 {
 	int xe, x;
 
@@ -574,15 +569,15 @@ void SplashXPathScanner::drawRectangleSpanBinary(Guchar* line, int y, int x0, in
 	}
 }
 
-void SplashXPathScanner::getSpan(Guchar* line, int y, int x0, int x1, int* xMin, int* xMax)
+void SplashXPathScanner::getSpan(uint8_t* line, int y, int x0, int x1, int* xMin, int* xMax)
 {
 	int iy, x, k;
 
 	iy = y * aaVert;
 	if (!resetDone || !resetAA)
-		reset(gTrue, gTrue);
+		reset(true, true);
 	else if (yBottomI > iy)
-		reset(gTrue, gFalse);
+		reset(true, false);
 	memset(line + x0, 0, x1 - x0 + 1);
 
 	*xMin = x1 + 1;
@@ -595,10 +590,10 @@ void SplashXPathScanner::getSpan(Guchar* line, int y, int x0, int x1, int* xMin,
 	}
 
 	if (yBottomI < iy)
-		skip(iy, gTrue);
+		skip(iy, true);
 	for (k = 0; k < aaVert; ++k, ++iy)
 	{
-		advance(gTrue);
+		advance(true);
 		generatePixels(x0, x1, line, xMin, xMax);
 	}
 
@@ -608,15 +603,15 @@ void SplashXPathScanner::getSpan(Guchar* line, int y, int x0, int x1, int* xMin,
 #endif
 }
 
-void SplashXPathScanner::getSpanBinary(Guchar* line, int y, int x0, int x1, int* xMin, int* xMax)
+void SplashXPathScanner::getSpanBinary(uint8_t* line, int y, int x0, int x1, int* xMin, int* xMax)
 {
 	int iy;
 
 	iy = y;
 	if (!resetDone || resetAA)
-		reset(gFalse, gTrue);
+		reset(false, true);
 	else if (yBottomI > iy)
-		reset(gFalse, gFalse);
+		reset(false, false);
 	memset(line + x0, 0, x1 - x0 + 1);
 
 	*xMin = x1 + 1;
@@ -628,8 +623,7 @@ void SplashXPathScanner::getSpanBinary(Guchar* line, int y, int x0, int x1, int*
 		return;
 	}
 
-	if (yBottomI < iy)
-		skip(iy, gFalse);
-	advance(gFalse);
+	if (yBottomI < iy) skip(iy, false);
+	advance(false);
 	generatePixelsBinary(x0, x1, line, xMin, xMax);
 }

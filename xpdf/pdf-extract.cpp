@@ -4,10 +4,7 @@
 
 #define NOMINMAX
 
-#include <iostream>
-#include <filesystem>
-#include <fstream>
-
+#include <aconf.h>
 #include "GlobalParams.h"
 #include "Object.h"
 #include "PDFDoc.h"
@@ -23,16 +20,10 @@
 
 PdfExtract::PdfExtract(const std::filesystem::path& configFile, int quiet)
 {
-	for (int i = 1; i < 200000000; i *= 2)
-	{
-		auto buf = GString::format("%!PS-TrueTypeFont-{0:2g} {1:d}\n", (double)i / 65536.0, i);
-		fprintf(stderr, "buf=%s\n", buf->getCString());
-		delete buf;
-	}
-
 	if (!globalParams)
 	{
-		globalParams = new GlobalParams(configFile.string().c_str());
+		fmt::print("PdfExtract: {}", configFile.string());
+	    globalParams = std::make_shared<GlobalParams>(configFile.string().c_str());
 		globalParams->setupBaseFonts(nullptr);
 		globalParams->setErrQuiet(quiet);
 	}
@@ -54,11 +45,6 @@ void PdfExtract::ClosePdf()
 
 void PdfExtract::Destroy()
 {
-	if (globalParams)
-	{
-		delete globalParams;
-		globalParams = nullptr;
-	}
 }
 
 /**
@@ -67,7 +53,7 @@ void PdfExtract::Destroy()
 PdfBitmap PdfExtract::ExtractBitmap(int page, double dpi, int rotate, bool alpha)
 {
 	SplashColor     paperColor = { 0xff, 0xff, 0xff };
-	SplashOutputDev splashOut(splashModeRGB8, 1, gFalse, paperColor);
+	SplashOutputDev splashOut(splashModeRGB8, 1, false, paperColor);
 
 	if (alpha) splashOut.setNoComposite(1);
 
@@ -78,7 +64,7 @@ PdfBitmap PdfExtract::ExtractBitmap(int page, double dpi, int rotate, bool alpha
 	if (page < 1) page = 1;
 	if (page > numPage) return {};
 
-	doc->displayPage(&splashOut, page, dpi, dpi, rotate, gFalse, gTrue, gFalse);
+	doc->displayPage(&splashOut, page, dpi, dpi, rotate, false, true, false);
 
 	auto bitmap = splashOut.getBitmap();
 	return {
@@ -92,10 +78,10 @@ PdfBitmap PdfExtract::ExtractBitmap(int page, double dpi, int rotate, bool alpha
 	};
 }
 
-static void TextFunc(void* stream, const char* text, int len)
+static void TextFunc(void* stream, const char* text, size_t len)
 {
 	std::string* sstream = (std::string*)stream;
-	*sstream += std::string(text, len);
+	sstream->append(text, len);
 }
 
 /**
@@ -122,9 +108,9 @@ std::string PdfExtract::ExtractText(int page, int pageEnd, int mode, double fixe
 	if (pageEnd > numPage) pageEnd = std::min(page, numPage);
 
 	globalParams->setTextEOL("unix");
-	// globalParams->setTextPageBreaks(gFalse);
+	// globalParams->setTextPageBreaks(false);
 
-	doc->displayPages(&textOut, page, pageEnd, 72, 72, 0, gFalse, gTrue, gFalse);
+	doc->displayPages(&textOut, page, pageEnd, 72, 72, 0, false, true, false);
 
 	if (umap) umap->decRefCnt();
 	return stream;

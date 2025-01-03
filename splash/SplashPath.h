@@ -6,11 +6,9 @@
 //
 //========================================================================
 
-#ifndef SPLASHPATH_H
-#define SPLASHPATH_H
+#pragma once
 
 #include <aconf.h>
-
 #include "SplashTypes.h"
 
 //------------------------------------------------------------------------
@@ -45,9 +43,11 @@ struct SplashPathPoint
 
 struct SplashPathHint
 {
-	int   ctrl0, ctrl1;
-	int   firstPt, lastPt;
-	GBool projectingCap;
+	int  ctrl0;         //
+	int  ctrl1;         //
+	int  firstPt;       //
+	int  lastPt;        //
+	bool projectingCap; //
 };
 
 //------------------------------------------------------------------------
@@ -81,14 +81,14 @@ public:
 	// Close the last subpath, adding a line segment if necessary.  If
 	// <force> is true, this adds a line segment even if the current
 	// point is equal to the first point in the subpath.
-	SplashError close(GBool force = gFalse);
+	SplashError close(bool force = false);
 
 	// Add a stroke adjustment hint.  The controlling segments are
 	// <ctrl0> and <ctrl1> (where segments are identified by their first
 	// point), and the points to be adjusted are <firstPt> .. <lastPt>.
 	// <projectingCap> is true if the points are part of a projecting
 	// line cap.
-	void addStrokeAdjustHint(int ctrl0, int ctrl1, int firstPt, int lastPt, GBool projectingCap = gFalse);
+	void addStrokeAdjustHint(int ctrl0, int ctrl1, int firstPt, int lastPt, bool projectingCap = false);
 
 	// Add (<dx>, <dy>) to every point on this path.
 	void offset(SplashCoord dx, SplashCoord dy);
@@ -96,7 +96,7 @@ public:
 	// Get the points on the path.
 	int getLength() { return length; }
 
-	void getPoint(int i, SplashCoord* x, SplashCoord* y, Guchar* f)
+	void getPoint(int i, SplashCoord* x, SplashCoord* y, uint8_t* f)
 	{
 		*x = pts[i].x;
 		*y = pts[i].y;
@@ -104,32 +104,31 @@ public:
 	}
 
 	// Get the current point.
-	GBool getCurPt(SplashCoord* x, SplashCoord* y);
+	bool getCurPt(SplashCoord* x, SplashCoord* y);
 
 	// Returns true if the path contains one or more zero length
 	// subpaths.
-	GBool containsZeroLengthSubpaths();
+	bool containsZeroLengthSubpaths();
 
 private:
 	SplashPath(SplashPath* path);
 	void grow(int nPts);
 
-	GBool noCurrentPoint() { return curSubpath == length; }
+	bool noCurrentPoint() { return curSubpath == length; }
 
-	GBool onePointSubpath() { return curSubpath == length - 1; }
+	bool onePointSubpath() { return curSubpath == length - 1; }
 
-	GBool openSubpath() { return curSubpath < length - 1; }
+	bool openSubpath() { return curSubpath < length - 1; }
 
-	SplashPathPoint* pts;          // array of points
-	Guchar*          flags;        // array of flags
-	int              length, size; // length/size of the pts and flags arrays
-	int              curSubpath;   // index of first point in last subpath
-
-	SplashPathHint* hints; // list of hints
-	int             hintsLength, hintsSize;
+	SplashPathPoint* pts;         // array of points
+	uint8_t*         flags;       // array of flags
+	int              length;      // length/size of the pts and flags arrays
+	int              size;        //
+	int              curSubpath;  // index of first point in last subpath
+	SplashPathHint*  hints;       // list of hints
+	int              hintsLength; //
+	int              hintsSize;   //
 
 	friend class SplashXPath;
 	friend class Splash;
 };
-
-#endif

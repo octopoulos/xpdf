@@ -6,15 +6,13 @@
 //
 //========================================================================
 
-#ifndef HTMLGEN_H
-#define HTMLGEN_H
+#pragma once
 
 #include <aconf.h>
+#include "TextOutputDev.h"
 
-class GString;
 class PDFDoc;
 class TextOutputDev;
-class TextFontInfo;
 class SplashOutputDev;
 class HTMLGenFontDefn;
 
@@ -23,10 +21,10 @@ class HTMLGenFontDefn;
 class HTMLGen
 {
 public:
-	HTMLGen(double backgroundResolutionA, GBool tableMode);
+	HTMLGen(double backgroundResolutionA, bool tableMode);
 	~HTMLGen();
 
-	GBool isOk() { return ok; }
+	bool isOk() { return ok; }
 
 	double getBackgroundResolution() { return backgroundResolution; }
 
@@ -41,47 +39,47 @@ public:
 
 	void setVStretch(double vStretchA) { vStretch = vStretchA; }
 
-	GBool getDrawInvisibleText() { return drawInvisibleText; }
+	bool getDrawInvisibleText() { return drawInvisibleText; }
 
-	void setDrawInvisibleText(GBool drawInvisibleTextA)
+	void setDrawInvisibleText(bool drawInvisibleTextA)
 	{
 		drawInvisibleText = drawInvisibleTextA;
 	}
 
-	GBool getAllTextInvisible() { return allTextInvisible; }
+	bool getAllTextInvisible() { return allTextInvisible; }
 
-	void setAllTextInvisible(GBool allTextInvisibleA)
+	void setAllTextInvisible(bool allTextInvisibleA)
 	{
 		allTextInvisible = allTextInvisibleA;
 	}
 
-	void setExtractFontFiles(GBool extractFontFilesA)
+	void setExtractFontFiles(bool extractFontFilesA)
 	{
 		extractFontFiles = extractFontFilesA;
 	}
 
-	void setConvertFormFields(GBool convertFormFieldsA)
+	void setConvertFormFields(bool convertFormFieldsA)
 	{
 		convertFormFields = convertFormFieldsA;
 	}
 
-	void setEmbedBackgroundImage(GBool embedBackgroundImageA)
+	void setEmbedBackgroundImage(bool embedBackgroundImageA)
 	{
 		embedBackgroundImage = embedBackgroundImageA;
 	}
 
-	void setEmbedFonts(GBool embedFontsA)
+	void setEmbedFonts(bool embedFontsA)
 	{
 		embedFonts = embedFontsA;
 	}
 
-	void setIncludeMetadata(GBool includeMetadataA)
+	void setIncludeMetadata(bool includeMetadataA)
 	{
 		includeMetadata = includeMetadataA;
 	}
 
 	void startDoc(PDFDoc* docA);
-	int  convertPage(int pg, const char* pngURL, const char* htmlDir, int (*writeHTML)(void* stream, const char* data, int size), void* htmlStream, int (*writePNG)(void* stream, const char* data, int size), void* pngStream);
+	int  convertPage(int pg, const char* pngURL, const char* htmlDir, int (*writeHTML)(void* stream, const char* data, size_t size), void* htmlStream, int (*writePNG)(void* stream, const char* data, size_t size), void* pngStream);
 
 	// Get the counter values.
 	int getNumVisibleChars() { return nVisibleChars; }
@@ -92,45 +90,37 @@ public:
 
 private:
 	int              findDirSpan(GList* words, int firstWordIdx, int primaryDir, int* spanDir);
-	void             appendSpans(GList* words, int firstWordIdx, int lastWordIdx, int primaryDir, int spanDir, double base, GBool dropCapLine, GString* s);
-	void             appendUTF8(Unicode u, GString* s);
+	void             appendSpans(GList* words, int firstWordIdx, int lastWordIdx, int primaryDir, int spanDir, double base, bool dropCapLine, std::string& s);
+	void             appendUTF8(Unicode u, std::string& s);
 	HTMLGenFontDefn* getFontDefn(TextFontInfo* font, const char* htmlDir);
 	HTMLGenFontDefn* getFontFile(TextFontInfo* font, const char* htmlDir);
 	HTMLGenFontDefn* getSubstituteFont(TextFontInfo* font);
 	void             getFontDetails(TextFontInfo* font, const char** family, const char** weight, const char** style, double* scale);
-	void             genDocMetadata(int (*writeHTML)(void* stream, const char* data, int size), void* htmlStream);
-	void             genDocMetadataItem(int (*writeHTML)(void* stream, const char* data, int size), void* htmlStream, Dict* infoDict, const char* key);
+	void             genDocMetadata(int (*writeHTML)(void* stream, const char* data, size_t size), void* htmlStream);
+	void             genDocMetadataItem(int (*writeHTML)(void* stream, const char* data, size_t size), void* htmlStream, Dict* infoDict, const char* key);
 
-	double backgroundResolution;
-	double zoom;
-	double vStretch;
-	GBool  drawInvisibleText;
-	GBool  allTextInvisible;
-	GBool  extractFontFiles;
-	GBool  convertFormFields;
-	GBool  embedBackgroundImage;
-	GBool  embedFonts;
-	GBool  includeMetadata;
-
-	PDFDoc*          doc;
-	TextOutputDev*   textOut;
-	SplashOutputDev* splashOut;
-
-	GList*  fonts; // [TextFontInfo]
-	double* fontScales;
-
-	GList* fontDefns; // [HTMLGenFontDefn]
-	int    nextFontFaceIdx;
-
-	TextFontInfo* formFieldFont;
-	GList*        formFieldInfo; // [HTMLGenFormFieldInfo]
-	int           nextFieldID;
-
-	int nVisibleChars;    // number of visible chars on the page
-	int nInvisibleChars;  // number of invisible chars on the page
-	int nRemovedDupChars; // number of duplicate chars removed
-
-	GBool ok;
+	double                    backgroundResolution = 0;       //
+	double                    zoom                 = 1.0;     //
+	double                    vStretch             = 1.0;     //
+	bool                      drawInvisibleText    = true;    //
+	bool                      allTextInvisible     = false;   //
+	bool                      extractFontFiles     = false;   //
+	bool                      convertFormFields    = false;   //
+	bool                      embedBackgroundImage = false;   //
+	bool                      embedFonts           = false;   //
+	bool                      includeMetadata      = false;   //
+	PDFDoc*                   doc                  = nullptr; //
+	TextOutputDev*            textOut              = nullptr; //
+	SplashOutputDev*          splashOut            = nullptr; //
+	std::vector<TextFontInfo> fonts                = {};      // [TextFontInfo]
+	std::vector<double>       fontScales           = {};      //
+	GList*                    fontDefns            = nullptr; // [HTMLGenFontDefn]
+	int                       nextFontFaceIdx      = 0;       //
+	TextFontInfo*             formFieldFont        = nullptr; //
+	GList*                    formFieldInfo        = nullptr; // [HTMLGenFormFieldInfo]
+	int                       nextFieldID          = 0;       //
+	int                       nVisibleChars        = 0;       // number of visible chars on the page
+	int                       nInvisibleChars      = 0;       // number of invisible chars on the page
+	int                       nRemovedDupChars     = 0;       // number of duplicate chars removed
+	bool                      ok                   = true;    //
 };
-
-#endif

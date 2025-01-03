@@ -3,227 +3,149 @@
 // pdfdetach.cc
 //
 // Copyright 2010 Glyph & Cog, LLC
+// updated by octopoulos @ 2024-12-29
 //
 //========================================================================
 
+// --cfgFileName "c:/web/gori/data/xpdf.cfg" --doList --saveNum 1 -- "c:/web/gori/source/pdf/embedded.pdf"
+
 #include <aconf.h>
-#include <stdio.h>
-#include "gtypes.h"
-#include "gmem.h"
-#include "gmempp.h"
-#include "parseargs.h"
+#include "Error.h"
 #include "GlobalParams.h"
 #include "PDFDoc.h"
-#include "CharTypes.h"
 #include "UnicodeMap.h"
 #include "UTF8.h"
-#include "Error.h"
-#include "config.h"
 
-static GBool doList            = gFalse;
-static int   saveNum           = 0;
-static GBool saveAll           = gFalse;
-static char  savePath[1024]    = "";
-static char  textEncName[128]  = "";
-static char  ownerPassword[33] = "\001";
-static char  userPassword[33]  = "\001";
-static char  cfgFileName[256]  = "";
-static GBool printVersion      = gFalse;
-static GBool printHelp         = gFalse;
+#include <CLI/CLI.hpp>
 
-static ArgDesc argDesc[] = {
-	{ "-list", argFlag, &doList, 0, "list all embedded files" },
-	{ "-save", argInt, &saveNum, 0, "save the specified embedded file" },
-	{ "-saveall", argFlag, &saveAll, 0, "save all embedded files" },
-	{ "-o", argString, savePath, sizeof(savePath), "file name for the saved embedded file" },
-	{ "-enc", argString, textEncName, sizeof(textEncName), "output text encoding name" },
-	{ "-opw", argString, ownerPassword, sizeof(ownerPassword), "owner password (for encrypted files)" },
-	{ "-upw", argString, userPassword, sizeof(userPassword), "user password (for encrypted files)" },
-	{ "-cfg", argString, cfgFileName, sizeof(cfgFileName), "configuration file to use in place of .xpdfrc" },
-	{ "-v", argFlag, &printVersion, 0, "print copyright and version info" },
-	{ "-h", argFlag, &printHelp, 0, "print usage information" },
-	{ "-help", argFlag, &printHelp, 0, "print usage information" },
-	{ "--help", argFlag, &printHelp, 0, "print usage information" },
-	{ "-?", argFlag, &printHelp, 0, "print usage information" },
-	{ nullptr }
-};
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char* argv[])
 {
-#if USE_EXCEPTIONS
-	try
+	// OPTIONS
+	//////////
+
+	CLI_BEGIN("pdfdetach");
+
+	// name, type, default, implicit, needApp, help
+	// clang-format off
+	CLI_OPTION(cfgFileName  , std::string, "" , "", 0, "configuration file to use in place of .xpdfrc");
+	CLI_OPTION(doList       , int        , 0  , 1 , 0, "list all embedded files");
+	CLI_OPTION(ownerPassword, std::string, "" , "", 0, "owner password (for encrypted files)");
+	CLI_OPTION(printVersion , int        , 0  , 1 , 0, "print copyright and version info");
+	CLI_OPTION(saveAll      , int        , 0  , 1 , 0, "save all embedded files");
+	CLI_OPTION(saveNum      , int        , 0  , 0 , 0, "save the specified embedded files");
+	CLI_OPTION(savePath     , std::string, "" , "", 0, "file name for the saved embedded file");
+	CLI_OPTION(textEncName  , std::string, "" , "", 0, "output text encoding name");
+	CLI_OPTION(userPassword , std::string, "" , "", 0, "user password (for encrypted files)");
+	//
+	CLI_REQUIRED(fileName, std::string, 1, "<PDF-file>");
+	// clang-format on
+
+	CLI11_PARSE(cli, argc, argv);
+	CLI_NEEDAPP();
+
+	// config file
 	{
-#endif
+		if (CLI_STRING(cfgFileName) && !std::filesystem::exists(cfgFileName))
+			error(errConfig, -1, "Config file '{}' doesn't exist or isn't a file", cfgFileName);
 
-		char*       fileName;
-		UnicodeMap* uMap;
-		GString *   ownerPW, *userPW;
-		PDFDoc*     doc;
-		Unicode*    name;
-		char        uBuf[8];
-		GString*    path;
-		GBool       ok;
-		int         exitCode;
-		int         nFiles, nameLen, n, i, j;
-
-		exitCode = 99;
-
-		// parse args
-		fixCommandLine(&argc, &argv);
-		ok = parseArgs(argDesc, &argc, argv);
-		if ((doList ? 1 : 0) + ((saveNum != 0) ? 1 : 0) + (saveAll ? 1 : 0) != 1)
-			ok = gFalse;
-		if (!ok || argc != 2 || printVersion || printHelp)
-		{
-			fprintf(stderr, "pdfdetach version %s [www.xpdfreader.com]\n", xpdfVersion);
-			fprintf(stderr, "%s\n", xpdfCopyright);
-			if (!printVersion)
-				printUsage("pdfdetach", "<PDF-file>", argDesc);
-			goto err0;
-		}
-		fileName = argv[1];
-
-		// read config file
-		if (cfgFileName[0] && !pathIsFile(cfgFileName))
-			error(errConfig, -1, "Config file '{0:s}' doesn't exist or isn't a file", cfgFileName);
-		globalParams = new GlobalParams(cfgFileName);
-		if (textEncName[0])
-			globalParams->setTextEncoding(textEncName);
-
-		// get mapping to output encoding
-		if (!(uMap = globalParams->getTextEncoding()))
-		{
-			error(errConfig, -1, "Couldn't get text encoding");
-			goto err1;
-		}
-
-		// open PDF file
-		if (ownerPassword[0] != '\001')
-			ownerPW = new GString(ownerPassword);
-		else
-			ownerPW = nullptr;
-		if (userPassword[0] != '\001')
-			userPW = new GString(userPassword);
-		else
-			userPW = nullptr;
-		doc = new PDFDoc(fileName, ownerPW, userPW);
-		if (userPW)
-			delete userPW;
-		if (ownerPW)
-			delete ownerPW;
-		if (!doc->isOk())
-		{
-			exitCode = 1;
-			goto err2;
-		}
-
-		nFiles = doc->getNumEmbeddedFiles();
-
-		// list embedded files
-		if (doList)
-		{
-			printf("%d embedded files\n", nFiles);
-			for (i = 0; i < nFiles; ++i)
-			{
-				printf("%d: ", i + 1);
-				name    = doc->getEmbeddedFileName(i);
-				nameLen = doc->getEmbeddedFileNameLength(i);
-				for (j = 0; j < nameLen; ++j)
-				{
-					n = uMap->mapUnicode(name[j], uBuf, sizeof(uBuf));
-					fwrite(uBuf, 1, n, stdout);
-				}
-				fputc('\n', stdout);
-			}
-
-			// save all embedded files
-		}
-		else if (saveAll)
-		{
-			for (i = 0; i < nFiles; ++i)
-			{
-				if (savePath[0])
-				{
-					path = new GString(savePath);
-					path->append('/');
-				}
-				else
-				{
-					path = new GString();
-				}
-				name    = doc->getEmbeddedFileName(i);
-				nameLen = doc->getEmbeddedFileNameLength(i);
-				for (j = 0; j < nameLen; ++j)
-				{
-					n = mapUTF8(name[j], uBuf, sizeof(uBuf));
-					path->append(uBuf, n);
-				}
-				if (!doc->saveEmbeddedFileU(i, path->getCString()))
-				{
-					error(errIO, -1, "Error saving embedded file as '{0:t}'", path);
-					delete path;
-					exitCode = 2;
-					goto err2;
-				}
-				delete path;
-			}
-
-			// save an embedded file
-		}
-		else
-		{
-			if (saveNum < 1 || saveNum > nFiles)
-			{
-				error(errCommandLine, -1, "Invalid file number");
-				goto err2;
-			}
-			if (savePath[0])
-			{
-				path = new GString(savePath);
-			}
-			else
-			{
-				name    = doc->getEmbeddedFileName(saveNum - 1);
-				nameLen = doc->getEmbeddedFileNameLength(saveNum - 1);
-				path    = new GString();
-				for (j = 0; j < nameLen; ++j)
-				{
-					n = mapUTF8(name[j], uBuf, sizeof(uBuf));
-					path->append(uBuf, n);
-				}
-			}
-			if (!doc->saveEmbeddedFileU(saveNum - 1, path->getCString()))
-			{
-				error(errIO, -1, "Error saving embedded file as '{0:t}'", path);
-				delete path;
-				exitCode = 2;
-				goto err2;
-			}
-			delete path;
-		}
-
-		exitCode = 0;
-
-		// clean up
-err2:
-		uMap->decRefCnt();
-		delete doc;
-err1:
-		delete globalParams;
-err0:
-
-		// check for memory leaks
-		Object::memCheck(stderr);
-		gMemReport(stderr);
-
-		return exitCode;
-
-#if USE_EXCEPTIONS
+		globalParams = std::make_shared<GlobalParams>(cfgFileName.c_str());
+		globalParams->setupBaseFonts(nullptr);
+		if (CLI_STRING(textEncName)) globalParams->setTextEncoding(textEncName.c_str());
 	}
-	catch (GMemException e)
+
+	// get mapping to output encoding
+	UnicodeMap* uMap;
+	if (!(uMap = globalParams->getTextEncoding()))
 	{
-		fprintf(stderr, "Out of memory\n");
-		return 98;
+		error(errConfig, -1, "Couldn't get text encoding");
+		return 99;
 	}
-#endif
+
+	// open PDF file
+	auto doc = std::make_unique<PDFDoc>(fileName, ownerPassword, userPassword);
+	if (!doc->isOk()) return 1;
+
+	const int nFiles = doc->getNumEmbeddedFiles();
+	char      uBuf[8];
+
+	// list embedded files
+	if (doList)
+	{
+		printf("%d embedded file%s\n", nFiles, (nFiles > 1) ? "s" : "");
+		for (int i = 0; i < nFiles; ++i)
+		{
+			printf("%d: ", i + 1);
+			const Unicode* name    = doc->getEmbeddedFileName(i);
+			const int      nameLen = doc->getEmbeddedFileNameLength(i);
+			for (int j = 0; j < nameLen; ++j)
+			{
+				const int n = uMap->mapUnicode(name[j], uBuf, sizeof(uBuf));
+				fwrite(uBuf, 1, n, stdout);
+			}
+			fputc('\n', stdout);
+		}		
+	}
+
+	// save all embedded files
+	if (saveAll)
+	{
+		for (int i = 0; i < nFiles; ++i)
+		{
+			std::string path;
+			if (CLI_STRING(savePath))
+			{
+				path = savePath;
+				path += '/';
+			}
+			const Unicode* name    = doc->getEmbeddedFileName(i);
+			const int      nameLen = doc->getEmbeddedFileNameLength(i);
+			for (int j = 0; j < nameLen; ++j)
+			{
+				const int n = mapUTF8(name[j], uBuf, sizeof(uBuf));
+				path.append(uBuf, n);
+			}
+			if (!doc->saveEmbeddedFileU(i, path.c_str()))
+			{
+				error(errIO, -1, "Error saving embedded file as '{}'", path);
+				return 2;
+			}
+		}
+	}
+	// save an embedded file
+	else
+	{
+		if (saveNum < 1 || saveNum > nFiles)
+		{
+			error(errCommandLine, -1, "Invalid file number");
+			return 99;
+		}
+		std::string path;
+		if (CLI_STRING(savePath))
+			path = savePath;
+		else
+		{
+			const Unicode* name    = doc->getEmbeddedFileName(saveNum - 1);
+			const int      nameLen = doc->getEmbeddedFileNameLength(saveNum - 1);
+			for (int j = 0; j < nameLen; ++j)
+			{
+				const int n = mapUTF8(name[j], uBuf, sizeof(uBuf));
+				path.append(uBuf, n);
+			}
+		}
+		if (!doc->saveEmbeddedFileU(saveNum - 1, path.c_str()))
+		{
+			error(errIO, -1, "Error saving embedded file as '{}'", path);
+			return 2;
+		}
+	}
+
+	// clean up
+	uMap->decRefCnt();
+
+	// check for memory leaks
+	Object::memCheck(stderr);
+	gMemReport(stderr);
+	return 0;
 }

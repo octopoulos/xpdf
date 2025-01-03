@@ -5,19 +5,14 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "gmem.h"
 #include "gmempp.h"
-#include "GString.h"
-#include "GList.h"
-#include "GHash.h"
 #include "Zoox.h"
 
-//~ all of this code assumes the encoding is UTF-8 or ASCII or something
-//~   similar (ISO-8859-*)
+//~ all of this code assumes the encoding is UTF-8 or ASCII or something similar (ISO-8859-*)
 
 //------------------------------------------------------------------------
 
@@ -84,12 +79,9 @@ ZxNode* ZxNode::deleteChild(ZxNode* child)
 {
 	ZxNode *p1, *p2;
 
-	for (p1 = nullptr, p2 = firstChild;
-	     p2 && p2 != child;
-	     p1 = p2, p2 = p2->next)
+	for (p1 = nullptr, p2 = firstChild; p2 && p2 != child; p1 = p2, p2 = p2->next)
 		;
-	if (!p2)
-		return nullptr;
+	if (!p2) return nullptr;
 	if (p1)
 		p1->next = child->next;
 	else
@@ -151,41 +143,37 @@ ZxElement* ZxNode::findFirstElement(const char* type)
 ZxElement* ZxNode::findFirstChildElement(const char* type)
 {
 	ZxNode* child;
-
 	for (child = firstChild; child; child = child->next)
 		if (child->isElement(type))
 			return (ZxElement*)child;
 	return nullptr;
 }
 
-GList* ZxNode::findAllElements(const char* type)
+std::vector<ZxNode*> ZxNode::findAllElements(const char* type)
 {
-	GList* results;
-
-	results = new GList();
+	std::vector<ZxNode*> results;
 	findAllElements(type, results);
 	return results;
 }
 
-void ZxNode::findAllElements(const char* type, GList* results)
+void ZxNode::findAllElements(const char* type, std::vector<ZxNode*> results)
 {
 	ZxNode* child;
 
 	if (isElement(type))
-		results->append(this);
+		results.push_back(this);
 	for (child = firstChild; child; child = child->next)
 		child->findAllElements(type, results);
 }
 
-GList* ZxNode::findAllChildElements(const char* type)
+std::vector<ZxNode*> ZxNode::findAllChildElements(const char* type)
 {
-	GList*  results;
-	ZxNode* child;
+	std::vector<ZxNode*> results;
+	ZxNode*              child;
 
-	results = new GList();
 	for (child = firstChild; child; child = child->next)
 		if (child->isElement(type))
-			results->append(child);
+			results.push_back(child);
 	return results;
 }
 
@@ -213,7 +201,7 @@ ZxDoc::ZxDoc()
 	root        = nullptr;
 }
 
-ZxDoc* ZxDoc::loadMem(const char* data, Guint dataLen)
+ZxDoc* ZxDoc::loadMem(const char* data, size_t dataLen)
 {
 	ZxDoc* doc;
 
@@ -228,15 +216,14 @@ ZxDoc* ZxDoc::loadMem(const char* data, Guint dataLen)
 
 ZxDoc* ZxDoc::loadFile(const char* fileName)
 {
-	ZxDoc* doc;
-	FILE*  f;
-	char*  data;
-	Guint  dataLen;
+	ZxDoc*   doc;
+	FILE*    f;
+	char*    data;
+	uint32_t dataLen;
 
-	if (!(f = fopen(fileName, "rb")))
-		return nullptr;
+	if (!(f = fopen(fileName, "rb"))) return nullptr;
 	fseek(f, 0, SEEK_END);
-	dataLen = (Guint)ftell(f);
+	dataLen = (uint32_t)ftell(f);
 	if (!dataLen)
 	{
 		fclose(f);
@@ -260,9 +247,9 @@ ZxDoc::~ZxDoc()
 {
 }
 
-static bool writeToFileFunc(void* stream, const char* data, int length)
+static bool writeToFileFunc(void* stream, const char* data, size_t length)
 {
-	return (int)fwrite(data, 1, length, (FILE*)stream) == length;
+	return (fwrite(data, 1, length, (FILE*)stream) == length);
 }
 
 bool ZxDoc::writeFile(const char* fileName)
@@ -287,7 +274,7 @@ void ZxDoc::addChild(ZxNode* node)
 	ZxNode::addChild(node);
 }
 
-bool ZxDoc::parse(const char* data, Guint dataLen)
+bool ZxDoc::parse(const char* data, size_t dataLen)
 {
 	parsePtr = data;
 	parseEnd = data + dataLen;
@@ -307,16 +294,12 @@ bool ZxDoc::parse(const char* data, Guint dataLen)
 
 void ZxDoc::parseXMLDecl(ZxNode* par)
 {
-	GString *version, *encoding, *s;
-	bool     standalone;
-
-	if (!match("<?xml"))
-		return;
+	if (!match("<?xml")) return;
 	parsePtr += 5;
 	parseSpace();
 
 	// version
-	version = nullptr;
+	std::string version;
 	if (match("version"))
 	{
 		parsePtr += 7;
@@ -328,12 +311,11 @@ void ZxDoc::parseXMLDecl(ZxNode* par)
 			version = parseQuotedString();
 		}
 	}
-	if (!version)
-		version = new GString("1.0");
+	if (version.empty()) version = "1.0";
 	parseSpace();
 
 	// encoding
-	encoding = nullptr;
+	std::string encoding;
 	if (match("encoding"))
 	{
 		parsePtr += 8;
@@ -348,7 +330,7 @@ void ZxDoc::parseXMLDecl(ZxNode* par)
 	parseSpace();
 
 	// standalone
-	standalone = false;
+	bool standalone = false;
 	if (match("standalone"))
 	{
 		parsePtr += 10;
@@ -357,9 +339,8 @@ void ZxDoc::parseXMLDecl(ZxNode* par)
 		{
 			++parsePtr;
 			parseSpace();
-			s          = parseQuotedString();
-			standalone = !s->cmp("yes");
-			delete s;
+			const auto s = parseQuotedString();
+			standalone   = (s == "yes");
 		}
 	}
 	parseSpace();
@@ -373,23 +354,18 @@ void ZxDoc::parseXMLDecl(ZxNode* par)
 //~ this just skips everything after the name
 void ZxDoc::parseDocTypeDecl(ZxNode* par)
 {
-	GString* name;
-	int      state;
-	char     c, quote;
-
-	if (!match("<!DOCTYPE"))
-		return;
+	if (!match("<!DOCTYPE")) return;
 	parsePtr += 9;
 	parseSpace();
 
-	name = parseName();
+	const auto name = parseName();
 	parseSpace();
 
-	state = 0;
-	quote = '\0';
+	int  state = 0;
+	char quote = '\0';
 	while (parsePtr < parseEnd && state < 4)
 	{
-		c = *parsePtr++;
+		const char c = *parsePtr++;
 		switch (state)
 		{
 		case 0: // not in square brackets; not in quotes
@@ -423,14 +399,12 @@ void ZxDoc::parseDocTypeDecl(ZxNode* par)
 // assumes match("<")
 void ZxDoc::parseElement(ZxNode* par)
 {
-	GString*   type;
-	ZxElement* elem;
-	ZxAttr*    attr;
-
 	++parsePtr;
-	type = parseName();
-	elem = new ZxElement(type);
+	const auto type = parseName();
+	ZxElement* elem = new ZxElement(type);
 	parseSpace();
+
+	ZxAttr* attr;
 	while ((attr = parseAttr()))
 	{
 		elem->addAttr(attr);
@@ -450,28 +424,20 @@ void ZxDoc::parseElement(ZxNode* par)
 
 ZxAttr* ZxDoc::parseAttr()
 {
-	GString *    name, *value;
 	const char*  start;
 	char         quote, c;
 	unsigned int x;
 	int          n;
 
-	name = parseName();
+	const auto name = parseName();
 	parseSpace();
-	if (!match("="))
-	{
-		delete name;
-		return nullptr;
-	}
+	if (!match("=")) return nullptr;
 	++parsePtr;
 	parseSpace();
 	if (!(parsePtr < parseEnd && (*parsePtr == '"' || *parsePtr == '\'')))
-	{
-		delete name;
 		return nullptr;
-	}
 	quote = *parsePtr++;
-	value = new GString();
+	std::string value;
 	while (parsePtr < parseEnd && *parsePtr != quote)
 	{
 		if (*parsePtr == '&')
@@ -521,35 +487,31 @@ ZxAttr* ZxDoc::parseAttr()
 			else
 			{
 				start = parsePtr;
-				for (++parsePtr;
-				     parsePtr < parseEnd && *parsePtr != ';' && *parsePtr != quote && *parsePtr != '&';
-				     ++parsePtr)
+				for (++parsePtr; parsePtr < parseEnd && *parsePtr != ';' && *parsePtr != quote && *parsePtr != '&'; ++parsePtr)
 					;
 				n = (int)(parsePtr - start);
 				if (parsePtr < parseEnd && *parsePtr == ';')
 					++parsePtr;
 				if (n == 2 && !strncmp(start, "lt", 2))
-					value->append('<');
+					value += '<';
 				else if (n == 2 && !strncmp(start, "gt", 2))
-					value->append('>');
+					value += '>';
 				else if (n == 3 && !strncmp(start, "amp", 3))
-					value->append('&');
+					value += '&';
 				else if (n == 4 && !strncmp(start, "apos", 4))
-					value->append('\'');
+					value += '\'';
 				else if (n == 4 && !strncmp(start, "quot", 4))
-					value->append('"');
+					value += '"';
 				else
-					value->append(start - 1, (int)(parsePtr - start) + 1);
+					value.append(start - 1, (int)(parsePtr - start) + 1);
 			}
 		}
 		else
 		{
 			start = parsePtr;
-			for (++parsePtr;
-			     parsePtr < parseEnd && *parsePtr != quote && *parsePtr != '&';
-			     ++parsePtr)
+			for (++parsePtr; parsePtr < parseEnd && *parsePtr != quote && *parsePtr != '&'; ++parsePtr)
 				;
-			value->append(start, (int)(parsePtr - start));
+			value.append(start, (int)(parsePtr - start));
 		}
 	}
 	if (parsePtr < parseEnd && *parsePtr == quote)
@@ -560,15 +522,14 @@ ZxAttr* ZxDoc::parseAttr()
 // this consumes the end tag
 void ZxDoc::parseContent(ZxElement* par)
 {
-	GString* endType;
-
-	endType = (new GString("</"))->append(par->getType());
+	std::string endType = "</";
+	endType += par->getType();
 
 	while (parsePtr < parseEnd)
 	{
-		if (match(endType->getCString()))
+		if (match(endType.c_str()))
 		{
-			parsePtr += endType->getLength();
+			parsePtr += endType.size();
 			parseSpace();
 			if (match(">"))
 				++parsePtr;
@@ -595,19 +556,11 @@ void ZxDoc::parseContent(ZxElement* par)
 			parseCharData(par);
 		}
 	}
-
-	delete endType;
 }
 
 void ZxDoc::parseCharData(ZxElement* par)
 {
-	GString*     data;
-	const char*  start;
-	char         c;
-	unsigned int x;
-	int          n;
-
-	data = new GString();
+	std::string data;
 	while (parsePtr < parseEnd && *parsePtr != '<')
 	{
 		if (*parsePtr == '&')
@@ -619,10 +572,10 @@ void ZxDoc::parseCharData(ZxElement* par)
 				if (parsePtr < parseEnd && *parsePtr == 'x')
 				{
 					++parsePtr;
-					x = 0;
+					unsigned int x = 0;
 					while (parsePtr < parseEnd)
 					{
-						c = *parsePtr;
+						unsigned int c = *parsePtr;
 						if (c >= '0' && c <= '9')
 							x = (x << 4) + (c - '0');
 						else if (c >= 'a' && c <= 'f')
@@ -639,10 +592,10 @@ void ZxDoc::parseCharData(ZxElement* par)
 				}
 				else
 				{
-					x = 0;
+					unsigned int x = 0;
 					while (parsePtr < parseEnd)
 					{
-						c = *parsePtr;
+						const char c = *parsePtr;
 						if (c >= '0' && c <= '9')
 							x = x * 10 + (c - '0');
 						else
@@ -656,81 +609,77 @@ void ZxDoc::parseCharData(ZxElement* par)
 			}
 			else
 			{
-				start = parsePtr;
-				for (++parsePtr;
-				     parsePtr < parseEnd && *parsePtr != ';' && *parsePtr != '<' && *parsePtr != '&';
-				     ++parsePtr)
+				const char* start = parsePtr;
+				for (++parsePtr; parsePtr < parseEnd && *parsePtr != ';' && *parsePtr != '<' && *parsePtr != '&'; ++parsePtr)
 					;
-				n = (int)(parsePtr - start);
+				int n = (int)(parsePtr - start);
 				if (parsePtr < parseEnd && *parsePtr == ';')
 					++parsePtr;
 				if (n == 2 && !strncmp(start, "lt", 2))
-					data->append('<');
+					data += '<';
 				else if (n == 2 && !strncmp(start, "gt", 2))
-					data->append('>');
+					data += '>';
 				else if (n == 3 && !strncmp(start, "amp", 3))
-					data->append('&');
+					data += '&';
 				else if (n == 4 && !strncmp(start, "apos", 4))
-					data->append('\'');
+					data += '\'';
 				else if (n == 4 && !strncmp(start, "quot", 4))
-					data->append('"');
+					data += '"';
 				else
-					data->append(start - 1, (int)(parsePtr - start) + 1);
+					data.append(start - 1, (int)(parsePtr - start) + 1);
 			}
 		}
 		else
 		{
-			start = parsePtr;
-			for (++parsePtr;
-			     parsePtr < parseEnd && *parsePtr != '<' && *parsePtr != '&';
-			     ++parsePtr)
+			const char* start = parsePtr;
+			for (++parsePtr; parsePtr < parseEnd && *parsePtr != '<' && *parsePtr != '&'; ++parsePtr)
 				;
-			data->append(start, (int)(parsePtr - start));
+			data.append(start, (int)(parsePtr - start));
 		}
 	}
 	par->addChild(new ZxCharData(data, true));
 }
 
-void ZxDoc::appendUTF8(GString* s, unsigned int c)
+void ZxDoc::appendUTF8(std::string& s, unsigned int c)
 {
 	if (c <= 0x7f)
 	{
-		s->append((char)c);
+		s += (char)c;
 	}
 	else if (c <= 0x7ff)
 	{
-		s->append((char)(0xc0 + (c >> 6)));
-		s->append((char)(0x80 + (c & 0x3f)));
+		s += (char)(0xc0 + (c >> 6));
+		s += (char)(0x80 + (c & 0x3f));
 	}
 	else if (c <= 0xffff)
 	{
-		s->append((char)(0xe0 + (c >> 12)));
-		s->append((char)(0x80 + ((c >> 6) & 0x3f)));
-		s->append((char)(0x80 + (c & 0x3f)));
+		s += (char)(0xe0 + (c >> 12));
+		s += (char)(0x80 + ((c >> 6) & 0x3f));
+		s += (char)(0x80 + (c & 0x3f));
 	}
 	else if (c <= 0x1fffff)
 	{
-		s->append((char)(0xf0 + (c >> 18)));
-		s->append((char)(0x80 + ((c >> 12) & 0x3f)));
-		s->append((char)(0x80 + ((c >> 6) & 0x3f)));
-		s->append((char)(0x80 + (c & 0x3f)));
+		s += (char)(0xf0 + (c >> 18));
+		s += (char)(0x80 + ((c >> 12) & 0x3f));
+		s += (char)(0x80 + ((c >> 6) & 0x3f));
+		s += (char)(0x80 + (c & 0x3f));
 	}
 	else if (c <= 0x3ffffff)
 	{
-		s->append((char)(0xf8 + (c >> 24)));
-		s->append((char)(0x80 + ((c >> 18) & 0x3f)));
-		s->append((char)(0x80 + ((c >> 12) & 0x3f)));
-		s->append((char)(0x80 + ((c >> 6) & 0x3f)));
-		s->append((char)(0x80 + (c & 0x3f)));
+		s += (char)(0xf8 + (c >> 24));
+		s += (char)(0x80 + ((c >> 18) & 0x3f));
+		s += (char)(0x80 + ((c >> 12) & 0x3f));
+		s += (char)(0x80 + ((c >> 6) & 0x3f));
+		s += (char)(0x80 + (c & 0x3f));
 	}
 	else if (c <= 0x7fffffff)
 	{
-		s->append((char)(0xfc + (c >> 30)));
-		s->append((char)(0x80 + ((c >> 24) & 0x3f)));
-		s->append((char)(0x80 + ((c >> 18) & 0x3f)));
-		s->append((char)(0x80 + ((c >> 12) & 0x3f)));
-		s->append((char)(0x80 + ((c >> 6) & 0x3f)));
-		s->append((char)(0x80 + (c & 0x3f)));
+		s += (char)(0xfc + (c >> 30));
+		s += (char)(0x80 + ((c >> 24) & 0x3f));
+		s += (char)(0x80 + ((c >> 18) & 0x3f));
+		s += (char)(0x80 + ((c >> 12) & 0x3f));
+		s += (char)(0x80 + ((c >> 6) & 0x3f));
+		s += (char)(0x80 + (c & 0x3f));
 	}
 }
 
@@ -745,14 +694,14 @@ void ZxDoc::parseCDSect(ZxNode* par)
 	{
 		if (!strncmp(parsePtr, "]]>", 3))
 		{
-			par->addChild(new ZxCharData(new GString(start, (int)(parsePtr - start)), false));
+			par->addChild(new ZxCharData(std::string(start, (int)(parsePtr - start)), false));
 			parsePtr += 3;
 			return;
 		}
 		++parsePtr;
 	}
 	parsePtr = parseEnd;
-	par->addChild(new ZxCharData(new GString(start, (int)(parsePtr - start)), false));
+	par->addChild(new ZxCharData(std::string(start, (int)(parsePtr - start)), false));
 }
 
 void ZxDoc::parseMisc(ZxNode* par)
@@ -779,7 +728,7 @@ void ZxDoc::parseComment(ZxNode* par)
 	{
 		if (!strncmp(parsePtr, "-->", 3))
 		{
-			par->addChild(new ZxComment(new GString(start, (int)(parsePtr - start))));
+			par->addChild(new ZxComment(std::string(start, (int)(parsePtr - start))));
 			parsePtr += 3;
 			return;
 		}
@@ -791,62 +740,54 @@ void ZxDoc::parseComment(ZxNode* par)
 // assumes match("<?")
 void ZxDoc::parsePI(ZxNode* par)
 {
-	GString*    target;
-	const char* start;
-
 	parsePtr += 2;
-	target = parseName();
+	const auto target = parseName();
 	parseSpace();
-	start = parsePtr;
+	const char* start = parsePtr;
 	while (parsePtr <= parseEnd - 2)
 	{
 		if (!strncmp(parsePtr, "?>", 2))
 		{
-			par->addChild(new ZxPI(target, new GString(start, (int)(parsePtr - start))));
+			par->addChild(new ZxPI(target, std::string(start, (int)(parsePtr - start))));
 			parsePtr += 2;
 			return;
 		}
 		++parsePtr;
 	}
 	parsePtr = parseEnd;
-	par->addChild(new ZxPI(target, new GString(start, (int)(parsePtr - start))));
+	par->addChild(new ZxPI(target, std::string(start, (int)(parsePtr - start))));
 }
 
 //~ this accepts all chars >= 0x80
 //~ this doesn't check for properly-formed UTF-8
-GString* ZxDoc::parseName()
+std::string ZxDoc::parseName()
 {
-	GString* name;
-
-	name = new GString();
+	std::string name;
 	if (parsePtr < parseEnd && nameStartChar[*parsePtr & 0xff])
 	{
-		name->append(*parsePtr++);
+		name += (*parsePtr++);
 		while (parsePtr < parseEnd && nameChar[*parsePtr & 0xff])
-			name->append(*parsePtr++);
+			name += (*parsePtr++);
 	}
 	return name;
 }
 
-GString* ZxDoc::parseQuotedString()
+std::string ZxDoc::parseQuotedString()
 {
-	GString*    s;
-	const char* start;
-	char        quote;
-
+	std::string s;
 	if (parsePtr < parseEnd && (*parsePtr == '"' || *parsePtr == '\''))
 	{
-		quote = *parsePtr++;
-		start = parsePtr;
+		const char  quote = *parsePtr++;
+		const char* start = parsePtr;
 		while (parsePtr < parseEnd && *parsePtr != quote)
 			++parsePtr;
-		s = new GString(start, (int)(parsePtr - start));
+
+		s.assign(start, (int)(parsePtr - start));
 		if (parsePtr < parseEnd && *parsePtr == quote)
 			++parsePtr;
 	}
 	else
 	{
-		s = new GString();
 	}
 	return s;
 }
@@ -865,29 +806,24 @@ void ZxDoc::parseSpace()
 
 bool ZxDoc::match(const char* s)
 {
-	int n;
-
-	n = (int)strlen(s);
+	const int n = (int)strlen(s);
 	return parseEnd - parsePtr >= n && !strncmp(parsePtr, s, n);
 }
 
 bool ZxDoc::write(ZxWriteFunc writeFunc, void* stream)
 {
 	ZxNode* child;
-
 	for (child = getFirstChild(); child; child = child->getNextChild())
 	{
-		if (!child->write(writeFunc, stream))
-			return false;
-		if (!(*writeFunc)(stream, "\n", 1))
-			return false;
+		if (!child->write(writeFunc, stream)) return false;
+		if (!(*writeFunc)(stream, "\n", 1)) return false;
 	}
 	return true;
 }
 
 //------------------------------------------------------------------------
 
-ZxXMLDecl::ZxXMLDecl(GString* versionA, GString* encodingA, bool standaloneA)
+ZxXMLDecl::ZxXMLDecl(const std::string& versionA, const std::string& encodingA, bool standaloneA)
 {
 	version    = versionA;
 	encoding   = encodingA;
@@ -896,86 +832,67 @@ ZxXMLDecl::ZxXMLDecl(GString* versionA, GString* encodingA, bool standaloneA)
 
 ZxXMLDecl::~ZxXMLDecl()
 {
-	delete version;
-	if (encoding)
-		delete encoding;
 }
 
 bool ZxXMLDecl::write(ZxWriteFunc writeFunc, void* stream)
 {
-	GString* s;
-	bool     ok;
-
-	s = new GString("<?xml version=\"");
-	s->append(version);
-	s->append("\"");
-	if (encoding)
+	std::string s = "<?xml version=\"";
+	s += version;
+	s += "\"";
+	if (encoding.size())
 	{
-		s->append(" encoding=\"");
-		s->append(encoding);
-		s->append("\"");
+		s += " encoding=\"";
+		s += encoding;
+		s += "\"";
 	}
 	if (standalone)
-		s->append(" standlone=\"yes\"");
-	s->append("?>");
-	ok = (*writeFunc)(stream, s->getCString(), s->getLength());
-	delete s;
-	return ok;
+		s += " standlone=\"yes\"";
+	s += "?>";
+
+	return (*writeFunc)(stream, s.c_str(), s.size());
 }
 
 //------------------------------------------------------------------------
 
-ZxDocTypeDecl::ZxDocTypeDecl(GString* nameA)
+ZxDocTypeDecl::ZxDocTypeDecl(const std::string& nameA)
 {
 	name = nameA;
 }
 
 ZxDocTypeDecl::~ZxDocTypeDecl()
 {
-	delete name;
 }
 
 bool ZxDocTypeDecl::write(ZxWriteFunc writeFunc, void* stream)
 {
-	GString* s;
-	bool     ok;
-
-	s = new GString("<!DOCTYPE ");
-	s->append(name);
-	s->append(">");
-	ok = (*writeFunc)(stream, s->getCString(), s->getLength());
-	delete s;
-	return ok;
+	std::string s = "<!DOCTYPE ";
+	s += name;
+	s += ">";
+	return (*writeFunc)(stream, s.c_str(), s.size());
 }
 
 //------------------------------------------------------------------------
 
-ZxComment::ZxComment(GString* textA)
+ZxComment::ZxComment(const std::string& textA)
 {
 	text = textA;
 }
 
 ZxComment::~ZxComment()
 {
-	delete text;
 }
 
 bool ZxComment::write(ZxWriteFunc writeFunc, void* stream)
 {
-	GString* s;
-	bool     ok;
-
-	s = new GString("<!--");
-	s->append(text);
-	s->append("-->");
-	ok = (*writeFunc)(stream, s->getCString(), s->getLength());
-	delete s;
-	return ok;
+	std::string s = "<!--";
+	s += text;
+	s += "-->";
+	return (*writeFunc)(stream, s.c_str(), s.size());
 }
 
 //------------------------------------------------------------------------
 
-ZxPI::ZxPI(GString* targetA, GString* textA)
+ZxPI::ZxPI(const std::string& targetA, const std::string& textA)
 {
 	target = targetA;
 	text   = textA;
@@ -983,53 +900,45 @@ ZxPI::ZxPI(GString* targetA, GString* textA)
 
 ZxPI::~ZxPI()
 {
-	delete target;
-	delete text;
 }
 
 bool ZxPI::write(ZxWriteFunc writeFunc, void* stream)
 {
-	GString* s;
-	bool     ok;
-
-	s = new GString("<?");
-	s->append(target);
-	s->append(" ");
-	s->append(text);
-	s->append("?>");
-	ok = (*writeFunc)(stream, s->getCString(), s->getLength());
-	delete s;
-	return ok;
+	std::string s = "<?";
+	s += target;
+	s += " ";
+	s += text;
+	s += "?>";
+	return (*writeFunc)(stream, s.c_str(), s.size());
 }
 
 //------------------------------------------------------------------------
 
-ZxElement::ZxElement(GString* typeA)
+ZxElement::ZxElement(const std::string& typeA)
 {
 	type      = typeA;
-	attrs     = new GHash();
 	firstAttr = lastAttr = nullptr;
 }
 
 ZxElement::~ZxElement()
 {
-	delete type;
-	deleteGHash(attrs, ZxAttr);
 }
 
 bool ZxElement::isElement(const char* typeA)
 {
-	return !type->cmp(typeA);
+	return type == typeA;
 }
 
 ZxAttr* ZxElement::findAttr(const char* attrName)
 {
-	return (ZxAttr*)attrs->lookup(attrName);
+	if (const auto& it = attrs.find(attrName); it != attrs.end())
+		return it->second;
+	return nullptr;
 }
 
 void ZxElement::addAttr(ZxAttr* attr)
 {
-	attrs->add(attr->getName(), attr);
+	attrs.emplace(attr->getName(), attr);
 	if (lastAttr)
 	{
 		lastAttr->next = attr;
@@ -1045,70 +954,64 @@ void ZxElement::addAttr(ZxAttr* attr)
 
 bool ZxElement::write(ZxWriteFunc writeFunc, void* stream)
 {
-	GString* s;
-	ZxAttr*  attr;
-	ZxNode*  child;
-	bool     ok;
+	ZxAttr* attr;
+	ZxNode* child;
 
-	s = new GString("<");
-	s->append(type);
+	std::string s = "<";
+	s += type;
 	for (attr = firstAttr; attr; attr = attr->getNextAttr())
 	{
-		s->append(" ");
-		s->append(attr->name);
-		s->append("=\"");
+		s += " ";
+		s += attr->name;
+		s += "=\"";
 		appendEscapedAttrValue(s, attr->value);
-		s->append("\"");
+		s += "\"";
 	}
 	if ((child = getFirstChild()))
-		s->append(">");
+		s += ">";
 	else
-		s->append("/>");
-	ok = (*writeFunc)(stream, s->getCString(), s->getLength());
-	delete s;
-	if (!ok)
-		return false;
+		s += "/>";
+
+	const bool ok = (*writeFunc)(stream, s.c_str(), s.size());
+	if (!ok) return false;
+
 	if (child)
 	{
 		for (; child; child = child->getNextChild())
 			if (!child->write(writeFunc, stream))
 				return false;
-		s = new GString();
-		s->append("</");
-		s->append(type);
-		s->append(">");
-		ok = (*writeFunc)(stream, s->getCString(), s->getLength());
-		delete s;
-		if (!ok)
-			return false;
+		std::string s;
+		s += "</";
+		s += type;
+		s += ">";
+
+		const bool ok = (*writeFunc)(stream, s.c_str(), s.size());
+		if (!ok) return false;
 	}
 	return true;
 }
 
-void ZxElement::appendEscapedAttrValue(GString* out, GString* s)
+void ZxElement::appendEscapedAttrValue(std::string& out, const std::string& s)
 {
-	char c;
-	int  i;
-
-	for (i = 0; i < s->getLength(); ++i)
+	for (int i = 0; i < s.size(); ++i)
 	{
-		c = s->getChar(i);
+		const char c = s.at(i);
 		if (c == '<')
-			out->append("&lt;");
+			out += "&lt;";
 		else if (c == '>')
-			out->append("&gt;");
+			out += "&gt;";
 		else if (c == '&')
-			out->append("&amp;");
+			out += "&amp;";
 		else if (c == '"')
-			out->append("&quot;");
+			out += "&quot;";
 		else
-			out->append(c);
+			out += c;
 	}
 }
 
 //------------------------------------------------------------------------
 
-ZxAttr::ZxAttr(GString* nameA, GString* valueA)
+ZxAttr::ZxAttr(const std::string& nameA, const std::string& valueA)
 {
 	name   = nameA;
 	value  = valueA;
@@ -1118,13 +1021,11 @@ ZxAttr::ZxAttr(GString* nameA, GString* valueA)
 
 ZxAttr::~ZxAttr()
 {
-	delete name;
-	delete value;
 }
 
 //------------------------------------------------------------------------
 
-ZxCharData::ZxCharData(GString* dataA, bool parsedA)
+ZxCharData::ZxCharData(const std::string& dataA, bool parsedA)
 {
 	data   = dataA;
 	parsed = parsedA;
@@ -1132,39 +1033,32 @@ ZxCharData::ZxCharData(GString* dataA, bool parsedA)
 
 ZxCharData::~ZxCharData()
 {
-	delete data;
 }
 
 bool ZxCharData::write(ZxWriteFunc writeFunc, void* stream)
 {
-	GString* s;
-	char     c;
-	int      i;
-	bool     ok;
-
-	s = new GString();
+	std::string s;
 	if (parsed)
 	{
-		for (i = 0; i < data->getLength(); ++i)
+		for (int i = 0; i < data.size(); ++i)
 		{
-			c = data->getChar(i);
+			const char c = data.at(i);
 			if (c == '<')
-				s->append("&lt;");
+				s += "&lt;";
 			else if (c == '>')
-				s->append("&gt;");
+				s += "&gt;";
 			else if (c == '&')
-				s->append("&amp;");
+				s += "&amp;";
 			else
-				s->append(c);
+				s += c;
 		}
 	}
 	else
 	{
-		s->append("<![CDATA[");
-		s->append(data);
-		s->append("]]>");
+		s += "<![CDATA[";
+		s += data;
+		s += "]]>";
 	}
-	ok = (*writeFunc)(stream, s->getCString(), s->getLength());
-	delete s;
-	return ok;
+
+	return (*writeFunc)(stream, s.c_str(), s.size());
 }

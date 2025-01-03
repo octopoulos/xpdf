@@ -6,8 +6,7 @@
 //
 //========================================================================
 
-#ifndef SPLASHMATH_H
-#define SPLASHMATH_H
+#pragma once
 
 #include <aconf.h>
 
@@ -60,8 +59,8 @@ static inline int splashFloor(SplashCoord x)
 	//--- x87 inline assembly (gcc/clang)
 	// (this code fails on OSX for reasons I don't understand)
 
-	Gushort oldCW, newCW, t;
-	int     result;
+	uint16_t oldCW, newCW, t;
+	int      result;
 
 	__asm__ volatile(
 	    "fnstcw %0\n"
@@ -80,8 +79,8 @@ static inline int splashFloor(SplashCoord x)
 
 	//--- x87 inline assembly (VC)
 
-	Gushort oldCW, newCW;
-	int     result;
+	uint16_t oldCW, newCW;
+	int      result;
 
 	__asm fld QWORD PTR x __asm fnstcw WORD PTR oldCW __asm mov ax, WORD PTR oldCW __asm and ax, 0xf3ff __asm or ax, 0x0400 __asm mov WORD PTR newCW, ax // round down
 	    __asm fldcw WORD PTR newCW __asm fistp DWORD PTR result __asm fldcw WORD PTR oldCW return result;
@@ -125,8 +124,8 @@ static inline int splashCeil(SplashCoord x)
 	//--- x87 inline assembly (gcc/clang)
 	// (this code fails on OSX for reasons I don't understand)
 
-	Gushort oldCW, newCW, t;
-	int     result;
+	uint16_t oldCW, newCW, t;
+	int      result;
 
 	__asm__ volatile(
 	    "fnstcw %0\n"
@@ -148,8 +147,8 @@ static inline int splashCeil(SplashCoord x)
 	// ceil() and (int)() are implemented separately, which results
 	// in changing the FPCW multiple times - so we optimize it with
 	// some inline assembly
-	Gushort oldCW, newCW;
-	int     result;
+	uint16_t oldCW, newCW;
+	int      result;
 
 	__asm fld QWORD PTR x __asm fnstcw WORD PTR oldCW __asm mov ax, WORD PTR oldCW __asm and ax, 0xf3ff __asm or ax, 0x0800 __asm mov WORD PTR newCW, ax // round up
 	    __asm fldcw WORD PTR newCW __asm fistp DWORD PTR result __asm fldcw WORD PTR oldCW return result;
@@ -237,7 +236,7 @@ static inline SplashCoord splashDist(SplashCoord x0, SplashCoord y0, SplashCoord
 #endif
 }
 
-static inline GBool splashCheckDet(SplashCoord m11, SplashCoord m12, SplashCoord m21, SplashCoord m22, SplashCoord epsilon)
+static inline bool splashCheckDet(SplashCoord m11, SplashCoord m12, SplashCoord m21, SplashCoord m22, SplashCoord epsilon)
 {
 #if USE_FIXEDPOINT
 	return FixedPoint::checkDet(m11, m12, m21, m22, epsilon);
@@ -364,5 +363,3 @@ static inline void splashStrokeAdjust(SplashCoord xMin, SplashCoord xMax, int* x
 	*xMinI = x0;
 	*xMaxI = x1;
 }
-
-#endif

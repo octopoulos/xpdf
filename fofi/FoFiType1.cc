@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdlib.h>
 #include <string.h>
 #include "gmem.h"
@@ -21,7 +20,7 @@
 
 FoFiType1* FoFiType1::make(char* fileA, int lenA)
 {
-	return new FoFiType1(fileA, lenA, gFalse);
+	return new FoFiType1(fileA, lenA, false);
 }
 
 FoFiType1* FoFiType1::load(char* fileName)
@@ -29,36 +28,32 @@ FoFiType1* FoFiType1::load(char* fileName)
 	char* fileA;
 	int   lenA;
 
-	if (!(fileA = FoFiBase::readFile(fileName, &lenA)))
-		return NULL;
-	return new FoFiType1(fileA, lenA, gTrue);
+	if (!(fileA = FoFiBase::readFile(fileName, &lenA))) return nullptr;
+	return new FoFiType1(fileA, lenA, true);
 }
 
-FoFiType1::FoFiType1(char* fileA, int lenA, GBool freeFileDataA)
+FoFiType1::FoFiType1(char* fileA, int lenA, bool freeFileDataA)
     : FoFiBase(fileA, lenA, freeFileDataA)
 {
-	name          = NULL;
-	encoding      = NULL;
+	name          = nullptr;
+	encoding      = nullptr;
 	fontMatrix[0] = 0.001;
 	fontMatrix[1] = 0;
 	fontMatrix[2] = 0;
 	fontMatrix[3] = 0.001;
 	fontMatrix[4] = 0;
 	fontMatrix[5] = 0;
-	parsed        = gFalse;
+	parsed        = false;
 	undoPFB();
 }
 
 FoFiType1::~FoFiType1()
 {
-	int i;
-
 	if (name)
 		gfree(name);
 	if (encoding && encoding != (char**)fofiType1StandardEncoding)
 	{
-		for (i = 0; i < 256; ++i)
-			gfree(encoding[i]);
+		for (int i = 0; i < 256; ++i) gfree(encoding[i]);
 		gfree(encoding);
 	}
 }
@@ -79,11 +74,9 @@ char** FoFiType1::getEncoding()
 
 void FoFiType1::getFontMatrix(double* mat)
 {
-	int i;
-
 	if (!parsed)
 		parse();
-	for (i = 0; i < 6; ++i)
+	for (int i = 0; i < 6; ++i)
 		mat[i] = fontMatrix[i];
 }
 
@@ -91,12 +84,9 @@ void FoFiType1::writeEncoded(const char** newEncoding, FoFiOutputFunc outputFunc
 {
 	char  buf[512];
 	char *line, *line2, *p;
-	int   i;
 
 	// copy everything up to the encoding
-	for (line = (char*)file;
-	     line && line + 9 <= (char*)file + len && strncmp(line, "/Encoding", 9);
-	     line = getNextLine(line))
+	for (line = (char*)file; line && line + 9 <= (char*)file + len && strncmp(line, "/Encoding", 9); line = getNextLine(line))
 		;
 	if (!line)
 	{
@@ -109,7 +99,7 @@ void FoFiType1::writeEncoded(const char** newEncoding, FoFiOutputFunc outputFunc
 	// write the new encoding
 	(*outputFunc)(outputStream, "/Encoding 256 array\n", 20);
 	(*outputFunc)(outputStream, "0 1 255 {1 index exch /.notdef put} for\n", 40);
-	for (i = 0; i < 256; ++i)
+	for (int i = 0; i < 256; ++i)
 	{
 		if (newEncoding[i])
 		{
@@ -130,7 +120,7 @@ void FoFiType1::writeEncoded(const char** newEncoding, FoFiOutputFunc outputFunc
 		// skip "/Encoding" + one whitespace char,
 		// then look for 'def' preceded by PostScript whitespace
 		p    = line + 10;
-		line = NULL;
+		line = nullptr;
 		for (; p < (char*)file + len; ++p)
 		{
 			if ((*p == ' ' || *p == '\t' || *p == '\x0a' || *p == '\x0d' || *p == '\x0c' || *p == '\0') && p + 4 <= (char*)file + len && !strncmp(p + 1, "def", 3))
@@ -145,9 +135,8 @@ void FoFiType1::writeEncoded(const char** newEncoding, FoFiOutputFunc outputFunc
 	// check for a second one here
 	if (line)
 	{
-		for (line2 = line, i = 0;
-		     i < 20 && line2 && line2 + 9 <= (char*)file + len && strncmp(line2, "/Encoding", 9);
-		     line2 = getNextLine(line2), ++i)
+		int i;
+		for (line2 = line, i = 0; i < 20 && line2 && line2 + 9 <= (char*)file + len && strncmp(line2, "/Encoding", 9); line2 = getNextLine(line2), ++i)
 			;
 		if (i < 20 && line2)
 		{
@@ -161,7 +150,7 @@ void FoFiType1::writeEncoded(const char** newEncoding, FoFiOutputFunc outputFunc
 				// skip "/Encoding",
 				// then look for 'def' preceded by PostScript whitespace
 				p    = line2 + 9;
-				line = NULL;
+				line = nullptr;
 				for (; p < (char*)file + len; ++p)
 				{
 					if ((*p == ' ' || *p == '\t' || *p == '\x0a' || *p == '\x0d' || *p == '\x0c' || *p == '\0') && p + 4 <= (char*)file + len && !strncmp(p + 1, "def", 3))
@@ -174,8 +163,7 @@ void FoFiType1::writeEncoded(const char** newEncoding, FoFiOutputFunc outputFunc
 		}
 
 		// copy everything after the encoding
-		if (line)
-			(*outputFunc)(outputStream, line, (int)(((char*)file + len) - line));
+		if (line) (*outputFunc)(outputStream, line, (int)(((char*)file + len) - line));
 	}
 }
 
@@ -183,12 +171,9 @@ char* FoFiType1::getNextLine(char* line)
 {
 	while (line < (char*)file + len && *line != '\x0a' && *line != '\x0d')
 		++line;
-	if (line < (char*)file + len && *line == '\x0d')
-		++line;
-	if (line < (char*)file + len && *line == '\x0a')
-		++line;
-	if (line >= (char*)file + len)
-		return NULL;
+	if (line < (char*)file + len && *line == '\x0d') ++line;
+	if (line < (char*)file + len && *line == '\x0a') ++line;
+	if (line >= (char*)file + len) return nullptr;
 	return line;
 }
 
@@ -198,12 +183,10 @@ void FoFiType1::parse()
 	char  buf[256];
 	char  c;
 	int   n, code, base, i, j;
-	GBool gotMatrix, startsWithDup, endsWithDup;
+	bool  gotMatrix, startsWithDup, endsWithDup;
 
-	gotMatrix = gFalse;
-	for (i = 1, line = (char*)file;
-	     i <= 100 && line && (!name || !encoding || !gotMatrix);
-	     ++i)
+	gotMatrix = false;
+	for (i = 1, line = (char*)file; i <= 100 && line && (!name || !encoding || !gotMatrix); ++i)
 	{
 		// get font name
 		if (!name && line + 9 <= (char*)file + len && !strncmp(line, "/FontName", 9))
@@ -227,10 +210,8 @@ void FoFiType1::parse()
 		{
 			encoding = (char**)gmallocn(256, sizeof(char*));
 			for (j = 0; j < 256; ++j)
-				encoding[j] = NULL;
-			for (j = 0, line = getNextLine(line);
-			     j < 300 && line && (line1 = getNextLine(line));
-			     ++j, line = line1)
+				encoding[j] = nullptr;
+			for (j = 0, line = getNextLine(line); j < 300 && line && (line1 = getNextLine(line)); ++j, line = line1)
 			{
 				if ((n = (int)(line1 - line)) > 255)
 					n = 255;
@@ -292,7 +273,7 @@ void FoFiType1::parse()
 				}
 				else
 				{
-					if (strtok(buf, " \t") && (p = strtok(NULL, " \t\n\r")) && !strcmp(p, "def"))
+					if (strtok(buf, " \t") && (p = strtok(nullptr, " \t\n\r")) && !strcmp(p, "def"))
 						break;
 				}
 			}
@@ -312,13 +293,13 @@ void FoFiType1::parse()
 				{
 					*p2 = '\0';
 					for (j = 0; j < 6; ++j)
-						if ((p = strtok(j == 0 ? p : (char*)NULL, " \t\n\r")))
+						if ((p = strtok(j == 0 ? p : (char*)nullptr, " \t\n\r")))
 							fontMatrix[j] = atof(p);
 						else
 							break;
 				}
 			}
-			gotMatrix = gTrue;
+			gotMatrix = true;
 		}
 		else
 		{
@@ -326,31 +307,28 @@ void FoFiType1::parse()
 		}
 	}
 
-	parsed = gTrue;
+	parsed = true;
 }
 
 // Undo the PFB encoding, i.e., remove the PFB headers.
 void FoFiType1::undoPFB()
 {
-	GBool   ok;
-	Guchar* file2;
-	int     pos1, pos2, type;
-	Guint   segLen;
+	bool     ok;
+	uint8_t* file2;
+	int      pos1, pos2, type;
+	uint32_t segLen;
 
-	ok = gTrue;
-	if (getU8(0, &ok) != 0x80 || !ok)
-		return;
-	file2 = (Guchar*)gmalloc(len);
+	ok = true;
+	if (getU8(0, &ok) != 0x80 || !ok) return;
+	file2 = (uint8_t*)gmalloc(TO_INT(len));
 	pos1 = pos2 = 0;
 	while (getU8(pos1, &ok) == 0x80 && ok)
 	{
 		type = getU8(pos1 + 1, &ok);
-		if (type < 1 || type > 2 || !ok)
-			break;
+		if (type < 1 || type > 2 || !ok) break;
 		segLen = getU32LE(pos1 + 2, &ok);
 		pos1 += 6;
-		if (!ok || !checkRegion(pos1, segLen))
-			break;
+		if (!ok || !checkRegion(pos1, segLen)) break;
 		memcpy(file2 + pos2, file + pos1, segLen);
 		pos1 += segLen;
 		pos2 += segLen;
@@ -358,6 +336,6 @@ void FoFiType1::undoPFB()
 	if (freeFileData)
 		gfree(fileData);
 	file = fileData = file2;
-	freeFileData    = gTrue;
+	freeFileData    = true;
 	len             = pos2;
 }

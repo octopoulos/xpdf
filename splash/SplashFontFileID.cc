@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include "gmempp.h"
 #include "SplashFontFileID.h"
 

@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdlib.h>
 #include <stddef.h>
 #include "gmem.h"
@@ -21,38 +20,24 @@
 
 Array::Array(XRef* xrefA)
 {
-	xref  = xrefA;
-	elems = nullptr;
-	size = length = 0;
-	ref           = 1;
+	xref = xrefA;
+	ref  = 1;
 }
 
 Array::~Array()
 {
-	int i;
-
-	for (i = 0; i < length; ++i)
+	for (int i = 0; i < elems.size(); ++i)
 		elems[i].free();
-	gfree(elems);
 }
 
 void Array::add(Object* elem)
 {
-	if (length == size)
-	{
-		if (length == 0)
-			size = 8;
-		else
-			size *= 2;
-		elems = (Object*)greallocn(elems, size, sizeof(Object));
-	}
-	elems[length] = *elem;
-	++length;
+	elems.push_back(*elem);
 }
 
 Object* Array::get(int i, Object* obj, int recursion)
 {
-	if (i < 0 || i >= length)
+	if (i < 0 || i >= elems.size())
 	{
 #ifdef DEBUG_OBJECT_MEM
 		abort();
@@ -65,7 +50,7 @@ Object* Array::get(int i, Object* obj, int recursion)
 
 Object* Array::getNF(int i, Object* obj)
 {
-	if (i < 0 || i >= length)
+	if (i < 0 || i >= elems.size())
 	{
 #ifdef DEBUG_OBJECT_MEM
 		abort();

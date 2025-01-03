@@ -6,8 +6,7 @@
 //
 //========================================================================
 
-#ifndef XFASCANNER_H
-#define XFASCANNER_H
+#pragma once
 
 #include <aconf.h>
 
@@ -51,11 +50,11 @@ enum XFAFieldPictureSubtype
 class XFAFieldPictureInfo
 {
 public:
-	XFAFieldPictureInfo(XFAFieldPictureSubtype subtypeA, GString* formatA);
+	XFAFieldPictureInfo(XFAFieldPictureSubtype subtypeA, const std::string& formatA);
 	~XFAFieldPictureInfo();
 
 	XFAFieldPictureSubtype subtype;
-	GString*               format; // picture format string
+	std::string            format; // picture format string
 };
 
 //------------------------------------------------------------------------
@@ -63,16 +62,16 @@ public:
 class XFAFieldBarcodeInfo
 {
 public:
-	XFAFieldBarcodeInfo(GString* barcodeTypeA, double wideNarrowRatioA, double moduleWidthA, double moduleHeightA, int dataLengthA, int errorCorrectionLevelA, GString* textLocationA);
+	XFAFieldBarcodeInfo(const std::string& barcodeTypeA, double wideNarrowRatioA, double moduleWidthA, double moduleHeightA, int dataLengthA, int errorCorrectionLevelA, const std::string& textLocationA);
 	~XFAFieldBarcodeInfo();
 
-	GString* barcodeType;
-	double   wideNarrowRatio;
-	double   moduleWidth;
-	double   moduleHeight;
-	int      dataLength;
-	int      errorCorrectionLevel;
-	GString* textLocation;
+	std::string barcodeType;
+	double      wideNarrowRatio;
+	double      moduleWidth;
+	double      moduleHeight;
+	int         dataLength;
+	int         errorCorrectionLevel;
+	std::string textLocation;
 };
 
 //------------------------------------------------------------------------
@@ -80,12 +79,12 @@ public:
 class XFAField
 {
 public:
-	XFAField(GString* nameA, GString* fullNameA, GString* valueA, XFAFieldLayoutInfo* layoutInfoA, XFAFieldPictureInfo* pictureInfoA, XFAFieldBarcodeInfo* barcodeInfoA);
+	XFAField(const std::string& nameA, const std::string& fullNameA, const std::string& valueA, XFAFieldLayoutInfo* layoutInfoA, XFAFieldPictureInfo* pictureInfoA, XFAFieldBarcodeInfo* barcodeInfoA);
 	~XFAField();
 
 	// Get the field's value, or nullptr if it doesn't have a value.  Sets
 	// *[length] to the length of the Unicode string.
-	GString* getValue() { return value; }
+	std::string getValue() { return value; }
 
 	// Return a pointer to the field's picture formatting info object,
 	// or nullptr if the field doesn't have picture formatting.
@@ -102,9 +101,9 @@ public:
 private:
 	friend class XFAScanner;
 
-	GString*             name;     // UTF-8
-	GString*             fullName; // UTF-8
-	GString*             value;    // UTF-8
+	std::string          name;     // UTF-8
+	std::string          fullName; // UTF-8
+	std::string          value;    // UTF-8
 	XFAFieldLayoutInfo*  layoutInfo;
 	XFAFieldPictureInfo* pictureInfo;
 	XFAFieldBarcodeInfo* barcodeInfo;
@@ -121,27 +120,26 @@ public:
 
 	// Find an XFA field matchined the specified AcroForm field name.
 	// Returns nullptr if there is no matching field.
-	XFAField* findField(GString* acroFormFieldName);
+	XFAField* findField(const std::string& acroFormFieldName);
 
 private:
 	XFAScanner();
-	static GString*      readXFAStreams(Object* xfaObj);
-	GHash*               scanFormValues(ZxElement* xmlRoot);
-	void                 scanFormNode(ZxElement* elem, GString* fullName, GHash* formValues);
-	void                 scanNode(ZxElement* elem, GString* parentName, GString* parentFullName, GHash* nameIdx, GHash* fullNameIdx, GString* exclGroupName, ZxElement* xmlRoot, GHash* formValues);
-	void                 scanField(ZxElement* elem, GString* name, GString* fullName, GString* exclGroupName, ZxElement* xmlRoot, GHash* formValues);
-	GString*             getFieldValue(ZxElement* elem, GString* name, GString* fullName, GString* exclGroupName, ZxElement* xmlRoot, GHash* formValues);
-	GString*             getDatasetsValue(char* partName, ZxElement* elem);
+	static std::string   readXFAStreams(Object* xfaObj);
+	UMAP_STR_STR         scanFormValues(ZxElement* xmlRoot);
+	void                 scanFormNode(ZxElement* elem, const std::string& fullName, UMAP_STR_STR& formValues);
+	void                 scanNode(ZxElement* elem, const std::string& parentName, const std::string& parentFullName, GHash* nameIdx, GHash* fullNameIdx, const std::string& exclGroupName, ZxElement* xmlRoot, UMAP_STR_STR& formValues);
+	void                 scanField(ZxElement* elem, const std::string& name, const std::string& fullName, const std::string& exclGroupName, ZxElement* xmlRoot, UMAP_STR_STR& formValues);
+	std::string          getFieldValue(ZxElement* elem, const std::string& name, const std::string& fullName, const std::string& exclGroupName, ZxElement* xmlRoot, UMAP_STR_STR& formValues);
+	std::string          getDatasetsValue(const char* partName, ZxElement* elem);
 	XFAFieldLayoutInfo*  getFieldLayoutInfo(ZxElement* elem);
 	XFAFieldPictureInfo* getFieldPictureInfo(ZxElement* elem);
 	XFAFieldBarcodeInfo* getFieldBarcodeInfo(ZxElement* elem);
-	double               getMeasurement(GString* s);
-	GString*             getNodeName(ZxElement* elem);
-	GString*             getNodeFullName(ZxElement* elem);
-	GBool                nodeIsBindGlobal(ZxElement* elem);
-	GBool                nodeIsBindNone(ZxElement* elem);
+	double               getMeasurement(const std::string& s);
+	std::string          getNodeName(ZxElement* elem);
+	std::string          getNodeFullName(ZxElement* elem);
+	bool                 nodeIsBindGlobal(ZxElement* elem);
+	bool                 nodeIsBindNone(ZxElement* elem);
 
-	GHash* fields; // [XFAField]
+	// GHash* fields; // [XFAField]
+	UMAP<std::string, XFAField> fields;
 };
-
-#endif

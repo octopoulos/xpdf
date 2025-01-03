@@ -7,17 +7,15 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include "gmem.h"
 #include "gmempp.h"
-#include "GString.h"
 #include "GHash.h"
 
 //------------------------------------------------------------------------
 
 struct GHashBucket
 {
-	GString* key;
+	std::string key;
 
 	union
 	{
@@ -36,15 +34,12 @@ struct GHashIter
 
 //------------------------------------------------------------------------
 
-GHash::GHash(GBool deleteKeysA)
+GHash::GHash(bool deleteKeysA)
 {
-	int h;
-
-	deleteKeys = deleteKeysA;
-	size       = 7;
-	tab        = (GHashBucket**)gmallocn(size, sizeof(GHashBucket*));
-	for (h = 0; h < size; ++h)
-		tab[h] = NULL;
+	size = 7;
+	tab  = (GHashBucket**)gmallocn(size, sizeof(GHashBucket*));
+	for (int h = 0; h < size; ++h)
+		tab[h] = nullptr;
 	len = 0;
 }
 
@@ -59,15 +54,13 @@ GHash::~GHash()
 		{
 			p      = tab[h];
 			tab[h] = p->next;
-			if (deleteKeys)
-				delete p->key;
 			delete p;
 		}
 	}
 	gfree(tab);
 }
 
-void GHash::add(GString* key, void* val)
+void GHash::add(const std::string& key, void* val)
 {
 	GHashBucket* p;
 	int          h;
@@ -86,7 +79,7 @@ void GHash::add(GString* key, void* val)
 	++len;
 }
 
-void GHash::add(GString* key, int val)
+void GHash::add(const std::string& key, int val)
 {
 	GHashBucket* p;
 	int          h;
@@ -105,51 +98,38 @@ void GHash::add(GString* key, int val)
 	++len;
 }
 
-void GHash::replace(GString* key, void* val)
+void GHash::replace(const std::string& key, void* val)
 {
 	GHashBucket* p;
 	int          h;
 
 	if ((p = find(key, &h)))
-	{
 		p->val.p = val;
-		if (deleteKeys)
-			delete key;
-	}
 	else
-	{
 		add(key, val);
-	}
 }
 
-void GHash::replace(GString* key, int val)
+void GHash::replace(const std::string& key, int val)
 {
 	GHashBucket* p;
 	int          h;
 
 	if ((p = find(key, &h)))
-	{
 		p->val.i = val;
-		if (deleteKeys)
-			delete key;
-	}
 	else
-	{
 		add(key, val);
-	}
 }
 
-void* GHash::lookup(GString* key)
+void* GHash::lookup(const std::string& key)
 {
 	GHashBucket* p;
 	int          h;
 
-	if (!(p = find(key, &h)))
-		return NULL;
+	if (!(p = find(key, &h))) return nullptr;
 	return p->val.p;
 }
 
-int GHash::lookupInt(GString* key)
+int GHash::lookupInt(const std::string& key)
 {
 	GHashBucket* p;
 	int          h;
@@ -164,8 +144,7 @@ void* GHash::lookup(const char* key)
 	GHashBucket* p;
 	int          h;
 
-	if (!(p = find(key, &h)))
-		return NULL;
+	if (!(p = find(key, &h))) return nullptr;
 	return p->val.p;
 }
 
@@ -179,28 +158,25 @@ int GHash::lookupInt(const char* key)
 	return p->val.i;
 }
 
-void* GHash::remove(GString* key)
+void* GHash::remove(const std::string& key)
 {
 	GHashBucket*  p;
 	GHashBucket** q;
 	void*         val;
 	int           h;
 
-	if (!(p = find(key, &h)))
-		return NULL;
+	if (!(p = find(key, &h))) return nullptr;
 	q = &tab[h];
 	while (*q != p)
 		q = &((*q)->next);
-	*q = p->next;
-	if (deleteKeys)
-		delete p->key;
+	*q  = p->next;
 	val = p->val.p;
 	delete p;
 	--len;
 	return val;
 }
 
-int GHash::removeInt(GString* key)
+int GHash::removeInt(const std::string& key)
 {
 	GHashBucket*  p;
 	GHashBucket** q;
@@ -212,9 +188,7 @@ int GHash::removeInt(GString* key)
 	q = &tab[h];
 	while (*q != p)
 		q = &((*q)->next);
-	*q = p->next;
-	if (deleteKeys)
-		delete p->key;
+	*q  = p->next;
 	val = p->val.i;
 	delete p;
 	--len;
@@ -228,14 +202,11 @@ void* GHash::remove(const char* key)
 	void*         val;
 	int           h;
 
-	if (!(p = find(key, &h)))
-		return NULL;
+	if (!(p = find(key, &h))) return nullptr;
 	q = &tab[h];
 	while (*q != p)
 		q = &((*q)->next);
-	*q = p->next;
-	if (deleteKeys)
-		delete p->key;
+	*q  = p->next;
 	val = p->val.p;
 	delete p;
 	--len;
@@ -254,9 +225,7 @@ int GHash::removeInt(const char* key)
 	q = &tab[h];
 	while (*q != p)
 		q = &((*q)->next);
-	*q = p->next;
-	if (deleteKeys)
-		delete p->key;
+	*q  = p->next;
 	val = p->val.i;
 	delete p;
 	--len;
@@ -267,13 +236,13 @@ void GHash::startIter(GHashIter** iter)
 {
 	*iter      = new GHashIter;
 	(*iter)->h = -1;
-	(*iter)->p = NULL;
+	(*iter)->p = nullptr;
 }
 
-GBool GHash::getNext(GHashIter** iter, GString** key, void** val)
+bool GHash::getNext(GHashIter** iter, std::string& key, void** val)
 {
 	if (!*iter)
-		return gFalse;
+		return false;
 	if ((*iter)->p)
 		(*iter)->p = (*iter)->p->next;
 	while (!(*iter)->p)
@@ -281,20 +250,20 @@ GBool GHash::getNext(GHashIter** iter, GString** key, void** val)
 		if (++(*iter)->h == size)
 		{
 			delete *iter;
-			*iter = NULL;
-			return gFalse;
+			*iter = nullptr;
+			return false;
 		}
 		(*iter)->p = tab[(*iter)->h];
 	}
-	*key = (*iter)->p->key;
+	key  = (*iter)->p->key;
 	*val = (*iter)->p->val.p;
-	return gTrue;
+	return true;
 }
 
-GBool GHash::getNext(GHashIter** iter, GString** key, int* val)
+bool GHash::getNext(GHashIter** iter, std::string& key, int* val)
 {
 	if (!*iter)
-		return gFalse;
+		return false;
 	if ((*iter)->p)
 		(*iter)->p = (*iter)->p->next;
 	while (!(*iter)->p)
@@ -302,20 +271,20 @@ GBool GHash::getNext(GHashIter** iter, GString** key, int* val)
 		if (++(*iter)->h == size)
 		{
 			delete *iter;
-			*iter = NULL;
-			return gFalse;
+			*iter = nullptr;
+			return false;
 		}
 		(*iter)->p = tab[(*iter)->h];
 	}
-	*key = (*iter)->p->key;
+	key  = (*iter)->p->key;
 	*val = (*iter)->p->val.i;
-	return gTrue;
+	return true;
 }
 
 void GHash::killIter(GHashIter** iter)
 {
 	delete *iter;
-	*iter = NULL;
+	*iter = nullptr;
 }
 
 void GHash::expand()
@@ -329,7 +298,7 @@ void GHash::expand()
 	size    = 2 * size + 1;
 	tab     = (GHashBucket**)gmallocn(size, sizeof(GHashBucket*));
 	for (h = 0; h < size; ++h)
-		tab[h] = NULL;
+		tab[h] = nullptr;
 	for (i = 0; i < oldSize; ++i)
 	{
 		while (oldTab[i])
@@ -344,15 +313,15 @@ void GHash::expand()
 	gfree(oldTab);
 }
 
-GHashBucket* GHash::find(GString* key, int* h)
+GHashBucket* GHash::find(const std::string& key, int* h)
 {
 	GHashBucket* p;
 
 	*h = hash(key);
 	for (p = tab[*h]; p; p = p->next)
-		if (!p->key->cmp(key))
-			return p;
-	return NULL;
+		if (p->key == key) return p;
+
+	return nullptr;
 }
 
 GHashBucket* GHash::find(const char* key, int* h)
@@ -361,19 +330,19 @@ GHashBucket* GHash::find(const char* key, int* h)
 
 	*h = hash(key);
 	for (p = tab[*h]; p; p = p->next)
-		if (!p->key->cmp(key))
-			return p;
-	return NULL;
+		if (p->key == key) return p;
+
+	return nullptr;
 }
 
-int GHash::hash(GString* key)
+int GHash::hash(const std::string& key)
 {
 	const char*  p;
 	unsigned int h;
 	int          i;
 
 	h = 0;
-	for (p = key->getCString(), i = 0; i < key->getLength(); ++p, ++i)
+	for (p = key.c_str(), i = 0; i < key.size(); ++p, ++i)
 		h = 17 * h + (int)(*p & 0xff);
 	return (int)(h % size);
 }

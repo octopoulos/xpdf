@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stddef.h>
 #include "gmempp.h"
 #include "Object.h"
@@ -21,12 +20,10 @@
 
 void OutputDev::setDefaultCTM(double* ctm)
 {
-	int    i;
-	double det;
-
-	for (i = 0; i < 6; ++i)
+	for (int i = 0; i < 6; ++i)
 		defCTM[i] = ctm[i];
-	det        = 1 / (defCTM[0] * defCTM[3] - defCTM[1] * defCTM[2]);
+	const double det = 1 / (defCTM[0] * defCTM[3] - defCTM[1] * defCTM[2]);
+
 	defICTM[0] = defCTM[3] * det;
 	defICTM[1] = -defCTM[1] * det;
 	defICTM[2] = -defCTM[2] * det;
@@ -76,7 +73,7 @@ void OutputDev::updateAll(GfxState* state)
 	updateFont(state);
 }
 
-void OutputDev::fillStroke(GfxState* state, GBool eo)
+void OutputDev::fillStroke(GfxState* state, bool eo)
 {
 	if (eo)
 		eoFill(state);
@@ -85,12 +82,12 @@ void OutputDev::fillStroke(GfxState* state, GBool eo)
 	stroke(state);
 }
 
-GBool OutputDev::beginType3Char(GfxState* state, double x, double y, double dx, double dy, CharCode code, Unicode* u, int uLen)
+bool OutputDev::beginType3Char(GfxState* state, double x, double y, double dx, double dy, CharCode code, Unicode* u, int uLen)
 {
-	return gFalse;
+	return false;
 }
 
-void OutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, int width, int height, GBool invert, GBool inlineImg, GBool interpolate)
+void OutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, int width, int height, bool invert, bool inlineImg, bool interpolate)
 {
 	if (inlineImg)
 	{
@@ -100,12 +97,12 @@ void OutputDev::drawImageMask(GfxState* state, Object* ref, Stream* str, int wid
 	}
 }
 
-void OutputDev::setSoftMaskFromImageMask(GfxState* state, Object* ref, Stream* str, int width, int height, GBool invert, GBool inlineImg, GBool interpolate)
+void OutputDev::setSoftMaskFromImageMask(GfxState* state, Object* ref, Stream* str, int width, int height, bool invert, bool inlineImg, bool interpolate)
 {
 	drawImageMask(state, ref, str, width, height, invert, inlineImg, interpolate);
 }
 
-void OutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int width, int height, GfxImageColorMap* colorMap, int* maskColors, GBool inlineImg, GBool interpolate)
+void OutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int width, int height, GfxImageColorMap* colorMap, int* maskColors, bool inlineImg, bool interpolate)
 {
 	if (inlineImg)
 	{
@@ -115,14 +112,14 @@ void OutputDev::drawImage(GfxState* state, Object* ref, Stream* str, int width, 
 	}
 }
 
-void OutputDev::drawMaskedImage(GfxState* state, Object* ref, Stream* str, int width, int height, GfxImageColorMap* colorMap, Object* maskRef, Stream* maskStr, int maskWidth, int maskHeight, GBool maskInvert, GBool interpolate)
+void OutputDev::drawMaskedImage(GfxState* state, Object* ref, Stream* str, int width, int height, GfxImageColorMap* colorMap, Object* maskRef, Stream* maskStr, int maskWidth, int maskHeight, bool maskInvert, bool interpolate)
 {
-	drawImage(state, ref, str, width, height, colorMap, nullptr, gFalse, interpolate);
+	drawImage(state, ref, str, width, height, colorMap, nullptr, false, interpolate);
 }
 
-void OutputDev::drawSoftMaskedImage(GfxState* state, Object* ref, Stream* str, int width, int height, GfxImageColorMap* colorMap, Object* maskRef, Stream* maskStr, int maskWidth, int maskHeight, GfxImageColorMap* maskColorMap, double* matte, GBool interpolate)
+void OutputDev::drawSoftMaskedImage(GfxState* state, Object* ref, Stream* str, int width, int height, GfxImageColorMap* colorMap, Object* maskRef, Stream* maskStr, int maskWidth, int maskHeight, GfxImageColorMap* maskColorMap, double* matte, bool interpolate)
 {
-	drawImage(state, ref, str, width, height, colorMap, nullptr, gFalse, interpolate);
+	drawImage(state, ref, str, width, height, colorMap, nullptr, false, interpolate);
 }
 
 #if OPI_SUPPORT

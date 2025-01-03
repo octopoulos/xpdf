@@ -6,11 +6,9 @@
 //
 //========================================================================
 
-#ifndef PAGE_H
-#define PAGE_H
+#pragma once
 
 #include <aconf.h>
-
 #include "Object.h"
 
 class Dict;
@@ -36,7 +34,7 @@ public:
 		y2 = y2A;
 	}
 
-	GBool isValid() { return x1 != 0 || y1 != 0 || x2 != 0 || y2 != 0; }
+	bool isValid() { return x1 != 0 || y1 != 0 || x2 != 0 || y2 != 0; }
 
 	void clipTo(PDFRectangle* rect);
 };
@@ -65,7 +63,7 @@ public:
 
 	PDFRectangle* getCropBox() { return &cropBox; }
 
-	GBool isCropped() { return haveCropBox; }
+	bool isCropped() { return haveCropBox; }
 
 	PDFRectangle* getBleedBox() { return &bleedBox; }
 
@@ -75,11 +73,9 @@ public:
 
 	int getRotate() { return rotate; }
 
-	GString* getLastModified()
+	std::string getLastModified()
 	{
-		return lastModified.isString()
-		    ? lastModified.getString()
-		    : (GString*)nullptr;
+		return lastModified.isString() ? lastModified.getString() : "";
 	}
 
 	Dict* getBoxColorInfo()
@@ -120,11 +116,11 @@ public:
 	void clipBoxes();
 
 private:
-	GBool readBox(Dict* dict, const char* key, PDFRectangle* box);
+	bool readBox(Dict* dict, const char* key, PDFRectangle* box);
 
 	PDFRectangle mediaBox;
 	PDFRectangle cropBox;
-	GBool        haveCropBox;
+	bool         haveCropBox;
 	PDFRectangle bleedBox;
 	PDFRectangle trimBox;
 	PDFRectangle artBox;
@@ -157,7 +153,7 @@ public:
 	~Page();
 
 	// Is page valid?
-	GBool isOk() { return ok; }
+	bool isOk() { return ok; }
 
 	// Get page parameters.
 	int getNum() { return num; }
@@ -168,7 +164,7 @@ public:
 
 	PDFRectangle* getCropBox() { return attrs->getCropBox(); }
 
-	GBool isCropped() { return attrs->isCropped(); }
+	bool isCropped() { return attrs->isCropped(); }
 
 	double getMediaWidth()
 	{
@@ -198,7 +194,7 @@ public:
 
 	int getRotate() { return attrs->getRotate(); }
 
-	GString* getLastModified() { return attrs->getLastModified(); }
+	std::string getLastModified() { return attrs->getLastModified(); }
 
 	Dict* getBoxColorInfo() { return attrs->getBoxColorInfo(); }
 
@@ -228,17 +224,17 @@ public:
 	Object* getThumbnail(Object* obj) { return thumbnail.fetch(xref, obj); }
 
 	// Display a page.
-	void display(OutputDev* out, double hDPI, double vDPI, int rotate, GBool useMediaBox, GBool crop, GBool printing, GBool (*abortCheckCbk)(void* data) = nullptr, void* abortCheckCbkData = nullptr);
+	void display(OutputDev* out, double hDPI, double vDPI, int rotate, bool useMediaBox, bool crop, bool printing, bool (*abortCheckCbk)(void* data) = nullptr, void* abortCheckCbkData = nullptr);
 
 	// Display part of a page.
-	void displaySlice(OutputDev* out, double hDPI, double vDPI, int rotate, GBool useMediaBox, GBool crop, int sliceX, int sliceY, int sliceW, int sliceH, GBool printing, GBool (*abortCheckCbk)(void* data) = nullptr, void* abortCheckCbkData = nullptr);
+	void displaySlice(OutputDev* out, double hDPI, double vDPI, int rotate, bool useMediaBox, bool crop, int sliceX, int sliceY, int sliceW, int sliceH, bool printing, bool (*abortCheckCbk)(void* data) = nullptr, void* abortCheckCbkData = nullptr);
 
-	void makeBox(double hDPI, double vDPI, int rotate, GBool useMediaBox, GBool upsideDown, double sliceX, double sliceY, double sliceW, double sliceH, PDFRectangle* box, GBool* crop);
+	void makeBox(double hDPI, double vDPI, int rotate, bool useMediaBox, bool upsideDown, double sliceX, double sliceY, double sliceW, double sliceH, PDFRectangle* box, bool* crop);
 
 	void processLinks(OutputDev* out);
 
 	// Get the page's default CTM.
-	void getDefaultCTM(double* ctm, double hDPI, double vDPI, int rotate, GBool useMediaBox, GBool upsideDown);
+	void getDefaultCTM(double* ctm, double hDPI, double vDPI, int rotate, bool useMediaBox, bool upsideDown);
 
 private:
 	PDFDoc*    doc;
@@ -248,7 +244,5 @@ private:
 	Object     annots;    // annotations array
 	Object     contents;  // page contents
 	Object     thumbnail; // reference to thumbnail image
-	GBool      ok;        // true if page is valid
+	bool       ok;        // true if page is valid
 };
-
-#endif

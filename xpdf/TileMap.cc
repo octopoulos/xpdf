@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include "gmem.h"
 #include "gmempp.h"
 #include "GList.h"
@@ -138,8 +137,7 @@ GList* TileMap::getTileList()
 			if ((x1 = state->getScrollX() + state->getWinW() - 1 - offsetX)
 			    >= pageW1)
 				x1 = pageW1 - 1;
-			if ((y1 = state->getScrollY() - pageY[page - 1]
-			         + state->getWinH() - 1 - offsetY)
+			if ((y1 = state->getScrollY() - pageY[page - 1] + state->getWinH() - 1 - offsetY)
 			    >= pageH1)
 				y1 = pageH1 - 1;
 			for (y = y0 / tileH1; y <= y1 / tileH1; ++y)
@@ -158,8 +156,7 @@ GList* TileMap::getTileList()
 					    page, state->getRotate(), pageDPI1,
 					    tx, ty, tw, th,
 					    tx - state->getScrollX() + offsetX,
-					    ty - state->getScrollY() + pageY[page - 1]
-					        + offsetY));
+					    ty - state->getScrollY() + pageY[page - 1] + offsetY));
 				}
 			}
 			++page;
@@ -313,9 +310,7 @@ GList* TileMap::getTileList()
 				x1 = pageW1 - 1;
 			else if (x1 < 0)
 				x1 = -tileW2;
-			if ((y1 = state->getScrollY() - pageY[page - 1]
-			         + state->getWinH() - 1 - offsetY)
-			    >= pageH1)
+			if ((y1 = state->getScrollY() - pageY[page - 1] + state->getWinH() - 1 - offsetY) >= pageH1)
 				y1 = pageH1 - 1;
 			else if (y1 < 0)
 				y1 = -tileH2;
@@ -335,8 +330,7 @@ GList* TileMap::getTileList()
 					    page, state->getRotate(), pageDPI1,
 					    tx, ty, tw, th,
 					    tx - state->getScrollX() + offsetX,
-					    ty - state->getScrollY() + pageY[page - 1]
-					        + offsetY));
+					    ty - state->getScrollY() + pageY[page - 1] + offsetY));
 				}
 			}
 			++page;
@@ -352,9 +346,7 @@ GList* TileMap::getTileList()
 					x1 = pageW2 - 1;
 				else if (x1 < 0)
 					x1 = -tileW2;
-				if ((y1 = state->getScrollY() - pageY[page - 1]
-				         + state->getWinH() - 1 - offsetY)
-				    >= pageH2)
+				if ((y1 = state->getScrollY() - pageY[page - 1] + state->getWinH() - 1 - offsetY) >= pageH2)
 					y1 = pageH2 - 1;
 				else if (y1 < 0)
 					y1 = -tileH2;
@@ -374,8 +366,7 @@ GList* TileMap::getTileList()
 						    page, state->getRotate(), pageDPI2,
 						    tx, ty, tw, th,
 						    tx - state->getScrollX() + offsetX2,
-						    ty - state->getScrollY() + pageY[page - 1]
-						        + offsetY));
+						    ty - state->getScrollY() + pageY[page - 1] + offsetY));
 					}
 				}
 			}
@@ -404,9 +395,7 @@ GList* TileMap::getTileList()
 				x0 = 0;
 			if ((y0 = state->getScrollY() - offsetY) < 0)
 				y0 = 0;
-			if ((x1 = state->getScrollX() - pageX[page - 1]
-			         + state->getWinW() - 1 - offsetX)
-			    >= pageW1)
+			if ((x1 = state->getScrollX() - pageX[page - 1] + state->getWinW() - 1 - offsetX) >= pageW1)
 				x1 = pageW1 - 1;
 			if ((y1 = state->getScrollY() + state->getWinH() - 1 - offsetY)
 			    >= pageH1)
@@ -426,8 +415,7 @@ GList* TileMap::getTileList()
 					tiles->append(new PlacedTileDesc(
 					    page, state->getRotate(), pageDPI1,
 					    tx, ty, tw, th,
-					    tx - state->getScrollX() + pageX[page - 1]
-					        + offsetX,
+					    tx - state->getScrollX() + pageX[page - 1] + offsetX,
 					    ty - state->getScrollY() + offsetY));
 				}
 			}
@@ -492,16 +480,16 @@ void TileMap::getScrollLimits(int* horizMax, int* vertMax)
 	}
 }
 
-GBool TileMap::cvtWindowToUser(int xw, int yw, int* pg, double* xu, double* yu)
+bool TileMap::cvtWindowToUser(int xw, int yw, int* pg, double* xu, double* yu)
 {
-	GBool ok;
-	int   xd, yd;
+	bool ok;
+	int  xd, yd;
 
 	if (!state->getDoc() || !state->getDoc()->getNumPages())
 	{
 		*pg = 0;
 		*xu = *yu = 0;
-		return gFalse;
+		return false;
 	}
 
 	ok = cvtWindowToDev(xw, yw, pg, &xd, &yd);
@@ -509,7 +497,7 @@ GBool TileMap::cvtWindowToUser(int xw, int yw, int* pg, double* xu, double* yu)
 	return ok;
 }
 
-GBool TileMap::cvtWindowToDev(int xw, int yw, int* pg, int* xd, int* yd)
+bool TileMap::cvtWindowToDev(int xw, int yw, int* pg, int* xd, int* yd)
 {
 	int pageW1, pageH1, pageW2, pageH2, offsetX, offsetX2, offsetY;
 
@@ -517,7 +505,7 @@ GBool TileMap::cvtWindowToDev(int xw, int yw, int* pg, int* xd, int* yd)
 	{
 		*pg = 0;
 		*xd = *yd = 0;
-		return gFalse;
+		return false;
 	}
 
 	updatePageParams();
@@ -551,7 +539,7 @@ GBool TileMap::cvtWindowToDev(int xw, int yw, int* pg, int* xd, int* yd)
 		{
 			*pg = 0;
 			*xd = *yd = 0;
-			return gFalse;
+			return false;
 		}
 		pageW1 = pageW[*pg - 1];
 		pageH1 = pageH[*pg - 1];
@@ -603,7 +591,7 @@ GBool TileMap::cvtWindowToDev(int xw, int yw, int* pg, int* xd, int* yd)
 			if (state->getScrollPage() + 1 > state->getDoc()->getNumPages())
 			{
 				*pg = *xd = *yd = 0;
-				return gFalse;
+				return false;
 			}
 			*pg = state->getScrollPage() + 1;
 			*xd = xw - offsetX2 + state->getScrollX();
@@ -621,7 +609,7 @@ GBool TileMap::cvtWindowToDev(int xw, int yw, int* pg, int* xd, int* yd)
 		{
 			*pg = 0;
 			*xd = *yd = 0;
-			return gFalse;
+			return false;
 		}
 		pageW1 = pageW[*pg - 1];
 		pageH1 = pageH[*pg - 1];
@@ -669,7 +657,7 @@ GBool TileMap::cvtWindowToDev(int xw, int yw, int* pg, int* xd, int* yd)
 		{
 			*pg = 0;
 			*xd = *yd = 0;
-			return gFalse;
+			return false;
 		}
 		pageW1 = pageW[*pg - 1];
 		pageH1 = pageH[*pg - 1];
@@ -682,10 +670,10 @@ GBool TileMap::cvtWindowToDev(int xw, int yw, int* pg, int* xd, int* yd)
 		return *xd >= 0 && *xd < pageW1 && *yd >= 0 && *yd < pageH1;
 	}
 
-	return gFalse;
+	return false;
 }
 
-GBool TileMap::cvtUserToWindow(int pg, double xu, double yu, int* xw, int* yw)
+bool TileMap::cvtUserToWindow(int pg, double xu, double yu, int* xw, int* yw)
 {
 	int xd, yd;
 
@@ -693,14 +681,14 @@ GBool TileMap::cvtUserToWindow(int pg, double xu, double yu, int* xw, int* yw)
 	return cvtDevToWindow(pg, xd, yd, xw, yw);
 }
 
-GBool TileMap::cvtDevToWindow(int pg, int xd, int yd, int* xw, int* yw)
+bool TileMap::cvtDevToWindow(int pg, int xd, int yd, int* xw, int* yw)
 {
 	int leftPg, pageW1, pageH1, pageW2, pageH2, offsetX, offsetX2, offsetY;
 
 	if (!state->getDoc() || pg < 1 || pg > state->getDoc()->getNumPages())
 	{
 		*xw = *yw = 0;
-		return gFalse;
+		return false;
 	}
 
 	updatePageParams();
@@ -712,7 +700,7 @@ GBool TileMap::cvtDevToWindow(int pg, int xd, int yd, int* xw, int* yw)
 		if (pg != state->getScrollPage())
 		{
 			*xw = *yw = 0;
-			return gFalse;
+			return false;
 		}
 		pageW1 = pageW[pg - 1];
 		pageH1 = pageH[pg - 1];
@@ -749,7 +737,7 @@ GBool TileMap::cvtDevToWindow(int pg, int xd, int yd, int* xw, int* yw)
 		if (!(pg == leftPg || (pg == leftPg + 1 && leftPg + 1 <= state->getDoc()->getNumPages())))
 		{
 			*xw = *yw = 0;
-			return gFalse;
+			return false;
 		}
 		pageW1 = pageW[leftPg - 1];
 		pageH1 = pageH[leftPg - 1];
@@ -819,7 +807,7 @@ GBool TileMap::cvtDevToWindow(int pg, int xd, int yd, int* xw, int* yw)
 		break;
 	}
 
-	return gTrue;
+	return true;
 }
 
 void TileMap::cvtUserToDev(int pg, double xu, double yu, int* xd, int* yd)
@@ -857,7 +845,6 @@ void TileMap::getWindowPageRange(int x, int y, int w, int h, int* firstPage, int
 {
 	GList*          tiles2;
 	PlacedTileDesc* tile;
-	int             i;
 
 	if (!state->getDoc() || !state->getDoc()->getNumPages())
 	{
@@ -867,7 +854,7 @@ void TileMap::getWindowPageRange(int x, int y, int w, int h, int* firstPage, int
 	*firstPage = state->getDoc()->getNumPages();
 	*lastPage  = 0;
 	tiles2     = getTileList();
-	for (i = 0; i < tiles2->getLength(); ++i)
+	for (int i = 0; i < tiles2->getLength(); ++i)
 	{
 		tile = (PlacedTileDesc*)tiles2->get(i);
 		if (tile->px < x + w && tile->px + tile->tw > x && tile->py < y + h && tile->py + tile->th > y)
@@ -1444,8 +1431,7 @@ void TileMap::updatePageParams()
 		}
 		else
 		{
-			nxTiles = (pageW[page - 1] + state->getMaxTileWidth() - 1)
-			    / state->getMaxTileWidth();
+			nxTiles         = (pageW[page - 1] + state->getMaxTileWidth() - 1) / state->getMaxTileWidth();
 			tileW[page - 1] = (pageW[page - 1] + nxTiles - 1) / nxTiles;
 		}
 		if (pageH[page - 1] <= state->getMaxTileHeight())
@@ -1455,8 +1441,7 @@ void TileMap::updatePageParams()
 		}
 		else
 		{
-			nyTiles = (pageH[page - 1] + state->getMaxTileHeight() - 1)
-			    / state->getMaxTileHeight();
+			nyTiles         = (pageH[page - 1] + state->getMaxTileHeight() - 1) / state->getMaxTileHeight();
 			tileH[page - 1] = (pageH[page - 1] + nyTiles - 1) / nyTiles;
 		}
 	}
@@ -1473,8 +1458,7 @@ void TileMap::updateContinuousModeParams()
 	int page, pageW1, pageH1, pageW2, pageH2, x, y;
 
 	// check to see if the continuous mode params have already been updated
-	if (pageX)
-		return;
+	if (pageX) return;
 
 	updatePageParams();
 
@@ -1558,8 +1542,8 @@ void TileMap::computePageMatrix(int page, double* m)
 	py2     = cropBox->y2;
 	k       = pageDPI[page - 1] / 72.0;
 	rotate  = state->getRotate() + state->getDoc()->getCatalog()->getPage(page)->getRotate();
-	if (rotate > 360)
-		rotate -= 360;
+	if (rotate > 360) rotate -= 360;
+
 	switch (rotate)
 	{
 	case 0:
@@ -1600,25 +1584,21 @@ void TileMap::computePageMatrix(int page, double* m)
 
 void TileMap::invertMatrix(double* m, double* im)
 {
-	double det;
-
-	det   = 1 / (m[0] * m[3] - m[1] * m[2]);
-	im[0] = m[3] * det;
-	im[1] = -m[1] * det;
-	im[2] = -m[2] * det;
-	im[3] = m[0] * det;
-	im[4] = (m[2] * m[5] - m[3] * m[4]) * det;
-	im[5] = (m[1] * m[4] - m[0] * m[5]) * det;
+	double det = 1 / (m[0] * m[3] - m[1] * m[2]);
+	im[0]      = m[3] * det;
+	im[1]      = -m[1] * det;
+	im[2]      = -m[2] * det;
+	im[3]      = m[0] * det;
+	im[4]      = (m[2] * m[5] - m[3] * m[4]) * det;
+	im[5]      = (m[1] * m[4] - m[0] * m[5]) * det;
 }
 
 int TileMap::findContinuousPage(int y)
 {
 	int a, b, m;
 
-	if (y < pageY[0])
-		return 0;
-	if (y >= totalH)
-		return state->getDoc()->getNumPages() + 1;
+	if (y < pageY[0]) return 0;
+	if (y >= totalH) return state->getDoc()->getNumPages() + 1;
 	a = -1;
 	b = state->getDoc()->getNumPages();
 	// invariant: pageY[a] < y < pageY[b]
@@ -1639,10 +1619,8 @@ int TileMap::findSideBySideContinuousPage(int y)
 {
 	int a, b, m;
 
-	if (y < pageY[0])
-		return 0;
-	if (y >= totalH)
-		return (state->getDoc()->getNumPages() + 2) & ~1;
+	if (y < pageY[0]) return 0;
+	if (y >= totalH) return (state->getDoc()->getNumPages() + 2) & ~1;
 	a = -2;
 	b = (state->getDoc()->getNumPages() + 1) & ~1;
 	// invariant: pageY[a] < y < pageY[b]
@@ -1663,10 +1641,8 @@ int TileMap::findHorizContinuousPage(int x)
 {
 	int a, b, m;
 
-	if (x < pageX[0])
-		return 0;
-	if (x >= totalW)
-		return state->getDoc()->getNumPages() + 1;
+	if (x < pageX[0]) return 0;
+	if (x >= totalW) return state->getDoc()->getNumPages() + 1;
 	a = -1;
 	b = state->getDoc()->getNumPages();
 	// invariant: pageX[a] < x < pageX[b]

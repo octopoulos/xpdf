@@ -6,8 +6,7 @@
 //
 //========================================================================
 
-#ifndef CHARTYPES_H
-#define CHARTYPES_H
+#pragma once
 
 // Unicode character.
 typedef unsigned int Unicode;
@@ -20,5 +19,3 @@ typedef unsigned int CID;
 // - 16-bit CID
 // - Unicode
 typedef unsigned int CharCode;
-
-#endif

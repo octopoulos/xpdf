@@ -8,19 +8,14 @@
 //
 //========================================================================
 
-#ifndef UNICODEMAP_H
-#define UNICODEMAP_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
 #include "CharTypes.h"
 
 #if MULTITHREADED
 #	include "GMutex.h"
 #endif
-
-class GString;
 
 //------------------------------------------------------------------------
 
@@ -35,8 +30,8 @@ typedef int (*UnicodeMapFunc)(Unicode u, char* buf, int bufSize);
 
 struct UnicodeMapRange
 {
-	Unicode start, end;   // range of Unicode chars
-	Guint   code, nBytes; // first output code
+	Unicode  start, end;   // range of Unicode chars
+	uint32_t code, nBytes; // first output code
 };
 
 struct UnicodeMapExt;
@@ -48,27 +43,27 @@ class UnicodeMap
 public:
 	// Create the UnicodeMap specified by <encodingName>.  Sets the
 	// initial reference count to 1.  Returns nullptr on failure.
-	static UnicodeMap* parse(GString* encodingNameA);
+	static UnicodeMap* parse(const std::string& encodingNameA);
 
 	// Create a resident UnicodeMap.
-	UnicodeMap(const char* encodingNameA, GBool unicodeOutA, UnicodeMapRange* rangesA, int lenA);
+	UnicodeMap(const char* encodingNameA, bool unicodeOutA, UnicodeMapRange* rangesA, int lenA);
 
 	// Create a resident UnicodeMap that uses a function instead of a
 	// list of ranges.
-	UnicodeMap(const char* encodingNameA, GBool unicodeOutA, UnicodeMapFunc funcA);
+	UnicodeMap(const char* encodingNameA, bool unicodeOutA, UnicodeMapFunc funcA);
 
 	~UnicodeMap();
 
 	void incRefCnt();
 	void decRefCnt();
 
-	GString* getEncodingName() { return encodingName; }
+	std::string getEncodingName() { return encodingName; }
 
-	GBool isUnicode() { return unicodeOut; }
+	bool isUnicode() { return unicodeOut; }
 
 	// Return true if this UnicodeMap matches the specified
 	// <encodingNameA>.
-	GBool match(GString* encodingNameA);
+	bool match(const std::string& encodingNameA);
 
 	// Map Unicode to the target encoding.  Fills in <buf> with the
 	// output and returns the number of bytes used.  Output will be
@@ -77,11 +72,11 @@ public:
 	int mapUnicode(Unicode u, char* buf, int bufSize);
 
 private:
-	UnicodeMap(GString* encodingNameA);
+	UnicodeMap(const std::string& encodingNameA);
 
-	GString*       encodingName;
+	std::string    encodingName;
 	UnicodeMapKind kind;
-	GBool          unicodeOut;
+	bool           unicodeOut;
 
 	union
 	{
@@ -112,10 +107,8 @@ public:
 	// Get the UnicodeMap for <encodingName>.  Increments its reference
 	// count; there will be one reference for the cache plus one for the
 	// caller of this function.  Returns nullptr on failure.
-	UnicodeMap* getUnicodeMap(GString* encodingName);
+	UnicodeMap* getUnicodeMap(const std::string& encodingName);
 
 private:
 	UnicodeMap* cache[unicodeMapCacheSize];
 };
-
-#endif

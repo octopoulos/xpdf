@@ -6,11 +6,9 @@
 //
 //========================================================================
 
-#ifndef PARSER_H
-#define PARSER_H
+#pragma once
 
 #include <aconf.h>
-
 #include "Lexer.h"
 
 //------------------------------------------------------------------------
@@ -21,7 +19,7 @@ class Parser
 {
 public:
 	// Constructor.
-	Parser(XRef* xrefA, Lexer* lexerA, GBool allowStreamsA);
+	Parser(XRef* xrefA, Lexer* lexerA, bool allowStreamsA);
 
 	// Destructor.
 	~Parser();
@@ -29,7 +27,7 @@ public:
 	// Get the next object from the input stream.  If <simpleOnly> is
 	// true, do not parse compound objects (arrays, dictionaries, or
 	// streams).
-	Object* getObj(Object* obj, GBool simpleOnly = gFalse, Guchar* fileKey = nullptr, CryptAlgorithm encAlgorithm = cryptRC4, int keyLength = 0, int objNum = 0, int objGen = 0, int recursion = 0);
+	Object* getObj(Object* obj, bool simpleOnly = false, uint8_t* fileKey = nullptr, CryptAlgorithm encAlgorithm = cryptRC4, int keyLength = 0, int objNum = 0, int objGen = 0, int recursion = 0);
 
 	// Get stream index (for arrays of streams).
 	int getStreamIndex() { return lexer->getStreamIndex(); }
@@ -43,12 +41,10 @@ public:
 private:
 	XRef*  xref;         // the xref table for this PDF file
 	Lexer* lexer;        // input stream
-	GBool  allowStreams; // parse stream objects?
+	bool   allowStreams; // parse stream objects?
 	Object buf1, buf2;   // next two tokens
 	int    inlineImg;    // set when inline image data is encountered
 
-	Stream* makeStream(Object* dict, Guchar* fileKey, CryptAlgorithm encAlgorithm, int keyLength, int objNum, int objGen, int recursion);
+	Stream* makeStream(Object* dict, uint8_t* fileKey, CryptAlgorithm encAlgorithm, int keyLength, int objNum, int objGen, int recursion);
 	void    shift();
 };
-
-#endif

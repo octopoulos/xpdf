@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,7 +14,6 @@
 #include "gmem.h"
 #include "gmempp.h"
 #include "gfile.h"
-#include "GString.h"
 #include "Error.h"
 #include "GlobalParams.h"
 #include "PSTokenizer.h"
@@ -27,7 +25,7 @@
 
 struct CMapVectorEntry
 {
-	GBool isVector;
+	bool isVector;
 
 	union
 	{
@@ -50,17 +48,16 @@ static int getCharFromStream(void* data)
 
 //------------------------------------------------------------------------
 
-CMap* CMap::parse(CMapCache* cache, GString* collectionA, Object* obj)
+CMap* CMap::parse(CMapCache* cache, const std::string& collectionA, Object* obj)
 {
-	CMap*    cMap;
-	GString* cMapNameA;
+	CMap*       cMap;
+	std::string cMapNameA;
 
 	if (obj->isName())
 	{
-		cMapNameA = new GString(obj->getName());
+		cMapNameA = obj->getName();
 		if (!(cMap = globalParams->getCMap(collectionA, cMapNameA)))
-			error(errSyntaxError, -1, "Unknown CMap '{0:t}' for character collection '{1:t}'", cMapNameA, collectionA);
-		delete cMapNameA;
+			error(errSyntaxError, -1, "Unknown CMap '{}' for character collection '{}'", cMapNameA, collectionA);
 	}
 	else if (obj->isStream())
 	{
@@ -75,7 +72,7 @@ CMap* CMap::parse(CMapCache* cache, GString* collectionA, Object* obj)
 	return cMap;
 }
 
-CMap* CMap::parse(CMapCache* cache, GString* collectionA, GString* cMapNameA)
+CMap* CMap::parse(CMapCache* cache, const std::string& collectionA, const std::string& cMapNameA)
 {
 	FILE* f;
 	CMap* cMap;
@@ -83,16 +80,16 @@ CMap* CMap::parse(CMapCache* cache, GString* collectionA, GString* cMapNameA)
 	if (!(f = globalParams->findCMapFile(collectionA, cMapNameA)))
 	{
 		// Check for an identity CMap.
-		if (!cMapNameA->cmp("Identity") || !cMapNameA->cmp("Identity-H"))
-			return new CMap(collectionA->copy(), cMapNameA->copy(), 0);
-		if (!cMapNameA->cmp("Identity-V"))
-			return new CMap(collectionA->copy(), cMapNameA->copy(), 1);
+		if (cMapNameA == "Identity" || cMapNameA == "Identity-H")
+			return new CMap(collectionA, cMapNameA, 0);
+		if (cMapNameA == "Identity-V")
+			return new CMap(collectionA, cMapNameA, 1);
 
-		error(errSyntaxError, -1, "Couldn't find '{0:t}' CMap file for '{1:t}' collection", cMapNameA, collectionA);
+		error(errSyntaxError, -1, "Couldn't find '{}' CMap file for '{}' collection", cMapNameA, collectionA);
 		return nullptr;
 	}
 
-	cMap = new CMap(collectionA->copy(), cMapNameA->copy());
+	cMap = new CMap(collectionA, cMapNameA);
 	cMap->parse2(cache, &getCharFromFile, f);
 
 	fclose(f);
@@ -100,12 +97,12 @@ CMap* CMap::parse(CMapCache* cache, GString* collectionA, GString* cMapNameA)
 	return cMap;
 }
 
-CMap* CMap::parse(CMapCache* cache, GString* collectionA, Stream* str)
+CMap* CMap::parse(CMapCache* cache, const std::string& collectionA, Stream* str)
 {
 	Object obj1;
 	CMap*  cMap;
 
-	cMap = new CMap(collectionA->copy(), nullptr);
+	cMap = new CMap(collectionA, nullptr);
 
 	if (!str->getDict()->lookup("UseCMap", &obj1)->isNull())
 		cMap->useCMap(cache, &obj1);
@@ -122,7 +119,7 @@ void CMap::parse2(CMapCache* cache, int (*getCharFunc)(void*), void* data)
 	PSTokenizer* pst;
 	char         tok1[256], tok2[256], tok3[256];
 	int          n1, n2, n3;
-	Guint        start, end, code;
+	uint32_t     start, end, code;
 
 	pst = new PSTokenizer(getCharFunc, data);
 	pst->getToken(tok1, sizeof(tok1), &n1);
@@ -196,28 +193,26 @@ void CMap::parse2(CMapCache* cache, int (*getCharFunc)(void*), void* data)
 	delete pst;
 }
 
-CMap::CMap(GString* collectionA, GString* cMapNameA)
+CMap::CMap(const std::string& collectionA, const std::string& cMapNameA)
 {
-	int i;
-
 	collection = collectionA;
 	cMapName   = cMapNameA;
-	isIdent    = gFalse;
+	isIdent    = false;
 	wMode      = 0;
 	vector     = (CMapVectorEntry*)gmallocn(256, sizeof(CMapVectorEntry));
-	for (i = 0; i < 256; ++i)
+	for (int i = 0; i < 256; ++i)
 	{
-		vector[i].isVector = gFalse;
+		vector[i].isVector = false;
 		vector[i].cid      = 0;
 	}
 	refCnt = 1;
 }
 
-CMap::CMap(GString* collectionA, GString* cMapNameA, int wModeA)
+CMap::CMap(const std::string& collectionA, const std::string& cMapNameA, int wModeA)
 {
 	collection = collectionA;
 	cMapName   = cMapNameA;
-	isIdent    = gTrue;
+	isIdent    = true;
 	wMode      = wModeA;
 	vector     = nullptr;
 	refCnt     = 1;
@@ -225,10 +220,9 @@ CMap::CMap(GString* collectionA, GString* cMapNameA, int wModeA)
 
 void CMap::useCMap(CMapCache* cache, char* useName)
 {
-	GString* useNameStr;
-	CMap*    subCMap;
+	CMap* subCMap;
 
-	useNameStr = new GString(useName);
+	const std::string useNameStr = useName;
 	// if cache is non-nullptr, we already have a lock, and we can use
 	// CMapCache::getCMap() directly; otherwise, we need to use
 	// GlobalParams::getCMap() in order to acqure the lock need to use
@@ -237,7 +231,6 @@ void CMap::useCMap(CMapCache* cache, char* useName)
 		subCMap = cache->getCMap(collection, useNameStr);
 	else
 		subCMap = globalParams->getCMap(collection, useNameStr);
-	delete useNameStr;
 	if (!subCMap)
 		return;
 	isIdent = subCMap->isIdent;
@@ -248,11 +241,8 @@ void CMap::useCMap(CMapCache* cache, char* useName)
 
 void CMap::useCMap(CMapCache* cache, Object* obj)
 {
-	CMap* subCMap;
-
-	subCMap = CMap::parse(cache, collection, obj);
-	if (!subCMap)
-		return;
+	CMap* subCMap = CMap::parse(cache, collection, obj);
+	if (!subCMap) return;
 	isIdent = subCMap->isIdent;
 	if (subCMap->vector)
 		copyVector(vector, subCMap->vector);
@@ -261,20 +251,17 @@ void CMap::useCMap(CMapCache* cache, Object* obj)
 
 void CMap::copyVector(CMapVectorEntry* dest, CMapVectorEntry* src)
 {
-	int i, j;
-
-	for (i = 0; i < 256; ++i)
+	for (int i = 0; i < 256; ++i)
 	{
 		if (src[i].isVector)
 		{
 			if (!dest[i].isVector)
 			{
-				dest[i].isVector = gTrue;
-				dest[i].vector =
-				    (CMapVectorEntry*)gmallocn(256, sizeof(CMapVectorEntry));
-				for (j = 0; j < 256; ++j)
+				dest[i].isVector = true;
+				dest[i].vector   = (CMapVectorEntry*)gmallocn(256, sizeof(CMapVectorEntry));
+				for (int j = 0; j < 256; ++j)
 				{
-					dest[i].vector[j].isVector = gFalse;
+					dest[i].vector[j].isVector = false;
 					dest[i].vector[j].cid      = 0;
 				}
 			}
@@ -290,38 +277,35 @@ void CMap::copyVector(CMapVectorEntry* dest, CMapVectorEntry* src)
 	}
 }
 
-void CMap::addCIDs(Guint start, Guint end, Guint nBytes, CID firstCID)
+void CMap::addCIDs(uint32_t start, uint32_t end, uint32_t nBytes, CID firstCID)
 {
 	CMapVectorEntry* vec;
-	int              byte, byte0, byte1;
-	Guint            start1, end1, i, j, k;
 
-	start1 = start & 0xffffff00;
-	end1   = end & 0xffffff00;
-	for (i = start1; i <= end1; i += 0x100)
+	const uint32_t start1 = start & 0xffffff00;
+	const uint32_t end1   = end & 0xffffff00;
+	for (uint32_t i = start1; i <= end1; i += 0x100)
 	{
 		vec = vector;
-		for (j = nBytes - 1; j >= 1; --j)
+		for (int j = TO_INT(nBytes) - 1; j >= 1; --j)
 		{
-			byte = (i >> (8 * j)) & 0xff;
+			const uint32_t byte = (i >> (8 * j)) & 0xff;
 			if (!vec[byte].isVector)
 			{
-				vec[byte].isVector = gTrue;
-				vec[byte].vector =
-				    (CMapVectorEntry*)gmallocn(256, sizeof(CMapVectorEntry));
-				for (k = 0; k < 256; ++k)
+				vec[byte].isVector = true;
+				vec[byte].vector   = (CMapVectorEntry*)gmallocn(256, sizeof(CMapVectorEntry));
+				for (int k = 0; k < 256; ++k)
 				{
-					vec[byte].vector[k].isVector = gFalse;
+					vec[byte].vector[k].isVector = false;
 					vec[byte].vector[k].cid      = 0;
 				}
 			}
 			vec = vec[byte].vector;
 		}
-		byte0 = (i < start) ? (start & 0xff) : 0;
-		byte1 = (i + 0xff > end) ? (end & 0xff) : 0xff;
-		for (byte = byte0; byte <= byte1; ++byte)
+		const uint32_t byte0 = (i < start) ? (start & 0xff) : 0;
+		const uint32_t byte1 = (i + 0xff > end) ? (end & 0xff) : 0xff;
+		for (uint32_t byte = byte0; byte <= byte1; ++byte)
 			if (vec[byte].isVector)
-				error(errSyntaxError, -1, "Invalid CID ({0:x} [{1:d} bytes]) in CMap", i, nBytes);
+				error(errSyntaxError, -1, "Invalid CID ({:x} [{} bytes]) in CMap", i, nBytes);
 			else
 				vec[byte].cid = firstCID + ((i + byte) - start);
 	}
@@ -329,18 +313,12 @@ void CMap::addCIDs(Guint start, Guint end, Guint nBytes, CID firstCID)
 
 CMap::~CMap()
 {
-	delete collection;
-	if (cMapName)
-		delete cMapName;
-	if (vector)
-		freeCMapVector(vector);
+	if (vector) freeCMapVector(vector);
 }
 
 void CMap::freeCMapVector(CMapVectorEntry* vec)
 {
-	int i;
-
-	for (i = 0; i < 256; ++i)
+	for (int i = 0; i < 256; ++i)
 		if (vec[i].isVector)
 			freeCMapVector(vec[i].vector);
 	gfree(vec);
@@ -357,7 +335,7 @@ void CMap::incRefCnt()
 
 void CMap::decRefCnt()
 {
-	GBool done;
+	bool done;
 
 #if MULTITHREADED
 	done = gAtomicDecrement(&refCnt) == 0;
@@ -368,12 +346,12 @@ void CMap::decRefCnt()
 		delete this;
 }
 
-GBool CMap::match(GString* collectionA, GString* cMapNameA)
+bool CMap::match(const std::string& collectionA, const std::string& cMapNameA)
 {
-	return !collection->cmp(collectionA) && !cMapName->cmp(cMapNameA);
+	return (collection == collectionA && cMapName == cMapNameA);
 }
 
-CID CMap::getCID(char* s, int len, CharCode* c, int* nUsed)
+CID CMap::getCID(const char* s, int len, CharCode* c, int* nUsed)
 {
 	CMapVectorEntry* vec;
 	CharCode         cc;
@@ -410,37 +388,32 @@ CID CMap::getCID(char* s, int len, CharCode* c, int* nUsed)
 
 CMapCache::CMapCache()
 {
-	int i;
-
-	for (i = 0; i < cMapCacheSize; ++i)
+	for (int i = 0; i < cMapCacheSize; ++i)
 		cache[i] = nullptr;
 }
 
 CMapCache::~CMapCache()
 {
-	int i;
-
-	for (i = 0; i < cMapCacheSize; ++i)
+	for (int i = 0; i < cMapCacheSize; ++i)
 		if (cache[i])
 			cache[i]->decRefCnt();
 }
 
-CMap* CMapCache::getCMap(GString* collection, GString* cMapName)
+CMap* CMapCache::getCMap(const std::string& collection, const std::string& cMapName)
 {
 	CMap* cmap;
-	int   i, j;
 
 	if (cache[0] && cache[0]->match(collection, cMapName))
 	{
 		cache[0]->incRefCnt();
 		return cache[0];
 	}
-	for (i = 1; i < cMapCacheSize; ++i)
+	for (int i = 1; i < cMapCacheSize; ++i)
 	{
 		if (cache[i] && cache[i]->match(collection, cMapName))
 		{
 			cmap = cache[i];
-			for (j = i; j >= 1; --j)
+			for (int j = i; j >= 1; --j)
 				cache[j] = cache[j - 1];
 			cache[0] = cmap;
 			cmap->incRefCnt();
@@ -451,7 +424,7 @@ CMap* CMapCache::getCMap(GString* collection, GString* cMapName)
 	{
 		if (cache[cMapCacheSize - 1])
 			cache[cMapCacheSize - 1]->decRefCnt();
-		for (j = cMapCacheSize - 1; j >= 1; --j)
+		for (int j = cMapCacheSize - 1; j >= 1; --j)
 			cache[j] = cache[j - 1];
 		cache[0] = cmap;
 		cmap->incRefCnt();

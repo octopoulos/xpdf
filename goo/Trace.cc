@@ -11,7 +11,6 @@
 #include <aconf.h>
 
 #if ENABLE_TRACING
-
 #	include <stdio.h>
 #	include <stdarg.h>
 #	include <sys/types.h>
@@ -23,23 +22,22 @@
 // NB: This module is NOT thread-safe.
 
 static bool  traceInitialized = false;
-static FILE* traceOut         = NULL;
+static FILE* traceOut         = nullptr;
 
 static void traceInit()
 {
 	if (traceInitialized)
 		return;
 	//~ this could read an env var to set up an output file
-	GString* fileName = GString::format("/tmp/trace.{0:d}", (int)getpid());
-	traceOut          = fopen(fileName->getCString(), "w");
-	delete fileName;
-	traceInitialized = true;
+	const auto fileName = fmt::format("/tmp/trace.{}", (int)getpid());
+	traceOut            = fopen(fileName.c_str(), "w");
+	traceInitialized    = true;
 }
 
 static void traceHeader(char flag, void* handle)
 {
 	timeval tv;
-	gettimeofday(&tv, NULL);
+	gettimeofday(&tv, nullptr);
 	if (handle)
 		fprintf(traceOut, "%c %ld %06ld %p ", flag, tv.tv_sec, tv.tv_usec, handle);
 	else
@@ -103,7 +101,7 @@ void traceMessage(const char* fmt, ...)
 	traceInit();
 	if (!traceOut)
 		return;
-	traceHeader('M', NULL);
+	traceHeader('M', nullptr);
 	va_list args;
 	va_start(args, fmt);
 	vfprintf(traceOut, fmt, args);

@@ -6,11 +6,9 @@
 //
 //========================================================================
 
-#ifndef SPLASHTYPES_H
-#define SPLASHTYPES_H
+#pragma once
 
 #include <aconf.h>
-#include "gtypes.h"
 
 //------------------------------------------------------------------------
 // coordinates
@@ -57,32 +55,32 @@ extern int splashColorModeNComps[];
 #	define splashMaxColorComps 4
 #endif
 
-typedef Guchar  SplashColor[splashMaxColorComps];
-typedef Guchar* SplashColorPtr;
+typedef uint8_t  SplashColor[splashMaxColorComps];
+typedef uint8_t* SplashColorPtr;
 
 // RGB8
-static inline Guchar splashRGB8R(SplashColorPtr rgb8) { return rgb8[0]; }
+static inline uint8_t splashRGB8R(SplashColorPtr rgb8) { return rgb8[0]; }
 
-static inline Guchar splashRGB8G(SplashColorPtr rgb8) { return rgb8[1]; }
+static inline uint8_t splashRGB8G(SplashColorPtr rgb8) { return rgb8[1]; }
 
-static inline Guchar splashRGB8B(SplashColorPtr rgb8) { return rgb8[2]; }
+static inline uint8_t splashRGB8B(SplashColorPtr rgb8) { return rgb8[2]; }
 
 // BGR8
-static inline Guchar splashBGR8R(SplashColorPtr bgr8) { return bgr8[2]; }
+static inline uint8_t splashBGR8R(SplashColorPtr bgr8) { return bgr8[2]; }
 
-static inline Guchar splashBGR8G(SplashColorPtr bgr8) { return bgr8[1]; }
+static inline uint8_t splashBGR8G(SplashColorPtr bgr8) { return bgr8[1]; }
 
-static inline Guchar splashBGR8B(SplashColorPtr bgr8) { return bgr8[0]; }
+static inline uint8_t splashBGR8B(SplashColorPtr bgr8) { return bgr8[0]; }
 
 #if SPLASH_CMYK
 // CMYK8
-static inline Guchar splashCMYK8C(SplashColorPtr cmyk8) { return cmyk8[0]; }
+static inline uint8_t splashCMYK8C(SplashColorPtr cmyk8) { return cmyk8[0]; }
 
-static inline Guchar splashCMYK8M(SplashColorPtr cmyk8) { return cmyk8[1]; }
+static inline uint8_t splashCMYK8M(SplashColorPtr cmyk8) { return cmyk8[1]; }
 
-static inline Guchar splashCMYK8Y(SplashColorPtr cmyk8) { return cmyk8[2]; }
+static inline uint8_t splashCMYK8Y(SplashColorPtr cmyk8) { return cmyk8[2]; }
 
-static inline Guchar splashCMYK8K(SplashColorPtr cmyk8) { return cmyk8[3]; }
+static inline uint8_t splashCMYK8K(SplashColorPtr cmyk8) { return cmyk8[3]; }
 #endif
 
 static inline void splashColorCopy(SplashColorPtr dest, SplashColorPtr src)
@@ -135,12 +133,12 @@ enum SplashScreenType
 
 struct SplashScreenParams
 {
-	SplashScreenType type;
-	int              size;
-	int              dotRadius;
-	SplashCoord      gamma;
-	SplashCoord      blackThreshold;
-	SplashCoord      whiteThreshold;
+	SplashScreenType type;           //
+	int              size;           //
+	int              dotRadius;      //
+	SplashCoord      gamma;          //
+	SplashCoord      blackThreshold; //
+	SplashCoord      whiteThreshold; //
 };
 
 //------------------------------------------------------------------------
@@ -148,5 +146,3 @@ struct SplashScreenParams
 //------------------------------------------------------------------------
 
 typedef int SplashError;
-
-#endif

@@ -6,12 +6,9 @@
 //
 //========================================================================
 
-#ifndef SPLASHFONT_H
-#define SPLASHFONT_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
 #include "SplashTypes.h"
 #include "SplashMath.h"
 
@@ -26,8 +23,7 @@ class SplashPath;
 // decimal points.
 #define splashFontFractionBits 2
 #define splashFontFraction     (1 << splashFontFractionBits)
-#define splashFontFractionMul \
-	((SplashCoord)1 / (SplashCoord)splashFontFraction)
+#define splashFontFractionMul  ((SplashCoord)1 / (SplashCoord)splashFontFraction)
 
 //------------------------------------------------------------------------
 // SplashFont
@@ -36,7 +32,7 @@ class SplashPath;
 class SplashFont
 {
 public:
-	SplashFont(SplashFontFile* fontFileA, SplashCoord* matA, SplashCoord* textMatA, GBool aaA);
+	SplashFont(SplashFontFile* fontFileA, SplashCoord* matA, SplashCoord* textMatA, bool aaA);
 
 	// This must be called after the constructor, so that the subclass
 	// constructor has a chance to compute the bbox.
@@ -47,7 +43,7 @@ public:
 	SplashFontFile* getFontFile() { return fontFile; }
 
 	// Return true if <this> matches the specified font file and matrix.
-	GBool matches(SplashFontFile* fontFileA, SplashCoord* matA, SplashCoord* textMatA)
+	bool matches(SplashFontFile* fontFileA, SplashCoord* matA, SplashCoord* textMatA)
 	{
 		return fontFileA == fontFile && splashAbs(matA[0] - mat[0]) < 0.0001 && splashAbs(matA[1] - mat[1]) < 0.0001 && splashAbs(matA[2] - mat[2]) < 0.0001 && splashAbs(matA[3] - mat[3]) < 0.0001 && splashAbs(textMatA[0] - textMat[0]) < 0.0001 && splashAbs(textMatA[1] - textMat[1]) < 0.0001 && splashAbs(textMatA[2] - textMat[2]) < 0.0001 && splashAbs(textMatA[3] - textMat[3]) < 0.0001;
 	}
@@ -59,11 +55,11 @@ public:
 	// splashFontFraction = 1 << splashFontFractionBits.  Subclasses
 	// should override this to zero out xFrac and/or yFrac if they don't
 	// support fractional coordinates.
-	virtual GBool getGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitmap);
+	virtual bool getGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitmap);
 
 	// Rasterize a glyph.  The <xFrac> and <yFrac> values are the same
 	// as described for getGlyph.
-	virtual GBool makeGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitmap) = 0;
+	virtual bool makeGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitmap) = 0;
 
 	// Return the path for a glyph.
 	virtual SplashPath* getGlyphPath(int c) = 0;
@@ -81,18 +77,19 @@ public:
 	}
 
 protected:
-	SplashFontFile* fontFile;
-	SplashCoord     mat[4];                 // font transform matrix (text space -> device space)
-	SplashCoord     textMat[4];             // text transform matrix (text space -> user space)
-	GBool           aa;                     // anti-aliasing
-	int             xMin, yMin, xMax, yMax; // glyph bounding box
-	Guchar*         cache;                  // glyph bitmap cache
-	SplashFontCacheTag*                     // cache tags
-	    cacheTags;
-	int glyphW, glyphH; // size of glyph bitmaps
-	int glyphSize;      // size of glyph bitmaps, in bytes
-	int cacheSets;      // number of sets in cache
-	int cacheAssoc;     // cache associativity (glyphs per set)
+	SplashFontFile*     fontFile;   //
+	SplashCoord         mat[4];     // font transform matrix (text space -> device space)
+	SplashCoord         textMat[4]; // text transform matrix (text space -> user space)
+	bool                aa;         // anti-aliasing
+	int                 xMin;       //
+	int                 yMin;       //
+	int                 xMax;       //
+	int                 yMax;       // glyph bounding box
+	uint8_t*            cache;      // glyph bitmap cache
+	SplashFontCacheTag* cacheTags;  // cache tags
+	int                 glyphW;     //
+	int                 glyphH;     // size of glyph bitmaps
+	int                 glyphSize;  // size of glyph bitmaps, in bytes
+	int                 cacheSets;  // number of sets in cache
+	int                 cacheAssoc; // cache associativity (glyphs per set)
 };
-
-#endif

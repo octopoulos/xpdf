@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <string.h>
 #include "gmem.h"
 #include "gmempp.h"
@@ -17,28 +16,24 @@
 
 struct NameToCharCodeEntry
 {
-	char*    name;
-	CharCode c;
+	char*    name; //
+	CharCode c;    //
 };
 
 //------------------------------------------------------------------------
 
 NameToCharCode::NameToCharCode()
 {
-	int i;
-
 	size = 31;
 	len  = 0;
 	tab  = (NameToCharCodeEntry*)gmallocn(size, sizeof(NameToCharCodeEntry));
-	for (i = 0; i < size; ++i)
+	for (int i = 0; i < size; ++i)
 		tab[i].name = nullptr;
 }
 
 NameToCharCode::~NameToCharCode()
 {
-	int i;
-
-	for (i = 0; i < size; ++i)
+	for (int i = 0; i < size; ++i)
 		if (tab[i].name)
 			gfree(tab[i].name);
 	gfree(tab);
@@ -47,22 +42,21 @@ NameToCharCode::~NameToCharCode()
 void NameToCharCode::add(const char* name, CharCode c)
 {
 	NameToCharCodeEntry* oldTab;
-	int                  h, i, oldSize;
 
 	// expand the table if necessary
 	if (len >= size / 2)
 	{
-		oldSize = size;
-		oldTab  = tab;
-		size    = 2 * size + 1;
-		tab     = (NameToCharCodeEntry*)gmallocn(size, sizeof(NameToCharCodeEntry));
-		for (h = 0; h < size; ++h)
+		const int oldSize = size;
+		oldTab            = tab;
+		size              = 2 * size + 1;
+		tab               = (NameToCharCodeEntry*)gmallocn(size, sizeof(NameToCharCodeEntry));
+		for (int h = 0; h < size; ++h)
 			tab[h].name = nullptr;
-		for (i = 0; i < oldSize; ++i)
+		for (int i = 0; i < oldSize; ++i)
 		{
 			if (oldTab[i].name)
 			{
-				h = hash(oldTab[i].name);
+				int h = hash(oldTab[i].name);
 				while (tab[h].name)
 					if (++h == size)
 						h = 0;
@@ -73,7 +67,7 @@ void NameToCharCode::add(const char* name, CharCode c)
 	}
 
 	// add the new name
-	h = hash(name);
+	int h = hash(name);
 	while (tab[h].name && strcmp(tab[h].name, name))
 		if (++h == size)
 			h = 0;
@@ -86,9 +80,7 @@ void NameToCharCode::add(const char* name, CharCode c)
 
 CharCode NameToCharCode::lookup(const char* name)
 {
-	int h;
-
-	h = hash(name);
+	int h = hash(name);
 	while (tab[h].name)
 	{
 		if (!strcmp(tab[h].name, name))
@@ -102,9 +94,7 @@ CharCode NameToCharCode::lookup(const char* name)
 int NameToCharCode::hash(const char* name)
 {
 	const char*  p;
-	unsigned int h;
-
-	h = 0;
+	unsigned int h = 0;
 	for (p = name; *p; ++p)
 		h = 17 * h + (int)(*p & 0xff);
 	return (int)(h % size);

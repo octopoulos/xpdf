@@ -26,7 +26,6 @@
 #include "gmem.h"
 #include "gmempp.h"
 #include "gfile.h"
-#include "GString.h"
 #include "GList.h"
 #include "SplashBitmap.h"
 #include "config.h"
@@ -75,15 +74,15 @@ void XpdfWidget::setup(const QColor& paperColor, const QColor& matteColor, bool 
 
 	init();
 
-	paperColor2[0] = (Guchar)paperColor.red();
-	paperColor2[1] = (Guchar)paperColor.green();
-	paperColor2[2] = (Guchar)paperColor.blue();
-	matteColor2[0] = (Guchar)matteColor.red();
-	matteColor2[1] = (Guchar)matteColor.green();
-	matteColor2[2] = (Guchar)matteColor.blue();
+	paperColor2[0] = (uint8_t)paperColor.red();
+	paperColor2[1] = (uint8_t)paperColor.green();
+	paperColor2[2] = (uint8_t)paperColor.blue();
+	matteColor2[0] = (uint8_t)matteColor.red();
+	matteColor2[1] = (uint8_t)matteColor.green();
+	matteColor2[2] = (uint8_t)matteColor.blue();
 	try
 	{
-		core = new QtPDFCore(viewport(), horizontalScrollBar(), verticalScrollBar(), paperColor2, matteColor2, (GBool)reverseVideo);
+		core = new QtPDFCore(viewport(), horizontalScrollBar(), verticalScrollBar(), paperColor2, matteColor2, (bool)reverseVideo);
 		core->setUpdateCbk(updateCbk, this);
 		core->setMidPageChangedCbk(midPageChangedCbk, this);
 		core->setPreLoadCbk(preLoadCbk, this);
@@ -98,12 +97,12 @@ void XpdfWidget::setup(const QColor& paperColor, const QColor& matteColor, bool 
 	catch (GMemException e)
 	{
 		//~ what should this do?
-		core = NULL;
+		core = nullptr;
 	}
 
 #if XPDFWIDGET_PRINTING
-	printerForDialog = NULL;
-	printDialog      = NULL;
+	printerForDialog = nullptr;
+	printDialog      = nullptr;
 	printHDPI = printVDPI = 0;
 #endif
 
@@ -137,10 +136,10 @@ XpdfWidget::~XpdfWidget()
 void XpdfWidget::init(const QString& configFileName)
 {
 #ifdef _WIN32
-	char     buf[512];
-	GString *dir, *path;
-	char*    configFileName2;
-	int      n;
+	char        buf[512];
+	std::string dir, path;
+	const char* configFileName2;
+	int         n;
 #endif
 
 	initMutex.lock();
@@ -150,7 +149,7 @@ void XpdfWidget::init(const QString& configFileName)
 		{
 #ifdef _WIN32
 			// get the executable directory
-			n = GetModuleFileNameA(NULL, buf, sizeof(buf));
+			n = GetModuleFileNameA(nullptr, buf, sizeof(buf));
 			if (n <= 0 || n >= sizeof(buf))
 			{
 				// error or path too long for buffer - just use the current dir
@@ -159,31 +158,27 @@ void XpdfWidget::init(const QString& configFileName)
 			dir = grabPath(buf);
 
 			// load the config file
-			path = NULL;
+			path = nullptr;
 			if (configFileName.isEmpty())
 			{
-				path            = appendToPath(dir->copy(), xpdfSysConfigFile);
-				configFileName2 = path->getCString();
+				path            = appendToPath(dir, xpdfSysConfigFile);
+				configFileName2 = path.c_str();
 			}
 			else
 			{
 				configFileName2 = (char*)configFileName.toLocal8Bit().constData();
 			}
-			globalParams = new GlobalParams(configFileName2);
-			globalParams->setBaseDir(dir->getCString());
-			globalParams->setErrQuiet(gTrue);
-			if (path)
-				delete path;
+			globalParams = std::make_shared<GlobalParams>(configFileName2);
+			globalParams->setBaseDir(dir.c_str());
+			globalParams->setErrQuiet(true);
 
 			// set up the base fonts
 			appendToPath(dir, "t1fonts");
-			globalParams->setupBaseFonts(dir->getCString());
-			delete dir;
+			globalParams->setupBaseFonts(dir.c_str());
 #else
-			globalParams = new GlobalParams(
-			    (char*)configFileName.toLocal8Bit().constData());
-			globalParams->setErrQuiet(gTrue);
-			globalParams->setupBaseFonts(NULL);
+			globalParams = std::make_shared<GlobalParams>((char*)configFileName.toLocal8Bit().constData());
+			globalParams->setErrQuiet(true);
+			globalParams->setupBaseFonts(nullptr);
 #endif
 		}
 		catch (GMemException e)
@@ -197,14 +192,11 @@ void XpdfWidget::init(const QString& configFileName)
 
 void XpdfWidget::setConfig(const QString& command)
 {
-	GString* fileName;
-
 	init();
 	try
 	{
-		fileName = new GString("(none)");
+		const std::string fileName = "(none)";
 		globalParams->parseLine((char*)command.toLocal8Bit().constData(), fileName, 1);
-		delete fileName;
 	}
 	catch (GMemException e)
 	{
@@ -215,7 +207,7 @@ void XpdfWidget::enableHyperlinks(bool on)
 {
 	try
 	{
-		core->enableHyperlinks((GBool)on);
+		core->enableHyperlinks((bool)on);
 	}
 	catch (GMemException e)
 	{
@@ -226,7 +218,7 @@ void XpdfWidget::enableExternalHyperlinks(bool on)
 {
 	try
 	{
-		core->enableExternalHyperlinks((GBool)on);
+		core->enableExternalHyperlinks((bool)on);
 	}
 	catch (GMemException e)
 	{
@@ -237,7 +229,7 @@ void XpdfWidget::enableSelect(bool on)
 {
 	try
 	{
-		core->enableSelect((GBool)on);
+		core->enableSelect((bool)on);
 	}
 	catch (GMemException e)
 	{
@@ -248,7 +240,7 @@ void XpdfWidget::enablePan(bool on)
 {
 	try
 	{
-		core->enablePan((GBool)on);
+		core->enablePan((bool)on);
 	}
 	catch (GMemException e)
 	{
@@ -277,7 +269,7 @@ void XpdfWidget::showPasswordDialog(bool showDlg)
 {
 	try
 	{
-		core->setShowPasswordDialog((GBool)showDlg);
+		core->setShowPasswordDialog((bool)showDlg);
 	}
 	catch (GMemException e)
 	{
@@ -288,9 +280,9 @@ void XpdfWidget::setMatteColor(const QColor& matteColor)
 {
 	SplashColor matteColor2;
 
-	matteColor2[0] = (Guchar)matteColor.red();
-	matteColor2[1] = (Guchar)matteColor.green();
-	matteColor2[2] = (Guchar)matteColor.blue();
+	matteColor2[0] = (uint8_t)matteColor.red();
+	matteColor2[1] = (uint8_t)matteColor.green();
+	matteColor2[2] = (uint8_t)matteColor.blue();
 	try
 	{
 		core->setMatteColor(matteColor2);
@@ -304,7 +296,7 @@ void XpdfWidget::setReverseVideo(bool reverse)
 {
 	try
 	{
-		core->setReverseVideo((GBool)reverse);
+		core->setReverseVideo((bool)reverse);
 	}
 	catch (GMemException e)
 	{
@@ -323,39 +315,33 @@ void XpdfWidget::unsetCursor()
 
 XpdfWidget::ErrorCode XpdfWidget::loadFile(const QString& fileName, const QString& password)
 {
-	GString* passwordStr;
+	std::string passwordStr;
 #ifdef _WIN32
 	wchar_t* fileNameStr;
-	int      n, i;
 #else
-	GString* fileNameStr;
+	std::string fileNameStr;
 #endif
 	int err;
 
 	try
 	{
-		if (password.isEmpty())
-			passwordStr = NULL;
-		else
-			passwordStr = new GString(password.toLocal8Bit().constData());
+		if (!password.isEmpty())
+			passwordStr = password.toStdString();
 #ifdef _WIN32
 		// this should use QString::toWCharArray(), but Qt builds their
 		// library with /Zc:wchar_t-, which confuses things
-		n           = fileName.length();
+		const int n = fileName.length();
 		fileNameStr = (wchar_t*)gmallocn(n, sizeof(wchar_t));
-		for (i = 0; i < n; ++i)
+		for (int i = 0; i < n; ++i)
 			fileNameStr[i] = (wchar_t)fileName[i].unicode();
 		err = core->loadFile(fileNameStr, n, passwordStr, passwordStr);
 		gfree(fileNameStr);
 #else
-		fileNameStr = new GString(fileName.toLocal8Bit().constData());
+		fileNameStr = fileName.toStdString();
 		err         = core->loadFile(fileNameStr, passwordStr, passwordStr);
 		delete fileNameStr;
 #endif
-		if (passwordStr)
-			delete passwordStr;
-		if (!err)
-			core->displayPage(1, gTrue, gFalse);
+		if (!err) core->displayPage(1, true, false);
 		return (ErrorCode)err;
 	}
 	catch (GMemException e)
@@ -368,22 +354,15 @@ XpdfWidget::ErrorCode XpdfWidget::loadMem(const char* buffer, unsigned int buffe
 {
 	Object     obj;
 	MemStream* stream;
-	GString*   passwordStr;
 	int        err;
 
 	try
 	{
 		obj.initNull();
 		stream = new MemStream((char*)buffer, 0, bufferLength, &obj);
-		if (password.isEmpty())
-			passwordStr = NULL;
-		else
-			passwordStr = new GString(password.toLocal8Bit().constData());
-		err = core->loadFile(stream, passwordStr, passwordStr);
-		if (passwordStr)
-			delete passwordStr;
+		err    = core->loadFile(stream, password.toStdString(), password.toStdString());
 		if (!err)
-			core->displayPage(1, gTrue, gFalse);
+			core->displayPage(1, true, false);
 		return (ErrorCode)err;
 	}
 	catch (GMemException e)
@@ -394,38 +373,10 @@ XpdfWidget::ErrorCode XpdfWidget::loadMem(const char* buffer, unsigned int buffe
 
 XpdfWidget::ErrorCode XpdfWidget::readDoc(XpdfDocHandle* docPtr, const QString& fileName, const QString& password)
 {
-	GString* passwordStr;
-#ifdef _WIN32
-	wchar_t* fileNameStr;
-	int      n, i;
-#else
-	GString* fileNameStr;
-#endif
-	PDFDoc*   doc;
 	ErrorCode err;
-
-	*docPtr = NULL;
 	try
 	{
-		if (password.isEmpty())
-			passwordStr = NULL;
-		else
-			passwordStr = new GString(password.toLocal8Bit().constData());
-#ifdef _WIN32
-		// this should use QString::toWCharArray(), but Qt builds their
-		// library with /Zc:wchar_t-, which confuses things
-		n           = fileName.length();
-		fileNameStr = (wchar_t*)gmallocn(n, sizeof(wchar_t));
-		for (i = 0; i < n; ++i)
-			fileNameStr[i] = (wchar_t)fileName[i].unicode();
-		doc = new PDFDoc(fileNameStr, n, passwordStr, passwordStr, core);
-		gfree(fileNameStr);
-#else
-		fileNameStr = new GString(fileName.toLocal8Bit().constData());
-		doc         = new PDFDoc(fileNameStr, passwordStr, passwordStr, core);
-#endif
-		if (passwordStr)
-			delete passwordStr;
+		const auto doc = new PDFDoc(fileName.toStdString(), password.toStdString(), password.toStdString(), core);
 		if (doc->isOk())
 		{
 			*docPtr = doc;
@@ -449,7 +400,7 @@ XpdfWidget::ErrorCode XpdfWidget::loadDoc(XpdfDocHandle doc)
 	if (!doc)
 		return pdfErrNoHandle;
 	core->loadDoc((PDFDoc*)doc);
-	core->displayPage(1, gTrue, gFalse, gTrue);
+	core->displayPage(1, true, false, true);
 	return pdfOk;
 }
 
@@ -485,19 +436,12 @@ void XpdfWidget::closeFile()
 
 XpdfWidget::ErrorCode XpdfWidget::saveAs(const QString& fileName)
 {
-	GString* s;
-
 	try
 	{
 		if (!core->getDoc())
 			return pdfErrNoHandle;
-		s = new GString(fileName.toLocal8Bit().constData());
-		if (!core->getDoc()->saveAs(s))
-		{
-			delete s;
+		if (!core->getDoc()->saveAs(fileName.toStdString()))
 			return pdfErrOpenFile;
-		}
-		delete s;
 		return pdfOk;
 	}
 	catch (GMemException e)
@@ -510,7 +454,7 @@ bool XpdfWidget::hasOpenDocument() const
 {
 	try
 	{
-		return core->getDoc() != NULL;
+		return core->getDoc() != nullptr;
 	}
 	catch (GMemException e)
 	{
@@ -522,12 +466,12 @@ QString XpdfWidget::getFileName() const
 {
 	try
 	{
-		if (!core->getDoc() || !core->getDoc()->getFileName())
+		if (!core->getDoc() || core->getDoc()->getFileName().empty())
 			return QString();
 #ifdef _WIN32
 		return QString::fromWCharArray(core->getDoc()->getFileNameU());
 #else
-		return QString::fromLocal8Bit(core->getDoc()->getFileName()->getCString());
+		return QString::fromLocal8Bit(core->getDoc()->getFileName().c_str());
 #endif
 	}
 	catch (GMemException e)
@@ -578,7 +522,7 @@ void XpdfWidget::gotoPage(int pageNum)
 {
 	try
 	{
-		core->displayPage(pageNum, gTrue, gFalse);
+		core->displayPage(pageNum, true, false);
 	}
 	catch (GMemException e)
 	{
@@ -589,7 +533,7 @@ void XpdfWidget::gotoFirstPage()
 {
 	try
 	{
-		core->displayPage(1, gTrue, gFalse);
+		core->displayPage(1, true, false);
 	}
 	catch (GMemException e)
 	{
@@ -602,7 +546,7 @@ void XpdfWidget::gotoLastPage()
 	{
 		if (!core->getDoc())
 			return;
-		core->displayPage(core->getDoc()->getNumPages(), gTrue, gFalse);
+		core->displayPage(core->getDoc()->getNumPages(), true, false);
 	}
 	catch (GMemException e)
 	{
@@ -624,7 +568,7 @@ void XpdfWidget::gotoPreviousPage(bool scrollToTop)
 {
 	try
 	{
-		core->gotoPrevPage(1, scrollToTop, gFalse);
+		core->gotoPrevPage(1, scrollToTop, false);
 	}
 	catch (GMemException e)
 	{
@@ -633,17 +577,10 @@ void XpdfWidget::gotoPreviousPage(bool scrollToTop)
 
 bool XpdfWidget::gotoNamedDestination(const QString& dest)
 {
-	GString* destStr;
-
 	try
 	{
-		destStr = new GString(dest.toLocal8Bit().constData());
-		if (!core->gotoNamedDestination(destStr))
-		{
-			delete destStr;
+		if (!core->gotoNamedDestination(dest.toStdString()))
 			return false;
-		}
-		delete destStr;
 		return true;
 	}
 	catch (GMemException e)
@@ -898,14 +835,14 @@ bool XpdfWidget::mouseOverLink()
 	{
 		if (core->getHyperlinksEnabled())
 		{
-			return core->getLinkAction() != NULL;
+			return core->getLinkAction() != nullptr;
 		}
 		else
 		{
 			pt = mapFromGlobal(QCursor::pos());
 			if (!convertWindowToPDFCoords(pt.x(), pt.y(), &page, &xx, &yy))
 				return false;
-			return core->findLink(page, xx, yy) != NULL;
+			return core->findLink(page, xx, yy) != nullptr;
 		}
 	}
 	catch (GMemException e)
@@ -922,7 +859,7 @@ bool XpdfWidget::onLink(int page, double xx, double yy)
 			return false;
 		if (page < 1 || page > core->getDoc()->getNumPages())
 			return false;
-		return core->findLink(page, xx, yy) != NULL;
+		return core->findLink(page, xx, yy) != nullptr;
 	}
 	catch (GMemException e)
 	{
@@ -990,9 +927,9 @@ bool XpdfWidget::getLinkTarget(int page, double xx, double yy, QString& targetFi
 {
 	LinkAction* action;
 	LinkDest*   dest;
-	GString *   fileName, *namedDest, *path;
+	std::string fileName, namedDest, path;
 	Ref         pageRef;
-	char*       s;
+	const char* s;
 
 	try
 	{
@@ -1005,9 +942,9 @@ bool XpdfWidget::getLinkTarget(int page, double xx, double yy, QString& targetFi
 		switch (action->getKind())
 		{
 		case actionGoTo:
-			if (!core->getDoc()->getFileName())
+			if (core->getDoc()->getFileName().empty())
 				return false;
-			targetFileName = core->getDoc()->getFileName()->getCString();
+			targetFileName = core->getDoc()->getFileName().c_str();
 			if ((dest = ((LinkGoTo*)action)->getDest()))
 			{
 				if (dest->isPageRef())
@@ -1021,26 +958,24 @@ bool XpdfWidget::getLinkTarget(int page, double xx, double yy, QString& targetFi
 				}
 				targetDest = "";
 			}
-			else if ((namedDest = ((LinkGoTo*)action)->getNamedDest()))
+			else if ((namedDest = ((LinkGoTo*)action)->getNamedDest()).size())
 			{
-				targetDest = namedDest->getCString();
+				targetDest = namedDest.c_str();
 				targetPage = 1;
 			}
 			return true;
 		case actionGoToR:
-			s = ((LinkGoToR*)action)->getFileName()->getCString();
+			s = ((LinkGoToR*)action)->getFileName().c_str();
 			if (isAbsolutePath(s))
 			{
 				targetFileName = s;
 			}
 			else
 			{
-				if (!core->getDoc()->getFileName())
+				if (core->getDoc()->getFileName().empty())
 					return false;
-				path = appendToPath(
-				    grabPath(core->getDoc()->getFileName()->getCString()), s);
-				targetFileName = path->getCString();
-				delete path;
+				path           = appendToPath(grabPath(core->getDoc()->getFileName().c_str()), s);
+				targetFileName = path.c_str();
 			}
 			if ((dest = ((LinkGoToR*)action)->getDest()))
 			{
@@ -1049,16 +984,16 @@ bool XpdfWidget::getLinkTarget(int page, double xx, double yy, QString& targetFi
 				targetPage = dest->getPageNum();
 				targetDest = "";
 			}
-			else if ((namedDest = ((LinkGoToR*)action)->getNamedDest()))
+			else if ((namedDest = ((LinkGoToR*)action)->getNamedDest()).size())
 			{
-				targetDest = namedDest->getCString();
+				targetDest = namedDest.c_str();
 				targetPage = 1;
 			}
 			return true;
 		case actionLaunch:
 			fileName = ((LinkLaunch*)action)->getFileName();
-			s        = fileName->getCString();
-			if (!(fileName->getLength() >= 4 && (!strcmp(s + fileName->getLength() - 4, ".pdf") || !strcmp(s + fileName->getLength() - 4, ".PDF"))))
+			s        = fileName.c_str();
+			if (!(fileName.size() >= 4 && (!strcmp(s + fileName.size() - 4, ".pdf") || !strcmp(s + fileName.size() - 4, ".PDF"))))
 				return false;
 			if (isAbsolutePath(s))
 			{
@@ -1066,12 +1001,10 @@ bool XpdfWidget::getLinkTarget(int page, double xx, double yy, QString& targetFi
 			}
 			else
 			{
-				if (!core->getDoc()->getFileName())
+				if (core->getDoc()->getFileName().empty())
 					return false;
-				path = appendToPath(
-				    grabPath(core->getDoc()->getFileName()->getCString()), s);
-				targetFileName = path->getCString();
-				delete path;
+				path           = appendToPath(grabPath(core->getDoc()->getFileName().c_str()), s);
+				targetFileName = path.c_str();
 			}
 			targetPage = 1;
 			targetDest = "";
@@ -1091,12 +1024,12 @@ XpdfAnnotHandle XpdfWidget::onAnnot(int page, double xx, double yy)
 	try
 	{
 		if (!core->getDoc())
-			return NULL;
+			return nullptr;
 		return (XpdfAnnotHandle)core->findAnnot(page, xx, yy);
 	}
 	catch (GMemException e)
 	{
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -1104,7 +1037,7 @@ QString XpdfWidget::getAnnotType(XpdfAnnotHandle annot)
 {
 	try
 	{
-		return ((Annot*)annot)->getType()->getCString();
+		return ((Annot*)annot)->getType().c_str();
 	}
 	catch (GMemException e)
 	{
@@ -1118,7 +1051,6 @@ QString XpdfWidget::getAnnotContent(XpdfAnnotHandle annot)
 	Object      annotObj, contentsObj;
 	TextString* ts;
 	Unicode*    u;
-	int         i;
 
 	try
 	{
@@ -1128,7 +1060,7 @@ QString XpdfWidget::getAnnotContent(XpdfAnnotHandle annot)
 			{
 				ts = new TextString(contentsObj.getString());
 				u  = ts->getUnicode();
-				for (i = 0; i < ts->getLength(); ++i)
+				for (int i = 0; i < ts->getLength(); ++i)
 					s.append((QChar)u[i]);
 			}
 			contentsObj.free();
@@ -1147,12 +1079,12 @@ XpdfFormFieldHandle XpdfWidget::onFormField(int page, double xx, double yy)
 	try
 	{
 		if (!core->getDoc())
-			return NULL;
+			return nullptr;
 		return (XpdfFormFieldHandle)core->findFormField(page, xx, yy);
 	}
 	catch (GMemException e)
 	{
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -1172,12 +1104,12 @@ QString XpdfWidget::getFormFieldName(XpdfFormFieldHandle field)
 {
 	Unicode* u;
 	QString  s;
-	int      length, i;
+	int      length;
 
 	try
 	{
 		u = ((AcroFormField*)field)->getName(&length);
-		for (i = 0; i < length; ++i)
+		for (int i = 0; i < length; ++i)
 			s.append((QChar)u[i]);
 		gfree(u);
 		return s;
@@ -1192,12 +1124,12 @@ QString XpdfWidget::getFormFieldValue(XpdfFormFieldHandle field)
 {
 	Unicode* u;
 	QString  s;
-	int      length, i;
+	int      length;
 
 	try
 	{
 		u = ((AcroFormField*)field)->getValue(&length);
-		for (i = 0; i < length; ++i)
+		for (int i = 0; i < length; ++i)
 			s.append((QChar)u[i]);
 		gfree(u);
 		return s;
@@ -1443,9 +1375,9 @@ void XpdfWidget::setSelectionColor(const QColor& selectionColor)
 
 	try
 	{
-		col[0] = (Guchar)selectionColor.red();
-		col[1] = (Guchar)selectionColor.green();
-		col[2] = (Guchar)selectionColor.blue();
+		col[0] = (uint8_t)selectionColor.red();
+		col[1] = (uint8_t)selectionColor.green();
+		col[2] = (uint8_t)selectionColor.blue();
 		core->setSelectionColor(col);
 	}
 	catch (GMemException e)
@@ -1495,7 +1427,7 @@ XpdfWidget::ErrorCode XpdfWidget::print(bool showDialog)
 			if ((defaultPrinter = globalParams->getDefaultPrinter()))
 			{
 				printerForDialog->setPrinterName(
-				    QString::fromUtf8(defaultPrinter->getCString()));
+				    QString::fromUtf8(defaultPrinter.c_str()));
 				delete defaultPrinter;
 			}
 		}
@@ -1580,15 +1512,15 @@ QImage XpdfWidget::convertPageToImage(int page, double dpi, bool transparent, Im
 		}
 		if (format == QImage::Format_ARGB32)
 		{
-			SplashOutputDev* out = new SplashOutputDev(mode, 1, gFalse, paperColor);
-			out->setNoComposite(gTrue);
+			SplashOutputDev* out = new SplashOutputDev(mode, 1, false, paperColor);
+			out->setNoComposite(true);
 			out->startDoc(doc->getXRef());
-			doc->displayPage(out, page, dpi, dpi, core->getRotate(), gFalse, gTrue, gFalse);
+			doc->displayPage(out, page, dpi, dpi, core->getRotate(), false, true, false);
 			SplashBitmap* bitmap = out->getBitmap();
 			QImage        img(bitmap->getWidth(), bitmap->getHeight(), format);
-			Guchar*       pix   = bitmap->getDataPtr();
-			Guchar*       alpha = bitmap->getAlphaPtr();
-			Guint*        argb  = (Guint*)img.bits();
+			uint8_t*      pix   = bitmap->getDataPtr();
+			uint8_t*      alpha = bitmap->getAlphaPtr();
+			uint32_t*     argb  = (uint32_t*)img.bits();
 			for (int y = 0; y < bitmap->getHeight(); ++y)
 			{
 				for (int x = 0; x < bitmap->getWidth(); ++x)
@@ -1604,9 +1536,9 @@ QImage XpdfWidget::convertPageToImage(int page, double dpi, bool transparent, Im
 		}
 		else
 		{
-			SplashOutputDev* out = new SplashOutputDev(mode, 4, gFalse, paperColor);
+			SplashOutputDev* out = new SplashOutputDev(mode, 4, false, paperColor);
 			out->startDoc(doc->getXRef());
-			doc->displayPage(out, page, dpi, dpi, core->getRotate(), gFalse, gTrue, gFalse);
+			doc->displayPage(out, page, dpi, dpi, core->getRotate(), false, true, false);
 			SplashBitmap* bitmap = out->getBitmap();
 			QImage*       img    = new QImage((const uchar*)bitmap->getDataPtr(), bitmap->getWidth(), bitmap->getHeight(), format);
 			// force a copy
@@ -1703,15 +1635,15 @@ QImage XpdfWidget::convertRegionToImage(int page, double x0, double y0, double x
 		}
 		if (format == QImage::Format_ARGB32)
 		{
-			SplashOutputDev* out = new SplashOutputDev(mode, 1, gFalse, paperColor);
-			out->setNoComposite(gTrue);
+			SplashOutputDev* out = new SplashOutputDev(mode, 1, false, paperColor);
+			out->setNoComposite(true);
 			out->startDoc(doc->getXRef());
-			doc->displayPageSlice(out, page, dpi, dpi, core->getRotate(), gFalse, gTrue, gFalse, sliceX, sliceY, sliceW, sliceH);
+			doc->displayPageSlice(out, page, dpi, dpi, core->getRotate(), false, true, false, sliceX, sliceY, sliceW, sliceH);
 			SplashBitmap* bitmap = out->getBitmap();
 			QImage        img(bitmap->getWidth(), bitmap->getHeight(), format);
-			Guchar*       pix   = bitmap->getDataPtr();
-			Guchar*       alpha = bitmap->getAlphaPtr();
-			Guint*        argb  = (Guint*)img.bits();
+			uint8_t*      pix   = bitmap->getDataPtr();
+			uint8_t*      alpha = bitmap->getAlphaPtr();
+			uint32_t*     argb  = (uint32_t*)img.bits();
 			for (int y = 0; y < bitmap->getHeight(); ++y)
 			{
 				for (int x = 0; x < bitmap->getWidth(); ++x)
@@ -1727,9 +1659,9 @@ QImage XpdfWidget::convertRegionToImage(int page, double x0, double y0, double x
 		}
 		else
 		{
-			SplashOutputDev* out = new SplashOutputDev(mode, 4, gFalse, paperColor);
+			SplashOutputDev* out = new SplashOutputDev(mode, 4, false, paperColor);
 			out->startDoc(doc->getXRef());
-			doc->displayPageSlice(out, page, dpi, dpi, core->getRotate(), gFalse, gTrue, gFalse, sliceX, sliceY, sliceW, sliceH);
+			doc->displayPageSlice(out, page, dpi, dpi, core->getRotate(), false, true, false, sliceX, sliceY, sliceW, sliceH);
 			SplashBitmap* bitmap = out->getBitmap();
 			QImage*       img    = new QImage((const uchar*)bitmap->getDataPtr(), bitmap->getWidth(), bitmap->getHeight(), format);
 			// force a copy
@@ -1752,7 +1684,7 @@ QImage XpdfWidget::getThumbnail(int page)
 	GfxColorSpace*    colorSpace;
 	GfxImageColorMap* colorMap;
 	ImageStream*      imgStream;
-	Guchar *          line, *rgb;
+	uint8_t *         line, *rgb;
 	int               w, h, bpc, yy;
 
 	try
@@ -1807,7 +1739,7 @@ QImage XpdfWidget::getThumbnail(int page)
 
 		// create the QImage, and read the image data
 		QImage img(w, h, QImage::Format_RGB888);
-		rgb = (Guchar*)gmallocn(w, 3);
+		rgb = (uint8_t*)gmallocn(w, 3);
 		imgStream->reset();
 		for (yy = 0; yy < h; ++yy)
 		{
@@ -1857,26 +1789,21 @@ void XpdfWidget::setTextEncoding(const QString& encodingName)
 
 QString XpdfWidget::extractText(int page, double x0, double y0, double x1, double y1)
 {
-	GString *s, *enc;
-	GBool    twoByte;
-	QString  ret;
-	int      i;
+	QString     ret;
+	std::string s;
 
 	try
 	{
-		if (!core->getDoc())
-			return QString();
-		if (!(s = core->extractText(page, x0, y0, x1, y1)))
-			return QString();
-		enc     = globalParams->getTextEncodingName();
-		twoByte = !enc->cmp("UCS-2");
-		delete enc;
+		if (!core->getDoc()) return QString();
+		if ((s = core->extractText(page, x0, y0, x1, y1)).empty()) return QString();
+
+		const auto enc     = globalParams->getTextEncodingName();
+		const bool twoByte = (enc == "UCS-2");
 		if (twoByte)
-			for (i = 0; i + 1 < s->getLength(); i += 2)
-				ret.append((QChar)(((s->getChar(i) & 0xff) << 8) + (s->getChar(i + 1) & 0xff)));
+			for (int i = 0; i + 1 < s.size(); i += 2)
+				ret.append((QChar)(((s.at(i) & 0xff) << 8) + (s.at(i + 1) & 0xff)));
 		else
-			ret.append(s->getCString());
-		delete s;
+			ret.append(s.c_str());
 		return ret;
 	}
 	catch (GMemException e)
@@ -1901,7 +1828,7 @@ void XpdfWidget::copySelection()
 {
 	try
 	{
-		core->copySelection(gTrue);
+		core->copySelection(true);
 	}
 	catch (GMemException e)
 	{
@@ -1912,17 +1839,15 @@ bool XpdfWidget::find(const QString& text, int flags)
 {
 	Unicode* u;
 	bool     ret;
-	int      len, i;
 
 	try
 	{
-		if (!core->getDoc())
-			return false;
-		len = (int)text.length();
-		u   = (Unicode*)gmallocn(len, sizeof(Unicode));
-		for (i = 0; i < len; ++i)
+		if (!core->getDoc()) return false;
+		const int len = TO_INT(text.length());
+		u             = (Unicode*)gmallocn(len, sizeof(Unicode));
+		for (int i = 0; i < len; ++i)
 			u[i] = (Unicode)text[i].unicode();
-		ret = (bool)core->findU(u, len, (flags & findCaseSensitive) ? gTrue : gFalse, (flags & findNext) ? gTrue : gFalse, (flags & findBackward) ? gTrue : gFalse, (flags & findWholeWord) ? gTrue : gFalse, (flags & findOnePageOnly) ? gTrue : gFalse);
+		ret = (bool)core->findU(u, len, (flags & findCaseSensitive) ? true : false, (flags & findNext) ? true : false, (flags & findBackward) ? true : false, (flags & findWholeWord) ? true : false, (flags & findOnePageOnly) ? true : false);
 		gfree(u);
 		return ret;
 	}
@@ -1943,7 +1868,7 @@ QVector<XpdfFindResult> XpdfWidget::findAll(const QString& text, int firstPage, 
 		Unicode* u   = (Unicode*)gmallocn(len, sizeof(Unicode));
 		for (int i = 0; i < len; ++i)
 			u[i] = (Unicode)text[i].unicode();
-		GList* results = core->findAll(u, len, (flags & findCaseSensitive) ? gTrue : gFalse, (flags & findWholeWord) ? gTrue : gFalse, firstPage, lastPage);
+		GList* results = core->findAll(u, len, (flags & findCaseSensitive) ? true : false, (flags & findWholeWord) ? true : false, firstPage, lastPage);
 		gfree(u);
 		for (int i = 0; i < results->getLength(); ++i)
 		{
@@ -2048,7 +1973,7 @@ XpdfOutlineHandle XpdfWidget::getOutlineChild(XpdfOutlineHandle outline, int idx
 	try
 	{
 		if (!core->getDoc())
-			return NULL;
+			return nullptr;
 		if (outline)
 		{
 			((OutlineItem*)outline)->open();
@@ -2059,21 +1984,21 @@ XpdfOutlineHandle XpdfWidget::getOutlineChild(XpdfOutlineHandle outline, int idx
 			items = core->getDoc()->getOutline()->getItems();
 		}
 		if (!items)
-			return NULL;
+			return nullptr;
 		if (idx < 0 || idx >= items->getLength())
-			return NULL;
+			return nullptr;
 		return (XpdfOutlineHandle)items->get(idx);
 	}
 	catch (GMemException e)
 	{
-		return NULL;
+		return nullptr;
 	}
 }
 
 XpdfOutlineHandle XpdfWidget::getOutlineParent(XpdfOutlineHandle outline)
 {
 	if (!outline)
-		return NULL;
+		return nullptr;
 	return (XpdfOutlineHandle)((OutlineItem*)outline)->getParent();
 }
 
@@ -2081,15 +2006,14 @@ QString XpdfWidget::getOutlineTitle(XpdfOutlineHandle outline)
 {
 	Unicode* title;
 	QString  s;
-	int      titleLen, i;
 
 	if (!outline)
 		return QString();
 	try
 	{
-		title    = ((OutlineItem*)outline)->getTitle();
-		titleLen = ((OutlineItem*)outline)->getTitleLength();
-		for (i = 0; i < titleLen; ++i)
+		title              = ((OutlineItem*)outline)->getTitle();
+		const int titleLen = ((OutlineItem*)outline)->getTitleLength();
+		for (int i = 0; i < titleLen; ++i)
 			s.append((QChar)title[i]);
 		return s;
 	}
@@ -2160,12 +2084,12 @@ XpdfLayerHandle XpdfWidget::getLayer(int idx) const
 	try
 	{
 		if (!core->getDoc() || idx < 0 || idx >= core->getDoc()->getOptionalContent()->getNumOCGs())
-			return NULL;
+			return nullptr;
 		return (XpdfLayerHandle)core->getDoc()->getOptionalContent()->getOCG(idx);
 	}
 	catch (GMemException e)
 	{
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -2173,15 +2097,14 @@ QString XpdfWidget::getLayerName(XpdfLayerHandle layer) const
 {
 	Unicode* name;
 	QString  s;
-	int      nameLen, i;
 
 	if (!layer)
 		return QString();
 	try
 	{
-		name    = ((OptionalContentGroup*)layer)->getName();
-		nameLen = ((OptionalContentGroup*)layer)->getNameLength();
-		for (i = 0; i < nameLen; ++i)
+		name              = ((OptionalContentGroup*)layer)->getName();
+		const int nameLen = ((OptionalContentGroup*)layer)->getNameLength();
+		for (int i = 0; i < nameLen; ++i)
 			s.append((QChar)name[i]);
 		return s;
 	}
@@ -2211,7 +2134,7 @@ void XpdfWidget::setLayerVisibility(XpdfLayerHandle layer, bool visibility)
 	{
 		if (!core->getDoc() || !layer)
 			return;
-		core->setOCGState(((OptionalContentGroup*)layer), (GBool)visibility);
+		core->setOCGState(((OptionalContentGroup*)layer), (bool)visibility);
 	}
 	catch (GMemException e)
 	{
@@ -2260,7 +2183,7 @@ XpdfLayerOrderHandle XpdfWidget::getLayerOrderRoot() const
 	try
 	{
 		if (!core->getDoc())
-			return NULL;
+			return nullptr;
 		return (XpdfLayerOrderHandle)
 		    core->getDoc()
 		        ->getOptionalContent()
@@ -2268,7 +2191,7 @@ XpdfLayerOrderHandle XpdfWidget::getLayerOrderRoot() const
 	}
 	catch (GMemException e)
 	{
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -2278,7 +2201,7 @@ bool XpdfWidget::getLayerOrderIsName(XpdfLayerOrderHandle order) const
 		return false;
 	try
 	{
-		return ((OCDisplayNode*)order)->getOCG() == NULL;
+		return ((OCDisplayNode*)order)->getOCG() == nullptr;
 	}
 	catch (GMemException e)
 	{
@@ -2290,15 +2213,14 @@ QString XpdfWidget::getLayerOrderName(XpdfLayerOrderHandle order) const
 {
 	Unicode* name;
 	QString  s;
-	int      nameLen, i;
 
 	if (!order)
 		return QString();
 	try
 	{
-		name    = ((OCDisplayNode*)order)->getName();
-		nameLen = ((OCDisplayNode*)order)->getNameLength();
-		for (i = 0; i < nameLen; ++i)
+		name              = ((OCDisplayNode*)order)->getName();
+		const int nameLen = ((OCDisplayNode*)order)->getNameLength();
+		for (int i = 0; i < nameLen; ++i)
 			s.append((QChar)name[i]);
 		return s;
 	}
@@ -2311,14 +2233,14 @@ QString XpdfWidget::getLayerOrderName(XpdfLayerOrderHandle order) const
 XpdfLayerHandle XpdfWidget::getLayerOrderLayer(XpdfLayerOrderHandle order)
 {
 	if (!order)
-		return NULL;
+		return nullptr;
 	try
 	{
 		return (XpdfLayerHandle)((OCDisplayNode*)order)->getOCG();
 	}
 	catch (GMemException e)
 	{
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -2339,16 +2261,16 @@ int XpdfWidget::getLayerOrderNumChildren(XpdfLayerOrderHandle order)
 XpdfLayerOrderHandle XpdfWidget::getLayerOrderChild(XpdfLayerOrderHandle order, int idx)
 {
 	if (!order)
-		return NULL;
+		return nullptr;
 	try
 	{
 		if (idx < 0 || idx >= ((OCDisplayNode*)order)->getNumChildren())
-			return NULL;
+			return nullptr;
 		return (XpdfLayerOrderHandle)((OCDisplayNode*)order)->getChild(idx);
 	}
 	catch (GMemException e)
 	{
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -2356,14 +2278,14 @@ XpdfLayerOrderHandle XpdfWidget::getLayerOrderParent(
     XpdfLayerOrderHandle order)
 {
 	if (!order)
-		return NULL;
+		return nullptr;
 	try
 	{
 		return (XpdfLayerOrderHandle)((OCDisplayNode*)order)->getParent();
 	}
 	catch (GMemException e)
 	{
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -2385,15 +2307,14 @@ QString XpdfWidget::getEmbeddedFileName(int idx)
 {
 	Unicode* name;
 	QString  s;
-	int      nameLen, i;
 
 	try
 	{
 		if (!core->getDoc() || idx < 0 || idx >= core->getDoc()->getNumEmbeddedFiles())
 			return "";
-		name    = core->getDoc()->getEmbeddedFileName(idx);
-		nameLen = core->getDoc()->getEmbeddedFileNameLength(idx);
-		for (i = 0; i < nameLen; ++i)
+		name              = core->getDoc()->getEmbeddedFileName(idx);
+		const int nameLen = core->getDoc()->getEmbeddedFileNameLength(idx);
+		for (int i = 0; i < nameLen; ++i)
 			s.append((QChar)name[i]);
 		return s;
 	}
@@ -2409,8 +2330,7 @@ bool XpdfWidget::saveEmbeddedFile(int idx, QString fileName)
 	{
 		if (!core->getDoc() || idx < 0 || idx >= core->getDoc()->getNumEmbeddedFiles())
 			return false;
-		return core->getDoc()->saveEmbeddedFile(
-		    idx, fileName.toLocal8Bit().constData());
+		return core->getDoc()->saveEmbeddedFile(idx, fileName.toLocal8Bit().constData());
 	}
 	catch (GMemException e)
 	{
@@ -2434,11 +2354,11 @@ QSize XpdfWidget::sizeHint() const
 // callbacks from QtPDFCore
 //------------------------------------------------------------------------
 
-void XpdfWidget::updateCbk(void* data, GString* fileName, int pageNum, int numPages, const char* linkLabel)
+void XpdfWidget::updateCbk(void* data, const std::string& fileName, int pageNum, int numPages, const char* linkLabel)
 {
 	XpdfWidget* xpdf = (XpdfWidget*)data;
 
-	if (fileName)
+	if (fileName.size())
 	{
 		if (pageNum >= 0)
 			emit xpdf->pageChange(pageNum);
@@ -2584,14 +2504,12 @@ void XpdfWidget::mousePressEvent(QMouseEvent* e)
 
 void XpdfWidget::mouseReleaseEvent(QMouseEvent* e)
 {
-	int x, y;
-
 	// some versions of Qt drop mouse press events in double-clicks (?)
-	if (!lastMouseEventWasPress)
-		mousePressEvent(e);
+	if (!lastMouseEventWasPress) mousePressEvent(e);
 	lastMouseEventWasPress = false;
 
-	x = y = 0;
+	int x = 0;
+	int y = 0;
 	if (!mousePassthrough)
 	{
 		x = (int)(e->pos().x() * scaleFactor);
@@ -2627,10 +2545,8 @@ void XpdfWidget::mouseReleaseEvent(QMouseEvent* e)
 
 void XpdfWidget::mouseMoveEvent(QMouseEvent* e)
 {
-	int x, y;
-
-	x = (int)(e->pos().x() * scaleFactor);
-	y = (int)(e->pos().y() * scaleFactor);
+	const int x = (int)(e->pos().x() * scaleFactor);
+	const int y = (int)(e->pos().y() * scaleFactor);
 	core->mouseMove(x, y);
 	emit mouseMove(e);
 }

@@ -6,12 +6,9 @@
 //
 //========================================================================
 
-#ifndef TILECACHE_H
-#define TILECACHE_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
 #include "SplashTypes.h"
 
 class SplashBitmap;
@@ -37,7 +34,7 @@ public:
 	// started yet.  If <finished> is non-nullptr, *<finished> will be set
 	// to true if rasterization of this bitmap is finished, false
 	// otherwise.
-	SplashBitmap* getTileBitmap(TileDesc* tile, GBool* finished);
+	SplashBitmap* getTileBitmap(TileDesc* tile, bool* finished);
 
 	// Set a callback to be called whenever a tile rasterization is
 	// finished.  NB: this callback will be called from a worker thread.
@@ -56,21 +53,19 @@ public:
 private:
 	int             findTile(TileDesc* tile, GList* tileList);
 	void            cleanCache();
-	void            flushCache(GBool wait);
+	void            flushCache(bool wait);
 	void            removeTile(CachedTileDesc* ct);
-	GBool           hasUnstartedTiles();
+	bool            hasUnstartedTiles();
 	CachedTileDesc* getUnstartedTile();
 	static void     startPageCbk(void* data);
 	void            rasterizeTile(CachedTileDesc* tile);
-	static GBool    abortCheckCbk(void* data);
+	static bool     abortCheckCbk(void* data);
 
-	DisplayState*        state;
-	GList*               cache; // [CachedTileDesc]
-	TileCacheThreadPool* threadPool;
-	void (*tileDoneCbk)(void* data);
-	void* tileDoneCbkData;
+	DisplayState*        state;      //
+	GList*               cache;      // [CachedTileDesc]
+	TileCacheThreadPool* threadPool; //
+	void (*tileDoneCbk)(void* data); //
+	void* tileDoneCbkData;           //
 
 	friend class TileCacheThreadPool;
 };
-
-#endif

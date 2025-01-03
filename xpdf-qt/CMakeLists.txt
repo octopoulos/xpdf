@@ -8,6 +8,12 @@
 #
 # ========================================================================
 
+cmake_minimum_required(VERSION 3.17)
+
+set(CMAKE_CXX_STANDARD 20)
+
+find_package(CLI11 CONFIG REQUIRED)
+
 if((QT4_FOUND OR Qt5Widgets_FOUND OR Qt6Widgets_FOUND)
 	AND HAVE_SPLASH AND MULTITHREADED AND USE_EXCEPTIONS)
 	include_directories("${PROJECT_SOURCE_DIR}")
@@ -32,7 +38,7 @@ if((QT4_FOUND OR Qt5Widgets_FOUND OR Qt6Widgets_FOUND)
 	cmake_policy(SET CMP0020 NEW)
 
 	if(Qt5Widgets_FOUND AND NOT(Qt5Widgets_VERSION VERSION_LESS 5.7.0))
-		set(CMAKE_CXX_STANDARD 11)
+		# set(CMAKE_CXX_STANDARD 11)
 		set(CMAKE_CXX_STANDARD_REQUIRED ON)
 	endif()
 
@@ -101,7 +107,8 @@ if((QT4_FOUND OR Qt5Widgets_FOUND OR Qt6Widgets_FOUND)
 		${XPDF_MANIFEST}
 	)
 	target_link_libraries(xpdf ${QT_LIBRARIES} ${EXTRA_QT_LIBRARIES}
-		fmt::fmt
+		CLI11::CLI11
+		fmt::fmt-header-only
 		${PAPER_LIBRARY}
 		${FREETYPE_LIBRARY} ${FREETYPE_OTHER_LIBS}
 		${DTYPE_LIBRARY}

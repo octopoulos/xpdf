@@ -292,8 +292,8 @@ ASCII85Stream, ASCIIHexStream, and DCTStream didn't check for EOF and
   could run past the end of the stream in damaged files.
 Handle hex escapes (#xx) in names.  Still allow the name /# for
   backward-compatibility.
-Check for NULL characters in encoding array in GfxFont.cc (was calling
-  strcmp() with NULL which crashed under Solaris).
+Check for nullptr characters in encoding array in GfxFont.cc (was calling
+  strcmp() with nullptr which crashed under Solaris).
 PageAttrs::PageAttrs() didn't initialize crop box boundaries.
 Changed uses of lookup() to lookupNF() in XRef.cc.
 Fixed type checking of operators which take a variable number of
@@ -314,7 +314,7 @@ Deleted 'LTKApp::' in function declaration in LTKApp.h.
 Changed '(XKeyEvent *)&event' to '&event.xkey' in LTKApp.cc.
 Check that the link rectangle coordinates are in the correct order,
   and swap if necessary.
-TextOutputDev didn't set text to NULL, which caused pdftotext to
+TextOutputDev didn't set text to nullptr, which caused pdftotext to
   segfault if it couldn't open it's output file.
 Fixed a hash table search bug in GfxFontEncoding::getCharCode().
 Cleaned up colorspace code: rewrote GfxColorSpace and added
@@ -399,7 +399,7 @@ Various minor VMS fixes.
 Changes to configure script and Makefiles:
   - Print a warning if X is missing.
   - Use C++ when checking select() argument type (HP-UX).
-  - Use 0 instead of NULL when checking select().
+  - Use 0 instead of nullptr when checking select().
   - Default to gcc instead of c++.
   - Get rid of AC_C_INLINE -- this is meant for C, not C++.
   - Changed -USE_GZIP to -DUSE_GZIP.
@@ -731,14 +731,14 @@ Look for character names of the form "<letter><digit><digit>", instead
 T1FontFile::T1FontFile wasn't initializing vars, and ~T1FontFile
   wasn't checking before calling T1_DeleteFont -- this caused crashes
   if it tried to open a nonexistent font file.
-Catalog::Catalog didn't set baseURI to NULL early enough.
+Catalog::Catalog didn't set baseURI to nullptr early enough.
 Tweak the check for strings.h in the configure script.
 Yet another fix for the image rotation code in XOutputDev --
   off-by-one problem when upsampling.
 Handle Type 1/1C encodings when using FreeType 2.
 Allow FreeType2 to render user-supplied Type 1 base fonts.
 Opening a new file from full-screen mode tried to scroll.
-Fixed a bug in GfxFont constructor (missing check for NULL base font
+Fixed a bug in GfxFont constructor (missing check for nullptr base font
   name).
 Don't crash if a Type 1 font's FontBBox is non-integer.
 Pdfinfo prints page size.
@@ -768,7 +768,7 @@ In TextOutputDev, when computing the number of blank lines to insert,
   do a sanity check on the result.
 If both FlateDecode and some other filter (e.g., DCTDecode) were
   applied to an image stream, getPSFilter() crashed instead of just
-  returning NULL.
+  returning nullptr.
 Handle the /Identity function.
 
 0.92e (2001-aug-23)
@@ -1089,7 +1089,7 @@ Work around a pragma bug in the version of gcc that ships with MacOS X
   10.2.  [Thanks to Frank Siegert and Andrew Stone.]
 Fix a problem that was causing an infinite loop when a damaged content
   stream contains an 'ID' command inside a dictionary.
-Handle the case where systempapername() returns NULL (libpaper
+Handle the case where systempapername() returns nullptr (libpaper
   support).
 Handle fonts which are defined directly in the font resource
   dictionary rather than as separate objects.
@@ -1160,7 +1160,7 @@ Added support for external 16-bit TrueType fonts; added the
   file.
 Added an Arabic language support package.
 Added the Windows-1255 encoding to the Hebrew language package.
-A missing NULL check was causing a crash when closing the file in a
+A missing nullptr check was causing a crash when closing the file in a
   single window (which clears out the window, but leaves it open).
 Deal with TrueType fonts whose glyph data is out of order - this
   affected both FreeType rasterization and PostScript generation.
@@ -1341,7 +1341,7 @@ Allow the Count entry in a Pages dictionary to be a real number
 Shading pattern fills weren't being clipped correctly.
 Incorrect shallow copies in GfxRadialShading and StitchingFunction.
 The StitchingFunction destructor wasn't checking for funcs being
-  NULL.
+  nullptr.
 Change the TrueType code-to-GID mapping code so it looks at the
   TrueType 'post' table.
 Set the print command in the print dialog once at startup, don't
@@ -1415,7 +1415,7 @@ PSOutputDev now forces the text horizontal scale factor to be non-zero
 Tweaked the error recovery in the CCITTFax decoder.
 The LZW/Flate predictor should treat any Predictor value (in the
   stream dictionary) >= 10 identically.
-PSOutputDev and pdffonts check for NULL font objects (which can
+PSOutputDev and pdffonts check for nullptr font objects (which can
   happen, e.g., because of missing CMap files).
 Swap the left and right mouse wheel button numbers.
 EPS output ("pdftops -eps") now uses the CropBox instead of the
@@ -1453,7 +1453,7 @@ Fixed a text positioning problem in PostScript output.
 Handle TrueType collections in FoFiTrueType.cc.
 FoFiTrueType constructor was reporting a failure if the post table was
   bad - this should be non-fatal.
-Type 1 font parser was missing a NULL test.
+Type 1 font parser was missing a nullptr test.
 Mask chars passed to isdigit in goo/parseargs.c to avoid problems with
   signed chars.
 Added more error checking to the CCITTFax decoder.
@@ -1512,7 +1512,7 @@ Don't remap small caps and oldstyle glyphs in the name-to-Unicode
   table - it messes up TrueType font encodings.
 Pdftoppm wasn't setting the paper color correctly in mono and gray
   modes (this only showed up on big-endian machines).
-Missing NULL check was causing crashes when attempting to read non-PDF
+Missing nullptr check was causing crashes when attempting to read non-PDF
   files that happened to contain the string '%PDF'.
 Fixed a problem in the text extractor that was breaking up words.
 Handle vertical text (CJK fonts) in PS output with TrueType fonts that
@@ -1660,7 +1660,7 @@ Check for a broken/missing embedded font (this was causing xpdf to
 Added support for transfer functions in PostScript output.
 Be a bit more tolerant of Link destinations that contain null values
   for positioning parameters.
-Use ordered dot dithering instead of clustered dot dithering at 
+Use ordered dot dithering instead of clustered dot dithering at
   resolutions below 300 dpi (for monochrome output).
 Fixed security holes (bounds checking issues) in several places.
 Don't bother creating a SplashFont (allocating memory) for fonts that
@@ -2065,7 +2065,7 @@ Allow CCITTFax images to be more than 32k pixels wide.
 Modified the CMap parser to handle usecmap with Identity-H/V.
 Added some parameter checking in the JPX decoder.
 Added checks for infinite loops in PDF objects - for color spaces,
-  functions, optional content, and outline items.  
+  functions, optional content, and outline items.
 Add support for mouse button bindings up to button 32 (old limit was
   7).
 Fixed a bug in the decryption code for revision 3 with keyLength < 16
@@ -2119,7 +2119,7 @@ Skip extraneous unused data at the end of JBIG2 segments.
 Change the algorithm that stroke/fill adjustment uses so that the
   edges of adjacent strokes/fills line up.
 Do stroke adjustment on end caps when cap style is butt or projecting.
-Fixed a security hole: Gfx.parser was not being initialized to NULL.
+Fixed a security hole: Gfx.parser was not being initialized to nullptr.
 Fixed a security hole: integer bounds check in the Type 1 encoding
   parser in FoFiType1.cc.
 If an embedded font object is invalid or non-existent, do font
@@ -2174,7 +2174,7 @@ Apply stroke adjustment to rectangular images and clipping regions (in
   addition to strokes and fills).
 Decode JPEG 2000 images at less than full resolution if the full res
   image isn't needed (i.e., if the raw image is higher resolution than
-  the output). 
+  the output).
 Implemented knockout groups.
 Removed t1lib support.
 Added support for images with 16-bit components.
@@ -2678,7 +2678,7 @@ Display an error dialog when trying to copy text from a protected
 Updated all four of the CJK language support packages with the latest
   Adobe data.
 Modified pdftohtml to draw 'invisible' text over non-horizontal words.
-Catalog.pageLabels wasn't being properly initialized to NULL.  [Thanks
+Catalog.pageLabels wasn't being properly initialized to nullptr.  [Thanks
   to Dhiraj for the bug report.]
 Added a sanity check for JBIG2 symbol width.  [Reported by Marc
   Schoenefeld.]

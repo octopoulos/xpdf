@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -24,7 +23,6 @@
 #endif
 #include "gmem.h"
 #include "gmempp.h"
-#include "GString.h"
 #include "GList.h"
 #include "GHash.h"
 #include "gfile.h"
@@ -73,32 +71,35 @@
 
 //------------------------------------------------------------------------
 
-static struct
+struct DisplayFontTab
 {
-	const char* name;
-	const char* t1FileName;
-	const char* ttFileName;
-	const char* macFileName;   // may be .dfont, .ttf, or .ttc
-	const char* macFontName;   // font name inside .dfont or .ttc
-	const char* obliqueFont;   // name of font to oblique
+	std::string name;
+	std::string t1FileName;
+	std::string ttFileName;
+	std::string macFileName;   // may be .dfont, .ttf, or .ttc
+	std::string macFontName;   // font name inside .dfont or .ttc
+	std::string obliqueFont;   // name of font to oblique
 	double      obliqueFactor; // oblique sheer factor
-} displayFontTab[] = {
-	{ "Courier", "n022003l.pfb", "cour.ttf", "Courier", "Courier", nullptr, 0 },
-	{ "Courier-Bold", "n022004l.pfb", "courbd.ttf", "Courier", "Courier Bold", nullptr, 0 },
-	{ "Courier-BoldOblique", "n022024l.pfb", "courbi.ttf", "Courier", "Courier Bold Oblique", "Courier-Bold", 0.212557 },
-	{ "Courier-Oblique", "n022023l.pfb", "couri.ttf", "Courier", "Courier Oblique", "Courier", 0.212557 },
-	{ "Helvetica", "n019003l.pfb", "arial.ttf", "Helvetica", "Helvetica", nullptr, 0 },
-	{ "Helvetica-Bold", "n019004l.pfb", "arialbd.ttf", "Helvetica", "Helvetica Bold", nullptr, 0 },
-	{ "Helvetica-BoldOblique", "n019024l.pfb", "arialbi.ttf", "Helvetica", "Helvetica Bold Oblique", "Helvetica-Bold", 0.212557 },
-	{ "Helvetica-Oblique", "n019023l.pfb", "ariali.ttf", "Helvetica", "Helvetica Oblique", "Helvetica", 0.212557 },
-	{ "Symbol", "s050000l.pfb", nullptr, "Symbol", "Symbol", nullptr, 0 },
-	{ "Times-Bold", "n021004l.pfb", "timesbd.ttf", "Times", "Times Bold", nullptr, 0 },
-	{ "Times-BoldItalic", "n021024l.pfb", "timesbi.ttf", "Times", "Times Bold Italic", nullptr, 0 },
-	{ "Times-Italic", "n021023l.pfb", "timesi.ttf", "Times", "Times Italic", nullptr, 0 },
-	{ "Times-Roman", "n021003l.pfb", "times.ttf", "Times", "Times Roman", nullptr, 0 },
-	{ "ZapfDingbats", "d050000l.pfb", nullptr, "ZapfDingbats", "Zapf Dingbats", nullptr, 0 },
-	{ nullptr }
 };
+
+// clang-format off
+std::vector<DisplayFontTab> displayFontTabs = {
+	{ "Courier"              , "n022003l.pfb", "cour.ttf"   , "Courier"     , "Courier"               , ""              , 0        },
+	{ "Courier-Bold"         , "n022004l.pfb", "courbd.ttf" , "Courier"     , "Courier Bold"          , ""              , 0        },
+	{ "Courier-BoldOblique"  , "n022024l.pfb", "courbi.ttf" , "Courier"     , "Courier Bold Oblique"  , "Courier-Bold"  , 0.212557 },
+	{ "Courier-Oblique"      , "n022023l.pfb", "couri.ttf"  , "Courier"     , "Courier Oblique"       , "Courier"       , 0.212557 },
+	{ "Helvetica"            , "n019003l.pfb", "arial.ttf"  , "Helvetica"   , "Helvetica"             , ""              , 0        },
+	{ "Helvetica-Bold"       , "n019004l.pfb", "arialbd.ttf", "Helvetica"   , "Helvetica Bold"        , ""              , 0        },
+	{ "Helvetica-BoldOblique", "n019024l.pfb", "arialbi.ttf", "Helvetica"   , "Helvetica Bold Oblique", "Helvetica-Bold", 0.212557 },
+	{ "Helvetica-Oblique"    , "n019023l.pfb", "ariali.ttf" , "Helvetica"   , "Helvetica Oblique"     , "Helvetica"     , 0.212557 },
+	{ "Symbol"               , "s050000l.pfb", ""           , "Symbol"      , "Symbol"                , ""              , 0        },
+	{ "Times-Bold"           , "n021004l.pfb", "timesbd.ttf", "Times"       , "Times Bold"            , ""              , 0        },
+	{ "Times-BoldItalic"     , "n021024l.pfb", "timesbi.ttf", "Times"       , "Times Bold Italic"     , ""              , 0        },
+	{ "Times-Italic"         , "n021023l.pfb", "timesi.ttf" , "Times"       , "Times Italic"          , ""              , 0        },
+	{ "Times-Roman"          , "n021003l.pfb", "times.ttf"  , "Times"       , "Times Roman"           , ""              , 0        },
+	{ "ZapfDingbats"         , "d050000l.pfb", ""           , "ZapfDingbats", "Zapf Dingbats"         , ""              , 0        },
+};
+// clang-format on
 
 static const char* displayFontDirs[] = {
 #ifdef BASE14_FONT_DIR
@@ -124,28 +125,9 @@ static const char* displayFontDirs[] = {
 static const char* macSystemFontPath = "/System/Library/Fonts";
 #endif
 
-struct Base14FontInfo
-{
-	Base14FontInfo(GString* fileNameA, int fontNumA, double obliqueA)
-	{
-		fileName = fileNameA;
-		fontNum  = fontNumA;
-		oblique  = obliqueA;
-	}
-
-	~Base14FontInfo()
-	{
-		delete fileName;
-	}
-
-	GString* fileName;
-	int      fontNum;
-	double   oblique;
-};
-
 //------------------------------------------------------------------------
 
-GlobalParams* globalParams = nullptr;
+std::shared_ptr<GlobalParams> globalParams;
 
 const char* GlobalParams::defaultTextEncoding = "Latin1";
 
@@ -153,7 +135,7 @@ const char* GlobalParams::defaultTextEncoding = "Latin1";
 // PSFontParam16
 //------------------------------------------------------------------------
 
-PSFontParam16::PSFontParam16(GString* nameA, int wModeA, GString* psFontNameA, GString* encodingA)
+PSFontParam16::PSFontParam16(const std::string& nameA, int wModeA, const std::string& psFontNameA, const std::string& encodingA)
 {
 	name       = nameA;
 	wMode      = wModeA;
@@ -163,9 +145,6 @@ PSFontParam16::PSFontParam16(GString* nameA, int wModeA, GString* psFontNameA, G
 
 PSFontParam16::~PSFontParam16()
 {
-	delete name;
-	delete psFontName;
-	delete encoding;
 }
 
 //------------------------------------------------------------------------
@@ -175,20 +154,20 @@ PSFontParam16::~PSFontParam16()
 class SysFontInfo
 {
 public:
-	GString*    name;
-	GString*    path;
+	std::string name;
+	std::string path;
 	SysFontType type;
 	int         fontNum; // for TrueType collections
 
-	SysFontInfo(GString* nameA, GString* pathA, SysFontType typeA, int fontNumA);
+	SysFontInfo(const std::string& nameA, const std::string& pathA, SysFontType typeA, int fontNumA);
 	~SysFontInfo();
-	GString* mungeName1(GString* in);
-	GString* mungeName2(GString* in);
-	void     mungeName3(GString* nameA, GBool* bold, GBool* italic);
-	int      match(GString* nameA);
+	std::string mungeName1(const std::string& in);
+	std::string mungeName2(const std::string& in);
+	void        mungeName3(std::string& nameA, bool* bold, bool* italic);
+	int         match(const std::string& nameA);
 };
 
-SysFontInfo::SysFontInfo(GString* nameA, GString* pathA, SysFontType typeA, int fontNumA)
+SysFontInfo::SysFontInfo(const std::string& nameA, const std::string& pathA, SysFontType typeA, int fontNumA)
 {
 	name    = nameA;
 	path    = pathA;
@@ -198,16 +177,14 @@ SysFontInfo::SysFontInfo(GString* nameA, GString* pathA, SysFontType typeA, int 
 
 SysFontInfo::~SysFontInfo()
 {
-	delete name;
-	delete path;
 }
 
 // Remove space/comma/dash/underscore chars.
 // Uppercase the name.
-GString* SysFontInfo::mungeName1(GString* in)
+std::string SysFontInfo::mungeName1(const std::string& in)
 {
-	GString* out = new GString();
-	for (char* p = in->getCString(); *p; ++p)
+	std::string out;
+	for (char* p = (char*)in.c_str(); *p; ++p)
 	{
 		if (*p == ' ' || *p == ',' || *p == '-' || *p == '_')
 		{
@@ -215,11 +192,11 @@ GString* SysFontInfo::mungeName1(GString* in)
 		}
 		else if (*p >= 'a' && *p <= 'z')
 		{
-			out->append((char)(*p & 0xdf));
+			out += (char)(*p & 0xdf);
 		}
 		else
 		{
-			out->append(*p);
+			out += *p;
 		}
 	}
 	return out;
@@ -231,18 +208,16 @@ GString* SysFontInfo::mungeName1(GString* in)
 // Remove trailing "PS" and "WGL4" from tokens.
 // Uppercase each token.
 // Concatenate tokens (dropping the space/comma/dash chars).
-GString* SysFontInfo::mungeName2(GString* in)
+std::string SysFontInfo::mungeName2(const std::string& in)
 {
-	GString* out = new GString();
-	char*    p0  = in->getCString();
+	std::string out;
+	char*       p0 = (char*)in.c_str();
 	while (*p0)
 	{
 		if (!strcmp(p0, "Identity-H") || !strcmp(p0, "Identity-V") || !strcmp(p0, "GB2312") || !strcmp(p0, "UniGB-UCS2-H") || !strcmp(p0, "UniGB-UCS2-V"))
 			break;
 		char* p1;
-		for (p1 = p0 + 1;
-		     *p1 && *p1 != ' ' && *p1 != ',' && *p1 != '-' && *p1 != '_';
-		     ++p1)
+		for (p1 = p0 + 1; *p1 && *p1 != ' ' && *p1 != ',' && *p1 != '-' && *p1 != '_'; ++p1)
 			;
 		char* p2 = p1;
 		if (p2 - p0 >= 2 && (p2[-2] == 'B' || p2[-2] == 'M') && p2[-1] == 'T')
@@ -253,9 +228,9 @@ GString* SysFontInfo::mungeName2(GString* in)
 			p2 -= 4;
 		for (; p0 < p2; ++p0)
 			if (*p0 >= 'a' && *p0 <= 'z')
-				out->append((char)(*p0 & 0xdf));
+				out += (char)(*p0 & 0xdf);
 			else
-				out->append(*p0);
+				out += *p0;
 		for (p0 = p1; *p0 == ' ' || *p0 == ',' || *p0 == '-' || *p0 == '_'; ++p0)
 			;
 	}
@@ -264,33 +239,33 @@ GString* SysFontInfo::mungeName2(GString* in)
 
 // Remove trailing bold/italic/regular/roman tags from the name.
 // (Note: the names have already been uppercased by mungeName1/2.)
-void SysFontInfo::mungeName3(GString* nameA, GBool* bold, GBool* italic)
+void SysFontInfo::mungeName3(std::string& nameA, bool* bold, bool* italic)
 {
-	*bold   = gFalse;
-	*italic = gFalse;
-	int n   = nameA->getLength();
+	*bold   = false;
+	*italic = false;
+	int n   = TO_INT(nameA.size());
 	while (1)
 	{
-		if (n >= 4 && !strcmp(nameA->getCString() + n - 4, "BOLD"))
+		if (n >= 4 && !strcmp(nameA.c_str() + n - 4, "BOLD"))
 		{
-			nameA->del(n - 4, 4);
+			nameA.erase(n - 4, 4);
 			n -= 4;
-			*bold = gTrue;
+			*bold = true;
 		}
-		else if (n >= 6 && !strcmp(nameA->getCString() + n - 6, "ITALIC"))
+		else if (n >= 6 && !strcmp(nameA.c_str() + n - 6, "ITALIC"))
 		{
-			nameA->del(n - 6, 6);
+			nameA.erase(n - 6, 6);
 			n -= 6;
-			*italic = gTrue;
+			*italic = true;
 		}
-		else if (n >= 7 && !strcmp(nameA->getCString() + n - 7, "REGULAR"))
+		else if (n >= 7 && !strcmp(nameA.c_str() + n - 7, "REGULAR"))
 		{
-			nameA->del(n - 7, 7);
+			nameA.erase(n - 7, 7);
 			n -= 7;
 		}
-		else if (n >= 5 && !strcmp(nameA->getCString() + n - 5, "ROMAN"))
+		else if (n >= 5 && !strcmp(nameA.c_str() + n - 5, "ROMAN"))
 		{
-			nameA->del(n - 5, 5);
+			nameA.erase(n - 5, 5);
 			n -= 5;
 		}
 		else
@@ -302,46 +277,31 @@ void SysFontInfo::mungeName3(GString* nameA, GBool* bold, GBool* italic)
 
 // Returns a score indicating how well this font matches [nameA].  A
 // higher score is better.  Zero indicates a non-match.
-int SysFontInfo::match(GString* nameA)
+int SysFontInfo::match(const std::string& nameA)
 {
 	// fast fail: check if the first two letters match
-	if (strncasecmp(name->getCString(), nameA->getCString(), 2))
+	if (strncasecmp(name.c_str(), nameA.c_str(), 2))
 		return 0;
 
-	GString* pdfName1 = mungeName1(nameA);
-	GString* sysName1 = mungeName1(name);
-	if (!pdfName1->cmp(sysName1))
-	{
-		delete pdfName1;
-		delete sysName1;
+	std::string pdfName1 = mungeName1(nameA);
+	std::string sysName1 = mungeName1(name);
+	if (pdfName1 == sysName1)
 		return 8;
-	}
 
-	GString* pdfName2 = mungeName2(nameA);
-	GString* sysName2 = mungeName2(name);
-	if (!pdfName2->cmp(sysName2))
-	{
-		delete pdfName1;
-		delete sysName1;
-		delete pdfName2;
-		delete sysName2;
+	std::string pdfName2 = mungeName2(nameA);
+	std::string sysName2 = mungeName2(name);
+	if (pdfName2 == sysName2)
 		return 7;
-	}
 
-	GBool pdfBold1, pdfItalic1, sysBold1, sysItalic1;
+	bool pdfBold1, pdfItalic1, sysBold1, sysItalic1;
 	mungeName3(pdfName1, &pdfBold1, &pdfItalic1);
 	mungeName3(sysName1, &sysBold1, &sysItalic1);
-	int eq1 = !pdfName1->cmp(sysName1);
+	int eq1 = (pdfName1 == sysName1);
 
-	GBool pdfBold2, pdfItalic2, sysBold2, sysItalic2;
+	bool pdfBold2, pdfItalic2, sysBold2, sysItalic2;
 	mungeName3(pdfName2, &pdfBold2, &pdfItalic2);
 	mungeName3(sysName2, &sysBold2, &sysItalic2);
-	int eq2 = !pdfName2->cmp(sysName2);
-
-	delete pdfName1;
-	delete sysName1;
-	delete pdfName2;
-	delete sysName2;
+	int eq2 = (pdfName2 == sysName2);
 
 	if (eq1 && pdfBold1 == sysBold1 && pdfItalic1 == sysItalic1)
 		return 6;
@@ -368,7 +328,7 @@ class SysFontList
 public:
 	SysFontList();
 	~SysFontList();
-	SysFontInfo* find(GString* name);
+	SysFontInfo* find(const std::string& name);
 
 #ifdef _WIN32
 	void scanWindowsFonts(char* winFontDir);
@@ -380,7 +340,7 @@ public:
 
 private:
 #ifdef _WIN32
-	SysFontInfo* makeWindowsFont(char* name, int fontNum, char* path);
+	SysFontInfo* makeWindowsFont(char* name, int fontNum, const char* path);
 #endif
 
 	GList* fonts; // [SysFontInfo]
@@ -396,7 +356,7 @@ SysFontList::~SysFontList()
 	deleteGList(fonts, SysFontInfo);
 }
 
-SysFontInfo* SysFontList::find(GString* name)
+SysFontInfo* SysFontList::find(const std::string& name)
 {
 	SysFontInfo* match = nullptr;
 	int          score = 0;
@@ -423,7 +383,6 @@ void SysFontList::scanWindowsFonts(char* winFontDir)
 	char          valName[1024], data[1024];
 	int           n, fontNum;
 	char *        p0, *p1;
-	GString*      fontPath;
 
 	version.dwOSVersionInfoSize = sizeof(version);
 	GetVersionEx(&version);
@@ -447,11 +406,11 @@ void SysFontList::scanWindowsFonts(char* winFontDir)
 				n                   = (int)strlen(data);
 				if (!strcasecmp(data + n - 4, ".ttf") || !strcasecmp(data + n - 4, ".ttc") || !strcasecmp(data + n - 4, ".otf"))
 				{
-					fontPath = new GString(data);
+					std::string fontPath;
 					if (!(dataLen >= 3 && data[1] == ':' && data[2] == '\\'))
 					{
-						fontPath->insert(0, '\\');
-						fontPath->insert(0, winFontDir);
+						fontPath.insert(0, "\\");
+						fontPath.insert(0, winFontDir);
 					}
 					p0      = valName;
 					fontNum = 0;
@@ -467,11 +426,10 @@ void SysFontList::scanWindowsFonts(char* winFontDir)
 						{
 							p1 = p0 + strlen(p0);
 						}
-						fonts->append(makeWindowsFont(p0, fontNum, fontPath->getCString()));
+						fonts->append(makeWindowsFont(p0, fontNum, fontPath.c_str()));
 						p0 = p1;
 						++fontNum;
 					}
-					delete fontPath;
 				}
 			}
 			++idx;
@@ -480,9 +438,9 @@ void SysFontList::scanWindowsFonts(char* winFontDir)
 	}
 }
 
-SysFontInfo* SysFontList::makeWindowsFont(char* name, int fontNum, char* path)
+SysFontInfo* SysFontList::makeWindowsFont(char* name, int fontNum, const char* path)
 {
-	int n = (int)strlen(name);
+	int n = TO_INT(strlen(name));
 
 	// remove trailing ' (TrueType)' or ' (OpenType)'
 	if (n > 11 && (!strncmp(name + n - 11, " (TrueType)", 11) || !strncmp(name + n - 11, " (OpenType)", 11)))
@@ -496,7 +454,7 @@ SysFontInfo* SysFontList::makeWindowsFont(char* name, int fontNum, char* path)
 	else
 		type = sysFontTTF;
 
-	return new SysFontInfo(new GString(name, n), new GString(path), type, fontNum);
+	return new SysFontInfo(std::string(name, n), path, type, fontNum);
 }
 #endif // _WIN32
 
@@ -569,8 +527,8 @@ KeyBinding::KeyBinding(int codeA, int modsA, int contextA, const char* cmd0)
 	code    = codeA;
 	mods    = modsA;
 	context = contextA;
-	cmds    = new GList();
-	cmds->append(new GString(cmd0));
+	cmds.clear();
+	cmds.push_back(cmd0);
 }
 
 KeyBinding::KeyBinding(int codeA, int modsA, int contextA, const char* cmd0, const char* cmd1)
@@ -578,12 +536,12 @@ KeyBinding::KeyBinding(int codeA, int modsA, int contextA, const char* cmd0, con
 	code    = codeA;
 	mods    = modsA;
 	context = contextA;
-	cmds    = new GList();
-	cmds->append(new GString(cmd0));
-	cmds->append(new GString(cmd1));
+	cmds.clear();
+	cmds.push_back(cmd0);
+	cmds.push_back(cmd1);
 }
 
-KeyBinding::KeyBinding(int codeA, int modsA, int contextA, GList* cmdsA)
+KeyBinding::KeyBinding(int codeA, int modsA, int contextA, const VEC_STR& cmdsA)
 {
 	code    = codeA;
 	mods    = modsA;
@@ -593,14 +551,13 @@ KeyBinding::KeyBinding(int codeA, int modsA, int contextA, GList* cmdsA)
 
 KeyBinding::~KeyBinding()
 {
-	deleteGList(cmds, GString);
 }
 
 //------------------------------------------------------------------------
 // PopupMenuCmd
 //------------------------------------------------------------------------
 
-PopupMenuCmd::PopupMenuCmd(GString* labelA, GList* cmdsA)
+PopupMenuCmd::PopupMenuCmd(const std::string& labelA, const VEC_STR& cmdsA)
 {
 	label = labelA;
 	cmds  = cmdsA;
@@ -608,8 +565,6 @@ PopupMenuCmd::PopupMenuCmd(GString* labelA, GList* cmdsA)
 
 PopupMenuCmd::~PopupMenuCmd()
 {
-	delete label;
-	deleteGList(cmds, GString);
 }
 
 //------------------------------------------------------------------------
@@ -618,11 +573,6 @@ PopupMenuCmd::~PopupMenuCmd()
 
 GlobalParams::GlobalParams(const char* cfgFileName)
 {
-	UnicodeMap* map;
-	GString*    fileName;
-	FILE*       f;
-	int         i;
-
 #if MULTITHREADED
 	gInitMutex(&mutex);
 	gInitMutex(&unicodeMapCacheMutex);
@@ -638,31 +588,20 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 	// scan the encoding in reverse because we want the lowest-numbered
 	// index for each char name ('space' is encoded twice)
 	macRomanReverseMap = new NameToCharCode();
-	for (i = 255; i >= 0; --i)
+	for (int i = 255; i >= 0; --i)
 		if (macRomanEncoding[i])
 			macRomanReverseMap->add(macRomanEncoding[i], (CharCode)i);
 
 #ifdef _WIN32
 	// baseDir will be set by a call to setBaseDir
-	baseDir = new GString();
+	baseDir.clear();
 #else
 	baseDir = appendToPath(getHomeDir(), ".xpdf");
 #endif
-	configFileVars = new GHash(gTrue);
 	setDataDirVar();
-	nameToUnicode       = new NameToCharCode();
-	cidToUnicodes       = new GHash(gTrue);
-	unicodeToUnicodes   = new GHash(gTrue);
-	residentUnicodeMaps = new GHash();
-	unicodeMaps         = new GHash(gTrue);
-	cMapDirs            = new GHash(gTrue);
-	toUnicodeDirs       = new GList();
-	unicodeRemapping    = new UnicodeRemapping();
-	fontFiles           = new GHash(gTrue);
-	fontDirs            = new GList();
-	ccFontFiles         = new GHash(gTrue);
-	base14SysFonts      = new GHash(gTrue);
-	sysFonts            = new SysFontList();
+	nameToUnicode    = new NameToCharCode();
+	unicodeRemapping = new UnicodeRemapping();
+	sysFonts         = new SysFontList();
 #if HAVE_PAPER_H
 	const char*         paperName;
 	const struct paper* paperType;
@@ -685,74 +624,70 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 	psPaperHeight = defPaperHeight;
 #endif
 	psImageableLLX = psImageableLLY = 0;
-	psImageableURX                  = psPaperWidth;
-	psImageableURY                  = psPaperHeight;
-	psCrop                          = gTrue;
-	psUseCropBoxAsPage              = gFalse;
-	psExpandSmaller                 = gFalse;
-	psShrinkLarger                  = gTrue;
-	psCenter                        = gTrue;
-	psDuplex                        = gFalse;
-	psLevel                         = psLevel2;
-	psResidentFonts                 = new GHash(gTrue);
-	psResidentFonts16               = new GList();
-	psResidentFontsCC               = new GList();
-	psEmbedType1                    = gTrue;
-	psEmbedTrueType                 = gTrue;
-	psEmbedCIDPostScript            = gTrue;
-	psEmbedCIDTrueType              = gTrue;
-	psFontPassthrough               = gFalse;
-	psPreload                       = gFalse;
-	psOPI                           = gFalse;
-	psASCIIHex                      = gFalse;
-	psLZW                           = gTrue;
-	psUncompressPreloadedImages     = gFalse;
-	psMinLineWidth                  = 0;
-	psRasterResolution              = 300;
-	psRasterMono                    = gFalse;
-	psRasterSliceSize               = 20000000;
-	psAlwaysRasterize               = gFalse;
-	psNeverRasterize                = gFalse;
-	textEncoding                    = new GString(defaultTextEncoding);
+	psImageableURX.store(psPaperWidth.load());
+	psImageableURY.store(psPaperHeight.load());
+	psCrop                      = true;
+	psUseCropBoxAsPage          = false;
+	psExpandSmaller             = false;
+	psShrinkLarger              = true;
+	psCenter                    = true;
+	psDuplex                    = false;
+	psLevel                     = psLevel2;
+	psEmbedType1                = true;
+	psEmbedTrueType             = true;
+	psEmbedCIDPostScript        = true;
+	psEmbedCIDTrueType          = true;
+	psFontPassthrough           = false;
+	psPreload                   = false;
+	psOPI                       = false;
+	psASCIIHex                  = false;
+	psLZW                       = true;
+	psUncompressPreloadedImages = false;
+	psMinLineWidth              = 0;
+	psRasterResolution          = 300;
+	psRasterMono                = false;
+	psRasterSliceSize           = 20000000;
+	psAlwaysRasterize           = false;
+	psNeverRasterize            = false;
+	textEncoding                = defaultTextEncoding;
 #if defined(_WIN32)
 	textEOL = eolDOS;
 #else
 	textEOL = eolUnix;
 #endif
-	textPageBreaks    = gTrue;
-	textKeepTinyChars = gTrue;
-	initialZoom       = new GString("125");
+	textPageBreaks    = true;
+	textKeepTinyChars = true;
+	initialZoom       = "125";
 	defaultFitZoom    = 0;
 	zoomScaleFactor   = 1;
-	zoomValues        = new GList();
-	zoomValues->append(new GString("25"));
-	zoomValues->append(new GString("50"));
-	zoomValues->append(new GString("75"));
-	zoomValues->append(new GString("100"));
-	zoomValues->append(new GString("110"));
-	zoomValues->append(new GString("125"));
-	zoomValues->append(new GString("150"));
-	zoomValues->append(new GString("175"));
-	zoomValues->append(new GString("200"));
-	zoomValues->append(new GString("300"));
-	zoomValues->append(new GString("400"));
-	zoomValues->append(new GString("600"));
-	zoomValues->append(new GString("800"));
-	initialDisplayMode            = new GString("continuous");
-	initialToolbarState           = gTrue;
-	initialSidebarState           = gTrue;
+	zoomValues.push_back("25");
+	zoomValues.push_back("50");
+	zoomValues.push_back("75");
+	zoomValues.push_back("100");
+	zoomValues.push_back("110");
+	zoomValues.push_back("125");
+	zoomValues.push_back("150");
+	zoomValues.push_back("175");
+	zoomValues.push_back("200");
+	zoomValues.push_back("300");
+	zoomValues.push_back("400");
+	zoomValues.push_back("600");
+	zoomValues.push_back("800");
+	initialDisplayMode            = "continuous";
+	initialToolbarState           = true;
+	initialSidebarState           = true;
 	initialSidebarWidth           = 0;
-	initialSelectMode             = new GString("linear");
+	initialSelectMode             = "linear";
 	maxTileWidth                  = 1500;
 	maxTileHeight                 = 1500;
 	tileCacheSize                 = 10;
 	workerThreads                 = 1;
-	enableFreeType                = gTrue;
-	disableFreeTypeHinting        = gFalse;
-	antialias                     = gTrue;
-	vectorAntialias               = gTrue;
-	imageMaskAntialias            = gTrue;
-	antialiasPrinting             = gFalse;
+	enableFreeType                = true;
+	disableFreeTypeHinting        = false;
+	antialias                     = true;
+	vectorAntialias               = true;
+	imageMaskAntialias            = true;
+	antialiasPrinting             = false;
 	strokeAdjust                  = strokeAdjustNormal;
 	screenType                    = screenUnset;
 	screenSize                    = -1;
@@ -761,81 +696,72 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 	screenBlackThreshold          = 0.0;
 	screenWhiteThreshold          = 1.0;
 	minLineWidth                  = 0.0;
-	enablePathSimplification      = gFalse;
-	drawAnnotations               = gTrue;
-	drawFormFields                = gTrue;
-	enableXFA                     = gTrue;
-	overprintPreview              = gFalse;
-	paperColor                    = new GString("#ffffff");
-	matteColor                    = new GString("#808080");
-	fullScreenMatteColor          = new GString("#000000");
-	selectionColor                = new GString("#8080ff");
-	reverseVideoInvertImages      = gFalse;
-	allowLinksToChangeZoom        = gTrue;
-	launchCommand                 = nullptr;
-	movieCommand                  = nullptr;
-	defaultPrinter                = nullptr;
-	mapNumericCharNames           = gTrue;
-	mapUnknownCharNames           = gFalse;
-	mapExtTrueTypeFontsViaUnicode = gTrue;
-	useTrueTypeUnicodeMapping     = gFalse;
-	ignoreWrongSizeToUnicode      = gFalse;
-	droppedFonts                  = new GHash(gTrue);
-	separateRotatedText           = gFalse;
+	enablePathSimplification      = false;
+	drawAnnotations               = true;
+	drawFormFields                = true;
+	enableXFA                     = true;
+	overprintPreview              = false;
+	paperColor                    = "#ffffff";
+	matteColor                    = "#808080";
+	fullScreenMatteColor          = "#000000";
+	selectionColor                = "#8080ff";
+	reverseVideoInvertImages      = false;
+	allowLinksToChangeZoom        = true;
+	mapNumericCharNames           = true;
+	mapUnknownCharNames           = false;
+	mapExtTrueTypeFontsViaUnicode = true;
+	useTrueTypeUnicodeMapping     = false;
+	ignoreWrongSizeToUnicode      = false;
+	separateRotatedText           = false;
 	createDefaultKeyBindings();
-	popupMenuCmds = new GList();
 	initStateFilePaths();
-	saveSessionOnQuit = gTrue;
-	savePageNumbers   = gTrue;
-	printCommands     = gFalse;
-	printStatusInfo   = gFalse;
-	errQuiet          = gFalse;
-	debugLogFile      = nullptr;
+	saveSessionOnQuit = true;
+	savePageNumbers   = true;
+	printCommands     = false;
+	printStatusInfo   = false;
+	errQuiet          = false;
 
-	cidToUnicodeCache = new CharCodeToUnicodeCache(cidToUnicodeCacheSize);
-	unicodeToUnicodeCache =
-	    new CharCodeToUnicodeCache(unicodeToUnicodeCacheSize);
-	unicodeMapCache = new UnicodeMapCache();
-	cMapCache       = new CMapCache();
+	cidToUnicodeCache     = new CharCodeToUnicodeCache(cidToUnicodeCacheSize);
+	unicodeToUnicodeCache = new CharCodeToUnicodeCache(unicodeToUnicodeCacheSize);
+	unicodeMapCache       = new UnicodeMapCache();
+	cMapCache             = new CMapCache();
 
 	// set up the initial nameToUnicode table
-	for (i = 0; nameToUnicodeTab[i].name; ++i)
+	for (int i = 0; nameToUnicodeTab[i].name; ++i)
 		nameToUnicode->add(nameToUnicodeTab[i].name, nameToUnicodeTab[i].u);
 
 	// set up the residentUnicodeMaps table
-	map = new UnicodeMap("Latin1", gFalse, latin1UnicodeMapRanges, latin1UnicodeMapLen);
-	residentUnicodeMaps->add(map->getEncodingName(), map);
-	map = new UnicodeMap("ASCII7", gFalse, ascii7UnicodeMapRanges, ascii7UnicodeMapLen);
-	residentUnicodeMaps->add(map->getEncodingName(), map);
-	map = new UnicodeMap("Symbol", gFalse, symbolUnicodeMapRanges, symbolUnicodeMapLen);
-	residentUnicodeMaps->add(map->getEncodingName(), map);
-	map = new UnicodeMap("ZapfDingbats", gFalse, zapfDingbatsUnicodeMapRanges, zapfDingbatsUnicodeMapLen);
-	residentUnicodeMaps->add(map->getEncodingName(), map);
-	map = new UnicodeMap("UTF-8", gTrue, &mapUTF8);
-	residentUnicodeMaps->add(map->getEncodingName(), map);
-	map = new UnicodeMap("UCS-2", gTrue, &mapUCS2);
-	residentUnicodeMaps->add(map->getEncodingName(), map);
+	// clang-format off
+	residentUnicodeMaps.emplace("Latin1"      , UnicodeMap("Latin1"      , false, latin1UnicodeMapRanges, latin1UnicodeMapLen));
+	residentUnicodeMaps.emplace("ASCII7"      , UnicodeMap("ASCII7"      , false, ascii7UnicodeMapRanges, ascii7UnicodeMapLen));
+	residentUnicodeMaps.emplace("Symbol"      , UnicodeMap("Symbol"      , false, symbolUnicodeMapRanges, symbolUnicodeMapLen));
+	residentUnicodeMaps.emplace("ZapfDingbats", UnicodeMap("ZapfDingbats", false, zapfDingbatsUnicodeMapRanges, zapfDingbatsUnicodeMapLen));
+	residentUnicodeMaps.emplace("UTF-8"       , UnicodeMap("UTF-8"       , true, &mapUTF8));
+	residentUnicodeMaps.emplace("UCS-2"       , UnicodeMap("UCS-2"       , true, &mapUCS2));
+	// clang-format on
 
 	// look for a user config file, then a system-wide config file
-	f        = nullptr;
-	fileName = nullptr;
+	FILE*       f = nullptr;
+	std::string fileName;
 	if (cfgFileName && cfgFileName[0])
 	{
-		fileName = new GString(cfgFileName);
-		if (!(f = fopen(fileName->getCString(), "r")))
-			delete fileName;
+		fileName = cfgFileName;
+		if (!(f = fopen(fileName.c_str(), "r")))
+		{
+		}
 	}
 	if (!f)
 	{
 		fileName = appendToPath(getHomeDir(), xpdfUserConfigFile);
-		if (!(f = fopen(fileName->getCString(), "r")))
-			delete fileName;
+		if (!(f = fopen(fileName.c_str(), "r")))
+		{
+		}
 	}
 	if (!f)
 	{
 #ifdef _WIN32
-		char buf[512];
-		i = GetModuleFileNameA(nullptr, buf, sizeof(buf));
+		char      buf[512];
+		const int i = GetModuleFileNameA(nullptr, buf, sizeof(buf));
 		if (i <= 0 || i >= sizeof(buf))
 		{
 			// error or path too long for buffer - just use the current dir
@@ -844,25 +770,25 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 		fileName = grabPath(buf);
 		appendToPath(fileName, xpdfSysConfigFile);
 #else
-		fileName = new GString(xpdfSysConfigFile);
+		fileName = xpdfSysConfigFile;
 #endif
-		if (!(f = fopen(fileName->getCString(), "r")))
-			delete fileName;
+		if (!(f = fopen(fileName.c_str(), "r")))
+		{
+		}
 	}
 	if (f)
 	{
 		parseFile(fileName, f);
-		delete fileName;
 		fclose(f);
 	}
 }
 
 void GlobalParams::setDataDirVar()
 {
-	GString* dir;
+	std::string dir;
 
 #if defined(XPDFRC_DATADIR)
-	dir = new GString(XPDFRC_DATADIR);
+	dir = XPDFRC_DATADIR;
 #elif defined(_WIN32)
 	wchar_t buf[512];
 	DWORD   n = GetModuleFileNameW(nullptr, buf, sizeof(buf) / sizeof(wchar_t));
@@ -871,99 +797,96 @@ void GlobalParams::setDataDirVar()
 		// error or path too long for buffer - just use the current dir
 		buf[0] = L'\0';
 	}
-	GString* path = fileNameToUTF8(buf);
-	dir           = grabPath(path->getCString());
-	delete path;
+	const auto path = fileNameToUTF8(buf);
+	dir             = grabPath(path.c_str());
 	appendToPath(dir, "data");
 #else
 	//~ may be useful to allow the options of using the install dir
 	//~   and/or the user's home dir (?)
-	dir = new GString("./data");
+	dir = "./data";
 #endif
 
-	configFileVars->add(new GString("DATADIR"), dir);
+	configFileVars.emplace("DATADIR", dir);
 }
 
 void GlobalParams::createDefaultKeyBindings()
 {
-	keyBindings = new GList();
-
 	//----- mouse buttons
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMousePress1, xpdfKeyModNone, xpdfKeyContextAny, "startSelection"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMousePress1, xpdfKeyModShift, xpdfKeyContextAny, "startExtendedSelection"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMouseRelease1, xpdfKeyModNone, xpdfKeyContextAny, "endSelection"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMouseRelease1, xpdfKeyModShift, xpdfKeyContextAny, "endSelection"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMouseDoubleClick1, xpdfKeyModNone, xpdfKeyContextAny, "selectWord"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMouseTripleClick1, xpdfKeyModNone, xpdfKeyContextAny, "selectLine"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMouseClick1, xpdfKeyModNone, xpdfKeyContextAny, "followLinkNoSel"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMouseClick2, xpdfKeyModNone, xpdfKeyContextOverLink, "followLinkInNewTab"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMousePress2, xpdfKeyModNone, xpdfKeyContextAny, "startPan"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMouseRelease2, xpdfKeyModNone, xpdfKeyContextAny, "endPan"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMousePress3, xpdfKeyModNone, xpdfKeyContextAny, "postPopupMenu"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMousePress4, xpdfKeyModNone, xpdfKeyContextAny, "scrollUpPrevPage(16)"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMousePress5, xpdfKeyModNone, xpdfKeyContextAny, "scrollDownNextPage(16)"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMousePress6, xpdfKeyModNone, xpdfKeyContextAny, "scrollLeft(16)"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMousePress7, xpdfKeyModNone, xpdfKeyContextAny, "scrollRight(16)"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMousePress4, xpdfKeyModCtrl, xpdfKeyContextAny, "zoomIn"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeMousePress5, xpdfKeyModCtrl, xpdfKeyContextAny, "zoomOut"));
+	keyBindings.emplace_back(xpdfKeyCodeMousePress1, xpdfKeyModNone, xpdfKeyContextAny, "startSelection");
+	keyBindings.emplace_back(xpdfKeyCodeMousePress1, xpdfKeyModShift, xpdfKeyContextAny, "startExtendedSelection");
+	keyBindings.emplace_back(xpdfKeyCodeMouseRelease1, xpdfKeyModNone, xpdfKeyContextAny, "endSelection");
+	keyBindings.emplace_back(xpdfKeyCodeMouseRelease1, xpdfKeyModShift, xpdfKeyContextAny, "endSelection");
+	keyBindings.emplace_back(xpdfKeyCodeMouseDoubleClick1, xpdfKeyModNone, xpdfKeyContextAny, "selectWord");
+	keyBindings.emplace_back(xpdfKeyCodeMouseTripleClick1, xpdfKeyModNone, xpdfKeyContextAny, "selectLine");
+	keyBindings.emplace_back(xpdfKeyCodeMouseClick1, xpdfKeyModNone, xpdfKeyContextAny, "followLinkNoSel");
+	keyBindings.emplace_back(xpdfKeyCodeMouseClick2, xpdfKeyModNone, xpdfKeyContextOverLink, "followLinkInNewTab");
+	keyBindings.emplace_back(xpdfKeyCodeMousePress2, xpdfKeyModNone, xpdfKeyContextAny, "startPan");
+	keyBindings.emplace_back(xpdfKeyCodeMouseRelease2, xpdfKeyModNone, xpdfKeyContextAny, "endPan");
+	keyBindings.emplace_back(xpdfKeyCodeMousePress3, xpdfKeyModNone, xpdfKeyContextAny, "postPopupMenu");
+	keyBindings.emplace_back(xpdfKeyCodeMousePress4, xpdfKeyModNone, xpdfKeyContextAny, "scrollUpPrevPage(16)");
+	keyBindings.emplace_back(xpdfKeyCodeMousePress5, xpdfKeyModNone, xpdfKeyContextAny, "scrollDownNextPage(16)");
+	keyBindings.emplace_back(xpdfKeyCodeMousePress6, xpdfKeyModNone, xpdfKeyContextAny, "scrollLeft(16)");
+	keyBindings.emplace_back(xpdfKeyCodeMousePress7, xpdfKeyModNone, xpdfKeyContextAny, "scrollRight(16)");
+	keyBindings.emplace_back(xpdfKeyCodeMousePress4, xpdfKeyModCtrl, xpdfKeyContextAny, "zoomIn");
+	keyBindings.emplace_back(xpdfKeyCodeMousePress5, xpdfKeyModCtrl, xpdfKeyContextAny, "zoomOut");
 
 	//----- control keys
-	keyBindings->append(new KeyBinding('o', xpdfKeyModCtrl, xpdfKeyContextAny, "open"));
-	keyBindings->append(new KeyBinding('r', xpdfKeyModCtrl, xpdfKeyContextAny, "reload"));
-	keyBindings->append(new KeyBinding('f', xpdfKeyModCtrl, xpdfKeyContextAny, "find"));
-	keyBindings->append(new KeyBinding('g', xpdfKeyModCtrl, xpdfKeyContextAny, "findNext"));
-	keyBindings->append(new KeyBinding('c', xpdfKeyModCtrl, xpdfKeyContextAny, "copy"));
-	keyBindings->append(new KeyBinding('p', xpdfKeyModCtrl, xpdfKeyContextAny, "print"));
-	keyBindings->append(new KeyBinding('0', xpdfKeyModCtrl, xpdfKeyContextAny, "zoomPercent(125)"));
-	keyBindings->append(new KeyBinding('+', xpdfKeyModCtrl, xpdfKeyContextAny, "zoomIn"));
-	keyBindings->append(new KeyBinding('=', xpdfKeyModCtrl, xpdfKeyContextAny, "zoomIn"));
-	keyBindings->append(new KeyBinding('-', xpdfKeyModCtrl, xpdfKeyContextAny, "zoomOut"));
-	keyBindings->append(new KeyBinding('s', xpdfKeyModCtrl, xpdfKeyContextAny, "saveAs"));
-	keyBindings->append(new KeyBinding('t', xpdfKeyModCtrl, xpdfKeyContextAny, "newTab"));
-	keyBindings->append(new KeyBinding('n', xpdfKeyModCtrl, xpdfKeyContextAny, "newWindow"));
-	keyBindings->append(new KeyBinding('w', xpdfKeyModCtrl, xpdfKeyContextAny, "closeTabOrQuit"));
-	keyBindings->append(new KeyBinding('l', xpdfKeyModCtrl, xpdfKeyContextAny, "toggleFullScreenMode"));
-	keyBindings->append(new KeyBinding('q', xpdfKeyModCtrl, xpdfKeyContextAny, "quit"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeTab, xpdfKeyModCtrl, xpdfKeyContextAny, "nextTab"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeTab, xpdfKeyModShift | xpdfKeyModCtrl, xpdfKeyContextAny, "prevTab"));
-	keyBindings->append(new KeyBinding('?', xpdfKeyModCtrl, xpdfKeyContextAny, "help"));
+	keyBindings.emplace_back('o', xpdfKeyModCtrl, xpdfKeyContextAny, "open");
+	keyBindings.emplace_back('r', xpdfKeyModCtrl, xpdfKeyContextAny, "reload");
+	keyBindings.emplace_back('f', xpdfKeyModCtrl, xpdfKeyContextAny, "find");
+	keyBindings.emplace_back('g', xpdfKeyModCtrl, xpdfKeyContextAny, "findNext");
+	keyBindings.emplace_back('c', xpdfKeyModCtrl, xpdfKeyContextAny, "copy");
+	keyBindings.emplace_back('p', xpdfKeyModCtrl, xpdfKeyContextAny, "print");
+	keyBindings.emplace_back('0', xpdfKeyModCtrl, xpdfKeyContextAny, "zoomPercent(125)");
+	keyBindings.emplace_back('+', xpdfKeyModCtrl, xpdfKeyContextAny, "zoomIn");
+	keyBindings.emplace_back('=', xpdfKeyModCtrl, xpdfKeyContextAny, "zoomIn");
+	keyBindings.emplace_back('-', xpdfKeyModCtrl, xpdfKeyContextAny, "zoomOut");
+	keyBindings.emplace_back('s', xpdfKeyModCtrl, xpdfKeyContextAny, "saveAs");
+	keyBindings.emplace_back('t', xpdfKeyModCtrl, xpdfKeyContextAny, "newTab");
+	keyBindings.emplace_back('n', xpdfKeyModCtrl, xpdfKeyContextAny, "newWindow");
+	keyBindings.emplace_back('w', xpdfKeyModCtrl, xpdfKeyContextAny, "closeTabOrQuit");
+	keyBindings.emplace_back('l', xpdfKeyModCtrl, xpdfKeyContextAny, "toggleFullScreenMode");
+	keyBindings.emplace_back('q', xpdfKeyModCtrl, xpdfKeyContextAny, "quit");
+	keyBindings.emplace_back(xpdfKeyCodeTab, xpdfKeyModCtrl, xpdfKeyContextAny, "nextTab");
+	keyBindings.emplace_back(xpdfKeyCodeTab, xpdfKeyModShift | xpdfKeyModCtrl, xpdfKeyContextAny, "prevTab");
+	keyBindings.emplace_back('?', xpdfKeyModCtrl, xpdfKeyContextAny, "help");
 
 	//----- alt keys
-	keyBindings->append(new KeyBinding(xpdfKeyCodeLeft, xpdfKeyModAlt, xpdfKeyContextAny, "goBackward"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeRight, xpdfKeyModAlt, xpdfKeyContextAny, "goForward"));
+	keyBindings.emplace_back(xpdfKeyCodeLeft, xpdfKeyModAlt, xpdfKeyContextAny, "goBackward");
+	keyBindings.emplace_back(xpdfKeyCodeRight, xpdfKeyModAlt, xpdfKeyContextAny, "goForward");
 
 	//----- home/end keys
-	keyBindings->append(new KeyBinding(xpdfKeyCodeHome, xpdfKeyModCtrl, xpdfKeyContextAny, "gotoPage(1)"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeHome, xpdfKeyModNone, xpdfKeyContextAny, "scrollToTopLeft"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeEnd, xpdfKeyModCtrl, xpdfKeyContextAny, "gotoLastPage"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeEnd, xpdfKeyModNone, xpdfKeyContextAny, "scrollToBottomRight"));
+	keyBindings.emplace_back(xpdfKeyCodeHome, xpdfKeyModCtrl, xpdfKeyContextAny, "gotoPage(1)");
+	keyBindings.emplace_back(xpdfKeyCodeHome, xpdfKeyModNone, xpdfKeyContextAny, "scrollToTopLeft");
+	keyBindings.emplace_back(xpdfKeyCodeEnd, xpdfKeyModCtrl, xpdfKeyContextAny, "gotoLastPage");
+	keyBindings.emplace_back(xpdfKeyCodeEnd, xpdfKeyModNone, xpdfKeyContextAny, "scrollToBottomRight");
 
 	//----- pgup/pgdn keys
-	keyBindings->append(new KeyBinding(xpdfKeyCodePgUp, xpdfKeyModNone, xpdfKeyContextAny, "pageUp"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodePgDn, xpdfKeyModNone, xpdfKeyContextAny, "pageDown"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodePgUp, xpdfKeyModCtrl, xpdfKeyContextAny, "prevPage"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodePgDn, xpdfKeyModCtrl, xpdfKeyContextAny, "nextPage"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodePgUp, xpdfKeyModCtrl, xpdfKeyContextScrLockOn, "prevPageNoScroll"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodePgDn, xpdfKeyModCtrl, xpdfKeyContextScrLockOn, "nextPageNoScroll"));
+	keyBindings.emplace_back(xpdfKeyCodePgUp, xpdfKeyModNone, xpdfKeyContextAny, "pageUp");
+	keyBindings.emplace_back(xpdfKeyCodePgDn, xpdfKeyModNone, xpdfKeyContextAny, "pageDown");
+	keyBindings.emplace_back(xpdfKeyCodePgUp, xpdfKeyModCtrl, xpdfKeyContextAny, "prevPage");
+	keyBindings.emplace_back(xpdfKeyCodePgDn, xpdfKeyModCtrl, xpdfKeyContextAny, "nextPage");
+	keyBindings.emplace_back(xpdfKeyCodePgUp, xpdfKeyModCtrl, xpdfKeyContextScrLockOn, "prevPageNoScroll");
+	keyBindings.emplace_back(xpdfKeyCodePgDn, xpdfKeyModCtrl, xpdfKeyContextScrLockOn, "nextPageNoScroll");
 
 	//----- esc key
-	keyBindings->append(new KeyBinding(xpdfKeyCodeEsc, xpdfKeyModNone, xpdfKeyContextFullScreen, "windowMode"));
+	keyBindings.emplace_back(xpdfKeyCodeEsc, xpdfKeyModNone, xpdfKeyContextFullScreen, "windowMode");
 
 	//----- arrow keys
-	keyBindings->append(new KeyBinding(xpdfKeyCodeLeft, xpdfKeyModNone, xpdfKeyContextAny, "scrollLeft(16)"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeRight, xpdfKeyModNone, xpdfKeyContextAny, "scrollRight(16)"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeUp, xpdfKeyModNone, xpdfKeyContextAny, "scrollUp(16)"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeDown, xpdfKeyModNone, xpdfKeyContextAny, "scrollDown(16)"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeUp, xpdfKeyModCtrl, xpdfKeyContextAny, "prevPage"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeDown, xpdfKeyModCtrl, xpdfKeyContextAny, "nextPage"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeUp, xpdfKeyModCtrl, xpdfKeyContextScrLockOn, "prevPageNoScroll"));
-	keyBindings->append(new KeyBinding(xpdfKeyCodeDown, xpdfKeyModCtrl, xpdfKeyContextScrLockOn, "nextPageNoScroll"));
+	keyBindings.emplace_back(xpdfKeyCodeLeft, xpdfKeyModNone, xpdfKeyContextAny, "scrollLeft(16)");
+	keyBindings.emplace_back(xpdfKeyCodeRight, xpdfKeyModNone, xpdfKeyContextAny, "scrollRight(16)");
+	keyBindings.emplace_back(xpdfKeyCodeUp, xpdfKeyModNone, xpdfKeyContextAny, "scrollUp(16)");
+	keyBindings.emplace_back(xpdfKeyCodeDown, xpdfKeyModNone, xpdfKeyContextAny, "scrollDown(16)");
+	keyBindings.emplace_back(xpdfKeyCodeUp, xpdfKeyModCtrl, xpdfKeyContextAny, "prevPage");
+	keyBindings.emplace_back(xpdfKeyCodeDown, xpdfKeyModCtrl, xpdfKeyContextAny, "nextPage");
+	keyBindings.emplace_back(xpdfKeyCodeUp, xpdfKeyModCtrl, xpdfKeyContextScrLockOn, "prevPageNoScroll");
+	keyBindings.emplace_back(xpdfKeyCodeDown, xpdfKeyModCtrl, xpdfKeyContextScrLockOn, "nextPageNoScroll");
 
 	//----- letter keys
-	keyBindings->append(new KeyBinding(' ', xpdfKeyModNone, xpdfKeyContextAny, "pageDown"));
-	keyBindings->append(new KeyBinding('g', xpdfKeyModNone, xpdfKeyContextAny, "focusToPageNum"));
-	keyBindings->append(new KeyBinding('z', xpdfKeyModNone, xpdfKeyContextAny, "zoomFitPage"));
-	keyBindings->append(new KeyBinding('w', xpdfKeyModNone, xpdfKeyContextAny, "zoomFitWidth"));
+	keyBindings.emplace_back(' ', xpdfKeyModNone, xpdfKeyContextAny, "pageDown");
+	keyBindings.emplace_back('g', xpdfKeyModNone, xpdfKeyContextAny, "focusToPageNum");
+	keyBindings.emplace_back('z', xpdfKeyModNone, xpdfKeyContextAny, "zoomFitPage");
+	keyBindings.emplace_back('w', xpdfKeyModNone, xpdfKeyContextAny, "zoomFitWidth");
 }
 
 void GlobalParams::initStateFilePaths()
@@ -972,10 +895,10 @@ void GlobalParams::initStateFilePaths()
 	char path[MAX_PATH];
 	if (SHGetFolderPathA(nullptr, CSIDL_APPDATA, nullptr, SHGFP_TYPE_CURRENT, path) != S_OK)
 		return;
-	GString* dir = appendToPath(new GString(path), "xpdf");
-	CreateDirectoryA(dir->getCString(), nullptr);
-	pagesFile    = appendToPath(dir->copy(), "xpdf.pages");
-	tabStateFile = appendToPath(dir->copy(), "xpdf.tab-state");
+	const auto dir = appendToPath(path, "xpdf");
+	CreateDirectoryA(dir.c_str(), nullptr);
+	pagesFile    = appendToPath(dir, "xpdf.pages");
+	tabStateFile = appendToPath(dir, "xpdf.tab-state");
 	sessionFile  = appendToPath(dir, "xpdf.session");
 #else
 	pagesFile    = appendToPath(getHomeDir(), ".xpdf.pages");
@@ -984,7 +907,7 @@ void GlobalParams::initStateFilePaths()
 #endif
 }
 
-void GlobalParams::parseFile(GString* fileName, FILE* f)
+void GlobalParams::parseFile(const std::string& fileName, FILE* f)
 {
 	int  line;
 	char buf[512];
@@ -997,478 +920,467 @@ void GlobalParams::parseFile(GString* fileName, FILE* f)
 	}
 }
 
-void GlobalParams::parseLine(char* buf, GString* fileName, int line)
+void GlobalParams::parseLine(char* buf, const std::string& fileName, int line)
 {
-	GList*   tokens;
-	GString *cmd, *incFile;
-	FILE*    f2;
-
 	// break the line into tokens
-	tokens = parseLineTokens(buf, fileName, line);
+	const auto tokens = parseLineTokens(buf, fileName, line);
 
 	// parse the line
-	if (tokens->getLength() > 0 && ((GString*)tokens->get(0))->getChar(0) != '#')
+	if (tokens.size() > 0 && (tokens.at(0)).at(0) != '#')
 	{
-		cmd = (GString*)tokens->get(0);
-		if (!cmd->cmp("include"))
+		const auto cmd = tokens.at(0);
+		if (cmd == "include")
 		{
-			if (tokens->getLength() == 2)
+			if (tokens.size() == 2)
 			{
-				incFile = (GString*)tokens->get(1);
-				if ((f2 = openFile(incFile->getCString(), "r")))
+				const auto incFile = tokens.at(1);
+				FILE*      f2;
+				if ((f2 = openFile(incFile.c_str(), "r")))
 				{
 					parseFile(incFile, f2);
 					fclose(f2);
 				}
 				else
 				{
-					error(errConfig, -1, "Couldn't find included config file: '{0:t}' ({1:t}:{2:d})", incFile, fileName, line);
+					error(errConfig, -1, "Couldn't find included config file: '{}' ({}:{})", incFile, fileName, line);
 				}
 			}
 			else
 			{
-				error(errConfig, -1, "Bad 'include' config file command ({0:t}:{1:d})", fileName, line);
+				error(errConfig, -1, "Bad 'include' config file command ({}:{})", fileName, line);
 			}
 		}
-		else if (!cmd->cmp("nameToUnicode"))
+		else if (cmd == "nameToUnicode")
 		{
 			parseNameToUnicode(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("cidToUnicode"))
+		else if (cmd == "cidToUnicode")
 		{
 			parseCIDToUnicode(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("unicodeToUnicode"))
+		else if (cmd == "unicodeToUnicode")
 		{
 			parseUnicodeToUnicode(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("unicodeMap"))
+		else if (cmd == "unicodeMap")
 		{
 			parseUnicodeMap(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("cMapDir"))
+		else if (cmd == "cMapDir")
 		{
 			parseCMapDir(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("toUnicodeDir"))
+		else if (cmd == "toUnicodeDir")
 		{
 			parseToUnicodeDir(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("unicodeRemapping"))
+		else if (cmd == "unicodeRemapping")
 		{
 			parseUnicodeRemapping(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("fontFile"))
+		else if (cmd == "fontFile")
 		{
 			parseFontFile(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("fontDir"))
+		else if (cmd == "fontDir")
 		{
 			parseFontDir(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("fontFileCC"))
+		else if (cmd == "fontFileCC")
 		{
 			parseFontFileCC(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psPaperSize"))
+		else if (cmd == "psPaperSize")
 		{
 			parsePSPaperSize(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psImageableArea"))
+		else if (cmd == "psImageableArea")
 		{
 			parsePSImageableArea(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psCrop"))
+		else if (cmd == "psCrop")
 		{
 			parseYesNo("psCrop", &psCrop, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psUseCropBoxAsPage"))
+		else if (cmd == "psUseCropBoxAsPage")
 		{
 			parseYesNo("psUseCropBoxAsPage", &psUseCropBoxAsPage, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psExpandSmaller"))
+		else if (cmd == "psExpandSmaller")
 		{
 			parseYesNo("psExpandSmaller", &psExpandSmaller, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psShrinkLarger"))
+		else if (cmd == "psShrinkLarger")
 		{
 			parseYesNo("psShrinkLarger", &psShrinkLarger, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psCenter"))
+		else if (cmd == "psCenter")
 		{
 			parseYesNo("psCenter", &psCenter, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psDuplex"))
+		else if (cmd == "psDuplex")
 		{
 			parseYesNo("psDuplex", &psDuplex, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psLevel"))
+		else if (cmd == "psLevel")
 		{
 			parsePSLevel(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psResidentFont"))
+		else if (cmd == "psResidentFont")
 		{
 			parsePSResidentFont(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psResidentFont16"))
+		else if (cmd == "psResidentFont16")
 		{
 			parsePSResidentFont16(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psResidentFontCC"))
+		else if (cmd == "psResidentFontCC")
 		{
 			parsePSResidentFontCC(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psEmbedType1Fonts"))
+		else if (cmd == "psEmbedType1Fonts")
 		{
 			parseYesNo("psEmbedType1", &psEmbedType1, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psEmbedTrueTypeFonts"))
+		else if (cmd == "psEmbedTrueTypeFonts")
 		{
 			parseYesNo("psEmbedTrueType", &psEmbedTrueType, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psEmbedCIDPostScriptFonts"))
+		else if (cmd == "psEmbedCIDPostScriptFonts")
 		{
 			parseYesNo("psEmbedCIDPostScript", &psEmbedCIDPostScript, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psEmbedCIDTrueTypeFonts"))
+		else if (cmd == "psEmbedCIDTrueTypeFonts")
 		{
 			parseYesNo("psEmbedCIDTrueType", &psEmbedCIDTrueType, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psFontPassthrough"))
+		else if (cmd == "psFontPassthrough")
 		{
 			parseYesNo("psFontPassthrough", &psFontPassthrough, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psPreload"))
+		else if (cmd == "psPreload")
 		{
 			parseYesNo("psPreload", &psPreload, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psOPI"))
+		else if (cmd == "psOPI")
 		{
 			parseYesNo("psOPI", &psOPI, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psASCIIHex"))
+		else if (cmd == "psASCIIHex")
 		{
 			parseYesNo("psASCIIHex", &psASCIIHex, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psLZW"))
+		else if (cmd == "psLZW")
 		{
 			parseYesNo("psLZW", &psLZW, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psUncompressPreloadedImages"))
+		else if (cmd == "psUncompressPreloadedImages")
 		{
 			parseYesNo("psUncompressPreloadedImages", &psUncompressPreloadedImages, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psMinLineWidth"))
+		else if (cmd == "psMinLineWidth")
 		{
 			parseFloat("psMinLineWidth", &psMinLineWidth, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psRasterResolution"))
+		else if (cmd == "psRasterResolution")
 		{
 			parseFloat("psRasterResolution", &psRasterResolution, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psRasterMono"))
+		else if (cmd == "psRasterMono")
 		{
 			parseYesNo("psRasterMono", &psRasterMono, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psRasterSliceSize"))
+		else if (cmd == "psRasterSliceSize")
 		{
 			parseInteger("psRasterSliceSize", &psRasterSliceSize, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psAlwaysRasterize"))
+		else if (cmd == "psAlwaysRasterize")
 		{
 			parseYesNo("psAlwaysRasterize", &psAlwaysRasterize, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("psNeverRasterize"))
+		else if (cmd == "psNeverRasterize")
 		{
 			parseYesNo("psNeverRasterize", &psNeverRasterize, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("textEncoding"))
+		else if (cmd == "textEncoding")
 		{
 			parseString("textEncoding", &textEncoding, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("textEOL"))
+		else if (cmd == "textEOL")
 		{
 			parseTextEOL(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("textPageBreaks"))
+		else if (cmd == "textPageBreaks")
 		{
 			parseYesNo("textPageBreaks", &textPageBreaks, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("textKeepTinyChars"))
+		else if (cmd == "textKeepTinyChars")
 		{
 			parseYesNo("textKeepTinyChars", &textKeepTinyChars, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("initialZoom"))
+		else if (cmd == "initialZoom")
 		{
 			parseString("initialZoom", &initialZoom, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("defaultFitZoom"))
+		else if (cmd == "defaultFitZoom")
 		{
 			parseInteger("defaultFitZoom", &defaultFitZoom, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("zoomScaleFactor"))
+		else if (cmd == "zoomScaleFactor")
 		{
 			parseZoomScaleFactor(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("zoomValues"))
+		else if (cmd == "zoomValues")
 		{
 			parseZoomValues(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("initialDisplayMode"))
+		else if (cmd == "initialDisplayMode")
 		{
 			parseString("initialDisplayMode", &initialDisplayMode, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("initialToolbarState"))
+		else if (cmd == "initialToolbarState")
 		{
 			parseYesNo("initialToolbarState", &initialToolbarState, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("initialSidebarState"))
+		else if (cmd == "initialSidebarState")
 		{
 			parseYesNo("initialSidebarState", &initialSidebarState, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("initialSidebarWidth"))
+		else if (cmd == "initialSidebarWidth")
 		{
 			parseInteger("initialSidebarWidth", &initialSidebarWidth, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("initialSelectMode"))
+		else if (cmd == "initialSelectMode")
 		{
 			parseString("initialSelectMode", &initialSelectMode, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("maxTileWidth"))
+		else if (cmd == "maxTileWidth")
 		{
 			parseInteger("maxTileWidth", &maxTileWidth, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("maxTileHeight"))
+		else if (cmd == "maxTileHeight")
 		{
 			parseInteger("maxTileHeight", &maxTileHeight, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("tileCacheSize"))
+		else if (cmd == "tileCacheSize")
 		{
 			parseInteger("tileCacheSize", &tileCacheSize, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("workerThreads"))
+		else if (cmd == "workerThreads")
 		{
 			parseInteger("workerThreads", &workerThreads, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("enableFreeType"))
+		else if (cmd == "enableFreeType")
 		{
 			parseYesNo("enableFreeType", &enableFreeType, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("disableFreeTypeHinting"))
+		else if (cmd == "disableFreeTypeHinting")
 		{
 			parseYesNo("disableFreeTypeHinting", &disableFreeTypeHinting, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("antialias"))
+		else if (cmd == "antialias")
 		{
 			parseYesNo("antialias", &antialias, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("vectorAntialias"))
+		else if (cmd == "vectorAntialias")
 		{
 			parseYesNo("vectorAntialias", &vectorAntialias, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("imageMaskAntialias"))
+		else if (cmd == "imageMaskAntialias")
 		{
 			parseYesNo("imageMaskAntialias", &imageMaskAntialias, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("antialiasPrinting"))
+		else if (cmd == "antialiasPrinting")
 		{
 			parseYesNo("antialiasPrinting", &antialiasPrinting, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("strokeAdjust"))
+		else if (cmd == "strokeAdjust")
 		{
 			parseStrokeAdjust(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("screenType"))
+		else if (cmd == "screenType")
 		{
 			parseScreenType(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("screenSize"))
+		else if (cmd == "screenSize")
 		{
 			parseInteger("screenSize", &screenSize, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("screenDotRadius"))
+		else if (cmd == "screenDotRadius")
 		{
 			parseInteger("screenDotRadius", &screenDotRadius, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("screenGamma"))
+		else if (cmd == "screenGamma")
 		{
 			parseFloat("screenGamma", &screenGamma, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("screenBlackThreshold"))
+		else if (cmd == "screenBlackThreshold")
 		{
 			parseFloat("screenBlackThreshold", &screenBlackThreshold, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("screenWhiteThreshold"))
+		else if (cmd == "screenWhiteThreshold")
 		{
 			parseFloat("screenWhiteThreshold", &screenWhiteThreshold, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("minLineWidth"))
+		else if (cmd == "minLineWidth")
 		{
 			parseFloat("minLineWidth", &minLineWidth, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("enablePathSimplification"))
+		else if (cmd == "enablePathSimplification")
 		{
 			parseYesNo("enablePathSimplification", &enablePathSimplification, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("drawAnnotations"))
+		else if (cmd == "drawAnnotations")
 		{
 			parseYesNo("drawAnnotations", &drawAnnotations, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("drawFormFields"))
+		else if (cmd == "drawFormFields")
 		{
 			parseYesNo("drawFormFields", &drawFormFields, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("enableXFA"))
+		else if (cmd == "enableXFA")
 		{
 			parseYesNo("enableXFA", &enableXFA, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("overprintPreview"))
+		else if (cmd == "overprintPreview")
 		{
 			parseYesNo("overprintPreview", &overprintPreview, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("paperColor"))
+		else if (cmd == "paperColor")
 		{
 			parseString("paperColor", &paperColor, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("matteColor"))
+		else if (cmd == "matteColor")
 		{
 			parseString("matteColor", &matteColor, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("fullScreenMatteColor"))
+		else if (cmd == "fullScreenMatteColor")
 		{
 			parseString("fullScreenMatteColor", &fullScreenMatteColor, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("selectionColor"))
+		else if (cmd == "selectionColor")
 		{
 			parseString("selectionColor", &selectionColor, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("reverseVideoInvertImages"))
+		else if (cmd == "reverseVideoInvertImages")
 		{
 			parseYesNo("reverseVideoInvertImages", &reverseVideoInvertImages, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("allowLinksToChangeZoom"))
+		else if (cmd == "allowLinksToChangeZoom")
 		{
 			parseYesNo("allowLinksToChangeZoom", &allowLinksToChangeZoom, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("launchCommand"))
+		else if (cmd == "launchCommand")
 		{
 			parseString("launchCommand", &launchCommand, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("movieCommand"))
+		else if (cmd == "movieCommand")
 		{
 			parseString("movieCommand", &movieCommand, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("defaultPrinter"))
+		else if (cmd == "defaultPrinter")
 		{
 			parseString("defaultPrinter", &defaultPrinter, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("mapNumericCharNames"))
+		else if (cmd == "mapNumericCharNames")
 		{
 			parseYesNo("mapNumericCharNames", &mapNumericCharNames, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("mapUnknownCharNames"))
+		else if (cmd == "mapUnknownCharNames")
 		{
 			parseYesNo("mapUnknownCharNames", &mapUnknownCharNames, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("mapExtTrueTypeFontsViaUnicode"))
+		else if (cmd == "mapExtTrueTypeFontsViaUnicode")
 		{
 			parseYesNo("mapExtTrueTypeFontsViaUnicode", &mapExtTrueTypeFontsViaUnicode, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("useTrueTypeUnicodeMapping"))
+		else if (cmd == "useTrueTypeUnicodeMapping")
 		{
 			parseYesNo("useTrueTypeUnicodeMapping", &useTrueTypeUnicodeMapping, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("ignoreWrongSizeToUnicode"))
+		else if (cmd == "ignoreWrongSizeToUnicode")
 		{
 			parseYesNo("ignoreWrongSizeToUnicode", &ignoreWrongSizeToUnicode, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("dropFont"))
+		else if (cmd == "dropFont")
 		{
 			parseDropFont(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("separateRotatedText"))
+		else if (cmd == "separateRotatedText")
 		{
 			parseYesNo("separateRotatedText", &separateRotatedText, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("bind"))
+		else if (cmd == "bind")
 		{
 			parseBind(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("unbind"))
+		else if (cmd == "unbind")
 		{
 			parseUnbind(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("popupMenuCmd"))
+		else if (cmd == "popupMenuCmd")
 		{
 			parsePopupMenuCmd(tokens, fileName, line);
 		}
-		else if (!cmd->cmp("tabStateFile"))
+		else if (cmd == "tabStateFile")
 		{
 			parseString("tabStateFile", &tabStateFile, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("sessionFile"))
+		else if (cmd == "sessionFile")
 		{
 			parseString("sessionFile", &sessionFile, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("saveSessionOnQuit"))
+		else if (cmd == "saveSessionOnQuit")
 		{
 			parseYesNo("saveSessionOnQuit", &saveSessionOnQuit, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("savePageNumbers"))
+		else if (cmd == "savePageNumbers")
 		{
 			parseYesNo("savePageNumbers", &savePageNumbers, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("printCommands"))
+		else if (cmd == "printCommands")
 		{
 			parseYesNo("printCommands", &printCommands, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("printStatusInfo"))
+		else if (cmd == "printStatusInfo")
 		{
 			parseYesNo("printStatusInfo", &printStatusInfo, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("errQuiet"))
+		else if (cmd == "errQuiet")
 		{
 			parseYesNo("errQuiet", &errQuiet, tokens, fileName, line);
 		}
-		else if (!cmd->cmp("debugLogFile"))
+		else if (cmd == "debugLogFile")
 		{
 			parseString("debugLogFile", &debugLogFile, tokens, fileName, line);
 		}
 		else
 		{
-			error(errConfig, -1, "Unknown config file command '{0:t}' ({1:t}:{2:d})", cmd, fileName, line);
-			if (!cmd->cmp("displayFontX") || !cmd->cmp("displayNamedCIDFontX") || !cmd->cmp("displayCIDFontX"))
+			error(errConfig, -1, "Unknown config file command '{}' ({}:{})", cmd, fileName, line);
+			if (cmd == "displayFontX" || cmd == "displayNamedCIDFontX" || cmd == "displayCIDFontX")
 				error(errConfig, -1, "Xpdf no longer supports X fonts");
-			else if (!cmd->cmp("enableT1lib"))
+			else if (cmd == "enableT1lib")
 				error(errConfig, -1, "Xpdf no longer uses t1lib");
-			else if (!cmd->cmp("t1libControl") || !cmd->cmp("freetypeControl"))
+			else if (cmd == "t1libControl" || cmd == "freetypeControl")
 				error(errConfig, -1, "The t1libControl and freetypeControl options have been replaced by the enableT1lib, enableFreeType, and antialias options");
-			else if (!cmd->cmp("fontpath") || !cmd->cmp("fontmap"))
+			else if (cmd == "fontpath" || cmd == "fontmap")
 				error(errConfig, -1, "The config file format has changed since Xpdf 0.9x");
 		}
 	}
-
-	deleteGList(tokens, GString);
 }
 
-// Split a line into a sequence of tokens.  Tokens are separated by
-// whitespace.  Each token is one of:
-//   - unquoted string, which can contain any char other than
-//     whitespace, and which cannot start with a single quote, double
-//     quote, or at-double-quote (xxxx)
-//   - single-quoted string, which can contain any char other than the
-//     single quote ('xxxx')
-//   - double-quoted string, which can contain any char other than the
-//     double quote ("xxxx")
-//   - at-double-quoted string, which can contain variables and escape
-//     chars (@"xxxx")
+// Split a line into a sequence of tokens.  Tokens are separated by whitespace.  Each token is one of:
+//   - unquoted string, which can contain any char other than whitespace, and which cannot start with a single quote, double quote, or at-double-quote (xxxx)
+//   - single-quoted string, which can contain any char other than the single quote ('xxxx')
+//   - double-quoted string, which can contain any char other than the double quote ("xxxx")
+//   - at-double-quoted string, which can contain variables and escape chars (@"xxxx")
 //     - variables look like ${name}
 //     - special chars (${}") can be escaped with %, e.g.,
 //       @"foo%"bar", @"foo%$bar", @"foo%%bar"
-GList* GlobalParams::parseLineTokens(char* buf, GString* fileName, int line)
+VEC_STR GlobalParams::parseLineTokens(char* buf, const std::string& fileName, int line)
 {
-	GList* tokens = new GList();
-	char*  p1     = buf;
+	VEC_STR tokens;
+	char*   p1 = buf;
 	while (*p1)
 	{
 		for (; *p1 && isspace(*p1); ++p1)
@@ -1481,18 +1393,18 @@ GList* GlobalParams::parseLineTokens(char* buf, GString* fileName, int line)
 			for (p2 = p1 + 1; *p2 && *p2 != *p1; ++p2)
 				;
 			++p1;
-			tokens->append(new GString(p1, (int)(p2 - p1)));
+			tokens.push_back(std::string(p1, (int)(p2 - p1)));
 			p1 = *p2 ? p2 + 1 : p2;
 		}
 		else if (*p1 == '@' && p1[1] == '"')
 		{
-			GString* token = new GString();
-			char*    p2    = p1 + 2;
+			std::string token;
+			char*       p2 = p1 + 2;
 			while (*p2 && *p2 != '"')
 			{
 				if (*p2 == '%' && p2[1])
 				{
-					token->append(p2[1]);
+					token += p2[1];
 					p2 += 2;
 				}
 				else if (*p2 == '$' && p2[1] == '{')
@@ -1501,22 +1413,20 @@ GList* GlobalParams::parseLineTokens(char* buf, GString* fileName, int line)
 					char* p3;
 					for (p3 = p2; *p3 && *p3 != '}'; ++p3)
 						;
-					GString* varName  = new GString(p2, (int)(p3 - p2));
-					GString* varValue = (GString*)configFileVars->lookup(varName);
-					if (varValue)
-						token->append(varValue);
+					const auto varName = std::string(p2, (int)(p3 - p2));
+					if (const auto& it = configFileVars.find(varName); it != configFileVars.end())
+						token += it->second;
 					else
 						error(errConfig, -1, "Unknown config file variable '%t'", varName);
-					delete varName;
 					p2 = *p3 ? p3 + 1 : p3;
 				}
 				else
 				{
-					token->append(*p2);
+					token += *p2;
 					++p2;
 				}
 			}
-			tokens->append(token);
+			tokens.push_back(token);
 			p1 = *p2 ? p2 + 1 : p2;
 		}
 		else
@@ -1524,31 +1434,30 @@ GList* GlobalParams::parseLineTokens(char* buf, GString* fileName, int line)
 			char* p2;
 			for (p2 = p1 + 1; *p2 && !isspace(*p2); ++p2)
 				;
-			tokens->append(new GString(p1, (int)(p2 - p1)));
+			tokens.push_back(std::string(p1, (int)(p2 - p1)));
 			p1 = p2;
 		}
 	}
 	return tokens;
 }
 
-void GlobalParams::parseNameToUnicode(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseNameToUnicode(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	GString* name;
-	char *   tok1, *tok2;
-	FILE*    f;
-	char     buf[256];
-	int      line2;
-	Unicode  u;
+	char *  tok1, *tok2;
+	FILE*   f;
+	char    buf[256];
+	int     line2;
+	Unicode u;
 
-	if (tokens->getLength() != 2)
+	if (tokens.size() != 2)
 	{
-		error(errConfig, -1, "Bad 'nameToUnicode' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'nameToUnicode' config file command ({}:{})", fileName, line);
 		return;
 	}
-	name = (GString*)tokens->get(1);
-	if (!(f = openFile(name->getCString(), "r")))
+	const auto name = tokens.at(1);
+	if (!(f = openFile(name.c_str(), "r")))
 	{
-		error(errConfig, -1, "Couldn't open 'nameToUnicode' file '{0:t}'", name);
+		error(errConfig, -1, "Couldn't open 'nameToUnicode' file '{}'", name);
 		return;
 	}
 	line2 = 1;
@@ -1563,397 +1472,361 @@ void GlobalParams::parseNameToUnicode(GList* tokens, GString* fileName, int line
 		}
 		else
 		{
-			error(errConfig, -1, "Bad line in 'nameToUnicode' file ({0:t}:{1:d})", name, line2);
+			error(errConfig, -1, "Bad line in 'nameToUnicode' file ({}:{})", name, line2);
 		}
 		++line2;
 	}
 	fclose(f);
 }
 
-void GlobalParams::parseCIDToUnicode(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseCIDToUnicode(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	GString *collection, *name, *old;
-
-	if (tokens->getLength() != 3)
+	if (tokens.size() != 3)
 	{
-		error(errConfig, -1, "Bad 'cidToUnicode' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'cidToUnicode' config file command ({}:{})", fileName, line);
 		return;
 	}
-	collection = (GString*)tokens->get(1);
-	name       = (GString*)tokens->get(2);
-	if ((old = (GString*)cidToUnicodes->remove(collection)))
-		delete old;
-	cidToUnicodes->add(collection->copy(), name->copy());
+	const auto collection     = tokens.at(1);
+	const auto name           = tokens.at(2);
+	cidToUnicodes[collection] = name;
 }
 
-void GlobalParams::parseUnicodeToUnicode(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseUnicodeToUnicode(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	GString *font, *file, *old;
-
-	if (tokens->getLength() != 3)
+	if (tokens.size() != 3)
 	{
-		error(errConfig, -1, "Bad 'unicodeToUnicode' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'unicodeToUnicode' config file command ({}:{})", fileName, line);
 		return;
 	}
-	font = (GString*)tokens->get(1);
-	file = (GString*)tokens->get(2);
-	if ((old = (GString*)unicodeToUnicodes->remove(font)))
-		delete old;
-	unicodeToUnicodes->add(font->copy(), file->copy());
+	const auto font = tokens.at(1);
+	const auto file = tokens.at(2);
+	unicodeToUnicodes.emplace(font, file);
 }
 
-void GlobalParams::parseUnicodeMap(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseUnicodeMap(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	GString *encodingName, *name, *old;
-
-	if (tokens->getLength() != 3)
+	if (tokens.size() != 3)
 	{
-		error(errConfig, -1, "Bad 'unicodeMap' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'unicodeMap' config file command ({}:{})", fileName, line);
 		return;
 	}
-	encodingName = (GString*)tokens->get(1);
-	name         = (GString*)tokens->get(2);
-	if ((old = (GString*)unicodeMaps->remove(encodingName)))
-		delete old;
-	unicodeMaps->add(encodingName->copy(), name->copy());
+	const auto encodingName = tokens.at(1);
+	const auto name         = tokens.at(2);
+	unicodeMaps.emplace(encodingName, name);
 }
 
-void GlobalParams::parseCMapDir(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseCMapDir(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	GString *collection, *dir;
-	GList*   list;
-
-	if (tokens->getLength() != 3)
+	if (tokens.size() != 3)
 	{
-		error(errConfig, -1, "Bad 'cMapDir' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'cMapDir' config file command ({}:{})", fileName, line);
 		return;
 	}
-	collection = (GString*)tokens->get(1);
-	dir        = (GString*)tokens->get(2);
-	if (!(list = (GList*)cMapDirs->lookup(collection)))
-	{
-		list = new GList();
-		cMapDirs->add(collection->copy(), list);
-	}
-	list->append(dir->copy());
+	const auto collection = tokens.at(1);
+	const auto dir        = tokens.at(2);
+	if (!cMapDirs.contains(collection))
+		cMapDirs.emplace(collection, VEC_STR {});
+	if (auto it = cMapDirs.find(collection); it != cMapDirs.end())
+		it->second.push_back(dir);
 }
 
-void GlobalParams::parseToUnicodeDir(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseToUnicodeDir(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	if (tokens->getLength() != 2)
+	if (tokens.size() != 2)
 	{
-		error(errConfig, -1, "Bad 'toUnicodeDir' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'toUnicodeDir' config file command ({}:{})", fileName, line);
 		return;
 	}
-	toUnicodeDirs->append(((GString*)tokens->get(1))->copy());
+	toUnicodeDirs.push_back(tokens.at(1));
 }
 
-void GlobalParams::parseUnicodeRemapping(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseUnicodeRemapping(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	if (tokens->getLength() != 2)
+	if (tokens.size() != 2)
 	{
-		error(errConfig, -1, "Bad 'unicodeRemapping' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'unicodeRemapping' config file command ({}:{})", fileName, line);
 		return;
 	}
-	unicodeRemapping->parseFile((GString*)tokens->get(1));
+	unicodeRemapping->parseFile(tokens.at(1));
 }
 
-void GlobalParams::parseFontFile(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseFontFile(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	if (tokens->getLength() != 3)
+	if (tokens.size() != 3)
 	{
-		error(errConfig, -1, "Bad 'fontFile' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'fontFile' config file command ({}:{})", fileName, line);
 		return;
 	}
-	fprintf(stderr, "parseFontFile: [%s, %s]\n", ((GString*)tokens->get(1))->getCString(), ((GString*)tokens->get(2))->getCString());
-	fontFiles->add(((GString*)tokens->get(1))->copy(), ((GString*)tokens->get(2))->copy());
+	fprintf(stderr, "parseFontFile: [%s, %s]\n", tokens.at(1).c_str(), tokens.at(2).c_str());
+	fontFiles.emplace(tokens.at(1), tokens.at(2));
 }
 
-void GlobalParams::parseFontDir(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseFontDir(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	if (tokens->getLength() != 2)
+	if (tokens.size() != 2)
 	{
-		error(errConfig, -1, "Bad 'fontDir' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'fontDir' config file command ({}:{})", fileName, line);
 		return;
 	}
-	fontDirs->append(((GString*)tokens->get(1))->copy());
+	fontDirs.push_back(tokens.at(1));
 }
 
-void GlobalParams::parseFontFileCC(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseFontFileCC(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	if (tokens->getLength() != 3)
+	if (tokens.size() != 3)
 	{
-		error(errConfig, -1, "Bad 'fontFileCC' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'fontFileCC' config file command ({}:{})", fileName, line);
 		return;
 	}
-	ccFontFiles->add(((GString*)tokens->get(1))->copy(), ((GString*)tokens->get(2))->copy());
+	ccFontFiles.emplace(tokens.at(1), tokens.at(2));
 }
 
-void GlobalParams::parsePSPaperSize(GList* tokens, GString* fileName, int line)
+void GlobalParams::parsePSPaperSize(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	GString* tok;
-
-	if (tokens->getLength() == 2)
+	if (tokens.size() == 2)
 	{
-		tok = (GString*)tokens->get(1);
-		if (!setPSPaperSize(tok->getCString()))
-			error(errConfig, -1, "Bad 'psPaperSize' config file command ({0:s}:{1:d})", fileName, line);
+		const auto& tok = tokens.at(1);
+		if (!setPSPaperSize(tok.c_str()))
+			error(errConfig, -1, "Bad 'psPaperSize' config file command ({}:{})", fileName, line);
 	}
-	else if (tokens->getLength() == 3)
+	else if (tokens.size() == 3)
 	{
-		tok            = (GString*)tokens->get(1);
-		psPaperWidth   = atoi(tok->getCString());
-		tok            = (GString*)tokens->get(2);
-		psPaperHeight  = atoi(tok->getCString());
-		psImageableLLX = psImageableLLY = 0;
-		psImageableURX                  = psPaperWidth;
-		psImageableURY                  = psPaperHeight;
+		const auto& tok  = tokens.at(1);
+		psPaperWidth     = atoi(tok.c_str());
+		const auto& tok2 = tokens.at(2);
+		psPaperHeight    = atoi(tok2.c_str());
+		psImageableLLX   = 0;
+		psImageableLLY   = 0;
+		psImageableURX.store(psPaperWidth.load());
+		psImageableURY.store(psPaperHeight.load());
 	}
 	else
 	{
-		error(errConfig, -1, "Bad 'psPaperSize' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'psPaperSize' config file command ({}:{})", fileName, line);
 	}
 }
 
-void GlobalParams::parsePSImageableArea(GList* tokens, GString* fileName, int line)
+void GlobalParams::parsePSImageableArea(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	if (tokens->getLength() != 5)
+	if (tokens.size() != 5)
 	{
-		error(errConfig, -1, "Bad 'psImageableArea' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'psImageableArea' config file command ({}:{})", fileName, line);
 		return;
 	}
-	psImageableLLX = atoi(((GString*)tokens->get(1))->getCString());
-	psImageableLLY = atoi(((GString*)tokens->get(2))->getCString());
-	psImageableURX = atoi(((GString*)tokens->get(3))->getCString());
-	psImageableURY = atoi(((GString*)tokens->get(4))->getCString());
+	psImageableLLX = atoi(tokens.at(1).c_str());
+	psImageableLLY = atoi(tokens.at(2).c_str());
+	psImageableURX = atoi(tokens.at(3).c_str());
+	psImageableURY = atoi(tokens.at(4).c_str());
 }
 
-void GlobalParams::parsePSLevel(GList* tokens, GString* fileName, int line)
+void GlobalParams::parsePSLevel(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	GString* tok;
-
-	if (tokens->getLength() != 2)
+	if (tokens.size() != 2)
 	{
-		error(errConfig, -1, "Bad 'psLevel' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'psLevel' config file command ({}:{})", fileName, line);
 		return;
 	}
-	tok = (GString*)tokens->get(1);
-	if (!tok->cmp("level1"))
+	const auto& tok = tokens.at(1);
+	if (tok == "level1")
 		psLevel = psLevel1;
-	else if (!tok->cmp("level1sep"))
+	else if (tok == "level1sep")
 		psLevel = psLevel1Sep;
-	else if (!tok->cmp("level2"))
+	else if (tok == "level2")
 		psLevel = psLevel2;
-	else if (!tok->cmp("level2gray"))
+	else if (tok == "level2gray")
 		psLevel = psLevel2Gray;
-	else if (!tok->cmp("level2sep"))
+	else if (tok == "level2sep")
 		psLevel = psLevel2Sep;
-	else if (!tok->cmp("level3"))
+	else if (tok == "level3")
 		psLevel = psLevel3;
-	else if (!tok->cmp("level3gray"))
+	else if (tok == "level3gray")
 		psLevel = psLevel3Gray;
-	else if (!tok->cmp("level3Sep"))
+	else if (tok == "level3Sep")
 		psLevel = psLevel3Sep;
 	else
-		error(errConfig, -1, "Bad 'psLevel' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'psLevel' config file command ({}:{})", fileName, line);
 }
 
-void GlobalParams::parsePSResidentFont(GList* tokens, GString* fileName, int line)
+void GlobalParams::parsePSResidentFont(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	if (tokens->getLength() != 3)
+	if (tokens.size() != 3)
 	{
-		error(errConfig, -1, "Bad 'psResidentFont' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'psResidentFont' config file command ({}:{})", fileName, line);
 		return;
 	}
-	psResidentFonts->add(((GString*)tokens->get(1))->copy(), ((GString*)tokens->get(2))->copy());
+	psResidentFonts.emplace(tokens.at(1), tokens.at(2));
 }
 
-void GlobalParams::parsePSResidentFont16(GList* tokens, GString* fileName, int line)
+void GlobalParams::parsePSResidentFont16(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	PSFontParam16* param;
-	int            wMode;
-	GString*       tok;
-
-	if (tokens->getLength() != 5)
+	if (tokens.size() != 5)
 	{
-		error(errConfig, -1, "Bad 'psResidentFont16' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'psResidentFont16' config file command ({}:{})", fileName, line);
 		return;
 	}
-	tok = (GString*)tokens->get(2);
-	if (!tok->cmp("H"))
+	const auto& tok = tokens.at(2);
+	int         wMode;
+	if (tok == "H")
 	{
 		wMode = 0;
 	}
-	else if (!tok->cmp("V"))
+	else if (tok == "V")
 	{
 		wMode = 1;
 	}
 	else
 	{
-		error(errConfig, -1, "Bad wMode in psResidentFont16 config file command ({1:t}:{2:d})", fileName, line);
+		error(errConfig, -1, "Bad wMode in psResidentFont16 config file command ({}:{})", fileName, line);
 		return;
 	}
-	param = new PSFontParam16(((GString*)tokens->get(1))->copy(), wMode, ((GString*)tokens->get(3))->copy(), ((GString*)tokens->get(4))->copy());
-	psResidentFonts16->append(param);
+	psResidentFonts16.emplace_back(tokens.at(1), wMode, tokens.at(3), tokens.at(4));
 }
 
-void GlobalParams::parsePSResidentFontCC(GList* tokens, GString* fileName, int line)
+void GlobalParams::parsePSResidentFontCC(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	PSFontParam16* param;
-	int            wMode;
-	GString*       tok;
-
-	if (tokens->getLength() != 5)
+	if (tokens.size() != 5)
 	{
-		error(errConfig, -1, "Bad 'psResidentFontCC' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'psResidentFontCC' config file command ({}:{})", fileName, line);
 		return;
 	}
-	tok = (GString*)tokens->get(2);
-	if (!tok->cmp("H"))
+	const auto& tok = tokens.at(2);
+	int         wMode;
+	if (tok == "H")
 	{
 		wMode = 0;
 	}
-	else if (!tok->cmp("V"))
+	else if (tok == "V")
 	{
 		wMode = 1;
 	}
 	else
 	{
-		error(errConfig, -1, "Bad wMode in psResidentFontCC config file command ({1:t}:{2:d})", fileName, line);
+		error(errConfig, -1, "Bad wMode in psResidentFontCC config file command ({}:{})", fileName, line);
 		return;
 	}
-	param = new PSFontParam16(((GString*)tokens->get(1))->copy(), wMode, ((GString*)tokens->get(3))->copy(), ((GString*)tokens->get(4))->copy());
-	psResidentFontsCC->append(param);
+	psResidentFontsCC.emplace_back(tokens.at(1), wMode, tokens.at(3), tokens.at(4));
 }
 
-void GlobalParams::parseTextEOL(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseTextEOL(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	GString* tok;
-
-	if (tokens->getLength() != 2)
+	if (tokens.size() != 2)
 	{
-		error(errConfig, -1, "Bad 'textEOL' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'textEOL' config file command ({}:{})", fileName, line);
 		return;
 	}
-	tok = (GString*)tokens->get(1);
-	if (!tok->cmp("unix"))
+	const auto& tok = tokens.at(1);
+	if (tok == "unix")
 		textEOL = eolUnix;
-	else if (!tok->cmp("dos"))
+	else if (tok == "dos")
 		textEOL = eolDOS;
-	else if (!tok->cmp("mac"))
+	else if (tok == "mac")
 		textEOL = eolMac;
 	else
-		error(errConfig, -1, "Bad 'textEOL' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'textEOL' config file command ({}:{})", fileName, line);
 }
 
-void GlobalParams::parseStrokeAdjust(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseStrokeAdjust(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	GString* tok;
-
-	if (tokens->getLength() != 2)
+	if (tokens.size() != 2)
 	{
-		error(errConfig, -1, "Bad 'strokeAdjust' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'strokeAdjust' config file command ({}:{})", fileName, line);
 		return;
 	}
-	tok = (GString*)tokens->get(1);
-	if (!tok->cmp("no"))
+	const auto& tok = tokens.at(1);
+	if (tok == "no")
 		strokeAdjust = strokeAdjustOff;
-	else if (!tok->cmp("yes"))
+	else if (tok == "yes")
 		strokeAdjust = strokeAdjustNormal;
-	else if (!tok->cmp("cad"))
+	else if (tok == "cad")
 		strokeAdjust = strokeAdjustCAD;
 	else
-		error(errConfig, -1, "Bad 'strokeAdjust' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'strokeAdjust' config file command ({}:{})", fileName, line);
 }
 
-void GlobalParams::parseScreenType(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseScreenType(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	GString* tok;
-
-	if (tokens->getLength() != 2)
+	if (tokens.size() != 2)
 	{
-		error(errConfig, -1, "Bad 'screenType' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'screenType' config file command ({}:{})", fileName, line);
 		return;
 	}
-	tok = (GString*)tokens->get(1);
-	if (!tok->cmp("dispersed"))
+	const auto& tok = tokens.at(1);
+	if (tok == "dispersed")
 		screenType = screenDispersed;
-	else if (!tok->cmp("clustered"))
+	else if (tok == "clustered")
 		screenType = screenClustered;
-	else if (!tok->cmp("stochasticClustered"))
+	else if (tok == "stochasticClustered")
 		screenType = screenStochasticClustered;
 	else
-		error(errConfig, -1, "Bad 'screenType' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'screenType' config file command ({}:{})", fileName, line);
 }
 
-void GlobalParams::parseDropFont(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseDropFont(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	if (tokens->getLength() != 2)
+	if (tokens.size() != 2)
 	{
-		error(errConfig, -1, "Bad 'dropFont' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'dropFont' config file command ({}:{})", fileName, line);
 		return;
 	}
-	droppedFonts->add(((GString*)tokens->get(1))->copy(), 1);
+	droppedFonts.emplace(tokens.at(1), 1);
 }
 
-void GlobalParams::parseBind(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseBind(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	KeyBinding* binding;
-	GList*      cmds;
-	int         code, mods, context, i;
+	int code, mods, context;
 
-	if (tokens->getLength() < 4)
+	if (tokens.size() < 4)
 	{
-		error(errConfig, -1, "Bad 'bind' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'bind' config file command ({}:{})", fileName, line);
 		return;
 	}
-	if (!parseKey((GString*)tokens->get(1), (GString*)tokens->get(2), &code, &mods, &context, "bind", tokens, fileName, line))
+	if (!parseKey(tokens.at(1), tokens.at(2), &code, &mods, &context, "bind", tokens, fileName, line))
 		return;
-	for (i = 0; i < keyBindings->getLength(); ++i)
+
+	for (auto it = keyBindings.begin(); it != keyBindings.end();)
 	{
-		binding = (KeyBinding*)keyBindings->get(i);
-		if (binding->code == code && binding->mods == mods && binding->context == context)
+		const auto& binding = *it;
+		if (binding.code == code && binding.mods == mods && binding.context == context)
 		{
-			delete (KeyBinding*)keyBindings->del(i);
+			keyBindings.erase(it);
 			break;
 		}
 	}
-	cmds = new GList();
-	for (i = 3; i < tokens->getLength(); ++i)
-		cmds->append(((GString*)tokens->get(i))->copy());
-	keyBindings->append(new KeyBinding(code, mods, context, cmds));
+
+	VEC_STR cmds;
+	for (int i = 3; i < tokens.size(); ++i)
+		cmds.push_back(tokens.at(i));
+	keyBindings.emplace_back(code, mods, context, cmds);
 }
 
-void GlobalParams::parseUnbind(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseUnbind(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	KeyBinding* binding;
-	int         code, mods, context, i;
-
-	if (tokens->getLength() != 3)
+	if (tokens.size() != 3)
 	{
-		error(errConfig, -1, "Bad 'unbind' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'unbind' config file command ({}:{})", fileName, line);
 		return;
 	}
-	if (!parseKey((GString*)tokens->get(1), (GString*)tokens->get(2), &code, &mods, &context, "unbind", tokens, fileName, line))
+	int code, mods, context;
+	if (!parseKey(tokens.at(1), tokens.at(2), &code, &mods, &context, "unbind", tokens, fileName, line))
 		return;
-	for (i = 0; i < keyBindings->getLength(); ++i)
+
+	for (auto it = keyBindings.begin(); it != keyBindings.end();)
 	{
-		binding = (KeyBinding*)keyBindings->get(i);
-		if (binding->code == code && binding->mods == mods && binding->context == context)
+		const auto& binding = *it;
+		if (binding.code == code && binding.mods == mods && binding.context == context)
 		{
-			delete (KeyBinding*)keyBindings->del(i);
+			keyBindings.erase(it);
 			break;
 		}
 	}
 }
 
-GBool GlobalParams::parseKey(GString* modKeyStr, GString* contextStr, int* code, int* mods, int* context, const char* cmdName, GList* tokens, GString* fileName, int line)
+bool GlobalParams::parseKey(const std::string& modKeyStr, const std::string& contextStr, int* code, int* mods, int* context, const char* cmdName, const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	char* p0;
-	int   btn;
+	int btn;
 
-	*mods = xpdfKeyModNone;
-	p0    = modKeyStr->getCString();
+	*mods          = xpdfKeyModNone;
+	const char* p0 = modKeyStr.c_str();
 	while (1)
 	{
 		if (!strncmp(p0, "shift-", 6))
@@ -2075,11 +1948,11 @@ GBool GlobalParams::parseKey(GString* modKeyStr, GString* contextStr, int* code,
 	}
 	else
 	{
-		error(errConfig, -1, "Bad key/modifier in '{0:s}' config file command ({1:t}:{2:d})", cmdName, fileName, line);
-		return gFalse;
+		error(errConfig, -1, "Bad key/modifier in '{}' config file command ({}:{})", cmdName, fileName, line);
+		return false;
 	}
 
-	p0 = contextStr->getCString();
+	p0 = contextStr.c_str();
 	if (!strcmp(p0, "any"))
 	{
 		*context = xpdfKeyContextAny;
@@ -2141,256 +2014,191 @@ GBool GlobalParams::parseKey(GString* modKeyStr, GString* contextStr, int* code,
 			}
 			else
 			{
-				error(errConfig, -1, "Bad context in '{0:s}' config file command ({1:t}:{2:d})", cmdName, fileName, line);
-				return gFalse;
+				error(errConfig, -1, "Bad context in '{}' config file command ({}:{})", cmdName, fileName, line);
+				return false;
 			}
 			if (!*p0)
 				break;
 			if (*p0 != ',')
 			{
-				error(errConfig, -1, "Bad context in '{0:s}' config file command ({1:t}:{2:d})", cmdName, fileName, line);
-				return gFalse;
+				error(errConfig, -1, "Bad context in '{}' config file command ({}:{})", cmdName, fileName, line);
+				return false;
 			}
 			++p0;
 		}
 	}
 
-	return gTrue;
+	return true;
 }
 
-void GlobalParams::parsePopupMenuCmd(GList* tokens, GString* fileName, int line)
+void GlobalParams::parsePopupMenuCmd(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	GList* cmds;
-	int    i;
-
-	if (tokens->getLength() < 3)
+	if (tokens.size() < 3)
 	{
-		error(errConfig, -1, "Bad 'popupMenuCmd' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'popupMenuCmd' config file command ({}:{})", fileName, line);
 		return;
 	}
-	cmds = new GList();
-	for (i = 2; i < tokens->getLength(); ++i)
-		cmds->append(((GString*)tokens->get(i))->copy());
-	popupMenuCmds->append(new PopupMenuCmd(((GString*)tokens->get(1))->copy(), cmds));
+	VEC_STR cmds;
+	for (int i = 2; i < tokens.size(); ++i)
+		cmds.push_back(tokens.at(i));
+	popupMenuCmds.emplace_back(tokens.at(1), cmds);
 }
 
-void GlobalParams::parseZoomScaleFactor(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseZoomScaleFactor(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	if (tokens->getLength() != 2)
+	if (tokens.size() != 2)
 	{
-		error(errConfig, -1, "Bad 'zoomScaleFactor' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'zoomScaleFactor' config file command ({}:{})", fileName, line);
 		return;
 	}
-	GString* tok = (GString*)tokens->get(1);
-	if (tok->getLength() == 0)
+	const auto& tok = tokens.at(1);
+	if (tok.size() == 0)
 	{
-		error(errConfig, -1, "Bad 'zoomScaleFactor' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'zoomScaleFactor' config file command ({}:{})", fileName, line);
 		return;
 	}
-	if (tok->cmp("actual") == 0)
+	if (tok == "actual")
 	{
 		zoomScaleFactor = -1;
 	}
 	else
 	{
-		for (int i = 0; i < tok->getLength(); ++i)
+		for (int i = 0; i < tok.size(); ++i)
 		{
-			if (!((tok->getChar(i) >= '0' && tok->getChar(i) <= '9') || tok->getChar(i) == '.'))
+			if (!((tok.at(i) >= '0' && tok.at(i) <= '9') || tok.at(i) == '.'))
 			{
-				error(errConfig, -1, "Bad 'zoomScaleFactor' config file command ({0:t}:{1:d})", fileName, line);
+				error(errConfig, -1, "Bad 'zoomScaleFactor' config file command ({}:{})", fileName, line);
 				return;
 			}
 		}
-		zoomScaleFactor = atof(tok->getCString());
+		zoomScaleFactor = atof(tok.c_str());
 	}
 }
 
-void GlobalParams::parseZoomValues(GList* tokens, GString* fileName, int line)
+void GlobalParams::parseZoomValues(const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	if (tokens->getLength() < 2)
+	if (tokens.size() < 2)
 	{
-		error(errConfig, -1, "Bad 'zoomValues' config file command ({0:t}:{1:d})", fileName, line);
+		error(errConfig, -1, "Bad 'zoomValues' config file command ({}:{})", fileName, line);
 		return;
 	}
-	for (int i = 1; i < tokens->getLength(); ++i)
+	for (int i = 1; i < tokens.size(); ++i)
 	{
-		GString* tok = (GString*)tokens->get(i);
-		for (int j = 0; j < tok->getLength(); ++j)
+		const auto& tok = tokens.at(i);
+		for (int j = 0; j < tok.size(); ++j)
 		{
-			if (tok->getChar(j) < '0' || tok->getChar(j) > '9')
+			if (tok.at(j) < '0' || tok.at(j) > '9')
 			{
-				error(errConfig, -1, "Bad 'zoomValues' config file command ({0:t}:{1:d})", fileName, line);
+				error(errConfig, -1, "Bad 'zoomValues' config file command ({}:{})", fileName, line);
 				return;
 			}
 		}
 	}
-	deleteGList(zoomValues, GString);
-	zoomValues = new GList();
-	for (int i = 1; i < tokens->getLength(); ++i)
-	{
-		GString* tok = (GString*)tokens->get(i);
-		zoomValues->append(tok->copy());
-	}
+
+	zoomValues.clear();
+	for (int i = 1; i < tokens.size(); ++i)
+		zoomValues.push_back(tokens.at(i));
 }
 
-void GlobalParams::parseYesNo(const char* cmdName, GBool* flag, GList* tokens, GString* fileName, int line)
+void GlobalParams::parseYesNo(const char* cmdName, std::atomic<bool>* flag, const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	GString* tok;
-
-	if (tokens->getLength() != 2)
+	if (tokens.size() != 2)
 	{
-		error(errConfig, -1, "Bad '{0:s}' config file command ({1:t}:{2:d})", cmdName, fileName, line);
+		error(errConfig, -1, "Bad '{}' config file command ({}:{})", cmdName, fileName, line);
 		return;
 	}
-	tok = (GString*)tokens->get(1);
-	if (!parseYesNo2(tok->getCString(), flag))
-		error(errConfig, -1, "Bad '{0:s}' config file command ({1:t}:{2:d})", cmdName, fileName, line);
+	const auto& tok = tokens.at(1);
+	if (!parseYesNo2(tok.c_str(), flag))
+		error(errConfig, -1, "Bad '{}' config file command ({}:{})", cmdName, fileName, line);
 }
 
-GBool GlobalParams::parseYesNo2(char* token, GBool* flag)
+bool GlobalParams::parseYesNo2(const char* token, std::atomic<bool>* flag)
 {
 	if (!strcmp(token, "yes"))
-		*flag = gTrue;
+		*flag = true;
 	else if (!strcmp(token, "no"))
-		*flag = gFalse;
+		*flag = false;
 	else
-		return gFalse;
-	return gTrue;
+		return false;
+	return true;
 }
 
-void GlobalParams::parseString(const char* cmdName, GString** s, GList* tokens, GString* fileName, int line)
+void GlobalParams::parseString(const char* cmdName, std::string* s, const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	if (tokens->getLength() != 2)
+	if (tokens.size() != 2)
 	{
-		error(errConfig, -1, "Bad '{0:s}' config file command ({1:t}:{2:d})", cmdName, fileName, line);
+		error(errConfig, -1, "Bad '{}' config file command ({}:{})", cmdName, fileName, line);
 		return;
 	}
-	if (*s)
-		delete *s;
-	*s = ((GString*)tokens->get(1))->copy();
+	*s = tokens.at(1);
 }
 
-void GlobalParams::parseInteger(const char* cmdName, int* val, GList* tokens, GString* fileName, int line)
+void GlobalParams::parseInteger(const char* cmdName, std::atomic<int>* val, const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	GString* tok;
-	int      i;
-
-	if (tokens->getLength() != 2)
+	if (tokens.size() != 2)
 	{
-		error(errConfig, -1, "Bad '{0:s}' config file command ({1:t}:{2:d})", cmdName, fileName, line);
+		error(errConfig, -1, "Bad '{}' config file command ({}:{})", cmdName, fileName, line);
 		return;
 	}
-	tok = (GString*)tokens->get(1);
-	if (tok->getLength() == 0)
+	const auto& tok = tokens.at(1);
+	if (tok.size() == 0)
 	{
-		error(errConfig, -1, "Bad '{0:s}' config file command ({1:t}:{2:d})", cmdName, fileName, line);
+		error(errConfig, -1, "Bad '{}' config file command ({}:{})", cmdName, fileName, line);
 		return;
 	}
-	if (tok->getChar(0) == '-')
+	int i;
+	if (tok.at(0) == '-')
 		i = 1;
 	else
 		i = 0;
-	for (; i < tok->getLength(); ++i)
+	for (; i < tok.size(); ++i)
 	{
-		if (tok->getChar(i) < '0' || tok->getChar(i) > '9')
+		if (tok.at(i) < '0' || tok.at(i) > '9')
 		{
-			error(errConfig, -1, "Bad '{0:s}' config file command ({1:t}:{2:d})", cmdName, fileName, line);
+			error(errConfig, -1, "Bad '{}' config file command ({}:{})", cmdName, fileName, line);
 			return;
 		}
 	}
-	*val = atoi(tok->getCString());
+	val->store(atoi(tok.c_str()));
 }
 
-void GlobalParams::parseFloat(const char* cmdName, double* val, GList* tokens, GString* fileName, int line)
+void GlobalParams::parseFloat(const char* cmdName, std::atomic<double>* val, const VEC_STR& tokens, const std::string& fileName, int line)
 {
-	GString* tok;
-	int      i;
-
-	if (tokens->getLength() != 2)
+	if (tokens.size() != 2)
 	{
-		error(errConfig, -1, "Bad '{0:s}' config file command ({1:t}:{2:d})", cmdName, fileName, line);
+		error(errConfig, -1, "Bad '{}' config file command ({}:{})", cmdName, fileName, line);
 		return;
 	}
-	tok = (GString*)tokens->get(1);
-	if (tok->getLength() == 0)
+	const auto& tok = tokens.at(1);
+	if (tok.size() == 0)
 	{
-		error(errConfig, -1, "Bad '{0:s}' config file command ({1:t}:{2:d})", cmdName, fileName, line);
+		error(errConfig, -1, "Bad '{}' config file command ({}:{})", cmdName, fileName, line);
 		return;
 	}
-	if (tok->getChar(0) == '-')
+	int i;
+	if (tok.at(0) == '-')
 		i = 1;
 	else
 		i = 0;
-	for (; i < tok->getLength(); ++i)
+	for (; i < tok.size(); ++i)
 	{
-		if (!((tok->getChar(i) >= '0' && tok->getChar(i) <= '9') || tok->getChar(i) == '.'))
+		if (!((tok.at(i) >= '0' && tok.at(i) <= '9') || tok.at(i) == '.'))
 		{
-			error(errConfig, -1, "Bad '{0:s}' config file command ({1:t}:{2:d})", cmdName, fileName, line);
+			error(errConfig, -1, "Bad '{}' config file command ({}:{})", cmdName, fileName, line);
 			return;
 		}
 	}
-	*val = atof(tok->getCString());
+	val->store(atof(tok.c_str()));
 }
 
 GlobalParams::~GlobalParams()
 {
-	GHashIter* iter;
-	GString*   key;
-	GList*     list;
-
 	freeBuiltinFontTables();
 
 	delete macRomanReverseMap;
-
-	delete baseDir;
-	deleteGHash(configFileVars, GString);
 	delete nameToUnicode;
-	deleteGHash(cidToUnicodes, GString);
-	deleteGHash(unicodeToUnicodes, GString);
-	deleteGHash(residentUnicodeMaps, UnicodeMap);
-	deleteGHash(unicodeMaps, GString);
-	deleteGList(toUnicodeDirs, GString);
 	delete unicodeRemapping;
-	deleteGHash(fontFiles, GString);
-	deleteGList(fontDirs, GString);
-	deleteGHash(ccFontFiles, GString);
-	deleteGHash(base14SysFonts, Base14FontInfo);
 	delete sysFonts;
-	deleteGHash(psResidentFonts, GString);
-	deleteGList(psResidentFonts16, PSFontParam16);
-	deleteGList(psResidentFontsCC, PSFontParam16);
-	delete textEncoding;
-	delete initialZoom;
-	deleteGList(zoomValues, GString);
-	delete initialDisplayMode;
-	delete initialSelectMode;
-	if (paperColor)
-		delete paperColor;
-	if (matteColor)
-		delete matteColor;
-	if (fullScreenMatteColor)
-		delete fullScreenMatteColor;
-	if (selectionColor)
-		delete selectionColor;
-	if (launchCommand)
-		delete launchCommand;
-	if (movieCommand)
-		delete movieCommand;
-	if (defaultPrinter)
-		delete defaultPrinter;
-	delete droppedFonts;
-	deleteGList(keyBindings, KeyBinding);
-	deleteGList(popupMenuCmds, PopupMenuCmd);
-	delete pagesFile;
-	delete tabStateFile;
-	delete sessionFile;
-	delete debugLogFile;
-
-	cMapDirs->startIter(&iter);
-	while (cMapDirs->getNext(&iter, &key, (void**)&list))
-		deleteGList(list, GString);
-	delete cMapDirs;
-
 	delete cidToUnicodeCache;
 	delete unicodeToUnicodeCache;
 	delete unicodeMapCache;
@@ -2407,8 +2215,7 @@ GlobalParams::~GlobalParams()
 
 void GlobalParams::setBaseDir(const char* dir)
 {
-	delete baseDir;
-	baseDir = new GString(dir);
+	baseDir = dir;
 }
 
 #ifdef _WIN32
@@ -2416,10 +2223,7 @@ static void getWinFontDir(char* winFontDir)
 {
 	HMODULE shell32Lib;
 	BOOL(__stdcall * SHGetSpecialFolderPathFunc)
-	(HWND  hwndOwner,
-	 LPSTR lpszPath,
-	 int   nFolder,
-	 BOOL  fCreate);
+	(HWND hwndOwner, LPSTR lpszPath, int nFolder, BOOL fCreate);
 	char* p;
 	int   i;
 
@@ -2428,9 +2232,7 @@ static void getWinFontDir(char* winFontDir)
 	winFontDir[0] = '\0';
 	if ((shell32Lib = LoadLibraryA("shell32.dll")))
 	{
-		if ((SHGetSpecialFolderPathFunc =
-		         (BOOL(__stdcall*)(HWND hwndOwner, LPSTR lpszPath, int nFolder, BOOL fCreate))
-		             GetProcAddress(shell32Lib, "SHGetSpecialFolderPathA")))
+		if ((SHGetSpecialFolderPathFunc = (BOOL(__stdcall*)(HWND hwndOwner, LPSTR lpszPath, int nFolder, BOOL fCreate))GetProcAddress(shell32Lib, "SHGetSpecialFolderPathA")))
 		{
 			if (!(*SHGetSpecialFolderPathFunc)(nullptr, winFontDir, CSIDL_FONTS, FALSE))
 				winFontDir[0] = '\0';
@@ -2466,12 +2268,12 @@ static void getWinFontDir(char* winFontDir)
 #ifdef __APPLE__
 // Apple dfonts and ttc fonts seem to randomly and interchangeably use
 // space and hyphen, and sometimes drop the separator entirely.
-static GBool macFontNameMatches(GString* name1, const char* name2)
+static bool macFontNameMatches(const std::string& name1, const char* name2)
 {
 	const char *p1, *p2;
 	char        c1, c2;
 
-	p1 = name1->getCString();
+	p1 = name1.c_str();
 	p2 = name2;
 	while (*p1 && *p2)
 	{
@@ -2488,113 +2290,91 @@ static GBool macFontNameMatches(GString* name1, const char* name2)
 		else
 		{
 			if (c1 != c2)
-				return gFalse;
+				return false;
 			++p1;
 		}
 		++p2;
 	}
 	if (*p1 || *p2)
-		return gFalse;
-	return gTrue;
+		return false;
+	return true;
 }
 #endif
 
 void GlobalParams::setupBaseFonts(const char* dir)
 {
-	GString*        fontName;
-	GString*        fileName;
-	int             fontNum;
-	const char*     s;
-	Base14FontInfo* base14;
 #ifdef _WIN32
 	char winFontDir[MAX_PATH];
 #endif
 #ifdef __APPLE__
 	static const char* macFontExts[3] = { "dfont", "ttc", "ttf" };
-	GList*             dfontFontNames;
-	GBool              found;
-	int                k;
 #endif
 	FILE* f;
-	int   i, j;
 
 #ifdef _WIN32
 	getWinFontDir(winFontDir);
 #endif
 #ifdef __APPLE__
-	dfontFontNames = nullptr;
+	GList* dfontFontNames = nullptr;
 #endif
-	for (i = 0; displayFontTab[i].name; ++i)
+	for (const auto& tab : displayFontTabs)
 	{
-		if (fontFiles->lookup(displayFontTab[i].name))
-			continue;
-		fontName = new GString(displayFontTab[i].name);
-		fileName = nullptr;
-		fontNum  = 0;
+		if (fontFiles.contains(tab.name)) continue;
+		std::string fontName = tab.name;
+		std::string fileName;
+		int         fontNum = 0;
 		if (dir)
 		{
-			fileName = appendToPath(new GString(dir), displayFontTab[i].t1FileName);
-			if ((f = fopen(fileName->getCString(), "rb")))
-			{
+			fileName = appendToPath(dir, tab.t1FileName.c_str());
+			if ((f = fopen(fileName.c_str(), "rb")))
 				fclose(f);
-			}
 			else
-			{
-				delete fileName;
-				fileName = nullptr;
-			}
+				fileName.clear();
 		}
 #ifdef _WIN32
-		if (!fileName && winFontDir[0] && displayFontTab[i].ttFileName)
+		if (fileName.empty() && winFontDir[0] && tab.ttFileName.size())
 		{
-			fileName = appendToPath(new GString(winFontDir), displayFontTab[i].ttFileName);
-			if ((f = fopen(fileName->getCString(), "rb")))
-			{
+			fileName = appendToPath(winFontDir, tab.ttFileName.c_str());
+			if ((f = fopen(fileName.c_str(), "rb")))
 				fclose(f);
-			}
 			else
-			{
-				delete fileName;
-				fileName = nullptr;
-			}
+				fileName.clear();
 		}
 #endif
 #ifdef __APPLE__
 		// Check for Mac OS X system fonts.
-		s = displayFontTab[i].macFileName;
+		const char* s = tab.macFileName.c_str();
 		if (dfontFontNames && i > 0 && (!s || strcmp(s, displayFontTab[i - 1].macFileName)))
 		{
 			deleteGList(dfontFontNames, GString);
 			dfontFontNames = nullptr;
 		}
-		if (!fileName && s)
+		if (fileName.empty() && s)
 		{
-			for (j = 0; j < 3; ++j)
+			for (int j = 0; j < 3; ++j)
 			{
-				fileName = GString::format("{0:s}/{1:s}.{2:s}", macSystemFontPath, s, macFontExts[j]);
-				if (!(f = fopen(fileName->getCString(), "rb")))
+				fileName = fmt::format("{}/{}.{}", macSystemFontPath, s, macFontExts[j]);
+				if (!(f = fopen(fileName.c_str(), "rb")))
 				{
-					delete fileName;
-					fileName = nullptr;
+					fileName.clear();
 				}
 				else
 				{
 					fclose(f);
-					found = gFalse;
+					bool found = false;
 					// for .dfont or .ttc, we need to scan the font list
 					if (j < 2)
 					{
 						if (!dfontFontNames)
-							dfontFontNames =
-							    FoFiIdentifier::getFontList(fileName->getCString());
+							dfontFontNames = FoFiIdentifier::getFontList(fileName.c_str());
 						if (dfontFontNames)
 						{
-							for (k = 0; k < dfontFontNames->getLength(); ++k)
+							for (int k = 0; k < dfontFontNames.size(); ++k)
 							{
-								if (macFontNameMatches((GString*)dfontFontNames->get(k), displayFontTab[i].macFontName))
+								if (macFontNameMatches((GString*)dfontFontNames->get(k), tab.macFontName))
 								{
 									fontNum = k;
-									found   = gTrue;
+									found   = true;
 									break;
 								}
 							}
@@ -2603,65 +2383,59 @@ void GlobalParams::setupBaseFonts(const char* dir)
 					}
 					else
 					{
-						found = gTrue;
+						found = true;
 					}
 					if (!found)
-					{
-						delete fileName;
-						fileName = nullptr;
-					}
+						fileName.clear();
 					break;
 				}
 			}
 		}
 #endif // __APPLE__
-       // On Linux, this checks the "standard" ghostscript font
-       // directories.  On Windows, it checks the "standard" system font
-       // directories (because SHGetSpecialFolderPath(CSIDL_FONTS)
-       // doesn't work on Win 2k Server or Win2003 Server, or with older
-       // versions of shell32.dll).
+       // On Linux, this checks the "standard" ghostscript font directories.
+	   // On Windows, it checks the "standard" system font directories (because SHGetSpecialFolderPath(CSIDL_FONTS) doesn't work on Win 2k Server or Win2003 Server, or with older versions of shell32.dll).
 #ifdef _WIN32
-		s = displayFontTab[i].ttFileName;
+		const char* s = tab.ttFileName.c_str();
 #else
-		s = displayFontTab[i].t1FileName;
+		const char* s = tab.t1FileName.c_str();
 #endif
-		if (!fileName && s)
+		if (fileName.empty() && s)
 		{
-			for (j = 0; !fileName && displayFontDirs[j]; ++j)
+			for (int j = 0; fileName.empty() && displayFontDirs[j]; ++j)
 			{
-				fileName = appendToPath(new GString(displayFontDirs[j]), s);
-				if ((f = fopen(fileName->getCString(), "rb")))
-				{
+				fileName = appendToPath(displayFontDirs[j], s);
+				if ((f = fopen(fileName.c_str(), "rb")))
 					fclose(f);
-				}
 				else
-				{
-					delete fileName;
-					fileName = nullptr;
-				}
+					fileName.clear();
 			}
 		}
-		if (!fileName)
+		if (fileName.empty())
 		{
-			delete fontName;
+			fontName.clear();
 			continue;
 		}
-		base14SysFonts->add(fontName, new Base14FontInfo(fileName, fontNum, 0));
+		base14SysFonts.emplace(fontName, Base14FontInfo(fileName, fontNum, 0));
 	}
 #ifdef __APPLE__
 	if (dfontFontNames)
 		deleteGList(dfontFontNames, GString);
 #endif
-	for (i = 0; displayFontTab[i].name; ++i)
+	for (const auto& tab : displayFontTabs)
 	{
-		if (!base14SysFonts->lookup(displayFontTab[i].name) && !fontFiles->lookup(displayFontTab[i].name))
+		if (!base14SysFonts.contains(tab.name) && !fontFiles.contains(tab.name))
 		{
-			if (displayFontTab[i].obliqueFont && ((base14 = (Base14FontInfo*)base14SysFonts->lookup(displayFontTab[i].obliqueFont))))
-				base14SysFonts->add(
-				    new GString(displayFontTab[i].name),
-				    new Base14FontInfo(base14->fileName->copy(), base14->fontNum, displayFontTab[i].obliqueFactor));
-			else
-				error(errConfig, -1, "No display font for '{0:s}'", displayFontTab[i].name);
+			bool found = false;
+			if (tab.obliqueFont.size())
+			{
+				if (const auto& it = base14SysFonts.find(tab.obliqueFont); it != base14SysFonts.end())
+				{
+					const auto& base14 = it->second;
+					base14SysFonts.emplace(tab.name, Base14FontInfo(base14.fileName, base14.fontNum, tab.obliqueFactor));
+					found = true;
+				}
+			}
+			if (!found) error(errConfig, -1, "No display font for '{}'", tab.name);
 		}
 	}
 #ifdef _WIN32
@@ -2683,14 +2457,9 @@ CharCode GlobalParams::getMacRomanCharCode(char* charName)
 	return macRomanReverseMap->lookup(charName);
 }
 
-GString* GlobalParams::getBaseDir()
+std::string GlobalParams::getBaseDir()
 {
-	GString* s;
-
-	lockGlobalParams;
-	s = baseDir->copy();
-	unlockGlobalParams;
-	return s;
+	return baseDir;
 }
 
 Unicode GlobalParams::mapNameToUnicode(const char* charName)
@@ -2699,1170 +2468,667 @@ Unicode GlobalParams::mapNameToUnicode(const char* charName)
 	return nameToUnicode->lookup(charName);
 }
 
-UnicodeMap* GlobalParams::getResidentUnicodeMap(GString* encodingName)
+UnicodeMap* GlobalParams::getResidentUnicodeMap(const std::string& encodingName)
 {
-	UnicodeMap* map;
-
-	lockGlobalParams;
-	map = (UnicodeMap*)residentUnicodeMaps->lookup(encodingName);
-	unlockGlobalParams;
-	if (map)
+	std::lock_guard<std::mutex> lock(mtx);
+	if (const auto& it = residentUnicodeMaps.find(encodingName); it != residentUnicodeMaps.end())
+	{
+		auto map = &it->second;
 		map->incRefCnt();
-	return map;
-}
-
-FILE* GlobalParams::getUnicodeMapFile(GString* encodingName)
-{
-	GString* fileName;
-	FILE*    f;
-
-	lockGlobalParams;
-	if ((fileName = (GString*)unicodeMaps->lookup(encodingName)))
-		f = openFile(fileName->getCString(), "r");
-	else
-		f = nullptr;
-	unlockGlobalParams;
-	return f;
-}
-
-FILE* GlobalParams::findCMapFile(GString* collection, GString* cMapName)
-{
-	GList*   list;
-	GString* dir;
-	GString* fileName;
-	FILE*    f;
-	int      i;
-
-	lockGlobalParams;
-	if (!(list = (GList*)cMapDirs->lookup(collection)))
-	{
-		unlockGlobalParams;
-		return nullptr;
+		return map;
 	}
-	for (i = 0; i < list->getLength(); ++i)
-	{
-		dir      = (GString*)list->get(i);
-		fileName = appendToPath(dir->copy(), cMapName->getCString());
-		f        = openFile(fileName->getCString(), "r");
-		delete fileName;
-		if (f)
-		{
-			unlockGlobalParams;
-			return f;
-		}
-	}
-	unlockGlobalParams;
 	return nullptr;
 }
 
-FILE* GlobalParams::findToUnicodeFile(GString* name)
+FILE* GlobalParams::getUnicodeMapFile(const std::string& encodingName)
 {
-	GString *dir, *fileName;
-	FILE*    f;
-	int      i;
+	std::lock_guard<std::mutex> lock(mtx);
 
-	lockGlobalParams;
-	for (i = 0; i < toUnicodeDirs->getLength(); ++i)
+	if (const auto fileName = FindDefault(unicodeMaps, encodingName, ""); fileName.size())
+		return openFile(fileName.c_str(), "r");
+	else
+		return nullptr;
+}
+
+FILE* GlobalParams::findCMapFile(const std::string& collection, const std::string& cMapName)
+{
+	std::lock_guard<std::mutex> lock(mtx);
+
+	if (auto it = cMapDirs.find(collection); it != cMapDirs.end())
 	{
-		dir      = (GString*)toUnicodeDirs->get(i);
-		fileName = appendToPath(dir->copy(), name->getCString());
-		f        = openFile(fileName->getCString(), "r");
-		delete fileName;
-		if (f)
+		auto& list = it->second;
+		for (const auto& dir : list)
 		{
-			unlockGlobalParams;
-			return f;
+			const auto fileName = appendToPath(dir, cMapName.c_str());
+			if (FILE* f = openFile(fileName.c_str(), "r")) return f;
 		}
 	}
-	unlockGlobalParams;
+	return nullptr;
+}
+
+FILE* GlobalParams::findToUnicodeFile(const std::string& name)
+{
+	std::lock_guard<std::mutex> lock(mtx);
+
+	for (const auto& dir : toUnicodeDirs)
+	{
+		const auto fileName = appendToPath(dir, name.c_str());
+		if (FILE* f = openFile(fileName.c_str(), "r")) return f;
+	}
 	return nullptr;
 }
 
 UnicodeRemapping* GlobalParams::getUnicodeRemapping()
 {
+	std::lock_guard<std::mutex> lock(mtx);
 	return unicodeRemapping;
 }
 
-GString* GlobalParams::findFontFile(GString* fontName)
+std::filesystem::path GlobalParams::findFontFile(const std::string& fontName)
 {
-	static const char* exts[] = { ".pfa", ".pfb", ".ttf", ".ttc", ".otf" };
-	GString *          path, *dir;
-#ifdef _WIN32
-	GString* fontNameU;
-#endif
-	const char* ext;
-	FILE*       f;
-	int         i, j;
+	std::lock_guard<std::mutex> lock(mtx);
 
-	lockGlobalParams;
-	if ((path = (GString*)fontFiles->lookup(fontName)))
-	{
-		path = path->copy();
-		unlockGlobalParams;
+	const VEC_STR& exts = { ".pfa", ".pfb", ".ttf", ".ttc", ".otf" };
+
+	if (const auto path = FindDefault(fontFiles, fontName, ""); path.size())
 		return path;
-	}
-	for (i = 0; i < fontDirs->getLength(); ++i)
+
+	for (const auto& fontDir : fontDirs)
 	{
-		dir = (GString*)fontDirs->get(i);
-		for (j = 0; j < (int)(sizeof(exts) / sizeof(exts[0])); ++j)
+		for (const auto& ext : exts)
 		{
-			ext = exts[j];
-#ifdef _WIN32
-			fontNameU = fileNameToUTF8(fontName->getCString());
-			path      = appendToPath(dir->copy(), fontNameU->getCString());
-			delete fontNameU;
-#else
-			path = appendToPath(dir->copy(), fontName->getCString());
-#endif
-			path->append(ext);
-			if ((f = openFile(path->getCString(), "rb")))
-			{
-				fclose(f);
-				unlockGlobalParams;
-				return path;
-			}
-			delete path;
+			const auto path = std::filesystem::path(fontDir) / (fontName + ext);
+			if (std::filesystem::exists(path)) return path;
 		}
 	}
-	unlockGlobalParams;
-	return nullptr;
+
+	return {};
 }
 
-GString* GlobalParams::findBase14FontFile(GString* fontName, int* fontNum, double* oblique)
+std::filesystem::path GlobalParams::findBase14FontFile(const std::string& fontName, int* fontNum, double* oblique)
 {
-	Base14FontInfo* fi;
-	GString*        path;
+	std::lock_guard<std::mutex> lock(mtx);
 
-	lockGlobalParams;
-	if ((fi = (Base14FontInfo*)base14SysFonts->lookup(fontName)))
+	std::string path;
+	if (const auto& it = base14SysFonts.find(fontName); it != base14SysFonts.end())
 	{
-		path     = fi->fileName->copy();
-		*fontNum = fi->fontNum;
-		*oblique = fi->oblique;
-		unlockGlobalParams;
+		const auto& fi = it->second;
+		path           = fi.fileName;
+		*fontNum       = fi.fontNum;
+		*oblique       = fi.oblique;
 		return path;
 	}
-	unlockGlobalParams;
 	*fontNum = 0;
 	*oblique = 0;
 	return findFontFile(fontName);
 }
 
-GString* GlobalParams::findSystemFontFile(GString* fontName, SysFontType* type, int* fontNum)
+std::filesystem::path GlobalParams::findSystemFontFile(const std::string& fontName, SysFontType* type, int* fontNum)
 {
-	SysFontInfo* fi;
-	GString*     path;
+	std::lock_guard<std::mutex> lock(mtx);
 
-	path = nullptr;
-	lockGlobalParams;
-	if ((fi = sysFonts->find(fontName)))
+	std::string path;
+	if (const auto fi = sysFonts->find(fontName))
 	{
-		path     = fi->path->copy();
+		path     = fi->path;
 		*type    = fi->type;
 		*fontNum = fi->fontNum;
 	}
-	unlockGlobalParams;
 	return path;
 }
 
-GString* GlobalParams::findCCFontFile(GString* collection)
+std::string GlobalParams::findCCFontFile(const std::string& collection)
 {
-	GString* path;
-
-	lockGlobalParams;
-	if ((path = (GString*)ccFontFiles->lookup(collection)))
-		path = path->copy();
-	unlockGlobalParams;
-	return path;
+	std::lock_guard<std::mutex> lock(mtx);
+	return FindDefault(ccFontFiles, collection, "");
 }
 
 int GlobalParams::getPSPaperWidth()
 {
-	int w;
-
-	lockGlobalParams;
-	w = psPaperWidth;
-	unlockGlobalParams;
-	return w;
+	return psPaperWidth;
 }
 
 int GlobalParams::getPSPaperHeight()
 {
-	int h;
-
-	lockGlobalParams;
-	h = psPaperHeight;
-	unlockGlobalParams;
-	return h;
+	return psPaperHeight;
 }
 
 void GlobalParams::getPSImageableArea(int* llx, int* lly, int* urx, int* ury)
 {
-	lockGlobalParams;
+	std::lock_guard<std::mutex> lock(mtx);
 	*llx = psImageableLLX;
 	*lly = psImageableLLY;
 	*urx = psImageableURX;
 	*ury = psImageableURY;
-	unlockGlobalParams;
 }
 
-GBool GlobalParams::getPSCrop()
+bool GlobalParams::getPSCrop()
 {
-	GBool f;
-
-	lockGlobalParams;
-	f = psCrop;
-	unlockGlobalParams;
-	return f;
+	return psCrop;
 }
 
-GBool GlobalParams::getPSUseCropBoxAsPage()
+bool GlobalParams::getPSUseCropBoxAsPage()
 {
-	GBool f;
-
-	lockGlobalParams;
-	f = psUseCropBoxAsPage;
-	unlockGlobalParams;
-	return f;
+	return psUseCropBoxAsPage;
 }
 
-GBool GlobalParams::getPSExpandSmaller()
+bool GlobalParams::getPSExpandSmaller()
 {
-	GBool f;
-
-	lockGlobalParams;
-	f = psExpandSmaller;
-	unlockGlobalParams;
-	return f;
+	return psExpandSmaller;
 }
 
-GBool GlobalParams::getPSShrinkLarger()
+bool GlobalParams::getPSShrinkLarger()
 {
-	GBool f;
-
-	lockGlobalParams;
-	f = psShrinkLarger;
-	unlockGlobalParams;
-	return f;
+	return psShrinkLarger;
 }
 
-GBool GlobalParams::getPSCenter()
+bool GlobalParams::getPSCenter()
 {
-	GBool f;
-
-	lockGlobalParams;
-	f = psCenter;
-	unlockGlobalParams;
-	return f;
+	return psCenter;
 }
 
-GBool GlobalParams::getPSDuplex()
+bool GlobalParams::getPSDuplex()
 {
-	GBool d;
-
-	lockGlobalParams;
-	d = psDuplex;
-	unlockGlobalParams;
-	return d;
+	return psDuplex;
 }
 
 PSLevel GlobalParams::getPSLevel()
 {
-	PSLevel level;
-
-	lockGlobalParams;
-	level = psLevel;
-	unlockGlobalParams;
-	return level;
+	std::lock_guard<std::mutex> lock(mtx);
+	return psLevel;
 }
 
-GString* GlobalParams::getPSResidentFont(GString* fontName)
+std::string GlobalParams::getPSResidentFont(const std::string& fontName)
 {
-	GString* psName;
-
-	lockGlobalParams;
-	if ((psName = (GString*)psResidentFonts->lookup(fontName)))
-		psName = psName->copy();
-	unlockGlobalParams;
-	return psName;
+	std::lock_guard<std::mutex> lock(mtx);
+	return FindDefault(psResidentFonts, fontName, "");
 }
 
-GList* GlobalParams::getPSResidentFonts()
+VEC_STR GlobalParams::getPSResidentFonts()
 {
-	GList*     names;
-	GHashIter* iter;
-	GString*   name;
-	GString*   psName;
+	std::lock_guard<std::mutex> lock(mtx);
 
-	names = new GList();
-	lockGlobalParams;
-	psResidentFonts->startIter(&iter);
-	while (psResidentFonts->getNext(&iter, &name, (void**)&psName))
-		names->append(psName->copy());
-	unlockGlobalParams;
+	VEC_STR names;
+	for (const auto& [pdfName, psName] : psResidentFonts)
+		names.push_back(psName);
+
 	return names;
 }
 
-PSFontParam16* GlobalParams::getPSResidentFont16(GString* fontName, int wMode)
+PSFontParam16* GlobalParams::getPSResidentFont16(const std::string& fontName, int wMode)
 {
-	PSFontParam16* p;
-	int            i;
+	std::lock_guard<std::mutex> lock(mtx);
 
-	lockGlobalParams;
-	p = nullptr;
-	for (i = 0; i < psResidentFonts16->getLength(); ++i)
-	{
-		p = (PSFontParam16*)psResidentFonts16->get(i);
-		if (!(p->name->cmp(fontName)) && p->wMode == wMode)
-			break;
-		p = nullptr;
-	}
-	unlockGlobalParams;
-	return p;
+	for (auto& font : psResidentFonts16)
+		if (font.name == fontName && font.wMode == wMode) return &font;
+	return nullptr;
 }
 
-PSFontParam16* GlobalParams::getPSResidentFontCC(GString* collection, int wMode)
+PSFontParam16* GlobalParams::getPSResidentFontCC(const std::string& collection, int wMode)
 {
-	PSFontParam16* p;
-	int            i;
+	std::lock_guard<std::mutex> lock(mtx);
 
-	lockGlobalParams;
-	p = nullptr;
-	for (i = 0; i < psResidentFontsCC->getLength(); ++i)
-	{
-		p = (PSFontParam16*)psResidentFontsCC->get(i);
-		if (!(p->name->cmp(collection)) && p->wMode == wMode)
-			break;
-		p = nullptr;
-	}
-	unlockGlobalParams;
-	return p;
+	for (auto& font : psResidentFontsCC)
+		if (font.name == collection && font.wMode == wMode) return &font;
+	return nullptr;
 }
 
-GBool GlobalParams::getPSEmbedType1()
+bool GlobalParams::getPSEmbedType1()
 {
-	GBool e;
-
-	lockGlobalParams;
-	e = psEmbedType1;
-	unlockGlobalParams;
-	return e;
+	return psEmbedType1;
 }
 
-GBool GlobalParams::getPSEmbedTrueType()
+bool GlobalParams::getPSEmbedTrueType()
 {
-	GBool e;
-
-	lockGlobalParams;
-	e = psEmbedTrueType;
-	unlockGlobalParams;
-	return e;
+	return psEmbedTrueType;
 }
 
-GBool GlobalParams::getPSEmbedCIDPostScript()
+bool GlobalParams::getPSEmbedCIDPostScript()
 {
-	GBool e;
-
-	lockGlobalParams;
-	e = psEmbedCIDPostScript;
-	unlockGlobalParams;
-	return e;
+	return psEmbedCIDPostScript;
 }
 
-GBool GlobalParams::getPSEmbedCIDTrueType()
+bool GlobalParams::getPSEmbedCIDTrueType()
 {
-	GBool e;
-
-	lockGlobalParams;
-	e = psEmbedCIDTrueType;
-	unlockGlobalParams;
-	return e;
+	return psEmbedCIDTrueType;
 }
 
-GBool GlobalParams::getPSFontPassthrough()
+bool GlobalParams::getPSFontPassthrough()
 {
-	GBool e;
-
-	lockGlobalParams;
-	e = psFontPassthrough;
-	unlockGlobalParams;
-	return e;
+	return psFontPassthrough;
 }
 
-GBool GlobalParams::getPSPreload()
+bool GlobalParams::getPSPreload()
 {
-	GBool preload;
-
-	lockGlobalParams;
-	preload = psPreload;
-	unlockGlobalParams;
-	return preload;
+	return psPreload;
 }
 
-GBool GlobalParams::getPSOPI()
+bool GlobalParams::getPSOPI()
 {
-	GBool opi;
-
-	lockGlobalParams;
-	opi = psOPI;
-	unlockGlobalParams;
-	return opi;
+	return psOPI;
 }
 
-GBool GlobalParams::getPSASCIIHex()
+bool GlobalParams::getPSASCIIHex()
 {
-	GBool ah;
-
-	lockGlobalParams;
-	ah = psASCIIHex;
-	unlockGlobalParams;
-	return ah;
+	return psASCIIHex;
 }
 
-GBool GlobalParams::getPSLZW()
+bool GlobalParams::getPSLZW()
 {
-	GBool ah;
-
-	lockGlobalParams;
-	ah = psLZW;
-	unlockGlobalParams;
-	return ah;
+	return psLZW;
 }
 
-GBool GlobalParams::getPSUncompressPreloadedImages()
+bool GlobalParams::getPSUncompressPreloadedImages()
 {
-	GBool ah;
-
-	lockGlobalParams;
-	ah = psUncompressPreloadedImages;
-	unlockGlobalParams;
-	return ah;
+	return psUncompressPreloadedImages;
 }
 
 double GlobalParams::getPSMinLineWidth()
 {
-	double w;
-
-	lockGlobalParams;
-	w = psMinLineWidth;
-	unlockGlobalParams;
-	return w;
+	return psMinLineWidth;
 }
 
 double GlobalParams::getPSRasterResolution()
 {
-	double res;
-
-	lockGlobalParams;
-	res = psRasterResolution;
-	unlockGlobalParams;
-	return res;
+	return psRasterResolution;
 }
 
-GBool GlobalParams::getPSRasterMono()
+bool GlobalParams::getPSRasterMono()
 {
-	GBool mono;
-
-	lockGlobalParams;
-	mono = psRasterMono;
-	unlockGlobalParams;
-	return mono;
+	return psRasterMono;
 }
 
 int GlobalParams::getPSRasterSliceSize()
 {
-	int slice;
-
-	lockGlobalParams;
-	slice = psRasterSliceSize;
-	unlockGlobalParams;
-	return slice;
+	return psRasterSliceSize;
 }
 
-GBool GlobalParams::getPSAlwaysRasterize()
+bool GlobalParams::getPSAlwaysRasterize()
 {
-	GBool rast;
-
-	lockGlobalParams;
-	rast = psAlwaysRasterize;
-	unlockGlobalParams;
-	return rast;
+	return psAlwaysRasterize;
 }
 
-GBool GlobalParams::getPSNeverRasterize()
+bool GlobalParams::getPSNeverRasterize()
 {
-	GBool rast;
-
-	lockGlobalParams;
-	rast = psNeverRasterize;
-	unlockGlobalParams;
-	return rast;
+	return psNeverRasterize;
 }
 
-GString* GlobalParams::getTextEncodingName()
+std::string GlobalParams::getTextEncodingName()
 {
-	GString* s;
-
-	lockGlobalParams;
-	s = textEncoding->copy();
-	unlockGlobalParams;
-	return s;
+	std::lock_guard<std::mutex> lock(mtx);
+	return textEncoding;
 }
 
-GList* GlobalParams::getAvailableTextEncodings()
+VEC_STR GlobalParams::getAvailableTextEncodings()
 {
-	GList*     list; // [GString]
-	GHashIter* iter;
-	GString*   key;
-	void*      val;
+	std::lock_guard<std::mutex> lock(mtx);
 
-	list = new GList();
-	lockGlobalParams;
-	residentUnicodeMaps->startIter(&iter);
-	while (residentUnicodeMaps->getNext(&iter, &key, &val))
-		list->append(key->copy());
-	unicodeMaps->startIter(&iter);
-	while (unicodeMaps->getNext(&iter, &key, &val))
-		list->append(key->copy());
-	unlockGlobalParams;
+	VEC_STR list;
+	for (const auto& [key, value] : residentUnicodeMaps)
+		list.push_back(key);
+
+	for (const auto& [key, value] : unicodeMaps)
+		list.push_back(key);
 	return list;
 }
 
 EndOfLineKind GlobalParams::getTextEOL()
 {
-	EndOfLineKind eol;
-
-	lockGlobalParams;
-	eol = textEOL;
-	unlockGlobalParams;
-	return eol;
+	std::lock_guard<std::mutex> lock(mtx);
+	return textEOL;
 }
 
-GBool GlobalParams::getTextPageBreaks()
+bool GlobalParams::getTextPageBreaks()
 {
-	GBool pageBreaks;
-
-	lockGlobalParams;
-	pageBreaks = textPageBreaks;
-	unlockGlobalParams;
-	return pageBreaks;
+	return textPageBreaks;
 }
 
-GBool GlobalParams::getTextKeepTinyChars()
+bool GlobalParams::getTextKeepTinyChars()
 {
-	GBool tiny;
-
-	lockGlobalParams;
-	tiny = textKeepTinyChars;
-	unlockGlobalParams;
-	return tiny;
+	return textKeepTinyChars;
 }
 
-GString* GlobalParams::getInitialZoom()
+std::string GlobalParams::getInitialZoom()
 {
-	GString* s;
-
-	lockGlobalParams;
-	s = initialZoom->copy();
-	unlockGlobalParams;
-	return s;
+	std::lock_guard<std::mutex> lock(mtx);
+	return initialZoom;
 }
 
 int GlobalParams::getDefaultFitZoom()
 {
-	int z;
-
-	lockGlobalParams;
-	z = defaultFitZoom;
-	unlockGlobalParams;
-	return z;
+	return defaultFitZoom;
 }
 
 double GlobalParams::getZoomScaleFactor()
 {
-	double z;
-
-	lockGlobalParams;
-	z = zoomScaleFactor;
-	unlockGlobalParams;
-	return z;
+	return zoomScaleFactor;
 }
 
-GList* GlobalParams::getZoomValues()
+VEC_STR GlobalParams::getZoomValues()
 {
+	std::lock_guard<std::mutex> lock(mtx);
 	return zoomValues;
 }
 
-GString* GlobalParams::getInitialDisplayMode()
+std::string GlobalParams::getInitialDisplayMode()
 {
-	GString* s;
-
-	lockGlobalParams;
-	s = initialDisplayMode->copy();
-	unlockGlobalParams;
-	return s;
+	std::lock_guard<std::mutex> lock(mtx);
+	return initialDisplayMode;
 }
 
-GBool GlobalParams::getInitialToolbarState()
+bool GlobalParams::getInitialToolbarState()
 {
-	GBool state;
-
-	lockGlobalParams;
-	state = initialToolbarState;
-	unlockGlobalParams;
-	return state;
+	return initialToolbarState;
 }
 
-GBool GlobalParams::getInitialSidebarState()
+bool GlobalParams::getInitialSidebarState()
 {
-	GBool state;
-
-	lockGlobalParams;
-	state = initialSidebarState;
-	unlockGlobalParams;
-	return state;
+	return initialSidebarState;
 }
 
 int GlobalParams::getInitialSidebarWidth()
 {
-	int w;
-
-	lockGlobalParams;
-	w = initialSidebarWidth;
-	unlockGlobalParams;
-	return w;
+	return initialSidebarWidth;
 }
 
-GString* GlobalParams::getInitialSelectMode()
+std::string GlobalParams::getInitialSelectMode()
 {
-	GString* s;
-
-	lockGlobalParams;
-	s = initialSelectMode->copy();
-	unlockGlobalParams;
-	return s;
+	std::lock_guard<std::mutex> lock(mtx);
+	return initialSelectMode;
 }
 
 int GlobalParams::getMaxTileWidth()
 {
-	int w;
-
-	lockGlobalParams;
-	w = maxTileWidth;
-	unlockGlobalParams;
-	return w;
+	return maxTileWidth;
 }
 
 int GlobalParams::getMaxTileHeight()
 {
-	int h;
-
-	lockGlobalParams;
-	h = maxTileHeight;
-	unlockGlobalParams;
-	return h;
+	return maxTileHeight;
 }
 
 int GlobalParams::getTileCacheSize()
 {
-	int n;
-
-	lockGlobalParams;
-	n = tileCacheSize;
-	unlockGlobalParams;
-	return n;
+	return tileCacheSize;
 }
 
 int GlobalParams::getWorkerThreads()
 {
-	int n;
-
-	lockGlobalParams;
-	n = workerThreads;
-	unlockGlobalParams;
-	return n;
+	return workerThreads;
 }
 
-GBool GlobalParams::getEnableFreeType()
+bool GlobalParams::getEnableFreeType()
 {
-	GBool f;
-
-	lockGlobalParams;
-	f = enableFreeType;
-	unlockGlobalParams;
-	return f;
+	return enableFreeType;
 }
 
-GBool GlobalParams::getDisableFreeTypeHinting()
+bool GlobalParams::getDisableFreeTypeHinting()
 {
-	GBool f;
-
-	lockGlobalParams;
-	f = disableFreeTypeHinting;
-	unlockGlobalParams;
-	return f;
+	return disableFreeTypeHinting;
 }
 
-GBool GlobalParams::getAntialias()
+bool GlobalParams::getAntialias()
 {
-	GBool f;
-
-	lockGlobalParams;
-	f = antialias;
-	unlockGlobalParams;
-	return f;
+	return antialias;
 }
 
-GBool GlobalParams::getVectorAntialias()
+bool GlobalParams::getVectorAntialias()
 {
-	GBool f;
-
-	lockGlobalParams;
-	f = vectorAntialias;
-	unlockGlobalParams;
-	return f;
+	return vectorAntialias;
 }
 
-GBool GlobalParams::getImageMaskAntialias()
+bool GlobalParams::getImageMaskAntialias()
 {
-	GBool f;
-
-	lockGlobalParams;
-	f = imageMaskAntialias;
-	unlockGlobalParams;
-	return f;
+	return imageMaskAntialias;
 }
 
-GBool GlobalParams::getAntialiasPrinting()
+bool GlobalParams::getAntialiasPrinting()
 {
-	GBool f;
-
-	lockGlobalParams;
-	f = antialiasPrinting;
-	unlockGlobalParams;
-	return f;
+	return antialiasPrinting;
 }
 
 StrokeAdjustMode GlobalParams::getStrokeAdjust()
 {
-	StrokeAdjustMode mode;
-
-	lockGlobalParams;
-	mode = strokeAdjust;
-	unlockGlobalParams;
-	return mode;
+	std::lock_guard<std::mutex> lock(mtx);
+	return strokeAdjust;
 }
 
 ScreenType GlobalParams::getScreenType()
 {
-	ScreenType t;
-
-	lockGlobalParams;
-	t = screenType;
-	unlockGlobalParams;
-	return t;
+	std::lock_guard<std::mutex> lock(mtx);
+	return screenType;
 }
 
 int GlobalParams::getScreenSize()
 {
-	int size;
-
-	lockGlobalParams;
-	size = screenSize;
-	unlockGlobalParams;
-	return size;
+	return screenSize;
 }
 
 int GlobalParams::getScreenDotRadius()
 {
-	int r;
-
-	lockGlobalParams;
-	r = screenDotRadius;
-	unlockGlobalParams;
-	return r;
+	return screenDotRadius;
 }
 
 double GlobalParams::getScreenGamma()
 {
-	double gamma;
-
-	lockGlobalParams;
-	gamma = screenGamma;
-	unlockGlobalParams;
-	return gamma;
+	return screenGamma;
 }
 
 double GlobalParams::getScreenBlackThreshold()
 {
-	double thresh;
-
-	lockGlobalParams;
-	thresh = screenBlackThreshold;
-	unlockGlobalParams;
-	return thresh;
+	return screenBlackThreshold;
 }
 
 double GlobalParams::getScreenWhiteThreshold()
 {
-	double thresh;
-
-	lockGlobalParams;
-	thresh = screenWhiteThreshold;
-	unlockGlobalParams;
-	return thresh;
+	return screenWhiteThreshold;
 }
 
 double GlobalParams::getMinLineWidth()
 {
-	double w;
-
-	lockGlobalParams;
-	w = minLineWidth;
-	unlockGlobalParams;
-	return w;
+	return minLineWidth;
 }
 
-GBool GlobalParams::getEnablePathSimplification()
+bool GlobalParams::getEnablePathSimplification()
 {
-	GBool en;
-
-	lockGlobalParams;
-	en = enablePathSimplification;
-	unlockGlobalParams;
-	return en;
+	return enablePathSimplification;
 }
 
-GBool GlobalParams::getDrawAnnotations()
+bool GlobalParams::getDrawAnnotations()
 {
-	GBool draw;
-
-	lockGlobalParams;
-	draw = drawAnnotations;
-	unlockGlobalParams;
-	return draw;
+	return drawAnnotations;
 }
 
-GBool GlobalParams::getDrawFormFields()
+bool GlobalParams::getDrawFormFields()
 {
-	GBool draw;
-
-	lockGlobalParams;
-	draw = drawFormFields;
-	unlockGlobalParams;
-	return draw;
+	return drawFormFields;
 }
 
-GBool GlobalParams::getEnableXFA()
+bool GlobalParams::getEnableXFA()
 {
-	GBool xfa;
-
-	lockGlobalParams;
-	xfa = enableXFA;
-	unlockGlobalParams;
-	return xfa;
+	return enableXFA;
 }
 
-GString* GlobalParams::getPaperColor()
+std::string GlobalParams::getPaperColor()
 {
-	GString* s;
-
-	lockGlobalParams;
-	s = paperColor->copy();
-	unlockGlobalParams;
-	return s;
+	std::lock_guard<std::mutex> lock(mtx);
+	return paperColor;
 }
 
-GString* GlobalParams::getMatteColor()
+std::string GlobalParams::getMatteColor()
 {
-	GString* s;
-
-	lockGlobalParams;
-	s = matteColor->copy();
-	unlockGlobalParams;
-	return s;
+	std::lock_guard<std::mutex> lock(mtx);
+	return matteColor;
 }
 
-GString* GlobalParams::getFullScreenMatteColor()
+std::string GlobalParams::getFullScreenMatteColor()
 {
-	GString* s;
-
-	lockGlobalParams;
-	s = fullScreenMatteColor->copy();
-	unlockGlobalParams;
-	return s;
+	std::lock_guard<std::mutex> lock(mtx);
+	return fullScreenMatteColor;
 }
 
-GString* GlobalParams::getSelectionColor()
+std::string GlobalParams::getSelectionColor()
 {
-	GString* s;
-
-	lockGlobalParams;
-	s = selectionColor->copy();
-	unlockGlobalParams;
-	return s;
+	std::lock_guard<std::mutex> lock(mtx);
+	return selectionColor;
 }
 
-GBool GlobalParams::getReverseVideoInvertImages()
+bool GlobalParams::getReverseVideoInvertImages()
 {
-	GBool invert;
-
-	lockGlobalParams;
-	invert = reverseVideoInvertImages;
-	unlockGlobalParams;
-	return invert;
+	return reverseVideoInvertImages;
 }
 
-GBool GlobalParams::getAllowLinksToChangeZoom()
+bool GlobalParams::getAllowLinksToChangeZoom()
 {
-	GBool allow;
-
-	lockGlobalParams;
-	allow = allowLinksToChangeZoom;
-	unlockGlobalParams;
-	return allow;
+	return allowLinksToChangeZoom;
 }
 
-GString* GlobalParams::getDefaultPrinter()
+std::string GlobalParams::getDefaultPrinter()
 {
-	GString* s;
-
-	lockGlobalParams;
-	s = defaultPrinter ? defaultPrinter->copy() : (GString*)nullptr;
-	unlockGlobalParams;
-	return s;
+	std::lock_guard<std::mutex> lock(mtx);
+	return defaultPrinter;
 }
 
-GBool GlobalParams::getMapNumericCharNames()
+bool GlobalParams::getMapNumericCharNames()
 {
-	GBool map;
-
-	lockGlobalParams;
-	map = mapNumericCharNames;
-	unlockGlobalParams;
-	return map;
+	return mapNumericCharNames;
 }
 
-GBool GlobalParams::getMapUnknownCharNames()
+bool GlobalParams::getMapUnknownCharNames()
 {
-	GBool map;
-
-	lockGlobalParams;
-	map = mapUnknownCharNames;
-	unlockGlobalParams;
-	return map;
+	return mapUnknownCharNames;
 }
 
-GBool GlobalParams::getMapExtTrueTypeFontsViaUnicode()
+bool GlobalParams::getMapExtTrueTypeFontsViaUnicode()
 {
-	GBool map;
-
-	lockGlobalParams;
-	map = mapExtTrueTypeFontsViaUnicode;
-	unlockGlobalParams;
-	return map;
+	return mapExtTrueTypeFontsViaUnicode;
 }
 
-GBool GlobalParams::getUseTrueTypeUnicodeMapping()
+bool GlobalParams::getUseTrueTypeUnicodeMapping()
 {
-	GBool use;
-
-	lockGlobalParams;
-	use = useTrueTypeUnicodeMapping;
-	unlockGlobalParams;
-	return use;
+	return useTrueTypeUnicodeMapping;
 }
 
-GBool GlobalParams::getIgnoreWrongSizeToUnicode()
+bool GlobalParams::getIgnoreWrongSizeToUnicode()
 {
-	GBool ignore;
-
-	lockGlobalParams;
-	ignore = ignoreWrongSizeToUnicode;
-	unlockGlobalParams;
-	return ignore;
+	return ignoreWrongSizeToUnicode;
 }
 
-GBool GlobalParams::isDroppedFont(const char* fontName)
+bool GlobalParams::isDroppedFont(const char* fontName)
 {
-	GBool isDropped;
-
-	lockGlobalParams;
-	isDropped = droppedFonts->lookupInt(fontName) != 0;
-	unlockGlobalParams;
-	return isDropped;
+	std::lock_guard<std::mutex> lock(mtx);
+	return droppedFonts.contains(fontName);
 }
 
-GBool GlobalParams::getSeparateRotatedText()
+bool GlobalParams::getSeparateRotatedText()
 {
-	GBool sep;
-
-	lockGlobalParams;
-	sep = separateRotatedText;
-	unlockGlobalParams;
-	return sep;
+	return separateRotatedText;
 }
 
-GList* GlobalParams::getKeyBinding(int code, int mods, int context)
+VEC_STR GlobalParams::getKeyBinding(int code, int mods, int context)
 {
-	KeyBinding* binding;
-	GList*      cmds;
-	int         modMask;
-	int         i, j;
+	std::lock_guard<std::mutex> lock(mtx);
 
-	lockGlobalParams;
-	cmds    = nullptr;
 	// for ASCII chars, ignore the shift modifier
-	modMask = (code >= 0x21 && code <= 0xff) ? ~xpdfKeyModShift : ~0;
-	for (i = 0; i < keyBindings->getLength(); ++i)
-	{
-		binding = (KeyBinding*)keyBindings->get(i);
-		if (binding->code == code && (binding->mods & modMask) == (mods & modMask) && (~binding->context | context) == ~0)
-		{
-			cmds = new GList();
-			for (j = 0; j < binding->cmds->getLength(); ++j)
-				cmds->append(((GString*)binding->cmds->get(j))->copy());
-			break;
-		}
-	}
-	unlockGlobalParams;
-	return cmds;
+	const int modMask = (code >= 0x21 && code <= 0xff) ? ~xpdfKeyModShift : ~0;
+
+	for (const auto& binding : keyBindings)
+		if (binding.code == code && (binding.mods & modMask) == (mods & modMask) && (~binding.context | context) == ~0)
+			return binding.cmds;
+
+	return {};
 }
 
-GList* GlobalParams::getAllKeyBindings()
+std::vector<KeyBinding> GlobalParams::getAllKeyBindings()
 {
+	std::lock_guard<std::mutex> lock(mtx);
 	return keyBindings;
 }
 
 int GlobalParams::getNumPopupMenuCmds()
 {
-	int n;
-
-	lockGlobalParams;
-	n = popupMenuCmds->getLength();
-	unlockGlobalParams;
-	return n;
+	std::lock_guard<std::mutex> lock(mtx);
+	return TO_INT(popupMenuCmds.size());
 }
 
 PopupMenuCmd* GlobalParams::getPopupMenuCmd(int idx)
 {
-	PopupMenuCmd* cmd;
-
-	lockGlobalParams;
-	if (idx < popupMenuCmds->getLength())
-		cmd = (PopupMenuCmd*)popupMenuCmds->get(idx);
-	else
-		cmd = nullptr;
-	unlockGlobalParams;
-	return cmd;
+	std::lock_guard<std::mutex> lock(mtx);
+	return (idx < popupMenuCmds.size()) ? &popupMenuCmds[idx] : nullptr;
 }
 
-GString* GlobalParams::getPagesFile()
+std::string GlobalParams::getPagesFile()
 {
-	GString* s;
-
-	lockGlobalParams;
-	s = pagesFile->copy();
-	unlockGlobalParams;
-	return s;
+	std::lock_guard<std::mutex> lock(mtx);
+	return pagesFile;
 }
 
-GString* GlobalParams::getTabStateFile()
+std::string GlobalParams::getTabStateFile()
 {
-	GString* s;
-
-	lockGlobalParams;
-	s = tabStateFile->copy();
-	unlockGlobalParams;
-	return s;
+	std::lock_guard<std::mutex> lock(mtx);
+	return tabStateFile;
 }
 
-GString* GlobalParams::getSessionFile()
+std::string GlobalParams::getSessionFile()
 {
-	GString* s;
-
-	lockGlobalParams;
-	s = sessionFile->copy();
-	unlockGlobalParams;
-	return s;
+	std::lock_guard<std::mutex> lock(mtx);
+	return sessionFile;
 }
 
-GBool GlobalParams::getSavePageNumbers()
+bool GlobalParams::getSavePageNumbers()
 {
-	GBool s;
-
-	lockGlobalParams;
-	s = savePageNumbers;
-	unlockGlobalParams;
-	return s;
+	return savePageNumbers;
 }
 
-GBool GlobalParams::getSaveSessionOnQuit()
+bool GlobalParams::getSaveSessionOnQuit()
 {
-	GBool s;
-
-	lockGlobalParams;
-	s = saveSessionOnQuit;
-	unlockGlobalParams;
-	return s;
+	return saveSessionOnQuit;
 }
 
-GBool GlobalParams::getPrintCommands()
+bool GlobalParams::getPrintCommands()
 {
-	GBool p;
-
-	lockGlobalParams;
-	p = printCommands;
-	unlockGlobalParams;
-	return p;
+	return printCommands;
 }
 
-GBool GlobalParams::getPrintStatusInfo()
+bool GlobalParams::getPrintStatusInfo()
 {
-	GBool p;
-
-	lockGlobalParams;
-	p = printStatusInfo;
-	unlockGlobalParams;
-	return p;
+	return printStatusInfo;
 }
 
-GBool GlobalParams::getErrQuiet()
+bool GlobalParams::getErrQuiet()
 {
-	// no locking -- this function may get called from inside a locked
-	// section
+	// no locking -- this function may get called from inside a locked section
 	return errQuiet;
 }
 
-GString* GlobalParams::getDebugLogFile()
+std::string GlobalParams::getDebugLogFile()
 {
+	std::lock_guard<std::mutex> lock(mtx);
 	return debugLogFile;
 }
 
 void GlobalParams::debugLogPrintf(const char* fmt, ...)
 {
-	GString*  path;
 	FILE*     f;
-	GBool     needClose;
 	time_t    t;
 	struct tm tm;
 	va_list   args;
 
-	if (!(path = getDebugLogFile()))
-		return;
-	needClose = gFalse;
-	if (!path->cmp("-"))
+	const std::string path = getDebugLogFile();
+	if (path.empty()) return;
+	bool needClose = false;
+	if (path == "-")
 	{
 		f = stdout;
 	}
-	else if (!path->cmp("+"))
+	else if (path == "+")
 	{
 		f = stderr;
 	}
 	else
 	{
-		f         = fopen(path->getCString(), "a");
-		needClose = gTrue;
+		f         = fopen(path.c_str(), "a");
+		needClose = true;
 	}
 	if (!f)
 		return;
@@ -3877,65 +3143,55 @@ void GlobalParams::debugLogPrintf(const char* fmt, ...)
 	vfprintf(f, fmt, args);
 	va_end(args);
 	fflush(f);
-	if (needClose)
-		fclose(f);
+	if (needClose) fclose(f);
 }
 
-CharCodeToUnicode* GlobalParams::getCIDToUnicode(GString* collection)
+CharCodeToUnicode* GlobalParams::getCIDToUnicode(const std::string& collection)
 {
-	GString*           fileName;
-	CharCodeToUnicode* ctu;
+	std::lock_guard<std::mutex> lock(mtx);
 
-	lockGlobalParams;
-	if (!(ctu = cidToUnicodeCache->getCharCodeToUnicode(collection)))
+	if (auto ctu = cidToUnicodeCache->getCharCodeToUnicode(collection))
+		return ctu;
+
+	if (const auto& it = cidToUnicodes.find(collection); it != cidToUnicodes.end())
 	{
-		if ((fileName = (GString*)cidToUnicodes->lookup(collection)) && (ctu = CharCodeToUnicode::parseCIDToUnicode(fileName, collection)))
+		if (auto ctu = CharCodeToUnicode::parseCIDToUnicode(it->second, collection))
+		{
 			cidToUnicodeCache->add(ctu);
+			return ctu;
+		}
 	}
-	unlockGlobalParams;
-	return ctu;
+
+	return nullptr;
 }
 
-CharCodeToUnicode* GlobalParams::getUnicodeToUnicode(GString* fontName)
+CharCodeToUnicode* GlobalParams::getUnicodeToUnicode(const std::string& fontName)
 {
-	CharCodeToUnicode* ctu;
-	GHashIter*         iter;
-	GString *          fontPattern, *fileName;
+	std::lock_guard<std::mutex> lock(mtx);
 
-	lockGlobalParams;
-	fileName = nullptr;
-	unicodeToUnicodes->startIter(&iter);
-	while (unicodeToUnicodes->getNext(&iter, &fontPattern, (void**)&fileName))
+	for (const auto& [fontPattern, fileName] : unicodeToUnicodes)
 	{
-		if (strstr(fontName->getCString(), fontPattern->getCString()))
+		if (fontName.find(fontPattern) != std::string::npos)
 		{
-			unicodeToUnicodes->killIter(&iter);
-			break;
-		}
-		fileName = nullptr;
-	}
-	if (fileName)
-	{
-		if (!(ctu = unicodeToUnicodeCache->getCharCodeToUnicode(fileName)))
-		{
-			if ((ctu = CharCodeToUnicode::parseUnicodeToUnicode(fileName)))
-				unicodeToUnicodeCache->add(ctu);
+			auto ctu = unicodeToUnicodeCache->getCharCodeToUnicode(fileName);
+			if (!ctu)
+			{
+				if (ctu = CharCodeToUnicode::parseUnicodeToUnicode(fileName))
+					unicodeToUnicodeCache->add(ctu);
+			}
+			if (ctu) return ctu;
 		}
 	}
-	else
-	{
-		ctu = nullptr;
-	}
-	unlockGlobalParams;
-	return ctu;
+
+	return nullptr;
 }
 
-UnicodeMap* GlobalParams::getUnicodeMap(GString* encodingName)
+UnicodeMap* GlobalParams::getUnicodeMap(const std::string& encodingName)
 {
 	return getUnicodeMap2(encodingName);
 }
 
-UnicodeMap* GlobalParams::getUnicodeMap2(GString* encodingName)
+UnicodeMap* GlobalParams::getUnicodeMap2(const std::string& encodingName)
 {
 	UnicodeMap* map;
 
@@ -3948,7 +3204,7 @@ UnicodeMap* GlobalParams::getUnicodeMap2(GString* encodingName)
 	return map;
 }
 
-CMap* GlobalParams::getCMap(GString* collection, GString* cMapName)
+CMap* GlobalParams::getCMap(const std::string& collection, const std::string& cMapName)
 {
 	CMap* cMap;
 
@@ -3972,16 +3228,15 @@ void GlobalParams::addUnicodeRemapping(Unicode in, Unicode* out, int len)
 	unicodeRemapping->addRemapping(in, out, len);
 }
 
-void GlobalParams::addFontFile(GString* fontName, GString* path)
+void GlobalParams::addFontFile(const std::string& fontName, const std::string& path)
 {
-	lockGlobalParams;
-	fontFiles->add(fontName, path);
-	unlockGlobalParams;
+	std::lock_guard<std::mutex> lock(mtx);
+	fontFiles.emplace(fontName, path);
 }
 
-GBool GlobalParams::setPSPaperSize(char* size)
+bool GlobalParams::setPSPaperSize(const char* size)
 {
-	lockGlobalParams;
+	std::lock_guard<std::mutex> lock(mtx);
 	if (!strcmp(size, "match"))
 	{
 		psPaperWidth = psPaperHeight = -1;
@@ -4008,352 +3263,256 @@ GBool GlobalParams::setPSPaperSize(char* size)
 	}
 	else
 	{
-		unlockGlobalParams;
-		return gFalse;
+		return false;
 	}
-	psImageableLLX = psImageableLLY = 0;
-	psImageableURX                  = psPaperWidth;
-	psImageableURY                  = psPaperHeight;
-	unlockGlobalParams;
-	return gTrue;
+	psImageableLLX = 0;
+	psImageableLLY = 0;
+	psImageableURX.store(psPaperWidth.load());
+	psImageableURY.store(psPaperHeight.load());
+	return true;
 }
 
 void GlobalParams::setPSPaperWidth(int width)
 {
-	lockGlobalParams;
+	std::lock_guard<std::mutex> lock(mtx);
 	psPaperWidth   = width;
 	psImageableLLX = 0;
-	psImageableURX = psPaperWidth;
-	unlockGlobalParams;
+	psImageableURX = width;
 }
 
 void GlobalParams::setPSPaperHeight(int height)
 {
-	lockGlobalParams;
+	std::lock_guard<std::mutex> lock(mtx);
 	psPaperHeight  = height;
 	psImageableLLY = 0;
-	psImageableURY = psPaperHeight;
-	unlockGlobalParams;
+	psImageableURY = height;
 }
 
 void GlobalParams::setPSImageableArea(int llx, int lly, int urx, int ury)
 {
-	lockGlobalParams;
+	std::lock_guard<std::mutex> lock(mtx);
 	psImageableLLX = llx;
 	psImageableLLY = lly;
 	psImageableURX = urx;
 	psImageableURY = ury;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPSCrop(GBool crop)
+void GlobalParams::setPSCrop(bool crop)
 {
-	lockGlobalParams;
 	psCrop = crop;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPSUseCropBoxAsPage(GBool crop)
+void GlobalParams::setPSUseCropBoxAsPage(bool crop)
 {
-	lockGlobalParams;
 	psUseCropBoxAsPage = crop;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPSExpandSmaller(GBool expand)
+void GlobalParams::setPSExpandSmaller(bool expand)
 {
-	lockGlobalParams;
 	psExpandSmaller = expand;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPSShrinkLarger(GBool shrink)
+void GlobalParams::setPSShrinkLarger(bool shrink)
 {
-	lockGlobalParams;
 	psShrinkLarger = shrink;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPSCenter(GBool center)
+void GlobalParams::setPSCenter(bool center)
 {
-	lockGlobalParams;
 	psCenter = center;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPSDuplex(GBool duplex)
+void GlobalParams::setPSDuplex(bool duplex)
 {
-	lockGlobalParams;
 	psDuplex = duplex;
-	unlockGlobalParams;
 }
 
 void GlobalParams::setPSLevel(PSLevel level)
 {
-	lockGlobalParams;
+	std::lock_guard<std::mutex> lock(mtx);
 	psLevel = level;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPSEmbedType1(GBool embed)
+void GlobalParams::setPSEmbedType1(bool embed)
 {
-	lockGlobalParams;
 	psEmbedType1 = embed;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPSEmbedTrueType(GBool embed)
+void GlobalParams::setPSEmbedTrueType(bool embed)
 {
-	lockGlobalParams;
 	psEmbedTrueType = embed;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPSEmbedCIDPostScript(GBool embed)
+void GlobalParams::setPSEmbedCIDPostScript(bool embed)
 {
-	lockGlobalParams;
 	psEmbedCIDPostScript = embed;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPSEmbedCIDTrueType(GBool embed)
+void GlobalParams::setPSEmbedCIDTrueType(bool embed)
 {
-	lockGlobalParams;
 	psEmbedCIDTrueType = embed;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPSFontPassthrough(GBool passthrough)
+void GlobalParams::setPSFontPassthrough(bool passthrough)
 {
-	lockGlobalParams;
 	psFontPassthrough = passthrough;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPSPreload(GBool preload)
+void GlobalParams::setPSPreload(bool preload)
 {
-	lockGlobalParams;
 	psPreload = preload;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPSOPI(GBool opi)
+void GlobalParams::setPSOPI(bool opi)
 {
-	lockGlobalParams;
 	psOPI = opi;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPSASCIIHex(GBool hex)
+void GlobalParams::setPSASCIIHex(bool hex)
 {
-	lockGlobalParams;
 	psASCIIHex = hex;
-	unlockGlobalParams;
 }
 
 void GlobalParams::setTextEncoding(const char* encodingName)
 {
-	lockGlobalParams;
-	delete textEncoding;
-	textEncoding = new GString(encodingName);
-	unlockGlobalParams;
+	std::lock_guard<std::mutex> lock(mtx);
+	textEncoding = encodingName;
 }
 
-GBool GlobalParams::setTextEOL(const char* s)
+bool GlobalParams::setTextEOL(const char* s)
 {
-	lockGlobalParams;
+	std::lock_guard<std::mutex> lock(mtx);
 	if (!strcmp(s, "unix"))
-	{
 		textEOL = eolUnix;
-	}
 	else if (!strcmp(s, "dos"))
-	{
 		textEOL = eolDOS;
-	}
 	else if (!strcmp(s, "mac"))
-	{
 		textEOL = eolMac;
-	}
 	else
-	{
-		unlockGlobalParams;
-		return gFalse;
-	}
-	unlockGlobalParams;
-	return gTrue;
+		return false;
+	return true;
 }
 
-void GlobalParams::setTextPageBreaks(GBool pageBreaks)
+void GlobalParams::setTextPageBreaks(bool pageBreaks)
 {
-	lockGlobalParams;
 	textPageBreaks = pageBreaks;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setTextKeepTinyChars(GBool keep)
+void GlobalParams::setTextKeepTinyChars(bool keep)
 {
-	lockGlobalParams;
 	textKeepTinyChars = keep;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setInitialZoom(char* s)
+void GlobalParams::setInitialZoom(const char* s)
 {
-	lockGlobalParams;
-	delete initialZoom;
-	initialZoom = new GString(s);
-	unlockGlobalParams;
+	std::lock_guard<std::mutex> lock(mtx);
+	initialZoom = s;
 }
 
 void GlobalParams::setDefaultFitZoom(int z)
 {
-	lockGlobalParams;
 	defaultFitZoom = z;
-	unlockGlobalParams;
 }
 
-GBool GlobalParams::setEnableFreeType(char* s)
+bool GlobalParams::setEnableFreeType(const char* s)
 {
-	GBool ok;
-
-	lockGlobalParams;
-	ok = parseYesNo2(s, &enableFreeType);
-	unlockGlobalParams;
-	return ok;
+	std::lock_guard<std::mutex> lock(mtx);
+	return parseYesNo2(s, &enableFreeType);
 }
 
-GBool GlobalParams::setAntialias(char* s)
+bool GlobalParams::setAntialias(const char* s)
 {
-	GBool ok;
-
-	lockGlobalParams;
-	ok = parseYesNo2(s, &antialias);
-	unlockGlobalParams;
-	return ok;
+	std::lock_guard<std::mutex> lock(mtx);
+	return parseYesNo2(s, &antialias);
 }
 
-GBool GlobalParams::setVectorAntialias(char* s)
+bool GlobalParams::setVectorAntialias(const char* s)
 {
-	GBool ok;
-
-	lockGlobalParams;
-	ok = parseYesNo2(s, &vectorAntialias);
-	unlockGlobalParams;
-	return ok;
+	std::lock_guard<std::mutex> lock(mtx);
+	return parseYesNo2(s, &vectorAntialias);
 }
 
 void GlobalParams::setScreenType(ScreenType t)
 {
-	lockGlobalParams;
+	std::lock_guard<std::mutex> lock(mtx);
 	screenType = t;
-	unlockGlobalParams;
 }
 
 void GlobalParams::setScreenSize(int size)
 {
-	lockGlobalParams;
 	screenSize = size;
-	unlockGlobalParams;
 }
 
 void GlobalParams::setScreenDotRadius(int r)
 {
-	lockGlobalParams;
 	screenDotRadius = r;
-	unlockGlobalParams;
 }
 
 void GlobalParams::setScreenGamma(double gamma)
 {
-	lockGlobalParams;
 	screenGamma = gamma;
-	unlockGlobalParams;
 }
 
 void GlobalParams::setScreenBlackThreshold(double thresh)
 {
-	lockGlobalParams;
 	screenBlackThreshold = thresh;
-	unlockGlobalParams;
 }
 
 void GlobalParams::setScreenWhiteThreshold(double thresh)
 {
-	lockGlobalParams;
 	screenWhiteThreshold = thresh;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setDrawFormFields(GBool draw)
+void GlobalParams::setDrawFormFields(bool draw)
 {
-	lockGlobalParams;
 	drawFormFields = draw;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setOverprintPreview(GBool preview)
+void GlobalParams::setOverprintPreview(bool preview)
 {
-	lockGlobalParams;
 	overprintPreview = preview;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setMapNumericCharNames(GBool map)
+void GlobalParams::setMapNumericCharNames(bool map)
 {
-	lockGlobalParams;
 	mapNumericCharNames = map;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setMapUnknownCharNames(GBool map)
+void GlobalParams::setMapUnknownCharNames(bool map)
 {
-	lockGlobalParams;
 	mapUnknownCharNames = map;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setMapExtTrueTypeFontsViaUnicode(GBool map)
+void GlobalParams::setMapExtTrueTypeFontsViaUnicode(bool map)
 {
-	lockGlobalParams;
 	mapExtTrueTypeFontsViaUnicode = map;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setTabStateFile(char* tabStateFileA)
+void GlobalParams::setTabStateFile(const char* tabStateFileA)
 {
-	lockGlobalParams;
-	delete tabStateFile;
-	tabStateFile = new GString(tabStateFileA);
-	unlockGlobalParams;
+	std::lock_guard<std::mutex> lock(mtx);
+	tabStateFile = tabStateFileA;
 }
 
-void GlobalParams::setSessionFile(char* sessionFileA)
+void GlobalParams::setSessionFile(const char* sessionFileA)
 {
-	lockGlobalParams;
-	delete sessionFile;
-	sessionFile = new GString(sessionFileA);
-	unlockGlobalParams;
+	std::lock_guard<std::mutex> lock(mtx);
+	sessionFile = sessionFileA;
 }
 
-void GlobalParams::setPrintCommands(GBool printCommandsA)
+void GlobalParams::setPrintCommands(bool printCommandsA)
 {
-	lockGlobalParams;
 	printCommands = printCommandsA;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setPrintStatusInfo(GBool printStatusInfoA)
+void GlobalParams::setPrintStatusInfo(bool printStatusInfoA)
 {
-	lockGlobalParams;
 	printStatusInfo = printStatusInfoA;
-	unlockGlobalParams;
 }
 
-void GlobalParams::setErrQuiet(GBool errQuietA)
+void GlobalParams::setErrQuiet(bool errQuietA)
 {
-	lockGlobalParams;
 	errQuiet = errQuietA;
-	unlockGlobalParams;
 }
 
 #ifdef _WIN32

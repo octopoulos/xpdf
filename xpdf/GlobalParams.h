@@ -6,29 +6,25 @@
 //
 //========================================================================
 
-#ifndef GLOBALPARAMS_H
-#define GLOBALPARAMS_H
+#pragma once
 
 #include <aconf.h>
-
 #include <stdio.h>
 #ifdef _WIN32
 #	include <windows.h>
 #endif
-#include "gtypes.h"
 #include "CharTypes.h"
+#include "UnicodeMap.h"
 
 #if MULTITHREADED
 #	include "GMutex.h"
 #endif
 
-class GString;
 class GList;
 class GHash;
 class NameToCharCode;
 class CharCodeToUnicode;
 class CharCodeToUnicodeCache;
-class UnicodeMap;
 class UnicodeMapCache;
 class UnicodeRemapping;
 class CMap;
@@ -40,7 +36,7 @@ class SysFontList;
 //------------------------------------------------------------------------
 
 // The global parameters object.
-extern GlobalParams* globalParams;
+extern std::shared_ptr<GlobalParams> globalParams;
 
 //------------------------------------------------------------------------
 
@@ -58,13 +54,12 @@ enum SysFontType
 class PSFontParam16
 {
 public:
-	GString* name;       // PDF font name for psResidentFont16;
-	                     //   char collection name for psResidentFontCC
-	int      wMode;      // writing mode (0=horiz, 1=vert)
-	GString* psFontName; // PostScript font name
-	GString* encoding;   // encoding
+	std::string name;       // PDF font name for psResidentFont16; char collection name for psResidentFontCC
+	int         wMode;      // writing mode (0=horiz, 1=vert)
+	std::string psFontName; // PostScript font name
+	std::string encoding;   // encoding
 
-	PSFontParam16(GString* nameA, int wModeA, GString* psFontNameA, GString* encodingA);
+	PSFontParam16(const std::string& nameA, int wModeA, const std::string& psFontNameA, const std::string& encodingA);
 	~PSFontParam16();
 };
 
@@ -112,21 +107,31 @@ enum ScreenType
 
 //------------------------------------------------------------------------
 
+struct Base14FontInfo
+{
+	Base14FontInfo(const std::string& fileNameA, int fontNumA, double obliqueA)
+	{
+		fileName = fileNameA;
+		fontNum  = fontNumA;
+		oblique  = obliqueA;
+	}
+
+	std::string fileName;
+	int         fontNum;
+	double      oblique;
+};
+
 class KeyBinding
 {
 public:
-	int    code;    // 0x20 .. 0xfe = ASCII,
-	                //   >=0x10000 = special keys, mouse buttons,
-	                //   etc. (xpdfKeyCode* symbols)
-	int    mods;    // modifiers (xpdfKeyMod* symbols, or-ed
-	                //   together)
-	int    context; // context (xpdfKeyContext* symbols, or-ed
-	                //   together)
-	GList* cmds;    // list of commands [GString]
+	int     code;    // 0x20 .. 0xfe = ASCII, >=0x10000 = special keys, mouse buttons, etc. (xpdfKeyCode* symbols)
+	int     mods;    // modifiers (xpdfKeyMod* symbols, or-ed together)
+	int     context; // context (xpdfKeyContext* symbols, or-ed together)
+	VEC_STR cmds;    // list of commands [GString]
 
 	KeyBinding(int codeA, int modsA, int contextA, const char* cmd0);
 	KeyBinding(int codeA, int modsA, int contextA, const char* cmd0, const char* cmd1);
-	KeyBinding(int codeA, int modsA, int contextA, GList* cmdsA);
+	KeyBinding(int codeA, int modsA, int contextA, const VEC_STR& cmdsA);
 	~KeyBinding();
 };
 
@@ -213,10 +218,10 @@ public:
 class PopupMenuCmd
 {
 public:
-	GString* label; // label for display in the menu
-	GList*   cmds;  // list of commands [GString]
+	std::string label; // label for display in the menu
+	VEC_STR     cmds;  // list of commands [GString]
 
-	PopupMenuCmd(GString* labelA, GList* cmdsA);
+	PopupMenuCmd(const std::string& labelA, const VEC_STR& cmdsA);
 	~PopupMenuCmd();
 };
 
@@ -234,9 +239,11 @@ struct XpdfWin32ErrorInfo
 
 class GlobalParams
 {
+private:
+	std::mutex mtx;
+
 public:
-	// Initialize the global parameters by attempting to read a config
-	// file.
+	// Initialize the global parameters by attempting to read a config file.
 	GlobalParams(const char* cfgFileName);
 
 	~GlobalParams();
@@ -244,180 +251,180 @@ public:
 	void setBaseDir(const char* dir);
 	void setupBaseFonts(const char* dir);
 
-	void parseLine(char* buf, GString* fileName, int line);
+	void parseLine(char* buf, const std::string& fileName, int line);
 
 	//----- accessors
 
 	CharCode getMacRomanCharCode(char* charName);
 
-	GString*          getBaseDir();
-	Unicode           mapNameToUnicode(const char* charName);
-	UnicodeMap*       getResidentUnicodeMap(GString* encodingName);
-	FILE*             getUnicodeMapFile(GString* encodingName);
-	FILE*             findCMapFile(GString* collection, GString* cMapName);
-	FILE*             findToUnicodeFile(GString* name);
-	UnicodeRemapping* getUnicodeRemapping();
-	GString*          findFontFile(GString* fontName);
-	GString*          findBase14FontFile(GString* fontName, int* fontNum, double* oblique);
-	GString*          findSystemFontFile(GString* fontName, SysFontType* type, int* fontNum);
-	GString*          findCCFontFile(GString* collection);
-	int               getPSPaperWidth();
-	int               getPSPaperHeight();
-	void              getPSImageableArea(int* llx, int* lly, int* urx, int* ury);
-	GBool             getPSDuplex();
-	GBool             getPSCrop();
-	GBool             getPSUseCropBoxAsPage();
-	GBool             getPSExpandSmaller();
-	GBool             getPSShrinkLarger();
-	GBool             getPSCenter();
-	PSLevel           getPSLevel();
-	GString*          getPSResidentFont(GString* fontName);
-	GList*            getPSResidentFonts();
-	PSFontParam16*    getPSResidentFont16(GString* fontName, int wMode);
-	PSFontParam16*    getPSResidentFontCC(GString* collection, int wMode);
-	GBool             getPSEmbedType1();
-	GBool             getPSEmbedTrueType();
-	GBool             getPSEmbedCIDPostScript();
-	GBool             getPSEmbedCIDTrueType();
-	GBool             getPSFontPassthrough();
-	GBool             getPSPreload();
-	GBool             getPSOPI();
-	GBool             getPSASCIIHex();
-	GBool             getPSLZW();
-	GBool             getPSUncompressPreloadedImages();
-	double            getPSMinLineWidth();
-	double            getPSRasterResolution();
-	GBool             getPSRasterMono();
-	int               getPSRasterSliceSize();
-	GBool             getPSAlwaysRasterize();
-	GBool             getPSNeverRasterize();
-	GString*          getTextEncodingName();
-	GList*            getAvailableTextEncodings();
-	EndOfLineKind     getTextEOL();
-	GBool             getTextPageBreaks();
-	GBool             getTextKeepTinyChars();
-	GString*          getInitialZoom();
-	int               getDefaultFitZoom();
-	double            getZoomScaleFactor();
-	GList*            getZoomValues();
-	GString*          getInitialDisplayMode();
-	GBool             getInitialToolbarState();
-	GBool             getInitialSidebarState();
-	int               getInitialSidebarWidth();
-	GString*          getInitialSelectMode();
-	int               getMaxTileWidth();
-	int               getMaxTileHeight();
-	int               getTileCacheSize();
-	int               getWorkerThreads();
-	GBool             getEnableFreeType();
-	GBool             getDisableFreeTypeHinting();
-	GBool             getAntialias();
-	GBool             getVectorAntialias();
-	GBool             getImageMaskAntialias();
-	GBool             getAntialiasPrinting();
-	StrokeAdjustMode  getStrokeAdjust();
-	ScreenType        getScreenType();
-	int               getScreenSize();
-	int               getScreenDotRadius();
-	double            getScreenGamma();
-	double            getScreenBlackThreshold();
-	double            getScreenWhiteThreshold();
-	double            getMinLineWidth();
-	GBool             getEnablePathSimplification();
-	GBool             getDrawAnnotations();
-	GBool             getDrawFormFields();
-	GBool             getEnableXFA();
+	std::string           getBaseDir();
+	Unicode               mapNameToUnicode(const char* charName);
+	UnicodeMap*           getResidentUnicodeMap(const std::string& encodingName);
+	FILE*                 getUnicodeMapFile(const std::string& encodingName);
+	FILE*                 findCMapFile(const std::string& collection, const std::string& cMapName);
+	FILE*                 findToUnicodeFile(const std::string& name);
+	UnicodeRemapping*     getUnicodeRemapping();
+	std::filesystem::path findFontFile(const std::string& fontName);
+	std::filesystem::path findBase14FontFile(const std::string& fontName, int* fontNum, double* oblique);
+	std::filesystem::path findSystemFontFile(const std::string& fontName, SysFontType* type, int* fontNum);
+	std::string           findCCFontFile(const std::string& collection);
+	int                   getPSPaperWidth();
+	int                   getPSPaperHeight();
+	void                  getPSImageableArea(int* llx, int* lly, int* urx, int* ury);
+	bool                  getPSDuplex();
+	bool                  getPSCrop();
+	bool                  getPSUseCropBoxAsPage();
+	bool                  getPSExpandSmaller();
+	bool                  getPSShrinkLarger();
+	bool                  getPSCenter();
+	PSLevel               getPSLevel();
+	std::string           getPSResidentFont(const std::string& fontName);
+	VEC_STR               getPSResidentFonts();
+	PSFontParam16*        getPSResidentFont16(const std::string& fontName, int wMode);
+	PSFontParam16*        getPSResidentFontCC(const std::string& collection, int wMode);
+	bool                  getPSEmbedType1();
+	bool                  getPSEmbedTrueType();
+	bool                  getPSEmbedCIDPostScript();
+	bool                  getPSEmbedCIDTrueType();
+	bool                  getPSFontPassthrough();
+	bool                  getPSPreload();
+	bool                  getPSOPI();
+	bool                  getPSASCIIHex();
+	bool                  getPSLZW();
+	bool                  getPSUncompressPreloadedImages();
+	double                getPSMinLineWidth();
+	double                getPSRasterResolution();
+	bool                  getPSRasterMono();
+	int                   getPSRasterSliceSize();
+	bool                  getPSAlwaysRasterize();
+	bool                  getPSNeverRasterize();
+	std::string           getTextEncodingName();
+	VEC_STR               getAvailableTextEncodings();
+	EndOfLineKind         getTextEOL();
+	bool                  getTextPageBreaks();
+	bool                  getTextKeepTinyChars();
+	std::string           getInitialZoom();
+	int                   getDefaultFitZoom();
+	double                getZoomScaleFactor();
+	VEC_STR               getZoomValues();
+	std::string           getInitialDisplayMode();
+	bool                  getInitialToolbarState();
+	bool                  getInitialSidebarState();
+	int                   getInitialSidebarWidth();
+	std::string           getInitialSelectMode();
+	int                   getMaxTileWidth();
+	int                   getMaxTileHeight();
+	int                   getTileCacheSize();
+	int                   getWorkerThreads();
+	bool                  getEnableFreeType();
+	bool                  getDisableFreeTypeHinting();
+	bool                  getAntialias();
+	bool                  getVectorAntialias();
+	bool                  getImageMaskAntialias();
+	bool                  getAntialiasPrinting();
+	StrokeAdjustMode      getStrokeAdjust();
+	ScreenType            getScreenType();
+	int                   getScreenSize();
+	int                   getScreenDotRadius();
+	double                getScreenGamma();
+	double                getScreenBlackThreshold();
+	double                getScreenWhiteThreshold();
+	double                getMinLineWidth();
+	bool                  getEnablePathSimplification();
+	bool                  getDrawAnnotations();
+	bool                  getDrawFormFields();
+	bool                  getEnableXFA();
 
-	GBool getOverprintPreview() { return overprintPreview; }
+	bool getOverprintPreview() { return overprintPreview; }
 
-	GString* getPaperColor();
-	GString* getMatteColor();
-	GString* getFullScreenMatteColor();
-	GString* getSelectionColor();
-	GBool    getReverseVideoInvertImages();
-	GBool    getAllowLinksToChangeZoom();
+	std::string getPaperColor();
+	std::string getMatteColor();
+	std::string getFullScreenMatteColor();
+	std::string getSelectionColor();
+	bool        getReverseVideoInvertImages();
+	bool        getAllowLinksToChangeZoom();
 
-	GString* getLaunchCommand() { return launchCommand; }
+	std::string getLaunchCommand() { return launchCommand; }
 
-	GString* getMovieCommand() { return movieCommand; }
+	std::string getMovieCommand() { return movieCommand; }
 
-	GString*      getDefaultPrinter();
-	GBool         getMapNumericCharNames();
-	GBool         getMapUnknownCharNames();
-	GBool         getMapExtTrueTypeFontsViaUnicode();
-	GBool         getUseTrueTypeUnicodeMapping();
-	GBool         getIgnoreWrongSizeToUnicode();
-	GBool         isDroppedFont(const char* fontName);
-	GBool         getSeparateRotatedText();
-	GList*        getKeyBinding(int code, int mods, int context);
-	GList*        getAllKeyBindings();
-	int           getNumPopupMenuCmds();
-	PopupMenuCmd* getPopupMenuCmd(int idx);
-	GString*      getPagesFile();
-	GString*      getTabStateFile();
-	GString*      getSessionFile();
-	GBool         getSaveSessionOnQuit();
-	GBool         getSavePageNumbers();
-	GBool         getPrintCommands();
-	GBool         getPrintStatusInfo();
-	GBool         getErrQuiet();
-	GString*      getDebugLogFile();
-	void          debugLogPrintf(const char* fmt, ...);
+	std::string             getDefaultPrinter();
+	bool                    getMapNumericCharNames();
+	bool                    getMapUnknownCharNames();
+	bool                    getMapExtTrueTypeFontsViaUnicode();
+	bool                    getUseTrueTypeUnicodeMapping();
+	bool                    getIgnoreWrongSizeToUnicode();
+	bool                    isDroppedFont(const char* fontName);
+	bool                    getSeparateRotatedText();
+	VEC_STR                 getKeyBinding(int code, int mods, int context);
+	std::vector<KeyBinding> getAllKeyBindings();
+	int                     getNumPopupMenuCmds();
+	PopupMenuCmd*           getPopupMenuCmd(int idx);
+	std::string             getPagesFile();
+	std::string             getTabStateFile();
+	std::string             getSessionFile();
+	bool                    getSaveSessionOnQuit();
+	bool                    getSavePageNumbers();
+	bool                    getPrintCommands();
+	bool                    getPrintStatusInfo();
+	bool                    getErrQuiet();
+	std::string             getDebugLogFile();
+	void                    debugLogPrintf(const char* fmt, ...);
 
-	CharCodeToUnicode* getCIDToUnicode(GString* collection);
-	CharCodeToUnicode* getUnicodeToUnicode(GString* fontName);
-	UnicodeMap*        getUnicodeMap(GString* encodingName);
-	CMap*              getCMap(GString* collection, GString* cMapName);
+	CharCodeToUnicode* getCIDToUnicode(const std::string& collection);
+	CharCodeToUnicode* getUnicodeToUnicode(const std::string& fontName);
+	UnicodeMap*        getUnicodeMap(const std::string& encodingName);
+	CMap*              getCMap(const std::string& collection, const std::string& cMapName);
 	UnicodeMap*        getTextEncoding();
 
 	//----- functions to set parameters
 
-	void  addUnicodeRemapping(Unicode in, Unicode* out, int len);
-	void  addFontFile(GString* fontName, GString* path);
-	GBool setPSPaperSize(char* size);
-	void  setPSPaperWidth(int width);
-	void  setPSPaperHeight(int height);
-	void  setPSImageableArea(int llx, int lly, int urx, int ury);
-	void  setPSDuplex(GBool duplex);
-	void  setPSCrop(GBool crop);
-	void  setPSUseCropBoxAsPage(GBool crop);
-	void  setPSExpandSmaller(GBool expand);
-	void  setPSShrinkLarger(GBool shrink);
-	void  setPSCenter(GBool center);
-	void  setPSLevel(PSLevel level);
-	void  setPSEmbedType1(GBool embed);
-	void  setPSEmbedTrueType(GBool embed);
-	void  setPSEmbedCIDPostScript(GBool embed);
-	void  setPSEmbedCIDTrueType(GBool embed);
-	void  setPSFontPassthrough(GBool passthrough);
-	void  setPSPreload(GBool preload);
-	void  setPSOPI(GBool opi);
-	void  setPSASCIIHex(GBool hex);
-	void  setTextEncoding(const char* encodingName);
-	GBool setTextEOL(const char* s);
-	void  setTextPageBreaks(GBool pageBreaks);
-	void  setTextKeepTinyChars(GBool keep);
-	void  setInitialZoom(char* s);
-	void  setDefaultFitZoom(int z);
-	GBool setEnableFreeType(char* s);
-	GBool setAntialias(char* s);
-	GBool setVectorAntialias(char* s);
-	void  setScreenType(ScreenType t);
-	void  setScreenSize(int size);
-	void  setScreenDotRadius(int r);
-	void  setScreenGamma(double gamma);
-	void  setScreenBlackThreshold(double thresh);
-	void  setScreenWhiteThreshold(double thresh);
-	void  setDrawFormFields(GBool draw);
-	void  setOverprintPreview(GBool preview);
-	void  setMapNumericCharNames(GBool map);
-	void  setMapUnknownCharNames(GBool map);
-	void  setMapExtTrueTypeFontsViaUnicode(GBool map);
-	void  setTabStateFile(char* tabStateFileA);
-	void  setSessionFile(char* sessionFileA);
-	void  setPrintCommands(GBool printCommandsA);
-	void  setPrintStatusInfo(GBool printStatusInfoA);
-	void  setErrQuiet(GBool errQuietA);
+	void addUnicodeRemapping(Unicode in, Unicode* out, int len);
+	void addFontFile(const std::string& fontName, const std::string& path);
+	bool setPSPaperSize(const char* size);
+	void setPSPaperWidth(int width);
+	void setPSPaperHeight(int height);
+	void setPSImageableArea(int llx, int lly, int urx, int ury);
+	void setPSDuplex(bool duplex);
+	void setPSCrop(bool crop);
+	void setPSUseCropBoxAsPage(bool crop);
+	void setPSExpandSmaller(bool expand);
+	void setPSShrinkLarger(bool shrink);
+	void setPSCenter(bool center);
+	void setPSLevel(PSLevel level);
+	void setPSEmbedType1(bool embed);
+	void setPSEmbedTrueType(bool embed);
+	void setPSEmbedCIDPostScript(bool embed);
+	void setPSEmbedCIDTrueType(bool embed);
+	void setPSFontPassthrough(bool passthrough);
+	void setPSPreload(bool preload);
+	void setPSOPI(bool opi);
+	void setPSASCIIHex(bool hex);
+	void setTextEncoding(const char* encodingName);
+	bool setTextEOL(const char* s);
+	void setTextPageBreaks(bool pageBreaks);
+	void setTextKeepTinyChars(bool keep);
+	void setInitialZoom(const char* s);
+	void setDefaultFitZoom(int z);
+	bool setEnableFreeType(const char* s);
+	bool setAntialias(const char* s);
+	bool setVectorAntialias(const char* s);
+	void setScreenType(ScreenType t);
+	void setScreenSize(int size);
+	void setScreenDotRadius(int r);
+	void setScreenGamma(double gamma);
+	void setScreenBlackThreshold(double thresh);
+	void setScreenWhiteThreshold(double thresh);
+	void setDrawFormFields(bool draw);
+	void setOverprintPreview(bool preview);
+	void setMapNumericCharNames(bool map);
+	void setMapUnknownCharNames(bool map);
+	void setMapExtTrueTypeFontsViaUnicode(bool map);
+	void setTabStateFile(const char* tabStateFileA);
+	void setSessionFile(const char* sessionFileA);
+	void setPrintCommands(bool printCommandsA);
+	void setPrintStatusInfo(bool printStatusInfoA);
+	void setErrQuiet(bool errQuietA);
 
 #ifdef _WIN32
 	void                setWin32ErrorInfo(const char* func, DWORD code);
@@ -430,40 +437,40 @@ private:
 	void        setDataDirVar();
 	void        createDefaultKeyBindings();
 	void        initStateFilePaths();
-	void        parseFile(GString* fileName, FILE* f);
-	GList*      parseLineTokens(char* buf, GString* fileName, int line);
-	void        parseNameToUnicode(GList* tokens, GString* fileName, int line);
-	void        parseCIDToUnicode(GList* tokens, GString* fileName, int line);
-	void        parseUnicodeToUnicode(GList* tokens, GString* fileName, int line);
-	void        parseUnicodeMap(GList* tokens, GString* fileName, int line);
-	void        parseCMapDir(GList* tokens, GString* fileName, int line);
-	void        parseToUnicodeDir(GList* tokens, GString* fileName, int line);
-	void        parseUnicodeRemapping(GList* tokens, GString* fileName, int line);
-	void        parseFontFile(GList* tokens, GString* fileName, int line);
-	void        parseFontDir(GList* tokens, GString* fileName, int line);
-	void        parseFontFileCC(GList* tokens, GString* fileName, int line);
-	void        parsePSPaperSize(GList* tokens, GString* fileName, int line);
-	void        parsePSImageableArea(GList* tokens, GString* fileName, int line);
-	void        parsePSLevel(GList* tokens, GString* fileName, int line);
-	void        parsePSResidentFont(GList* tokens, GString* fileName, int line);
-	void        parsePSResidentFont16(GList* tokens, GString* fileName, int line);
-	void        parsePSResidentFontCC(GList* tokens, GString* fileName, int line);
-	void        parseTextEOL(GList* tokens, GString* fileName, int line);
-	void        parseStrokeAdjust(GList* tokens, GString* fileName, int line);
-	void        parseScreenType(GList* tokens, GString* fileName, int line);
-	void        parseDropFont(GList* tokens, GString* fileName, int line);
-	void        parseBind(GList* tokens, GString* fileName, int line);
-	void        parseUnbind(GList* tokens, GString* fileName, int line);
-	GBool       parseKey(GString* modKeyStr, GString* contextStr, int* code, int* mods, int* context, const char* cmdName, GList* tokens, GString* fileName, int line);
-	void        parsePopupMenuCmd(GList* tokens, GString* fileName, int line);
-	void        parseZoomScaleFactor(GList* tokens, GString* fileName, int line);
-	void        parseZoomValues(GList* tokens, GString* fileName, int line);
-	void        parseYesNo(const char* cmdName, GBool* flag, GList* tokens, GString* fileName, int line);
-	GBool       parseYesNo2(char* token, GBool* flag);
-	void        parseString(const char* cmdName, GString** s, GList* tokens, GString* fileName, int line);
-	void        parseInteger(const char* cmdName, int* val, GList* tokens, GString* fileName, int line);
-	void        parseFloat(const char* cmdName, double* val, GList* tokens, GString* fileName, int line);
-	UnicodeMap* getUnicodeMap2(GString* encodingName);
+	void        parseFile(const std::string& fileName, FILE* f);
+	VEC_STR     parseLineTokens(char* buf, const std::string& fileName, int line);
+	void        parseNameToUnicode(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseCIDToUnicode(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseUnicodeToUnicode(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseUnicodeMap(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseCMapDir(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseToUnicodeDir(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseUnicodeRemapping(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseFontFile(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseFontDir(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseFontFileCC(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parsePSPaperSize(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parsePSImageableArea(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parsePSLevel(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parsePSResidentFont(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parsePSResidentFont16(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parsePSResidentFontCC(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseTextEOL(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseStrokeAdjust(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseScreenType(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseDropFont(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseBind(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseUnbind(const VEC_STR& tokens, const std::string& fileName, int line);
+	bool        parseKey(const std::string& modKeyStr, const std::string& contextStr, int* code, int* mods, int* context, const char* cmdName, const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parsePopupMenuCmd(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseZoomScaleFactor(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseZoomValues(const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseYesNo(const char* cmdName, std::atomic<bool>* flag, const VEC_STR& tokens, const std::string& fileName, int line);
+	bool        parseYesNo2(const char* token, std::atomic<bool>* flag);
+	void        parseString(const char* cmdName, std::string* s, const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseInteger(const char* cmdName, std::atomic<int>* val, const VEC_STR& tokens, const std::string& fileName, int line);
+	void        parseFloat(const char* cmdName, std::atomic<double>* val, const VEC_STR& tokens, const std::string& fileName, int line);
+	UnicodeMap* getUnicodeMap2(const std::string& encodingName);
 
 	//----- static tables
 
@@ -472,154 +479,119 @@ private:
 
 	//----- meta settings
 
-	GString* baseDir;        // base directory - for plugins, etc.
-	GHash*   configFileVars; // variables for use in the config file
-	                         //   [GString]
+	std::string  baseDir;        // base directory - for plugins, etc.
+	UMAP_STR_STR configFileVars; // variables for use in the config file [GString]
 
 	//----- user-modifiable settings
 
-	NameToCharCode* // mapping from char name to Unicode
-	       nameToUnicode;
-	GHash* cidToUnicodes;       // files for mappings from char collections
-	                            //   to Unicode, indexed by collection name
-	                            //   [GString]
-	GHash* unicodeToUnicodes;   // files for Unicode-to-Unicode mappings,
-	                            //   indexed by font name pattern [GString]
-	GHash* residentUnicodeMaps; // mappings from Unicode to char codes,
-	                            //   indexed by encoding name [UnicodeMap]
-	GHash* unicodeMaps;         // files for mappings from Unicode to char
-	                            //   codes, indexed by encoding name [GString]
-	GHash* cMapDirs;            // list of CMap dirs, indexed by collection
-	                            //   name [GList[GString]]
-	GList* toUnicodeDirs;       // list of ToUnicode CMap dirs [GString]
-	UnicodeRemapping*           // Unicode remapping for text output
-	             unicodeRemapping;
-	GHash*       fontFiles;      // font files: font name mapped to path
-	                             //   [GString]
-	GList*       fontDirs;       // list of font dirs [GString]
-	GHash*       ccFontFiles;    // character collection font files:
-	                             //   collection name  mapped to path [GString]
-	GHash*       base14SysFonts; // Base-14 system font files: font name
-	                             //   mapped to path [Base14FontInfo]
-	SysFontList* sysFonts;       // system fonts
-	int          psPaperWidth;   // paper size, in PostScript points, for
-	int          psPaperHeight;  // PostScript output
-	int          psImageableLLX, // imageable area, in PostScript points,
-	    psImageableLLY,          // for PostScript output
-	    psImageableURX,
-	    psImageableURY;
-	GBool            psCrop;                      // crop PS output to CropBox
-	GBool            psUseCropBoxAsPage;          // use CropBox as page size
-	GBool            psExpandSmaller;             // expand smaller pages to fill paper
-	GBool            psShrinkLarger;              // shrink larger pages to fit paper
-	GBool            psCenter;                    // center pages on the paper
-	GBool            psDuplex;                    // enable duplexing in PostScript?
-	PSLevel          psLevel;                     // PostScript level to generate
-	GHash*           psResidentFonts;             // 8-bit fonts resident in printer:
-	                                              //   PDF font name mapped to PS font name
-	                                              //   [GString]
-	GList*           psResidentFonts16;           // 16-bit fonts resident in printer:
-	                                              //   PDF font name mapped to font info
-	                                              //   [PSFontParam16]
-	GList*           psResidentFontsCC;           // 16-bit character collection fonts
-	                                              //   resident in printer: collection name
-	                                              //   mapped to font info [PSFontParam16]
-	GBool            psEmbedType1;                // embed Type 1 fonts?
-	GBool            psEmbedTrueType;             // embed TrueType fonts?
-	GBool            psEmbedCIDPostScript;        // embed CID PostScript fonts?
-	GBool            psEmbedCIDTrueType;          // embed CID TrueType fonts?
-	GBool            psFontPassthrough;           // pass all fonts through as-is?
-	GBool            psPreload;                   // preload PostScript images and forms into
-	                                              //   memory
-	GBool            psOPI;                       // generate PostScript OPI comments?
-	GBool            psASCIIHex;                  // use ASCIIHex instead of ASCII85?
-	GBool            psLZW;                       // false to use RLE instead of LZW
-	GBool            psUncompressPreloadedImages; // uncompress all preloaded images
-	double           psMinLineWidth;              // minimum line width for PostScript output
-	double           psRasterResolution;          // PostScript rasterization resolution (dpi)
-	GBool            psRasterMono;                // true to do PostScript rasterization
-	                                              //   in monochrome (gray); false to do it
-	                                              //   in color (RGB/CMYK)
-	int              psRasterSliceSize;           // maximum size (pixels) of PostScript
-	                                              //   rasterization slice
-	GBool            psAlwaysRasterize;           // force PostScript rasterization
-	GBool            psNeverRasterize;            // prevent PostScript rasterization
-	GString*         textEncoding;                // encoding (unicodeMap) to use for text
-	                                              //   output
-	EndOfLineKind    textEOL;                     // type of EOL marker to use for text
-	                                              //   output
-	GBool            textPageBreaks;              // insert end-of-page markers?
-	GBool            textKeepTinyChars;           // keep all characters in text output
-	GString*         initialZoom;                 // initial zoom level
-	int              defaultFitZoom;              // default zoom factor if initialZoom is
-	                                              //   'page' or 'width'
-	double           zoomScaleFactor;             // displayed zoom values are scaled by this
-	GList*           zoomValues;                  // zoom values for the combo box
-	GString*         initialDisplayMode;          // initial display mode (single,
-	                                              //   continuous, etc.)
-	GBool            initialToolbarState;         // initial toolbar state - open (true)
-	                                              //   or closed (false)
-	GBool            initialSidebarState;         // initial sidebar state - open (true)
-	                                              //   or closed (false)
-	int              initialSidebarWidth;         // initial sidebar width
-	GString*         initialSelectMode;           // initial selection mode (block or linear)
-	int              maxTileWidth;                // maximum rasterization tile width
-	int              maxTileHeight;               // maximum rasterization tile height
-	int              tileCacheSize;               // number of rasterization tiles in cache
-	int              workerThreads;               // number of rasterization worker threads
-	GBool            enableFreeType;              // FreeType enable flag
-	GBool            disableFreeTypeHinting;      // FreeType hinting disable flag
-	GBool            antialias;                   // font anti-aliasing enable flag
-	GBool            vectorAntialias;             // vector anti-aliasing enable flag
-	GBool            imageMaskAntialias;          // image mask anti-aliasing enable flag
-	GBool            antialiasPrinting;           // allow anti-aliasing when printing
-	StrokeAdjustMode strokeAdjust;                // stroke adjustment mode
-	ScreenType       screenType;                  // halftone screen type
-	int              screenSize;                  // screen matrix size
-	int              screenDotRadius;             // screen dot radius
-	double           screenGamma;                 // screen gamma correction
-	double           screenBlackThreshold;        // screen black clamping threshold
-	double           screenWhiteThreshold;        // screen white clamping threshold
-	double           minLineWidth;                // minimum line width
-	GBool                                         // enable path simplification
-	         enablePathSimplification;
-	GBool    drawAnnotations;               // draw annotations or not
-	GBool    drawFormFields;                // draw form fields or not
-	GBool    enableXFA;                     // enable XFA form parsing
-	GBool    overprintPreview;              // enable overprint preview
-	GString* paperColor;                    // paper (page background) color
-	GString* matteColor;                    // matte (background outside of page) color
-	GString* fullScreenMatteColor;          // matte color in full-screen mode
-	GString* selectionColor;                // selection color
-	GBool    reverseVideoInvertImages;      // invert images in reverse video mode
-	GBool    allowLinksToChangeZoom;        // allow clicking on a link to change the zoom
-	GString* launchCommand;                 // command executed for 'launch' links
-	GString* movieCommand;                  // command executed for movie annotations
-	GString* defaultPrinter;                // default printer (for interactive printing
-	                                        //   from the viewer)
-	GBool    mapNumericCharNames;           // map numeric char names (from font subsets)?
-	GBool    mapUnknownCharNames;           // map unknown char names?
-	GBool    mapExtTrueTypeFontsViaUnicode; // map char codes to GID via Unicode
-	                                        //   for external TrueType fonts?
-	GBool    useTrueTypeUnicodeMapping;     // use the Unicode cmaps in TrueType
-	                                        //   fonts, rather than the PDF
-	                                        //   ToUnicode mapping
-	GBool    ignoreWrongSizeToUnicode;      // ignore ToUnicode CMaps if their size
-	                                        //   (8-bit vs 16-bit) doesn't match the font
-	GHash*   droppedFonts;                  // dropped fonts [int]
-	GBool    separateRotatedText;           // separate text at each rotation
-	GList*   keyBindings;                   // key & mouse button bindings [KeyBinding]
-	GList*   popupMenuCmds;                 // popup menu commands [PopupMenuCmd]
-	GString* pagesFile;                     // path for the page number save file
-	GString* tabStateFile;                  // path for the tab state save file
-	GString* sessionFile;                   // path for the session save file
-	GBool    saveSessionOnQuit;             // save session info when xpdf is quit
-	GBool    savePageNumbers;               // save page number when file is closed
-	                                        //   and restore page number when opened
-	GBool    printCommands;                 // print the drawing commands
-	GBool    printStatusInfo;               // print status info for each page
-	GBool    errQuiet;                      // suppress error messages?
-	GString* debugLogFile;                  // path for debug log file
+	NameToCharCode*                   nameToUnicode;                 // mapping from char name to Unicode
+	UMAP_STR_STR                      cidToUnicodes;                 // files for mappings from char collections to Unicode, indexed by collection name [GString]
+	UMAP_STR_STR                      unicodeToUnicodes;             // files for Unicode-to-Unicode mappings, indexed by font name pattern [GString]
+	UMAP<std::string, UnicodeMap>     residentUnicodeMaps;           // mappings from Unicode to char codes, indexed by encoding name [UnicodeMap]
+	UMAP_STR_STR                      unicodeMaps;                   // files for mappings from Unicode to char codes, indexed by encoding name [GString]
+	UMAP<std::string, VEC_STR>        cMapDirs;                      // list of CMap dirs, indexed by collection name [GList[GString]]
+	VEC_STR                           toUnicodeDirs;                 // list of ToUnicode CMap dirs [GString]
+	UnicodeRemapping*                 unicodeRemapping;              // Unicode remapping for text output
+	UMAP_STR_STR                      fontFiles;                     // font files: font name mapped to path [GString]
+	VEC_STR                           fontDirs;                      // list of font dirs [GString]
+	UMAP_STR_STR                      ccFontFiles;                   // character collection font files: collection name mapped to path [GString]
+	UMAP<std::string, Base14FontInfo> base14SysFonts;                // Base-14 system font files: font name mapped to path [Base14FontInfo]
+	SysFontList*                      sysFonts;                      // system fonts
+	std::atomic<int>                  psPaperWidth;                  // paper size, in PostScript points, for
+	std::atomic<int>                  psPaperHeight;                 // PostScript output
+	std::atomic<int>                  psImageableLLX;                // imageable area, in PostScript points,
+	std::atomic<int>                  psImageableLLY;                // for PostScript output
+	std::atomic<int>                  psImageableURX;                //
+	std::atomic<int>                  psImageableURY;                //
+	std::atomic<bool>                 psCrop;                        // crop PS output to CropBox
+	std::atomic<bool>                 psUseCropBoxAsPage;            // use CropBox as page size
+	std::atomic<bool>                 psExpandSmaller;               // expand smaller pages to fill paper
+	std::atomic<bool>                 psShrinkLarger;                // shrink larger pages to fit paper
+	std::atomic<bool>                 psCenter;                      // center pages on the paper
+	std::atomic<bool>                 psDuplex;                      // enable duplexing in PostScript?
+	PSLevel                           psLevel;                       // PostScript level to generate
+	UMAP_STR_STR                      psResidentFonts;               // 8-bit fonts resident in printer: PDF font name mapped to PS font name [GString]
+	std::vector<PSFontParam16>        psResidentFonts16;             // 16-bit fonts resident in printer: PDF font name mapped to font info [PSFontParam16]
+	std::vector<PSFontParam16>        psResidentFontsCC;             // 16-bit character collection fonts resident in printer: collection name mapped to font info [PSFontParam16]
+	std::atomic<bool>                 psEmbedType1;                  // embed Type 1 fonts?
+	std::atomic<bool>                 psEmbedTrueType;               // embed TrueType fonts?
+	std::atomic<bool>                 psEmbedCIDPostScript;          // embed CID PostScript fonts?
+	std::atomic<bool>                 psEmbedCIDTrueType;            // embed CID TrueType fonts?
+	std::atomic<bool>                 psFontPassthrough;             // pass all fonts through as-is?
+	std::atomic<bool>                 psPreload;                     // preload PostScript images and forms into memory
+	std::atomic<bool>                 psOPI;                         // generate PostScript OPI comments?
+	std::atomic<bool>                 psASCIIHex;                    // use ASCIIHex instead of ASCII85?
+	std::atomic<bool>                 psLZW;                         // false to use RLE instead of LZW
+	std::atomic<bool>                 psUncompressPreloadedImages;   // uncompress all preloaded images
+	std::atomic<double>               psMinLineWidth;                // minimum line width for PostScript output
+	std::atomic<double>               psRasterResolution;            // PostScript rasterization resolution (dpi)
+	std::atomic<bool>                 psRasterMono;                  // true to do PostScript rasterization in monochrome (gray); false to do it in color (RGB/CMYK)
+	std::atomic<int>                  psRasterSliceSize;             // maximum size (pixels) of PostScript rasterization slice
+	std::atomic<bool>                 psAlwaysRasterize;             // force PostScript rasterization
+	std::atomic<bool>                 psNeverRasterize;              // prevent PostScript rasterization
+	std::string                       textEncoding;                  // encoding (unicodeMap) to use for text output
+	EndOfLineKind                     textEOL;                       // type of EOL marker to use for text output
+	std::atomic<bool>                 textPageBreaks;                // insert end-of-page markers?
+	std::atomic<bool>                 textKeepTinyChars;             // keep all characters in text output
+	std::string                       initialZoom;                   // initial zoom level
+	std::atomic<int>                  defaultFitZoom;                // default zoom factor if initialZoom is 'page' or 'width'
+	std::atomic<double>               zoomScaleFactor;               // displayed zoom values are scaled by this
+	VEC_STR                           zoomValues;                    // zoom values for the combo box
+	std::string                       initialDisplayMode;            // initial display mode (single, continuous, etc.)
+	std::atomic<bool>                 initialToolbarState;           // initial toolbar state - open (true) or closed (false)
+	std::atomic<bool>                 initialSidebarState;           // initial sidebar state - open (true) or closed (false)
+	std::atomic<int>                  initialSidebarWidth;           // initial sidebar width
+	std::string                       initialSelectMode;             // initial selection mode (block or linear)
+	std::atomic<int>                  maxTileWidth;                  // maximum rasterization tile width
+	std::atomic<int>                  maxTileHeight;                 // maximum rasterization tile height
+	std::atomic<int>                  tileCacheSize;                 // number of rasterization tiles in cache
+	std::atomic<int>                  workerThreads;                 // number of rasterization worker threads
+	std::atomic<bool>                 enableFreeType;                // FreeType enable flag
+	std::atomic<bool>                 disableFreeTypeHinting;        // FreeType hinting disable flag
+	std::atomic<bool>                 antialias;                     // font anti-aliasing enable flag
+	std::atomic<bool>                 vectorAntialias;               // vector anti-aliasing enable flag
+	std::atomic<bool>                 imageMaskAntialias;            // image mask anti-aliasing enable flag
+	std::atomic<bool>                 antialiasPrinting;             // allow anti-aliasing when printing
+	StrokeAdjustMode                  strokeAdjust;                  // stroke adjustment mode
+	ScreenType                        screenType;                    // halftone screen type
+	std::atomic<int>                  screenSize;                    // screen matrix size
+	std::atomic<int>                  screenDotRadius;               // screen dot radius
+	std::atomic<double>               screenGamma;                   // screen gamma correction
+	std::atomic<double>               screenBlackThreshold;          // screen black clamping threshold
+	std::atomic<double>               screenWhiteThreshold;          // screen white clamping threshold
+	std::atomic<double>               minLineWidth;                  // minimum line width
+	std::atomic<bool>                 enablePathSimplification;      // enable path simplification
+	std::atomic<bool>                 drawAnnotations;               // draw annotations or not
+	std::atomic<bool>                 drawFormFields;                // draw form fields or not
+	std::atomic<bool>                 enableXFA;                     // enable XFA form parsing
+	std::atomic<bool>                 overprintPreview;              // enable overprint preview
+	std::string                       paperColor;                    // paper (page background) color
+	std::string                       matteColor;                    // matte (background outside of page) color
+	std::string                       fullScreenMatteColor;          // matte color in full-screen mode
+	std::string                       selectionColor;                // selection color
+	std::atomic<bool>                 reverseVideoInvertImages;      // invert images in reverse video mode
+	std::atomic<bool>                 allowLinksToChangeZoom;        // allow clicking on a link to change the zoom
+	std::string                       launchCommand;                 // command executed for 'launch' links
+	std::string                       movieCommand;                  // command executed for movie annotations
+	std::string                       defaultPrinter;                // default printer (for interactive printing from the viewer)
+	std::atomic<bool>                 mapNumericCharNames;           // map numeric char names (from font subsets)?
+	std::atomic<bool>                 mapUnknownCharNames;           // map unknown char names?
+	std::atomic<bool>                 mapExtTrueTypeFontsViaUnicode; // map char codes to GID via Unicode for external TrueType fonts?
+	std::atomic<bool>                 useTrueTypeUnicodeMapping;     // use the Unicode cmaps in TrueType fonts, rather than the PDF ToUnicode mapping
+	std::atomic<bool>                 ignoreWrongSizeToUnicode;      // ignore ToUnicode CMaps if their size (8-bit vs 16-bit) doesn't match the font
+	UMAP_STR_INT                      droppedFonts;                  // dropped fonts [int]
+	std::atomic<bool>                 separateRotatedText;           // separate text at each rotation
+	std::vector<KeyBinding>           keyBindings;                   // key & mouse button bindings [KeyBinding]
+	std::vector<PopupMenuCmd>         popupMenuCmds;                 // popup menu commands [PopupMenuCmd]
+	std::string                       pagesFile;                     // path for the page number save file
+	std::string                       tabStateFile;                  // path for the tab state save file
+	std::string                       sessionFile;                   // path for the session save file
+	std::atomic<bool>                 saveSessionOnQuit;             // save session info when xpdf is quit
+	std::atomic<bool>                 savePageNumbers;               // save page number when file is closed and restore page number when opened
+	std::atomic<bool>                 printCommands;                 // print the drawing commands
+	std::atomic<bool>                 printStatusInfo;               // print status info for each page
+	std::atomic<bool>                 errQuiet;                      // suppress error messages?
+	std::string                       debugLogFile;                  // path for debug log file
 
 	CharCodeToUnicodeCache* cidToUnicodeCache;
 	CharCodeToUnicodeCache* unicodeToUnicodeCache;
@@ -635,5 +607,3 @@ private:
 	DWORD tlsWin32ErrorInfo; // TLS index for error info
 #endif
 };
-
-#endif

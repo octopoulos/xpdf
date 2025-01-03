@@ -7,16 +7,14 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdlib.h>
 #include <string.h>
 #if HAVE_STD_SORT
 #	include <algorithm>
 #endif
-#include "gtypes.h"
 #include "gmem.h"
 #include "gmempp.h"
-#include "GString.h"
+#include "GString.h" // Round2
 #include "GHash.h"
 #include "FoFiType1C.h"
 #include "FoFiTrueType.h"
@@ -27,12 +25,10 @@
 //
 // character code = number used as an element of a text string
 //
-// character name = glyph name = name for a particular glyph within a
-//                  font
+// character name = glyph name = name for a particular glyph within a font
 //
 // glyph index = GID = position (within some internal table in the font)
-//               where the instructions to draw a particular glyph are
-//               stored
+//               where the instructions to draw a particular glyph are stored
 //
 // Type 1 fonts
 // ------------
@@ -53,8 +49,7 @@
 //
 // TrueType fonts contain:
 //
-// 'cmap' table: mapping from character code to glyph index; there may
-//               be multiple cmaps in a TrueType font
+// 'cmap' table: mapping from character code to glyph index; there may be multiple cmaps in a TrueType font
 //
 //               cmap[charCode] = gid
 //
@@ -71,8 +66,7 @@
 //
 //           Encoding[charCode] = charName
 //
-// CharStrings: dictionary of glyph indexes, keyed by character names,
-//              maps character name to glyph index
+// CharStrings: dictionary of glyph indexes, keyed by character names, maps character name to glyph index
 //
 //              CharStrings[charName] = gid
 //
@@ -85,11 +79,11 @@
 
 struct TrueTypeTable
 {
-	Guint tag;
-	Guint checksum;
-	int   offset;
-	int   origOffset;
-	int   len;
+	uint32_t tag;
+	uint32_t checksum;
+	int      offset;
+	int      origOffset;
+	int      len;
 };
 
 struct TrueTypeCmap
@@ -182,24 +176,24 @@ static int cmpTrueTypeTableTag(const void* p1, const void* p2)
 struct T42Table
 {
 	const char* tag;      // 4-byte tag
-	GBool       required; // required by the TrueType spec?
+	bool        required; // required by the TrueType spec?
 };
 
 // TrueType tables to be embedded in Type 42 fonts.
 // NB: the table names must be in alphabetical order here.
 #define nT42Tables 11
 static T42Table t42Tables[nT42Tables] = {
-	{"cvt ",  gTrue },
-	{ "fpgm", gTrue },
-	{ "glyf", gTrue },
-	{ "head", gTrue },
-	{ "hhea", gTrue },
-	{ "hmtx", gTrue },
-	{ "loca", gTrue },
-	{ "maxp", gTrue },
-	{ "prep", gTrue },
-	{ "vhea", gFalse},
-	{ "vmtx", gFalse}
+	{"cvt ",  true },
+	{ "fpgm", true },
+	{ "glyf", true },
+	{ "head", true },
+	{ "hhea", true },
+	{ "hmtx", true },
+	{ "loca", true },
+	{ "maxp", true },
+	{ "prep", true },
+	{ "vhea", false},
+	{ "vmtx", false}
 };
 #define t42HeadTable 3
 #define t42LocaTable 6
@@ -283,50 +277,47 @@ static const char* macGlyphNames[258] = {
 // FoFiTrueType
 //------------------------------------------------------------------------
 
-FoFiTrueType* FoFiTrueType::make(char* fileA, int lenA, int fontNum, GBool allowHeadlessCFF)
+FoFiTrueType* FoFiTrueType::make(const char* fileA, size_t lenA, int fontNum, bool allowHeadlessCFF)
 {
-	FoFiTrueType* ff;
-
-	ff = new FoFiTrueType(fileA, lenA, gFalse, fontNum, gFalse, allowHeadlessCFF);
+	FoFiTrueType* ff = new FoFiTrueType(fileA, TO_INT(lenA), false, fontNum, false, allowHeadlessCFF);
 	if (!ff->parsedOk)
 	{
 		delete ff;
-		return NULL;
+		return nullptr;
 	}
 	return ff;
 }
 
-FoFiTrueType* FoFiTrueType::load(char* fileName, int fontNum, GBool allowHeadlessCFF)
+FoFiTrueType* FoFiTrueType::load(const char* fileName, int fontNum, bool allowHeadlessCFF)
 {
 	FoFiTrueType* ff;
 	char*         fileA;
 	int           lenA, n;
-	GBool         isDfontA;
+	bool          isDfontA;
 
-	if (!(fileA = FoFiBase::readFile(fileName, &lenA)))
-		return NULL;
+	if (!(fileA = FoFiBase::readFile(fileName, &lenA))) return nullptr;
 	n        = (int)strlen(fileName);
 	isDfontA = n >= 6 && !strcmp(fileName + n - 6, ".dfont");
-	ff       = new FoFiTrueType(fileA, lenA, gTrue, fontNum, isDfontA, allowHeadlessCFF);
+	ff       = new FoFiTrueType(fileA, lenA, true, fontNum, isDfontA, allowHeadlessCFF);
 	if (!ff->parsedOk)
 	{
 		delete ff;
-		return NULL;
+		return nullptr;
 	}
 	return ff;
 }
 
-FoFiTrueType::FoFiTrueType(char* fileA, int lenA, GBool freeFileDataA, int fontNum, GBool isDfontA, GBool allowHeadlessCFF)
+FoFiTrueType::FoFiTrueType(const char* fileA, int lenA, bool freeFileDataA, int fontNum, bool isDfontA, bool allowHeadlessCFF)
     : FoFiBase(fileA, lenA, freeFileDataA)
 {
-	tables    = NULL;
+	tables    = nullptr;
 	nTables   = 0;
-	cmaps     = NULL;
+	cmaps     = nullptr;
 	nCmaps    = 0;
-	nameToGID = NULL;
+	nameToGID = nullptr;
 	isDfont   = isDfontA;
-	isTTC     = gFalse;
-	parsedOk  = gFalse;
+	isTTC     = false;
+	parsedOk  = false;
 
 	parse(fontNum, allowHeadlessCFF);
 }
@@ -356,9 +347,7 @@ int FoFiTrueType::getCmapEncoding(int i)
 
 int FoFiTrueType::findCmap(int platform, int encoding)
 {
-	int i;
-
-	for (i = 0; i < nCmaps; ++i)
+	for (int i = 0; i < nCmaps; ++i)
 		if (cmaps[i].platform == platform && cmaps[i].encoding == encoding)
 			return i;
 	return -1;
@@ -366,15 +355,14 @@ int FoFiTrueType::findCmap(int platform, int encoding)
 
 int FoFiTrueType::mapCodeToGID(int i, int c)
 {
-	int   gid;
-	int   segCnt, segEnd, segStart, segDelta, segOffset;
-	int   cmapFirst, cmapLen;
-	int   pos, a, b, m;
-	GBool ok;
+	int  gid;
+	int  segCnt, segEnd, segStart, segDelta, segOffset;
+	int  cmapFirst, cmapLen;
+	int  pos, a, b, m;
+	bool ok;
 
-	if (i < 0 || i >= nCmaps)
-		return 0;
-	ok  = gTrue;
+	if (i < 0 || i >= nCmaps) return 0;
+	ok  = true;
 	pos = cmaps[i].offset;
 	switch (cmaps[i].fmt)
 	{
@@ -472,25 +460,22 @@ int FoFiTrueType::mapCodeToGID(int i, int c)
 	return gid;
 }
 
-int FoFiTrueType::mapNameToGID(char* name)
+int FoFiTrueType::mapNameToGID(const char* name)
 {
 	if (!nameToGID)
 		return 0;
 	return nameToGID->lookupInt(name);
 }
 
-GBool FoFiTrueType::getCFFBlock(char** start, int* length)
+bool FoFiTrueType::getCFFBlock(char** start, int* length)
 {
-	int i;
-
-	if (!openTypeCFF)
-		return gFalse;
-	i = seekTable("CFF ");
+	if (!openTypeCFF) return false;
+	const int i = seekTable("CFF ");
 	if (!checkRegion(tables[i].offset, tables[i].len))
-		return gFalse;
+		return false;
 	*start  = (char*)file + tables[i].offset;
 	*length = tables[i].len;
-	return gTrue;
+	return true;
 }
 
 int* FoFiTrueType::getCIDToGIDMap(int* nCIDs)
@@ -501,10 +486,8 @@ int* FoFiTrueType::getCIDToGIDMap(int* nCIDs)
 	int*        map;
 
 	*nCIDs = 0;
-	if (!getCFFBlock(&start, &length))
-		return NULL;
-	if (!(ff = FoFiType1C::make(start, length)))
-		return NULL;
+	if (!getCFFBlock(&start, &length)) return nullptr;
+	if (!(ff = FoFiType1C::make(start, length))) return nullptr;
 	map = ff->getCIDToGIDMap(nCIDs);
 	delete ff;
 	return map;
@@ -512,12 +495,12 @@ int* FoFiTrueType::getCIDToGIDMap(int* nCIDs)
 
 int FoFiTrueType::getEmbeddingRights()
 {
-	int   i, fsType;
-	GBool ok;
+	int  i, fsType;
+	bool ok;
 
 	if ((i = seekTable("OS/2")) < 0)
 		return 4;
-	ok     = gTrue;
+	ok     = true;
 	fsType = getU16BE(tables[i].offset + 8, &ok);
 	if (!ok)
 		return 4;
@@ -546,12 +529,12 @@ void FoFiTrueType::getFontMatrix(double* mat)
 
 struct FoFiTrueTypeTrickyFont
 {
-	int   cvtLen;
-	Guint cvtChecksum;
-	int   fpgmLen;
-	Guint fpgmChecksum;
-	int   prepLen;
-	Guint prepChecksum;
+	int      cvtLen;
+	uint32_t cvtChecksum;
+	int      fpgmLen;
+	uint32_t fpgmChecksum;
+	int      prepLen;
+	uint32_t prepChecksum;
 };
 
 // This data was taken from the FreeType project.
@@ -635,12 +618,11 @@ static FoFiTrueTypeTrickyFont trickyFonts[] = {
 // This looks at the length and checksum values for the cvt, fpgm, and
 // prep tables.  The theory is that those tables will be the same,
 // even if the font is renamed and/or subsetted.
-GBool FoFiTrueType::checkForTrickyCJK()
+bool FoFiTrueType::checkForTrickyCJK()
 {
-	int   cvtIdx, fpgmIdx, prepIdx;
-	int   cvtLen, fpgmLen, prepLen;
-	Guint cvtChecksum, fpgmChecksum, prepChecksum;
-	int   i;
+	int      cvtIdx, fpgmIdx, prepIdx;
+	int      cvtLen, fpgmLen, prepLen;
+	uint32_t cvtChecksum, fpgmChecksum, prepChecksum;
 
 	if ((cvtIdx = seekTable("cvt ")) >= 0)
 	{
@@ -673,23 +655,20 @@ GBool FoFiTrueType::checkForTrickyCJK()
 		prepChecksum = 0;
 	}
 
-	for (i = 0; i < nTrickyFonts; ++i)
+	for (int i = 0; i < nTrickyFonts; ++i)
 		if (cvtLen == trickyFonts[i].cvtLen && cvtChecksum == trickyFonts[i].cvtChecksum && fpgmLen == trickyFonts[i].fpgmLen && fpgmChecksum == trickyFonts[i].fpgmChecksum && prepLen == trickyFonts[i].prepLen && prepChecksum == trickyFonts[i].prepChecksum)
-			return gTrue;
-	return gFalse;
+			return true;
+	return false;
 }
 
-void FoFiTrueType::convertToType42(char* psName, char** encoding, int* codeToGID, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::convertToType42(const char* psName, char** encoding, int* codeToGID, FoFiOutputFunc outputFunc, void* outputStream)
 {
 	if (openTypeCFF) return;
 
 	// write the header
-	GBool ok = gTrue;
-	auto buf = GString::format("%!PS-TrueTypeFont-{0:2g}\n", (double)getS32BE(0, &ok) / 65536.0);
-	(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-	delete buf;
-	//auto  buf = fmt::format("%!PS-TrueTypeFont-{:2g}\n", (double)getS32BE(0, &ok) / 65536.0);
-	//(*outputFunc)(outputStream, buf.c_str(), buf.size());
+	bool ok  = true;
+	auto buf = fmt::format("%!PS-TrueTypeFont-{}\n", Round2((double)getS32BE(0, &ok) / 65536.0));
+	(*outputFunc)(outputStream, buf.c_str(), buf.size());
 
 	// begin the font dictionary
 	(*outputFunc)(outputStream, "10 dict begin\n", 14);
@@ -698,57 +677,49 @@ void FoFiTrueType::convertToType42(char* psName, char** encoding, int* codeToGID
 	(*outputFunc)(outputStream, " def\n", 5);
 	(*outputFunc)(outputStream, "/FontType 42 def\n", 17);
 	(*outputFunc)(outputStream, "/FontMatrix [1 0 0 1 0 0] def\n", 30);
-	//buf = fmt::format("/FontBBox [{} {} {} {}] def\n", bbox[0], bbox[1], bbox[2], bbox[3]);
-	buf = GString::format("/FontBBox [{0:d} {1:d} {2:d} {3:d}] def\n", bbox[0], bbox[1], bbox[2], bbox[3]);
-	(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-	delete buf;
-	//(*outputFunc)(outputStream, buf.c_str(), buf.size());
+	buf = fmt::format("/FontBBox [{} {} {} {}] def\n", bbox[0], bbox[1], bbox[2], bbox[3]);
+	(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	(*outputFunc)(outputStream, "/PaintType 0 def\n", 17);
 
 	// write the guts of the dictionary
 	cvtEncoding(encoding, outputFunc, outputStream);
 	cvtCharStrings(encoding, codeToGID, outputFunc, outputStream);
 	int maxUsedGlyph;
-	cvtSfnts(outputFunc, outputStream, NULL, gFalse, &maxUsedGlyph);
+	cvtSfnts(outputFunc, outputStream, "", false, &maxUsedGlyph);
 
 	// end the dictionary and define the font
 	(*outputFunc)(outputStream, "FontName currentdict end definefont pop\n", 40);
 }
 
-void FoFiTrueType::convertToType1(char* psName, const char** newEncoding, GBool ascii, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::convertToType1(const char* psName, const char** newEncoding, bool ascii, FoFiOutputFunc outputFunc, void* outputStream)
 {
 	char*       start;
 	int         length;
 	FoFiType1C* ff;
 
-	if (!getCFFBlock(&start, &length))
-		return;
-	if (!(ff = FoFiType1C::make(start, length)))
-		return;
+	if (!getCFFBlock(&start, &length)) return;
+	if (!(ff = FoFiType1C::make(start, length))) return;
 	ff->convertToType1(psName, newEncoding, ascii, outputFunc, outputStream);
 	delete ff;
 }
 
-void FoFiTrueType::convertToCIDType2(char* psName, int* cidMap, int nCIDs, GBool needVerticalMetrics, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::convertToCIDType2(const char* psName, int* cidMap, int nCIDs, bool needVerticalMetrics, FoFiOutputFunc outputFunc, void* outputStream)
 {
-	GString* buf;
-	int      cid, maxUsedGlyph;
-	GBool    ok;
-	int      i, j, k;
+	int cid, maxUsedGlyph;
 
-	if (openTypeCFF)
-		return;
+	if (openTypeCFF) return;
 
 	// write the header
-	ok  = gTrue;
-	buf = GString::format("%!PS-TrueTypeFont-{0:2g}\n", (double)getS32BE(0, &ok) / 65536.0);
-	(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-	delete buf;
+	bool ok = true;
+	{
+		const auto buf = fmt::format("%!PS-TrueTypeFont-{}\n", Round2((double)getS32BE(0, &ok) / 65536.0));
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
+	}
 
 	// begin the font dictionary
 	(*outputFunc)(outputStream, "20 dict begin\n", 14);
 	(*outputFunc)(outputStream, "/CIDFontName /", 14);
-	(*outputFunc)(outputStream, psName, (int)strlen(psName));
+	(*outputFunc)(outputStream, psName, strlen(psName));
 	(*outputFunc)(outputStream, " def\n", 5);
 	(*outputFunc)(outputStream, "/CIDFontType 2 def\n", 19);
 	(*outputFunc)(outputStream, "/FontType 42 def\n", 17);
@@ -760,24 +731,22 @@ void FoFiTrueType::convertToCIDType2(char* psName, int* cidMap, int nCIDs, GBool
 	(*outputFunc)(outputStream, "/GDBytes 2 def\n", 15);
 	if (cidMap)
 	{
-		buf = GString::format("/CIDCount {0:d} def\n", nCIDs);
-		(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-		delete buf;
+		const auto buf = fmt::format("/CIDCount {} def\n", nCIDs);
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		if (nCIDs > 32767)
 		{
 			(*outputFunc)(outputStream, "/CIDMap [", 9);
-			for (i = 0; i < nCIDs; i += 32768 - 16)
+			for (int i = 0; i < nCIDs; i += 32768 - 16)
 			{
 				(*outputFunc)(outputStream, "<\n", 2);
-				for (j = 0; j < 32768 - 16 && i + j < nCIDs; j += 16)
+				for (int j = 0; j < 32768 - 16 && i + j < nCIDs; j += 16)
 				{
 					(*outputFunc)(outputStream, "  ", 2);
-					for (k = 0; k < 16 && i + j + k < nCIDs; ++k)
+					for (int k = 0; k < 16 && i + j + k < nCIDs; ++k)
 					{
-						cid = cidMap[i + j + k];
-						buf = GString::format("{0:02x}{1:02x}", (cid >> 8) & 0xff, cid & 0xff);
-						(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-						delete buf;
+						cid            = cidMap[i + j + k];
+						const auto buf = fmt::format("{:02x}{:02x}", (cid >> 8) & 0xff, cid & 0xff);
+						(*outputFunc)(outputStream, buf.c_str(), buf.size());
 					}
 					(*outputFunc)(outputStream, "\n", 1);
 				}
@@ -789,15 +758,14 @@ void FoFiTrueType::convertToCIDType2(char* psName, int* cidMap, int nCIDs, GBool
 		else
 		{
 			(*outputFunc)(outputStream, "/CIDMap <\n", 10);
-			for (i = 0; i < nCIDs; i += 16)
+			for (int i = 0; i < nCIDs; i += 16)
 			{
 				(*outputFunc)(outputStream, "  ", 2);
-				for (j = 0; j < 16 && i + j < nCIDs; ++j)
+				for (int j = 0; j < 16 && i + j < nCIDs; ++j)
 				{
-					cid = cidMap[i + j];
-					buf = GString::format("{0:02x}{1:02x}", (cid >> 8) & 0xff, cid & 0xff);
-					(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-					delete buf;
+					cid            = cidMap[i + j];
+					const auto buf = fmt::format("{:02x}{:02x}", (cid >> 8) & 0xff, cid & 0xff);
+					(*outputFunc)(outputStream, buf.c_str(), buf.size());
 				}
 				(*outputFunc)(outputStream, "\n", 1);
 			}
@@ -807,39 +775,30 @@ void FoFiTrueType::convertToCIDType2(char* psName, int* cidMap, int nCIDs, GBool
 	else
 	{
 		// direct mapping - just fill the string(s) with s[i]=i
-		buf = GString::format("/CIDCount {0:d} def\n", nGlyphs);
-		(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-		delete buf;
+		const auto buf = fmt::format("/CIDCount {} def\n", nGlyphs);
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		if (nGlyphs > 32767)
 		{
 			(*outputFunc)(outputStream, "/CIDMap [\n", 10);
-			for (i = 0; i < nGlyphs; i += 32767)
+			for (int i = 0; i < nGlyphs; i += 32767)
 			{
-				j   = nGlyphs - i < 32767 ? nGlyphs - i : 32767;
-				buf = GString::format("  {0:d} string 0 1 {1:d} {{\n", 2 * j, j - 1);
-				(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-				delete buf;
-				buf = GString::format("    2 copy dup 2 mul exch {0:d} add -8 bitshift put\n", i);
-				(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-				delete buf;
-				buf = GString::format(
-				    "    1 index exch dup 2 mul 1 add exch {0:d} add"
-				    " 255 and put\n",
-				    i);
-				(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-				delete buf;
+				int  j   = nGlyphs - i < 32767 ? nGlyphs - i : 32767;
+				auto buf = fmt::format("  {} string 0 1 {} {{\n", 2 * j, j - 1);
+				(*outputFunc)(outputStream, buf.c_str(), buf.size());
+				buf = fmt::format("    2 copy dup 2 mul exch {} add -8 bitshift put\n", i);
+				(*outputFunc)(outputStream, buf.c_str(), buf.size());
+				buf = fmt::format("    1 index exch dup 2 mul 1 add exch {} add 255 and put\n", i);
+				(*outputFunc)(outputStream, buf.c_str(), buf.size());
 				(*outputFunc)(outputStream, "  } for\n", 8);
 			}
 			(*outputFunc)(outputStream, "] def\n", 6);
 		}
 		else
 		{
-			buf = GString::format("/CIDMap {0:d} string\n", 2 * nGlyphs);
-			(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-			delete buf;
-			buf = GString::format("  0 1 {0:d} {{\n", nGlyphs - 1);
-			(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-			delete buf;
+			auto buf = fmt::format("/CIDMap {} string\n", 2 * nGlyphs);
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
+			buf = fmt::format("  0 1 {} {{\n", nGlyphs - 1);
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 			(*outputFunc)(outputStream, "    2 copy dup 2 mul exch -8 bitshift put\n", 42);
 			(*outputFunc)(outputStream, "    1 index exch dup 2 mul 1 add exch 255 and put\n", 50);
 			(*outputFunc)(outputStream, "  } for\n", 8);
@@ -847,9 +806,8 @@ void FoFiTrueType::convertToCIDType2(char* psName, int* cidMap, int nCIDs, GBool
 		}
 	}
 	(*outputFunc)(outputStream, "/FontMatrix [1 0 0 1 0 0] def\n", 30);
-	buf = GString::format("/FontBBox [{0:d} {1:d} {2:d} {3:d}] def\n", bbox[0], bbox[1], bbox[2], bbox[3]);
-	(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-	delete buf;
+	const auto buf = fmt::format("/FontBBox [{} {} {} {}] def\n", bbox[0], bbox[1], bbox[2], bbox[3]);
+	(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	(*outputFunc)(outputStream, "/PaintType 0 def\n", 17);
 	(*outputFunc)(outputStream, "/Encoding [] readonly def\n", 26);
 	(*outputFunc)(outputStream, "/CharStrings 1 dict dup begin\n", 30);
@@ -857,13 +815,13 @@ void FoFiTrueType::convertToCIDType2(char* psName, int* cidMap, int nCIDs, GBool
 	(*outputFunc)(outputStream, "  end readonly def\n", 19);
 
 	// write the guts of the dictionary
-	cvtSfnts(outputFunc, outputStream, NULL, needVerticalMetrics, &maxUsedGlyph);
+	cvtSfnts(outputFunc, outputStream, "", needVerticalMetrics, &maxUsedGlyph);
 
 	// end the dictionary and define the font
 	(*outputFunc)(outputStream, "CIDFontName currentdict end /CIDFont defineresource pop\n", 56);
 }
 
-void FoFiTrueType::convertToCIDType0(char* psName, int* cidMap, int nCIDs, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::convertToCIDType0(const char* psName, int* cidMap, int nCIDs, FoFiOutputFunc outputFunc, void* outputStream)
 {
 	char*       start;
 	int         length;
@@ -877,19 +835,17 @@ void FoFiTrueType::convertToCIDType0(char* psName, int* cidMap, int nCIDs, FoFiO
 	delete ff;
 }
 
-void FoFiTrueType::convertToType0(char* psName, int* cidMap, int nCIDs, GBool needVerticalMetrics, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::convertToType0(const char* psName, int* cidMap, int nCIDs, bool needVerticalMetrics, FoFiOutputFunc outputFunc, void* outputStream)
 {
-	GString* buf;
-	GString* sfntsName;
-	int      maxUsedGlyph, n, i, j;
+	int maxUsedGlyph, n;
 
 	if (openTypeCFF)
 		return;
 
 	// write the Type 42 sfnts array
-	sfntsName = (new GString(psName))->append("_sfnts");
+	std::string sfntsName = psName;
+	sfntsName += "_sfnts";
 	cvtSfnts(outputFunc, outputStream, sfntsName, needVerticalMetrics, &maxUsedGlyph);
-	delete sfntsName;
 
 	// write the descendant Type 42 fonts
 	// (The following is a kludge: nGlyphs is the glyph count from the
@@ -911,38 +867,34 @@ void FoFiTrueType::convertToType0(char* psName, int* cidMap, int nCIDs, GBool ne
 			n = maxUsedGlyph + 1;
 	else
 		n = nGlyphs;
-	for (i = 0; i < n; i += 256)
+	for (int i = 0; i < n; i += 256)
 	{
 		(*outputFunc)(outputStream, "10 dict begin\n", 14);
 		(*outputFunc)(outputStream, "/FontName /", 11);
 		(*outputFunc)(outputStream, psName, (int)strlen(psName));
-		buf = GString::format("_{0:02x} def\n", i >> 8);
-		(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-		delete buf;
+		auto buf = fmt::format("_{:02x} def\n", i >> 8);
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		(*outputFunc)(outputStream, "/FontType 42 def\n", 17);
 		(*outputFunc)(outputStream, "/FontMatrix [1 0 0 1 0 0] def\n", 30);
-		buf = GString::format("/FontBBox [{0:d} {1:d} {2:d} {3:d}] def\n", bbox[0], bbox[1], bbox[2], bbox[3]);
-		(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-		delete buf;
+		buf = fmt::format("/FontBBox [{} {} {} {}] def\n", bbox[0], bbox[1], bbox[2], bbox[3]);
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		(*outputFunc)(outputStream, "/PaintType 0 def\n", 17);
 		(*outputFunc)(outputStream, "/sfnts ", 7);
 		(*outputFunc)(outputStream, psName, (int)strlen(psName));
 		(*outputFunc)(outputStream, "_sfnts def\n", 11);
 		(*outputFunc)(outputStream, "/Encoding 256 array\n", 20);
-		for (j = 0; j < 256 && i + j < n; ++j)
+		for (int j = 0; j < 256 && i + j < n; ++j)
 		{
-			buf = GString::format("dup {0:d} /c{1:02x} put\n", j, j);
-			(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-			delete buf;
+			const auto buf = fmt::format("dup {} /c{:02x} put\n", j, j);
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		(*outputFunc)(outputStream, "readonly def\n", 13);
 		(*outputFunc)(outputStream, "/CharStrings 257 dict dup begin\n", 32);
 		(*outputFunc)(outputStream, "/.notdef 0 def\n", 15);
-		for (j = 0; j < 256 && i + j < n; ++j)
+		for (int j = 0; j < 256 && i + j < n; ++j)
 		{
-			buf = GString::format("/c{0:02x} {1:d} def\n", j, cidMap ? cidMap[i + j] : i + j);
-			(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-			delete buf;
+			const auto buf = fmt::format("/c{:02x} {} def\n", j, cidMap ? cidMap[i + j] : i + j);
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		(*outputFunc)(outputStream, "end readonly def\n", 17);
 		(*outputFunc)(outputStream, "FontName currentdict end definefont pop\n", 40);
@@ -957,27 +909,25 @@ void FoFiTrueType::convertToType0(char* psName, int* cidMap, int nCIDs, GBool ne
 	(*outputFunc)(outputStream, "/FontMatrix [1 0 0 1 0 0] def\n", 30);
 	(*outputFunc)(outputStream, "/FMapType 2 def\n", 16);
 	(*outputFunc)(outputStream, "/Encoding [\n", 12);
-	for (i = 0; i < n; i += 256)
+	for (int i = 0; i < n; i += 256)
 	{
-		buf = GString::format("{0:d}\n", i >> 8);
-		(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-		delete buf;
+		const auto buf = fmt::format("{}\n", i >> 8);
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	}
 	(*outputFunc)(outputStream, "] def\n", 6);
 	(*outputFunc)(outputStream, "/FDepVector [\n", 14);
-	for (i = 0; i < n; i += 256)
+	for (int i = 0; i < n; i += 256)
 	{
 		(*outputFunc)(outputStream, "/", 1);
 		(*outputFunc)(outputStream, psName, (int)strlen(psName));
-		buf = GString::format("_{0:02x} findfont\n", i >> 8);
-		(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-		delete buf;
+		const auto buf = fmt::format("_{:02x} findfont\n", i >> 8);
+		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	}
 	(*outputFunc)(outputStream, "] def\n", 6);
 	(*outputFunc)(outputStream, "FontName currentdict end definefont pop\n", 40);
 }
 
-void FoFiTrueType::convertToType0(char* psName, int* cidMap, int nCIDs, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::convertToType0(const char* psName, int* cidMap, int nCIDs, FoFiOutputFunc outputFunc, void* outputStream)
 {
 	char*       start;
 	int         length;
@@ -991,7 +941,7 @@ void FoFiTrueType::convertToType0(char* psName, int* cidMap, int nCIDs, FoFiOutp
 	delete ff;
 }
 
-GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char* name, int* codeToGID, Guchar* replacementCmapTable, int replacementCmapTableLen)
+bool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char* name, int* codeToGID, uint8_t* replacementCmapTable, int replacementCmapTableLen)
 {
 	// this substitute cmap table maps char code ffff to glyph 0,
 	// with tables for MacRoman and MS Unicode
@@ -1069,8 +1019,8 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 		0, 0, 0, 1, // ulCodePageRange1
 		0, 0, 0, 0  // ulCodePageRange2
 	};
-	GBool          missingCmap, missingName, missingPost, missingOS2;
-	GBool          unsortedLoca, emptyCmap, badCmapLen, abbrevHMTX;
+	bool           missingCmap, missingName, missingPost, missingOS2;
+	bool           unsortedLoca, emptyCmap, badCmapLen, abbrevHMTX;
 	int            nZeroLengthTables, nBogusTables;
 	int            nHMetrics, advWidth, lsb;
 	TrueTypeLoca*  locaTable;
@@ -1078,15 +1028,15 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 	char *         newNameTab, *newCmapTab, *newHHEATab, *newHMTXTab;
 	int            nNewTables, cmapIdx, cmapLen, glyfLen, newNameLen, newCmapLen, next;
 	int            newHHEALen, newHMTXLen;
-	Guint          locaChecksum, glyfChecksum, fileChecksum;
+	uint32_t       locaChecksum, glyfChecksum, fileChecksum;
 	char*          tableDir;
 	char           locaBuf[4], checksumBuf[4];
-	GBool          ok;
-	Guint          t;
+	bool           ok;
+	uint32_t       t;
 	int            pos, i, j, k, n;
 
 	if (openTypeCFF)
-		return gFalse;
+		return false;
 
 	// check for missing tables
 	// (Note: if the OS/2 table is missing, the Microsoft PCL5 driver
@@ -1101,12 +1051,12 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 
 	// read the loca table, check to see if it's sorted
 	locaTable    = (TrueTypeLoca*)gmallocn(nGlyphs + 1, sizeof(TrueTypeLoca));
-	unsortedLoca = gFalse;
+	unsortedLoca = false;
 	i            = seekTable("loca");
 	pos          = tables[i].offset;
 	glyfLen      = tables[seekTable("glyf")].len;
-	ok           = gTrue;
-	for (i = 0; i <= nGlyphs; ++i)
+	ok           = true;
+	for (int i = 0; i <= nGlyphs; ++i)
 	{
 		if (locaFmt)
 			locaTable[i].origOffset = (int)getU32BE(pos + i * 4, &ok);
@@ -1115,10 +1065,10 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 		if (locaTable[i].origOffset < 0 || locaTable[i].origOffset > glyfLen)
 		{
 			locaTable[i].origOffset = glyfLen;
-			unsortedLoca            = gTrue;
+			unsortedLoca            = true;
 		}
 		if (i > 0 && locaTable[i].origOffset < locaTable[i - 1].origOffset)
-			unsortedLoca = gTrue;
+			unsortedLoca = true;
 		// glyph descriptions must be at least 12 bytes long (nContours,
 		// xMin, yMin, xMax, yMax, instructionLength - two bytes each);
 		// invalid glyph descriptions (even if they're never used) make
@@ -1129,26 +1079,26 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 		if (i > 0 && locaTable[i].origOffset - locaTable[i - 1].origOffset > 0 && locaTable[i].origOffset - locaTable[i - 1].origOffset < 12)
 		{
 			locaTable[i - 1].origOffset = locaTable[i].origOffset;
-			unsortedLoca                = gTrue;
+			unsortedLoca                = true;
 		}
 		locaTable[i].idx = i;
 	}
 
 	// check for zero-length tables and bogus tags
 	nZeroLengthTables = nBogusTables = 0;
-	for (i = 0; i < nTables; ++i)
+	for (int i = 0; i < nTables; ++i)
 	{
 		if (tables[i].len == 0)
 		{
 			++nZeroLengthTables;
 			if (tables[i].tag == cmapTag)
-				missingCmap = gTrue;
+				missingCmap = true;
 			else if (tables[i].tag == nameTag)
-				missingName = gTrue;
+				missingName = true;
 			else if (tables[i].tag == postTag)
-				missingPost = gTrue;
+				missingPost = true;
 			else if (tables[i].tag == os2Tag)
-				missingOS2 = gTrue;
+				missingOS2 = true;
 		}
 		else if (!(tables[i].tag & 0xe0000000) || !(tables[i].tag & 0x00e00000) || !(tables[i].tag & 0x0000e000) || !(tables[i].tag & 0x000000e0))
 		{
@@ -1162,23 +1112,24 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 	}
 
 	// check for an empty cmap table or an incorrect cmap table length
-	emptyCmap = badCmapLen = gFalse;
-	cmapLen                = 0; // make gcc happy
+	emptyCmap  = false;
+	badCmapLen = false;
+	cmapLen    = 0; // make gcc happy
 	if (!missingCmap)
 	{
 		if (nCmaps == 0)
 		{
-			emptyCmap = gTrue;
+			emptyCmap = true;
 		}
 		else
 		{
 			cmapLen = cmaps[0].offset + cmaps[0].len;
-			for (i = 1; i < nCmaps; ++i)
+			for (int i = 1; i < nCmaps; ++i)
 				if (cmaps[i].offset + cmaps[i].len > cmapLen)
 					cmapLen = cmaps[i].offset + cmaps[i].len;
 			cmapLen -= tables[cmapIdx].offset;
 			if (cmapLen > tables[cmapIdx].len)
-				badCmapLen = gTrue;
+				badCmapLen = true;
 		}
 	}
 
@@ -1194,7 +1145,7 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 	{
 		(*outputFunc)(outputStream, (char*)file, len);
 		gfree(locaTable);
-		return gFalse;
+		return false;
 	}
 
 	// sort the 'loca' table: some (non-compliant) fonts have
@@ -1314,7 +1265,7 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 	else
 	{
 		newNameLen = 0;
-		newNameTab = NULL;
+		newNameTab = nullptr;
 	}
 
 	// construct the new cmap table
@@ -1386,7 +1337,7 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 	else
 	{
 		newCmapLen = 0;
-		newCmapTab = NULL;
+		newCmapTab = nullptr;
 	}
 
 	// generate the new hmtx table and the updated hhea table
@@ -1427,7 +1378,7 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 	}
 	else
 	{
-		newHHEATab = newHMTXTab = NULL;
+		newHHEATab = newHMTXTab = nullptr;
 		newHHEALen = newHMTXLen = 0; // make gcc happy
 	}
 
@@ -1449,8 +1400,7 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 			newTables[j].origOffset = tables[i].offset;
 			if (checkRegion(tables[i].offset, tables[i].len))
 			{
-				newTables[j].checksum =
-				    computeTableChecksum(file + tables[i].offset, tables[i].len);
+				newTables[j].checksum = computeTableChecksum(file + tables[i].offset, tables[i].len);
 				if (tables[i].tag == headTag)
 				{
 					// don't include the file checksum
@@ -1470,11 +1420,11 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 			else if (newTables[j].tag == cmapTag && codeToGID)
 			{
 				newTables[j].len      = newCmapLen;
-				newTables[j].checksum = computeTableChecksum((Guchar*)newCmapTab, newCmapLen);
+				newTables[j].checksum = computeTableChecksum((uint8_t*)newCmapTab, newCmapLen);
 			}
 			else if (newTables[j].tag == cmapTag && emptyCmap)
 			{
-				newTables[j].checksum = computeTableChecksum((Guchar*)cmapTab, sizeof(cmapTab));
+				newTables[j].checksum = computeTableChecksum((uint8_t*)cmapTab, sizeof(cmapTab));
 				newTables[j].len      = sizeof(cmapTab);
 			}
 			else if (newTables[j].tag == cmapTag && badCmapLen)
@@ -1494,17 +1444,17 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 			else if (newTables[j].tag == nameTag && name)
 			{
 				newTables[j].len      = newNameLen;
-				newTables[j].checksum = computeTableChecksum((Guchar*)newNameTab, newNameLen);
+				newTables[j].checksum = computeTableChecksum((uint8_t*)newNameTab, newNameLen);
 			}
 			else if (newTables[j].tag == hheaTag && abbrevHMTX)
 			{
 				newTables[j].len      = newHHEALen;
-				newTables[j].checksum = computeTableChecksum((Guchar*)newHHEATab, newHHEALen);
+				newTables[j].checksum = computeTableChecksum((uint8_t*)newHHEATab, newHHEALen);
 			}
 			else if (newTables[j].tag == hmtxTag && abbrevHMTX)
 			{
 				newTables[j].len      = newHMTXLen;
-				newTables[j].checksum = computeTableChecksum((Guchar*)newHMTXTab, newHMTXLen);
+				newTables[j].checksum = computeTableChecksum((uint8_t*)newHMTXTab, newHMTXLen);
 			}
 			++j;
 		}
@@ -1519,12 +1469,12 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 		}
 		else if (codeToGID)
 		{
-			newTables[j].checksum = computeTableChecksum((Guchar*)newCmapTab, newCmapLen);
+			newTables[j].checksum = computeTableChecksum((uint8_t*)newCmapTab, newCmapLen);
 			newTables[j].len      = newCmapLen;
 		}
 		else
 		{
-			newTables[j].checksum = computeTableChecksum((Guchar*)cmapTab, sizeof(cmapTab));
+			newTables[j].checksum = computeTableChecksum((uint8_t*)cmapTab, sizeof(cmapTab));
 			newTables[j].len      = sizeof(cmapTab);
 		}
 		++j;
@@ -1534,12 +1484,12 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 		newTables[j].tag = nameTag;
 		if (name)
 		{
-			newTables[j].checksum = computeTableChecksum((Guchar*)newNameTab, newNameLen);
+			newTables[j].checksum = computeTableChecksum((uint8_t*)newNameTab, newNameLen);
 			newTables[j].len      = newNameLen;
 		}
 		else
 		{
-			newTables[j].checksum = computeTableChecksum((Guchar*)nameTab, sizeof(nameTab));
+			newTables[j].checksum = computeTableChecksum((uint8_t*)nameTab, sizeof(nameTab));
 			newTables[j].len      = sizeof(nameTab);
 		}
 		++j;
@@ -1547,14 +1497,14 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 	if (missingPost)
 	{
 		newTables[j].tag      = postTag;
-		newTables[j].checksum = computeTableChecksum((Guchar*)postTab, sizeof(postTab));
+		newTables[j].checksum = computeTableChecksum((uint8_t*)postTab, sizeof(postTab));
 		newTables[j].len      = sizeof(postTab);
 		++j;
 	}
 	if (missingOS2)
 	{
 		newTables[j].tag      = os2Tag;
-		newTables[j].checksum = computeTableChecksum((Guchar*)os2Tab, sizeof(os2Tab));
+		newTables[j].checksum = computeTableChecksum((uint8_t*)os2Tab, sizeof(os2Tab));
 		newTables[j].len      = sizeof(os2Tab);
 		++j;
 	}
@@ -1580,7 +1530,7 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 	tableDir[3] = 0x00;
 	tableDir[4] = (char)((nNewTables >> 8) & 0xff); // numTables
 	tableDir[5] = (char)(nNewTables & 0xff);
-	for (i = -1, t = (Guint)nNewTables; t; ++i, t >>= 1)
+	for (i = -1, t = (uint32_t)nNewTables; t; ++i, t >>= 1)
 		;
 	t            = 1 << (4 + i);
 	tableDir[6]  = (char)((t >> 8) & 0xff); // searchRange
@@ -1614,7 +1564,7 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 	(*outputFunc)(outputStream, tableDir, 12 + nNewTables * 16);
 
 	// compute the file checksum
-	fileChecksum = computeTableChecksum((Guchar*)tableDir, 12 + nNewTables * 16);
+	fileChecksum = computeTableChecksum((uint8_t*)tableDir, 12 + nNewTables * 16);
 	for (i = 0; i < nNewTables; ++i)
 		fileChecksum += newTables[i].checksum;
 	fileChecksum = 0xb1b0afba - fileChecksum;
@@ -1734,36 +1684,32 @@ GBool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char
 	gfree(tableDir);
 	gfree(newTables);
 	gfree(locaTable);
-	return gTrue;
+	return true;
 }
 
 void FoFiTrueType::cvtEncoding(char** encoding, FoFiOutputFunc outputFunc, void* outputStream)
 {
 	const char* name;
-	GString*    buf;
-	int         i;
 
 	(*outputFunc)(outputStream, "/Encoding 256 array\n", 20);
 	if (encoding)
 	{
-		for (i = 0; i < 256; ++i)
+		for (int i = 0; i < 256; ++i)
 		{
 			if (!(name = encoding[i]))
 				name = ".notdef";
-			buf = GString::format("dup {0:d} /", i);
-			(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-			delete buf;
+			const auto buf = fmt::format("dup {} /", i);
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 			(*outputFunc)(outputStream, name, (int)strlen(name));
 			(*outputFunc)(outputStream, " put\n", 5);
 		}
 	}
 	else
 	{
-		for (i = 0; i < 256; ++i)
+		for (int i = 0; i < 256; ++i)
 		{
-			buf = GString::format("dup {0:d} /c{1:02x} put\n", i, i);
-			(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-			delete buf;
+			const auto buf = fmt::format("dup {} /c{:02x} put\n", i, i);
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 	}
 	(*outputFunc)(outputStream, "readonly def\n", 13);
@@ -1771,10 +1717,9 @@ void FoFiTrueType::cvtEncoding(char** encoding, FoFiOutputFunc outputFunc, void*
 
 void FoFiTrueType::cvtCharStrings(char** encoding, int* codeToGID, FoFiOutputFunc outputFunc, void* outputStream)
 {
-	char*    name;
-	GString* buf;
-	char     buf2[16];
-	int      i, k;
+	char* name;
+	char  buf2[16];
+	int   i, k;
 
 	// always define '.notdef'
 	(*outputFunc)(outputStream, "/CharStrings 256 dict dup begin\n", 32);
@@ -1809,9 +1754,8 @@ void FoFiTrueType::cvtCharStrings(char** encoding, int* codeToGID, FoFiOutputFun
 			{
 				(*outputFunc)(outputStream, "/", 1);
 				(*outputFunc)(outputStream, name, (int)strlen(name));
-				buf = GString::format(" {0:d} def\n", k);
-				(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-				delete buf;
+				const auto buf = fmt::format(" {} def\n", k);
+				(*outputFunc)(outputStream, buf.c_str(), buf.size());
 			}
 		}
 	}
@@ -1819,18 +1763,18 @@ void FoFiTrueType::cvtCharStrings(char** encoding, int* codeToGID, FoFiOutputFun
 	(*outputFunc)(outputStream, "end readonly def\n", 17);
 }
 
-void FoFiTrueType::cvtSfnts(FoFiOutputFunc outputFunc, void* outputStream, GString* name, GBool needVerticalMetrics, int* maxUsedGlyph)
+void FoFiTrueType::cvtSfnts(FoFiOutputFunc outputFunc, void* outputStream, std::string_view name, bool needVerticalMetrics, int* maxUsedGlyph)
 {
-	Guchar        headData[54];
+	uint8_t       headData[54];
 	TrueTypeLoca* locaTable;
-	Guchar*       locaData;
+	uint8_t*      locaData;
 	TrueTypeTable newTables[nT42Tables];
-	Guchar        tableDir[12 + nT42Tables * 16];
-	GBool         ok;
-	Guint         checksum;
+	uint8_t       tableDir[12 + nT42Tables * 16];
+	bool          ok;
+	uint32_t      checksum;
 	int           nNewTables;
 	int           glyfTableLen, length, pos, glyfPos, i, j, k;
-	Guchar        vheaTab[36] = {
+	uint8_t       vheaTab[36] = {
         0, 1, 0, 0, // table version number
         0, 0,       // ascent
         0, 0,       // descent
@@ -1849,9 +1793,9 @@ void FoFiTrueType::cvtSfnts(FoFiOutputFunc outputFunc, void* outputStream, GStri
         0, 0,       // metric data format
         0, 1        // number of advance heights in vmtx table
 	};
-	Guchar* vmtxTab;
-	GBool   needVhea, needVmtx;
-	int     advance;
+	uint8_t* vmtxTab;
+	bool     needVhea, needVmtx;
+	int      advance;
 
 	// construct the 'head' table, zero out the font checksum
 	i   = seekTable("head");
@@ -1859,7 +1803,7 @@ void FoFiTrueType::cvtSfnts(FoFiOutputFunc outputFunc, void* outputStream, GStri
 	if (!checkRegion(pos, 54))
 		return;
 	memcpy(headData, file + pos, 54);
-	headData[8] = headData[9] = headData[10] = headData[11] = (Guchar)0;
+	headData[8] = headData[9] = headData[10] = headData[11] = (uint8_t)0;
 
 	// check for a bogus loca format field in the 'head' table
 	// (I've encountered fonts with loca format set to 0x0100 instead of 0x0001)
@@ -1889,7 +1833,7 @@ void FoFiTrueType::cvtSfnts(FoFiOutputFunc outputFunc, void* outputStream, GStri
 	pos          = tables[i].offset;
 	i            = seekTable("glyf");
 	glyfTableLen = tables[i].len;
-	ok           = gTrue;
+	ok           = true;
 	for (i = 0; i <= nGlyphs; ++i)
 	{
 		locaTable[i].idx = i;
@@ -1928,21 +1872,21 @@ void FoFiTrueType::cvtSfnts(FoFiOutputFunc outputFunc, void* outputStream, GStri
 	}
 
 	// construct the new 'loca' table
-	locaData = (Guchar*)gmallocn(nGlyphs + 1, (locaFmt ? 4 : 2));
+	locaData = (uint8_t*)gmallocn(nGlyphs + 1, (locaFmt ? 4 : 2));
 	for (i = 0; i <= nGlyphs; ++i)
 	{
 		pos = locaTable[i].newOffset;
 		if (locaFmt)
 		{
-			locaData[4 * i]     = (Guchar)(pos >> 24);
-			locaData[4 * i + 1] = (Guchar)(pos >> 16);
-			locaData[4 * i + 2] = (Guchar)(pos >> 8);
-			locaData[4 * i + 3] = (Guchar)pos;
+			locaData[4 * i]     = (uint8_t)(pos >> 24);
+			locaData[4 * i + 1] = (uint8_t)(pos >> 16);
+			locaData[4 * i + 2] = (uint8_t)(pos >> 8);
+			locaData[4 * i + 3] = (uint8_t)pos;
 		}
 		else
 		{
-			locaData[2 * i]     = (Guchar)(pos >> 9);
-			locaData[2 * i + 1] = (Guchar)(pos >> 1);
+			locaData[2 * i]     = (uint8_t)(pos >> 9);
+			locaData[2 * i + 1] = (uint8_t)(pos >> 1);
 		}
 	}
 
@@ -1951,8 +1895,8 @@ void FoFiTrueType::cvtSfnts(FoFiOutputFunc outputFunc, void* outputStream, GStri
 	for (i = 0; i < nT42Tables; ++i)
 		if (t42Tables[i].required || seekTable(t42Tables[i].tag) >= 0)
 			++nNewTables;
-	vmtxTab = NULL; // make gcc happy
-	advance = 0;    // make gcc happy
+	vmtxTab = nullptr; // make gcc happy
+	advance = 0;       // make gcc happy
 	if (needVerticalMetrics)
 	{
 		needVhea = seekTable("vhea") < 0;
@@ -2012,17 +1956,17 @@ void FoFiTrueType::cvtSfnts(FoFiOutputFunc outputFunc, void* outputStream, GStri
 		}
 		else if (needVerticalMetrics && i == t42VheaTable)
 		{
-			vheaTab[10] = (Guchar)(advance / 256); // max advance height
-			vheaTab[11] = (Guchar)(advance % 256);
+			vheaTab[10] = (uint8_t)(advance / 256); // max advance height
+			vheaTab[11] = (uint8_t)(advance % 256);
 			length      = sizeof(vheaTab);
 			checksum    = computeTableChecksum(vheaTab, length);
 		}
 		else if (needVerticalMetrics && i == t42VmtxTable)
 		{
 			length     = 4 + (nGlyphs - 1) * 2;
-			vmtxTab    = (Guchar*)gmalloc(length);
-			vmtxTab[0] = (Guchar)(advance / 256);
-			vmtxTab[1] = (Guchar)(advance % 256);
+			vmtxTab    = (uint8_t*)gmalloc(length);
+			vmtxTab[0] = (uint8_t)(advance / 256);
+			vmtxTab[1] = (uint8_t)(advance % 256);
 			for (j = 2; j < length; j += 2)
 			{
 				vmtxTab[j]     = 0;
@@ -2056,32 +2000,32 @@ void FoFiTrueType::cvtSfnts(FoFiOutputFunc outputFunc, void* outputStream, GStri
 	tableDir[2]  = 0x00;
 	tableDir[3]  = 0x00;
 	tableDir[4]  = 0; // numTables
-	tableDir[5]  = (Guchar)nNewTables;
+	tableDir[5]  = (uint8_t)nNewTables;
 	tableDir[6]  = 0; // searchRange
-	tableDir[7]  = (Guchar)128;
+	tableDir[7]  = (uint8_t)128;
 	tableDir[8]  = 0; // entrySelector
 	tableDir[9]  = 3;
 	tableDir[10] = 0; // rangeShift
-	tableDir[11] = (Guchar)(16 * nNewTables - 128);
+	tableDir[11] = (uint8_t)(16 * nNewTables - 128);
 	pos          = 12;
 	for (i = 0; i < nNewTables; ++i)
 	{
-		tableDir[pos]      = (Guchar)(newTables[i].tag >> 24);
-		tableDir[pos + 1]  = (Guchar)(newTables[i].tag >> 16);
-		tableDir[pos + 2]  = (Guchar)(newTables[i].tag >> 8);
-		tableDir[pos + 3]  = (Guchar)newTables[i].tag;
-		tableDir[pos + 4]  = (Guchar)(newTables[i].checksum >> 24);
-		tableDir[pos + 5]  = (Guchar)(newTables[i].checksum >> 16);
-		tableDir[pos + 6]  = (Guchar)(newTables[i].checksum >> 8);
-		tableDir[pos + 7]  = (Guchar)newTables[i].checksum;
-		tableDir[pos + 8]  = (Guchar)(newTables[i].offset >> 24);
-		tableDir[pos + 9]  = (Guchar)(newTables[i].offset >> 16);
-		tableDir[pos + 10] = (Guchar)(newTables[i].offset >> 8);
-		tableDir[pos + 11] = (Guchar)newTables[i].offset;
-		tableDir[pos + 12] = (Guchar)(newTables[i].len >> 24);
-		tableDir[pos + 13] = (Guchar)(newTables[i].len >> 16);
-		tableDir[pos + 14] = (Guchar)(newTables[i].len >> 8);
-		tableDir[pos + 15] = (Guchar)newTables[i].len;
+		tableDir[pos]      = (uint8_t)(newTables[i].tag >> 24);
+		tableDir[pos + 1]  = (uint8_t)(newTables[i].tag >> 16);
+		tableDir[pos + 2]  = (uint8_t)(newTables[i].tag >> 8);
+		tableDir[pos + 3]  = (uint8_t)newTables[i].tag;
+		tableDir[pos + 4]  = (uint8_t)(newTables[i].checksum >> 24);
+		tableDir[pos + 5]  = (uint8_t)(newTables[i].checksum >> 16);
+		tableDir[pos + 6]  = (uint8_t)(newTables[i].checksum >> 8);
+		tableDir[pos + 7]  = (uint8_t)newTables[i].checksum;
+		tableDir[pos + 8]  = (uint8_t)(newTables[i].offset >> 24);
+		tableDir[pos + 9]  = (uint8_t)(newTables[i].offset >> 16);
+		tableDir[pos + 10] = (uint8_t)(newTables[i].offset >> 8);
+		tableDir[pos + 11] = (uint8_t)newTables[i].offset;
+		tableDir[pos + 12] = (uint8_t)(newTables[i].len >> 24);
+		tableDir[pos + 13] = (uint8_t)(newTables[i].len >> 16);
+		tableDir[pos + 14] = (uint8_t)(newTables[i].len >> 8);
+		tableDir[pos + 15] = (uint8_t)newTables[i].len;
 		pos += 16;
 	}
 
@@ -2090,16 +2034,16 @@ void FoFiTrueType::cvtSfnts(FoFiOutputFunc outputFunc, void* outputStream, GStri
 	for (i = 0; i < nNewTables; ++i)
 		checksum += newTables[i].checksum;
 	checksum     = 0xb1b0afba - checksum; // because the TrueType spec says so
-	headData[8]  = (Guchar)(checksum >> 24);
-	headData[9]  = (Guchar)(checksum >> 16);
-	headData[10] = (Guchar)(checksum >> 8);
-	headData[11] = (Guchar)checksum;
+	headData[8]  = (uint8_t)(checksum >> 24);
+	headData[9]  = (uint8_t)(checksum >> 16);
+	headData[10] = (uint8_t)(checksum >> 8);
+	headData[11] = (uint8_t)checksum;
 
 	// start the sfnts array
-	if (name)
+	if (name.size())
 	{
 		(*outputFunc)(outputStream, "/", 1);
-		(*outputFunc)(outputStream, name->getCString(), name->getLength());
+		(*outputFunc)(outputStream, name.data(), name.size());
 		(*outputFunc)(outputStream, " [\n", 3);
 	}
 	else
@@ -2155,19 +2099,15 @@ void FoFiTrueType::cvtSfnts(FoFiOutputFunc outputFunc, void* outputStream, GStri
 		gfree(vmtxTab);
 }
 
-void FoFiTrueType::dumpString(Guchar* s, int length, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::dumpString(uint8_t* s, int length, FoFiOutputFunc outputFunc, void* outputStream)
 {
-	GString* buf;
-	int      pad, i, j;
-
 	(*outputFunc)(outputStream, "<", 1);
-	for (i = 0; i < length; i += 32)
+	for (int i = 0; i < length; i += 32)
 	{
-		for (j = 0; j < 32 && i + j < length; ++j)
+		for (int j = 0; j < 32 && i + j < length; ++j)
 		{
-			buf = GString::format("{0:02x}", s[i + j] & 0xff);
-			(*outputFunc)(outputStream, buf->getCString(), buf->getLength());
-			delete buf;
+			const auto buf = fmt::format("{:02x}", s[i + j] & 0xff);
+			(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		}
 		if (i % (65536 - 32) == 65536 - 64)
 			(*outputFunc)(outputStream, ">\n<", 3);
@@ -2176,29 +2116,26 @@ void FoFiTrueType::dumpString(Guchar* s, int length, FoFiOutputFunc outputFunc, 
 	}
 	if (length & 3)
 	{
-		pad = 4 - (length & 3);
-		for (i = 0; i < pad; ++i)
+		const int pad = 4 - (length & 3);
+		for (int i = 0; i < pad; ++i)
 			(*outputFunc)(outputStream, "00", 2);
 	}
 	// add an extra zero byte because the Adobe Type 42 spec says so
 	(*outputFunc)(outputStream, "00>\n", 4);
 }
 
-Guint FoFiTrueType::computeTableChecksum(Guchar* data, int length)
+uint32_t FoFiTrueType::computeTableChecksum(uint8_t* data, int length)
 {
-	Guint checksum, word;
-	int   i;
-
-	checksum = 0;
-	for (i = 0; i + 3 < length; i += 4)
+	uint32_t checksum = 0;
+	for (int i = 0; i + 3 < length; i += 4)
 	{
-		word = ((data[i] & 0xff) << 24) + ((data[i + 1] & 0xff) << 16) + ((data[i + 2] & 0xff) << 8) + (data[i + 3] & 0xff);
+		const uint32_t word = ((data[i] & 0xff) << 24) + ((data[i + 1] & 0xff) << 16) + ((data[i + 2] & 0xff) << 8) + (data[i + 3] & 0xff);
 		checksum += word;
 	}
 	if (length & 3)
 	{
-		word = 0;
-		i    = length & ~3;
+		uint32_t  word = 0;
+		const int i    = length & ~3;
 		switch (length & 3)
 		{
 		case 3:
@@ -2214,12 +2151,12 @@ Guint FoFiTrueType::computeTableChecksum(Guchar* data, int length)
 	return checksum;
 }
 
-void FoFiTrueType::parse(int fontNum, GBool allowHeadlessCFF)
+void FoFiTrueType::parse(int fontNum, bool allowHeadlessCFF)
 {
-	Guint topTag;
-	int   offset, pos, ver, i, j, k;
+	uint32_t topTag;
+	int      offset, pos, ver, i, j, k;
 
-	parsedOk = gTrue;
+	parsedOk = true;
 
 	// check for a dfont or TrueType collection (TTC)
 	// offset = start of actual TrueType font file (table positions are
@@ -2274,18 +2211,18 @@ void FoFiTrueType::parse(int fontNum, GBool allowHeadlessCFF)
 		return;
 
 	// check for the head table; allow for a head-less OpenType CFF font
-	headlessCFF = gFalse;
+	headlessCFF = false;
 	if (seekTable("head") < 0)
 	{
 		if (openTypeCFF && allowHeadlessCFF && seekTable("CFF ") >= 0)
 		{
-			headlessCFF = gTrue;
+			headlessCFF = true;
 			nGlyphs     = 0;
 			bbox[0] = bbox[1] = bbox[2] = bbox[3] = 0;
 			locaFmt                               = 0;
 			return;
 		}
-		parsedOk = gFalse;
+		parsedOk = false;
 		return;
 	}
 
@@ -2293,7 +2230,7 @@ void FoFiTrueType::parse(int fontNum, GBool allowHeadlessCFF)
 	// spec and the Type 42 spec
 	if (seekTable("hhea") < 0 || seekTable("maxp") < 0 || seekTable("hmtx") < 0 || (!openTypeCFF && seekTable("loca") < 0) || (!openTypeCFF && seekTable("glyf") < 0) || (openTypeCFF && seekTable("CFF ") < 0))
 	{
-		parsedOk = gFalse;
+		parsedOk = false;
 		return;
 	}
 
@@ -2351,7 +2288,7 @@ void FoFiTrueType::parse(int fontNum, GBool allowHeadlessCFF)
 		i = seekTable("loca");
 		if (tables[i].len < (locaFmt ? 4 : 2))
 		{
-			parsedOk = gFalse;
+			parsedOk = false;
 			return;
 		}
 		if (tables[i].len < (nGlyphs + 1) * (locaFmt ? 4 : 2))
@@ -2369,13 +2306,13 @@ void FoFiTrueType::parseTTC(int fontNum, int* pos)
 {
 	int nFonts;
 
-	isTTC  = gTrue;
+	isTTC  = true;
 	nFonts = getU32BE(8, &parsedOk);
 	if (!parsedOk)
 		return;
 	if (fontNum < 0 || fontNum >= nFonts)
 	{
-		parsedOk = gFalse;
+		parsedOk = false;
 		return;
 	}
 	*pos = getU32BE(12 + 4 * fontNum, &parsedOk);
@@ -2413,7 +2350,7 @@ void FoFiTrueType::parseDfont(int fontNum, int* offset, int* startPos)
 	}
 	if (i >= nTypes)
 	{
-		parsedOk = gFalse;
+		parsedOk = false;
 		return;
 	}
 	nFonts        = getU16BE(pos + 4, &parsedOk) + 1;
@@ -2422,13 +2359,12 @@ void FoFiTrueType::parseDfont(int fontNum, int* offset, int* startPos)
 		return;
 	if (fontNum < 0 || fontNum >= nFonts)
 	{
-		parsedOk = gFalse;
+		parsedOk = false;
 		return;
 	}
 	pos        = resMapOffset + resTypeListOffset + refListOffset + 12 * fontNum;
 	dataOffset = getU32BE(pos + 4, &parsedOk) & 0x00ffffff;
-	if (!parsedOk)
-		return;
+	if (!parsedOk) return;
 	// the data offset points to a 4-byte length field, which we skip over
 	*offset   = resDataOffset + dataOffset + 4;
 	*startPos = 0;
@@ -2436,57 +2372,50 @@ void FoFiTrueType::parseDfont(int fontNum, int* offset, int* startPos)
 
 void FoFiTrueType::readPostTable()
 {
-	GString* name;
-	int      tablePos, postFmt, stringIdx, stringPos;
-	GBool    ok;
-	int      i, j, n, m;
+	int tablePos, postFmt, stringIdx, stringPos;
+	int n, m;
 
-	ok = gTrue;
-	if ((i = seekTable("post")) < 0)
-		return;
+	int  i;
+	bool ok = true;
+	if ((i = seekTable("post")) < 0) return;
 	tablePos = tables[i].offset;
 	postFmt  = getU32BE(tablePos, &ok);
-	if (!ok)
-		goto err;
+	if (!ok) goto err;
 	if (postFmt == 0x00010000)
 	{
-		nameToGID = new GHash(gTrue);
-		for (i = 0; i < 258; ++i)
-			nameToGID->add(new GString(macGlyphNames[i]), i);
+		nameToGID = new GHash(true);
+		for (int i = 0; i < 258; ++i)
+			nameToGID->add(std::string(macGlyphNames[i]), i);
 	}
 	else if (postFmt == 0x00020000)
 	{
-		nameToGID = new GHash(gTrue);
+		nameToGID = new GHash(true);
 		n         = getU16BE(tablePos + 32, &ok);
-		if (!ok)
-			goto err;
+		if (!ok) goto err;
 		stringIdx = 0;
 		stringPos = tablePos + 34 + 2 * n;
-		for (i = 0; i < n && i < nGlyphs; ++i)
+		for (int i = 0; i < n && i < nGlyphs; ++i)
 		{
-			ok = gTrue;
-			j  = getU16BE(tablePos + 34 + 2 * i, &ok);
+			bool ok = true;
+			int  j  = getU16BE(tablePos + 34 + 2 * i, &ok);
 			if (j < 258)
 			{
 				nameToGID->removeInt(macGlyphNames[j]);
-				nameToGID->add(new GString(macGlyphNames[j]), i);
+				nameToGID->add(std::string(macGlyphNames[j]), i);
 			}
 			else
 			{
 				j -= 258;
 				if (j != stringIdx)
 				{
-					for (stringIdx = 0, stringPos = tablePos + 34 + 2 * n;
-					     stringIdx < j;
-					     ++stringIdx, stringPos += 1 + getU8(stringPos, &ok))
+					for (stringIdx = 0, stringPos = tablePos + 34 + 2 * n; stringIdx < j; ++stringIdx, stringPos += 1 + getU8(stringPos, &ok))
 						;
-					if (!ok)
-						continue;
+					if (!ok) continue;
 				}
 				m = getU8(stringPos, &ok);
 				if (!ok || !checkRegion(stringPos + 1, m))
 					continue;
-				name = new GString((char*)&file[stringPos + 1], m);
+				auto name = std::string((char*)&file[stringPos + 1], m);
 				nameToGID->removeInt(name);
 				nameToGID->add(name, i);
 				++stringIdx;
@@ -2496,16 +2425,15 @@ void FoFiTrueType::readPostTable()
 	}
 	else if (postFmt == 0x00028000)
 	{
-		nameToGID = new GHash(gTrue);
-		for (i = 0; i < nGlyphs; ++i)
+		nameToGID = new GHash(true);
+		for (int i = 0; i < nGlyphs; ++i)
 		{
-			j = getU8(tablePos + 32 + i, &ok);
-			if (!ok)
-				continue;
+			const int j = getU8(tablePos + 32 + i, &ok);
+			if (!ok) continue;
 			if (j < 258)
 			{
 				nameToGID->removeInt(macGlyphNames[j]);
-				nameToGID->add(new GString(macGlyphNames[j]), i);
+				nameToGID->add(std::string(macGlyphNames[j]), i);
 			}
 		}
 	}
@@ -2516,17 +2444,14 @@ err:
 	if (nameToGID)
 	{
 		delete nameToGID;
-		nameToGID = NULL;
+		nameToGID = nullptr;
 	}
 }
 
 int FoFiTrueType::seekTable(const char* tag)
 {
-	Guint tagI;
-	int   i;
-
-	tagI = ((tag[0] & 0xff) << 24) | ((tag[1] & 0xff) << 16) | ((tag[2] & 0xff) << 8) | (tag[3] & 0xff);
-	for (i = 0; i < nTables; ++i)
+	const uint32_t tagI = ((tag[0] & 0xff) << 24) | ((tag[1] & 0xff) << 16) | ((tag[2] & 0xff) << 8) | (tag[3] & 0xff);
+	for (int i = 0; i < nTables; ++i)
 		if (tables[i].tag == tagI)
 			return i;
 	return -1;

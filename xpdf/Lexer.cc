@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
@@ -51,7 +50,7 @@ Lexer::Lexer(XRef* xref, Stream* str)
 	streams = new Array(xref);
 	streams->add(curStr.copy(&obj));
 	strPtr    = 0;
-	freeArray = gTrue;
+	freeArray = true;
 	curStr.streamReset();
 }
 
@@ -62,13 +61,13 @@ Lexer::Lexer(XRef* xref, Object* obj)
 	if (obj->isStream())
 	{
 		streams   = new Array(xref);
-		freeArray = gTrue;
+		freeArray = true;
 		streams->add(obj->copy(&obj2));
 	}
 	else
 	{
 		streams   = obj->getArray();
-		freeArray = gFalse;
+		freeArray = false;
 	}
 	strPtr = 0;
 	if (streams->getLength() > 0)
@@ -117,17 +116,17 @@ int Lexer::lookChar()
 
 Object* Lexer::getObj(Object* obj)
 {
-	char*    p;
-	int      c, c2;
-	GBool    comment, neg, doubleMinus, done, invalid;
-	int      numParen, nErrors;
-	int      xi;
-	double   xf, scale;
-	GString* s;
-	int      n, m;
+	char*       p;
+	int         c, c2;
+	bool        comment, neg, doubleMinus, done, invalid;
+	int         numParen, nErrors;
+	int         xi;
+	double      xf, scale;
+	std::string s;
+	int         n, m;
 
 	// skip whitespace and comments
-	comment = gFalse;
+	comment = false;
 	while (1)
 	{
 		if ((c = getChar()) == EOF)
@@ -135,11 +134,11 @@ Object* Lexer::getObj(Object* obj)
 		if (comment)
 		{
 			if (c == '\r' || c == '\n')
-				comment = gFalse;
+				comment = false;
 		}
 		else if (c == '%')
 		{
-			comment = gTrue;
+			comment = true;
 		}
 		else if (specialChars[c] != 1)
 		{
@@ -178,8 +177,8 @@ Object* Lexer::getObj(Object* obj)
 		// "-50-100" is interpreted as -50
 		// "-" is interpreted as 0
 		// "-." is interpreted as 0.0
-		neg         = gFalse;
-		doubleMinus = gFalse;
+		neg         = false;
+		doubleMinus = false;
 		xf = xi = 0;
 		if (c == '+')
 		{
@@ -187,10 +186,10 @@ Object* Lexer::getObj(Object* obj)
 		}
 		else if (c == '-')
 		{
-			neg = gTrue;
+			neg = true;
 			if (lookChar() == '-')
 			{
-				doubleMinus = gTrue;
+				doubleMinus = true;
 				do {
 					getChar();
 				}
@@ -262,15 +261,14 @@ doReal:
 		p        = tokBuf;
 		n        = 0;
 		numParen = 1;
-		done     = gFalse;
-		s        = nullptr;
+		done     = false;
 		do {
 			c2 = EOF;
 			switch (c = getChar())
 			{
 			case EOF:
 				error(errSyntaxError, getPos(), "Unterminated string");
-				done = gTrue;
+				done = true;
 				break;
 
 			case '(':
@@ -280,7 +278,7 @@ doReal:
 
 			case ')':
 				if (--numParen == 0)
-					done = gTrue;
+					done = true;
 				else
 					c2 = c;
 				break;
@@ -348,7 +346,7 @@ doReal:
 					break;
 				case EOF:
 					error(errSyntaxError, getPos(), "Unterminated string");
-					done = gTrue;
+					done = true;
 					break;
 				default:
 					c2 = c;
@@ -365,10 +363,10 @@ doReal:
 			{
 				if (n == tokBufSize)
 				{
-					if (!s)
-						s = new GString(tokBuf, tokBufSize);
+					if (s.empty())
+						s.assign(tokBuf, tokBufSize);
 					else
-						s->append(tokBuf, tokBufSize);
+						s.append(tokBuf, tokBufSize);
 					p = tokBuf;
 					n = 0;
 				}
@@ -377,10 +375,10 @@ doReal:
 			}
 		}
 		while (!done);
-		if (!s)
-			s = new GString(tokBuf, n);
+		if (s.empty())
+			s.assign(tokBuf, n);
 		else
-			s->append(tokBuf, n);
+			s.append(tokBuf, n);
 		obj->initString(s);
 		break;
 
@@ -388,8 +386,7 @@ doReal:
 	case '/':
 		p       = tokBuf;
 		n       = 0;
-		s       = nullptr;
-		invalid = gFalse;
+		invalid = false;
 		while ((c = lookChar()) != EOF && !specialChars[c])
 		{
 			getChar();
@@ -434,7 +431,7 @@ doReal:
 				}
 				getChar();
 				if (c == 0)
-					invalid = gTrue;
+					invalid = true;
 			}
 notEscChar:
 			// the PDF spec claims that names are limited to 127 chars, but
@@ -448,19 +445,17 @@ notEscChar:
 			else if (n == tokBufSize)
 			{
 				*p = (char)c;
-				s  = new GString(tokBuf, n);
+				s.assign(tokBuf, n);
 			}
 			else
 			{
-				s->append((char)c);
+				s += (char)c;
 			}
 		}
 		if (invalid)
 		{
 			error(errSyntaxError, getPos(), "Null character in name");
 			obj->initError();
-			if (s)
-				delete s;
 		}
 		else if (n < tokBufSize)
 		{
@@ -469,8 +464,7 @@ notEscChar:
 		}
 		else
 		{
-			obj->initName(s->getCString());
-			delete s;
+			obj->initName(s.c_str());
 		}
 		break;
 
@@ -498,10 +492,10 @@ notEscChar:
 		}
 		else
 		{
-			p = tokBuf;
-			m = n   = 0;
+			p       = tokBuf;
+			m       = 0;
+			n       = 0;
 			c2      = 0;
-			s       = nullptr;
 			nErrors = 0;
 			while (nErrors < 100)
 			{
@@ -532,17 +526,17 @@ notEscChar:
 					}
 					else
 					{
-						error(errSyntaxError, getPos(), "Illegal character <{0:02x}> in hex string", c);
+						error(errSyntaxError, getPos(), "Illegal character <{:02x}> in hex string", c);
 						++nErrors;
 					}
 					if (++m == 2)
 					{
 						if (n == tokBufSize)
 						{
-							if (!s)
-								s = new GString(tokBuf, tokBufSize);
+							if (s.empty())
+								s.assign(tokBuf, tokBufSize);
 							else
-								s->append(tokBuf, tokBufSize);
+								s.append(tokBuf, tokBufSize);
 							p = tokBuf;
 							n = 0;
 						}
@@ -553,12 +547,12 @@ notEscChar:
 					}
 				}
 			}
-			if (!s)
-				s = new GString(tokBuf, n);
+			if (s.empty())
+				s.assign(tokBuf, n);
 			else
-				s->append(tokBuf, n);
+				s.append(tokBuf, n);
 			if (m == 1)
-				s->append((char)(c2 << 4));
+				s += (char)(c2 << 4);
 			obj->initString(s);
 		}
 		break;
@@ -584,7 +578,7 @@ notEscChar:
 	case ')':
 	case '{':
 	case '}':
-		error(errSyntaxError, getPos(), "Illegal character '{0:c}'", c);
+		error(errSyntaxError, getPos(), "Illegal character '{}'", c);
 		obj->initError();
 		break;
 
@@ -605,9 +599,9 @@ notEscChar:
 		}
 		*p = '\0';
 		if (tokBuf[0] == 't' && !strcmp(tokBuf, "true"))
-			obj->initBool(gTrue);
+			obj->initBool(true);
 		else if (tokBuf[0] == 'f' && !strcmp(tokBuf, "false"))
-			obj->initBool(gFalse);
+			obj->initBool(false);
 		else if (tokBuf[0] == 'n' && !strcmp(tokBuf, "null"))
 			obj->initNull();
 		else
@@ -620,11 +614,9 @@ notEscChar:
 
 void Lexer::skipToNextLine()
 {
-	int c;
-
 	while (1)
 	{
-		c = getChar();
+		int c = getChar();
 		if (c == EOF || c == '\n')
 			return;
 		if (c == '\r')
@@ -642,7 +634,7 @@ void Lexer::skipToEOF()
 		;
 }
 
-GBool Lexer::isSpace(int c)
+bool Lexer::isSpace(int c)
 {
 	return c >= 0 && c <= 0xff && specialChars[c] == 1;
 }

@@ -8,11 +8,9 @@
 //
 //========================================================================
 
-#ifndef UNICODEREMAPPING_H
-#define UNICODEREMAPPING_H
+#pragma once
 
 #include <aconf.h>
-
 #include "CharTypes.h"
 
 struct UnicodeRemappingString;
@@ -31,18 +29,17 @@ public:
 	void addRemapping(Unicode in, Unicode* out, int len);
 
 	// Add entries from the specified file to this UnicodeRemapping.
-	void parseFile(GString* fileName);
+	void parseFile(const std::string& fileName);
 
-	// Map <in> to zero or more (up to <size>) output characters in
-	// <out>.  Returns the number of output characters.
+	// Map <in> to zero or more (up to <size>) output characters in <out>.
+	// Returns the number of output characters.
 	int map(Unicode in, Unicode* out, int size);
 
 private:
 	int findSMap(Unicode u);
 
-	Unicode                 page0[256];
-	UnicodeRemappingString* sMap;
-	int                     sMapLen, sMapSize;
+	Unicode                 page0[256]; //
+	UnicodeRemappingString* sMap;       //
+	int                     sMapLen;    //
+	int                     sMapSize;   //
 };
-
-#endif

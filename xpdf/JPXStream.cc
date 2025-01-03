@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <limits.h>
 #include "gmem.h"
 #include "gmempp.h"
@@ -55,7 +54,7 @@
 // where subband = 0 for HL
 //               = 1 for LH and LL
 //               = 2 for HH
-static Guint sigPropContext[3][3][5][3] = {
+static uint32_t sigPropContext[3][3][5][3] = {
 	{{ { 0, 0, 0 },     // horiz=0, vert=0, diag=0
 	    { 1, 1, 3 },     // horiz=0, vert=0, diag=1
 	    { 2, 2, 6 },     // horiz=0, vert=0, diag=2
@@ -109,7 +108,7 @@ static Guint sigPropContext[3][3][5][3] = {
 // where horiz/vert are offset by 2 (i.e., range is -2 .. 2)
 // and k = 0 for the context
 //       = 1 for the xor bit
-static Guint signContext[5][5][2] = {
+static uint32_t signContext[5][5][2] = {
 	{{ 13, 1 },  // horiz=-2, vert=-2
 	  { 13, 1 },  // horiz=-2, vert=-1
 	  { 12, 1 },  // horiz=-2, vert= 0
@@ -227,32 +226,32 @@ JPXStream::JPXStream(Stream* strA)
 {
 	bufStr = new BufStream(str, 3);
 
-	decoded = gFalse;
+	decoded = false;
 	nComps  = 0;
 	bpc     = nullptr;
 	width = height = 0;
 	reduction      = 0;
-	haveCS         = gFalse;
+	haveCS         = false;
 
 	palette.bpc = nullptr;
 	palette.c   = nullptr;
-	havePalette = gFalse;
+	havePalette = false;
 
 	compMap.comp  = nullptr;
 	compMap.type  = nullptr;
 	compMap.pComp = nullptr;
-	haveCompMap   = gFalse;
+	haveCompMap   = false;
 
 	channelDefn.idx   = nullptr;
 	channelDefn.type  = nullptr;
 	channelDefn.assoc = nullptr;
-	haveChannelDefn   = gFalse;
+	haveChannelDefn   = false;
 
 	img.tiles = nullptr;
 
 	bitBuf     = 0;
 	bitBufLen  = 0;
-	bitBufSkip = gFalse;
+	bitBufSkip = false;
 	byteCount  = 0;
 }
 
@@ -271,7 +270,7 @@ void JPXStream::reset()
 {
 	img.ySize = 0;
 	bufStr->reset();
-	decoded = gFalse;
+	decoded = false;
 }
 
 void JPXStream::close()
@@ -282,7 +281,7 @@ void JPXStream::close()
 	JPXPrecinct*  precinct;
 	JPXSubband*   subband;
 	JPXCodeBlock* cb;
-	Guint         comp, i, k, r, pre, sb;
+	uint32_t      comp, i, k, r, pre, sb;
 
 	gfree(bpc);
 	bpc = nullptr;
@@ -290,21 +289,21 @@ void JPXStream::close()
 	{
 		gfree(palette.bpc);
 		gfree(palette.c);
-		havePalette = gFalse;
+		havePalette = false;
 	}
 	if (haveCompMap)
 	{
 		gfree(compMap.comp);
 		gfree(compMap.type);
 		gfree(compMap.pComp);
-		haveCompMap = gFalse;
+		haveCompMap = false;
 	}
 	if (haveChannelDefn)
 	{
 		gfree(channelDefn.idx);
 		gfree(channelDefn.type);
 		gfree(channelDefn.assoc);
-		haveChannelDefn = gFalse;
+		haveChannelDefn = false;
 	}
 
 	if (img.tiles)
@@ -332,7 +331,7 @@ void JPXStream::close()
 									precinct = &resLevel->precincts[pre];
 									if (precinct->subbands)
 									{
-										for (sb = 0; sb < (Guint)(r == 0 ? 1 : 3); ++sb)
+										for (sb = 0; sb < (uint32_t)(r == 0 ? 1 : 3); ++sb)
 										{
 											subband = &precinct->subbands[sb];
 											gfree(subband->inclusion);
@@ -384,7 +383,7 @@ void JPXStream::decodeImage()
 	curX       = img.xOffsetR;
 	curComp    = 0;
 	readBufLen = 0;
-	decoded    = gTrue;
+	decoded    = true;
 }
 
 int JPXStream::getChar()
@@ -439,16 +438,14 @@ int JPXStream::lookChar()
 void JPXStream::fillReadBuf()
 {
 	JPXTileComp* tileComp;
-	Guint        tileIdx, tx, ty;
+	uint32_t     tileIdx, tx, ty;
 	int          pix, pixBits, k;
-	GBool        eol;
+	bool         eol;
 
 	do {
 		if (curY >= (img.ySize >> reduction))
 			return;
-		tileIdx = (((curY << reduction) - img.yTileOffset) / img.yTileSize)
-		        * img.nXTiles
-		    + ((curX << reduction) - img.xTileOffset) / img.xTileSize;
+		tileIdx = (((curY << reduction) - img.yTileOffset) / img.yTileSize) * img.nXTiles + ((curX << reduction) - img.xTileOffset) / img.xTileSize;
 #if 1 //~ ignore the palette, assume the PDF ColorSpace object is valid
 		tileComp = &img.tiles[tileIdx].tileComps[curComp];
 #else
@@ -466,7 +463,7 @@ void JPXStream::fillReadBuf()
 			ty -= tileComp->y0r;
 		pix     = (int)tileComp->data[ty * tileComp->w + tx];
 		pixBits = tileComp->prec;
-		eol     = gFalse;
+		eol     = false;
 #if 1 //~ ignore the palette, assume the PDF ColorSpace object is valid
 		if (++curComp == img.nComps)
 		{
@@ -479,7 +476,7 @@ void JPXStream::fillReadBuf()
 				pix = 0;
 			pixBits = palette.bpc[curComp];
 		}
-		if (++curComp == (Guint)(havePalette ? palette.nComps : img.nComps))
+		if (++curComp == (uint32_t)(havePalette ? palette.nComps : img.nComps))
 		{
 #endif
 			curComp = 0;
@@ -487,7 +484,7 @@ void JPXStream::fillReadBuf()
 			{
 				curX = img.xOffsetR;
 				++curY;
-				eol = gTrue;
+				eol = true;
 			}
 		}
 		if (pixBits == 8)
@@ -504,26 +501,26 @@ void JPXStream::fillReadBuf()
 	while (readBufLen < 8);
 }
 
-GString* JPXStream::getPSFilter(int psLevel, const char* indent, GBool okToReadStream)
+std::string JPXStream::getPSFilter(int psLevel, const char* indent, bool okToReadStream)
 {
-	return nullptr;
+	return "";
 }
 
-GBool JPXStream::isBinary(GBool last)
+bool JPXStream::isBinary(bool last)
 {
-	return str->isBinary(gTrue);
+	return str->isBinary(true);
 }
 
 void JPXStream::getImageParams(int* bitsPerComponent, StreamColorSpaceMode* csMode)
 {
-	Guint                boxType, boxLen, dataLen, csEnum;
-	Guint                bpc1, dummy;
+	uint32_t             boxType, boxLen, dataLen, csEnum;
+	uint32_t             bpc1, dummy;
 	int                  csMeth, csPrec, csPrec1, dummy2;
 	StreamColorSpaceMode csMode1;
-	GBool                haveBPC, haveCSMode;
+	bool                 haveBPC, haveCSMode;
 
 	csPrec  = 0; // make gcc happy
-	haveBPC = haveCSMode = gFalse;
+	haveBPC = haveCSMode = false;
 	bufStr->reset();
 	if (bufStr->lookChar() == 0xff)
 	{
@@ -544,7 +541,7 @@ void JPXStream::getImageParams(int* bitsPerComponent, StreamColorSpaceMode* csMo
 				if (readULong(&dummy) && readULong(&dummy) && readUWord(&dummy) && readUByte(&bpc1) && readUByte(&dummy) && readUByte(&dummy) && readUByte(&dummy))
 				{
 					*bitsPerComponent = bpc1 + 1;
-					haveBPC           = gTrue;
+					haveBPC           = true;
 				}
 			}
 			else if (boxType == 0x636F6C72)
@@ -567,7 +564,7 @@ void JPXStream::getImageParams(int* bitsPerComponent, StreamColorSpaceMode* csMo
 							{
 								*csMode    = csMode1;
 								csPrec     = csPrec1;
-								haveCSMode = gTrue;
+								haveCSMode = true;
 							}
 							if (dataLen > 7)
 								bufStr->discardChars(dataLen - 7);
@@ -600,8 +597,8 @@ void JPXStream::getImageParams(int* bitsPerComponent, StreamColorSpaceMode* csMo
 // Get image parameters from the codestream.
 void JPXStream::getImageParams2(int* bitsPerComponent, StreamColorSpaceMode* csMode)
 {
-	int   segType;
-	Guint segLen, nComps1, bpc1, dummy;
+	int      segType;
+	uint32_t segLen, nComps1, bpc1, dummy;
 
 	while (readMarkerHdr(&segType, &segLen))
 	{
@@ -633,13 +630,13 @@ void JPXStream::getImageParams2(int* bitsPerComponent, StreamColorSpaceMode* csM
 JPXDecodeResult JPXStream::readBoxes()
 {
 	JPXDecodeResult result;
-	GBool           haveCodestream;
-	Guint           boxType, boxLen, dataLen;
-	Guint           w, h, n, bpc1, compression, unknownColorspace, ipr;
-	Guint           i, j;
+	bool            haveCodestream;
+	uint32_t        boxType, boxLen, dataLen;
+	uint32_t        w, h, n, bpc1, compression, unknownColorspace, ipr;
+	uint32_t        i, j;
 
-	haveImgHdr     = gFalse;
-	haveCodestream = gFalse;
+	haveImgHdr     = false;
+	haveCodestream = false;
 
 	// check for a naked JPEG 2000 codestream (without the JP2/JPX
 	// wrapper) -- this appears to be a violation of the PDF spec, but
@@ -651,7 +648,7 @@ JPXDecodeResult JPXStream::readBoxes()
 		if ((result = readCodestream(0)) == jpxDecodeFatalError)
 			return result;
 		nComps = img.nComps;
-		bpc    = (Guint*)gmallocn(nComps, sizeof(Guint));
+		bpc    = (uint32_t*)gmallocn(nComps, sizeof(uint32_t));
 		for (i = 0; i < nComps; ++i)
 			bpc[i] = img.tiles[0].tileComps[i].prec;
 		width  = img.xSize - img.xOffset;
@@ -686,10 +683,10 @@ JPXDecodeResult JPXStream::readBoxes()
 			height = h;
 			width  = w;
 			nComps = n;
-			bpc    = (Guint*)gmallocn(nComps, sizeof(Guint));
+			bpc    = (uint32_t*)gmallocn(nComps, sizeof(uint32_t));
 			for (i = 0; i < nComps; ++i)
 				bpc[i] = bpc1;
-			haveImgHdr = gTrue;
+			haveImgHdr = true;
 			break;
 		case 0x62706363: // bits per component
 			cover(10);
@@ -724,10 +721,9 @@ JPXDecodeResult JPXStream::readBoxes()
 				error(errSyntaxError, getPos(), "Unexpected EOF in JPX stream");
 				return jpxDecodeFatalError;
 			}
-			havePalette = gTrue;
-			palette.bpc = (Guint*)gmallocn(palette.nComps, sizeof(Guint));
-			palette.c =
-			    (int*)gmallocn(palette.nEntries * palette.nComps, sizeof(int));
+			havePalette = true;
+			palette.bpc = (uint32_t*)gmallocn(palette.nComps, sizeof(uint32_t));
+			palette.c   = (int*)gmallocn(palette.nEntries * palette.nComps, sizeof(int));
 			for (i = 0; i < palette.nComps; ++i)
 			{
 				if (!readUByte(&palette.bpc[i]))
@@ -741,7 +737,7 @@ JPXDecodeResult JPXStream::readBoxes()
 			{
 				for (j = 0; j < palette.nComps; ++j)
 				{
-					if (!readNBytes(((palette.bpc[j] & 0x7f) + 7) >> 3, (palette.bpc[j] & 0x80) ? gTrue : gFalse, &palette.c[i * palette.nComps + j]))
+					if (!readNBytes(((palette.bpc[j] & 0x7f) + 7) >> 3, (palette.bpc[j] & 0x80) ? true : false, &palette.c[i * palette.nComps + j]))
 					{
 						error(errSyntaxError, getPos(), "Unexpected EOF in JPX stream");
 						return jpxDecodeFatalError;
@@ -751,11 +747,11 @@ JPXDecodeResult JPXStream::readBoxes()
 			break;
 		case 0x636d6170: // component mapping
 			cover(13);
-			haveCompMap       = gTrue;
+			haveCompMap       = true;
 			compMap.nChannels = dataLen / 4;
-			compMap.comp      = (Guint*)gmallocn(compMap.nChannels, sizeof(Guint));
-			compMap.type      = (Guint*)gmallocn(compMap.nChannels, sizeof(Guint));
-			compMap.pComp     = (Guint*)gmallocn(compMap.nChannels, sizeof(Guint));
+			compMap.comp      = (uint32_t*)gmallocn(compMap.nChannels, sizeof(uint32_t));
+			compMap.type      = (uint32_t*)gmallocn(compMap.nChannels, sizeof(uint32_t));
+			compMap.pComp     = (uint32_t*)gmallocn(compMap.nChannels, sizeof(uint32_t));
 			for (i = 0; i < compMap.nChannels; ++i)
 			{
 				if (!readUWord(&compMap.comp[i]) || !readUByte(&compMap.type[i]) || !readUByte(&compMap.pComp[i]))
@@ -772,13 +768,10 @@ JPXDecodeResult JPXStream::readBoxes()
 				error(errSyntaxError, getPos(), "Unexpected EOF in JPX stream");
 				return jpxDecodeFatalError;
 			}
-			haveChannelDefn = gTrue;
-			channelDefn.idx =
-			    (Guint*)gmallocn(channelDefn.nChannels, sizeof(Guint));
-			channelDefn.type =
-			    (Guint*)gmallocn(channelDefn.nChannels, sizeof(Guint));
-			channelDefn.assoc =
-			    (Guint*)gmallocn(channelDefn.nChannels, sizeof(Guint));
+			haveChannelDefn   = true;
+			channelDefn.idx   = (uint32_t*)gmallocn(channelDefn.nChannels, sizeof(uint32_t));
+			channelDefn.type  = (uint32_t*)gmallocn(channelDefn.nChannels, sizeof(uint32_t));
+			channelDefn.assoc = (uint32_t*)gmallocn(channelDefn.nChannels, sizeof(uint32_t));
 			for (i = 0; i < channelDefn.nChannels; ++i)
 			{
 				if (!readUWord(&channelDefn.idx[i]) || !readUWord(&channelDefn.type[i]) || !readUWord(&channelDefn.assoc[i]))
@@ -796,7 +789,7 @@ JPXDecodeResult JPXStream::readBoxes()
 				error(errSyntaxError, getPos(), "JPX stream has no supported color spec");
 			if ((result = readCodestream(dataLen)) != jpxDecodeOk)
 				return result;
-			haveCodestream = gTrue;
+			haveCodestream = true;
 			break;
 		default:
 			cover(16);
@@ -811,13 +804,13 @@ JPXDecodeResult JPXStream::readBoxes()
 	return jpxDecodeOk;
 }
 
-GBool JPXStream::readColorSpecBox(Guint dataLen)
+bool JPXStream::readColorSpecBox(uint32_t dataLen)
 {
 	JPXColorSpec newCS;
-	Guint        csApprox, csEnum;
-	GBool        ok;
+	uint32_t     csApprox, csEnum;
+	bool         ok;
 
-	ok = gFalse;
+	ok = false;
 	if (!readUByte(&newCS.meth) || !readByte(&newCS.prec) || !readUByte(&csApprox))
 		goto err;
 	switch (newCS.meth)
@@ -830,28 +823,28 @@ GBool JPXStream::readColorSpecBox(Guint dataLen)
 		switch (newCS.enumerated.type)
 		{
 		case jpxCSBiLevel:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSYCbCr1:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSYCbCr2:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSYCBCr3:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSPhotoYCC:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSCMY:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSCMYK:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSYCCK:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSCIELab:
 			if (dataLen == 7 + 7 * 4)
@@ -875,34 +868,34 @@ GBool JPXStream::readColorSpecBox(Guint dataLen)
 			{
 				goto err;
 			}
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSsRGB:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSGrayscale:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSBiLevel2:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSCIEJab:
 			// not allowed in PDF
 			goto err;
 		case jpxCSCISesRGB:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSROMMRGB:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSsRGBYCbCr:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSYPbPr1125:
-			ok = gTrue;
+			ok = true;
 			break;
 		case jpxCSYPbPr1250:
-			ok = gTrue;
+			ok = true;
 			break;
 		default:
 			goto err;
@@ -920,30 +913,31 @@ GBool JPXStream::readColorSpecBox(Guint dataLen)
 	if (ok && (!haveCS || newCS.prec > cs.prec))
 	{
 		cs     = newCS;
-		haveCS = gTrue;
+		haveCS = true;
 	}
 
-	return gTrue;
+	return true;
 
 err:
 	error(errSyntaxError, getPos(), "Error in JPX color spec");
-	return gFalse;
+	return false;
 }
 
-JPXDecodeResult JPXStream::readCodestream(Guint len)
+JPXDecodeResult JPXStream::readCodestream(uint32_t len)
 {
 	JPXTile*     tile;
 	JPXTileComp* tileComp;
 	int          segType;
-	GBool        haveSIZ, haveCOD, haveQCD, haveSOT, ok;
-	Guint        style, progOrder, nLayers, multiComp, nDecompLevels;
-	Guint        codeBlockW, codeBlockH, codeBlockStyle, transform;
-	Guint        precinctSize;
-	Guint        segLen, capabilities, comp, i, j, r;
+	bool         haveSIZ, haveCOD, haveQCD, haveSOT, ok;
+	uint32_t     style, progOrder, nLayers, multiComp, nDecompLevels;
+	uint32_t     codeBlockW, codeBlockH, codeBlockStyle, transform;
+	uint32_t     precinctSize;
+	uint32_t     segLen, capabilities;
 
 	//----- main header
-	haveSIZ = haveCOD = haveQCD = haveSOT = gFalse;
-	do {
+	haveSIZ = haveCOD = haveQCD = haveSOT = false;
+	do
+	{
 		if (!readMarkerHdr(&segType, &segLen))
 		{
 			error(errSyntaxError, getPos(), "Error in JPX codestream");
@@ -981,10 +975,8 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 			img.ySizeR   = jpxCeilDivPow2(img.ySize, reduction);
 			img.xOffsetR = jpxCeilDivPow2(img.xOffset, reduction);
 			img.yOffsetR = jpxCeilDivPow2(img.yOffset, reduction);
-			img.nXTiles  = (img.xSize - img.xTileOffset + img.xTileSize - 1)
-			    / img.xTileSize;
-			img.nYTiles = (img.ySize - img.yTileOffset + img.yTileSize - 1)
-			    / img.yTileSize;
+			img.nXTiles  = (img.xSize - img.xTileOffset + img.xTileSize - 1) / img.xTileSize;
+			img.nYTiles  = (img.ySize - img.yTileOffset + img.yTileSize - 1) / img.yTileSize;
 			// check for overflow before allocating memory
 			if (img.nXTiles <= 0 || img.nYTiles <= 0 || img.nXTiles >= INT_MAX / img.nYTiles)
 			{
@@ -992,16 +984,16 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 				return jpxDecodeFatalError;
 			}
 			img.tiles = (JPXTile*)gmallocn(img.nXTiles * img.nYTiles, sizeof(JPXTile));
-			for (i = 0; i < img.nXTiles * img.nYTiles; ++i)
+			for (uint32_t i = 0; i < img.nXTiles * img.nYTiles; ++i)
 			{
-				img.tiles[i].init         = gFalse;
+				img.tiles[i].init         = false;
 				img.tiles[i].nextTilePart = 0;
 				img.tiles[i].tileComps    = nullptr;
 			}
-			for (i = 0; i < img.nXTiles * img.nYTiles; ++i)
+			for (uint32_t i = 0; i < img.nXTiles * img.nYTiles; ++i)
 			{
 				img.tiles[i].tileComps = (JPXTileComp*)gmallocn(img.nComps, sizeof(JPXTileComp));
-				for (comp = 0; comp < img.nComps; ++comp)
+				for (uint32_t comp = 0; comp < img.nComps; ++comp)
 				{
 					img.tiles[i].tileComps[comp].quantSteps = nullptr;
 					img.tiles[i].tileComps[comp].data       = nullptr;
@@ -1009,7 +1001,7 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 					img.tiles[i].tileComps[comp].resLevels  = nullptr;
 				}
 			}
-			for (comp = 0; comp < img.nComps; ++comp)
+			for (uint32_t comp = 0; comp < img.nComps; ++comp)
 			{
 				if (!readUByte(&img.tiles[0].tileComps[comp].prec) || !readUByte(&img.tiles[0].tileComps[comp].hSep) || !readUByte(&img.tiles[0].tileComps[comp].vSep))
 				{
@@ -1021,14 +1013,12 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 					error(errSyntaxError, getPos(), "Error in JPX SIZ marker segment");
 					return jpxDecodeFatalError;
 				}
-				img.tiles[0].tileComps[comp].sgned =
-				    (img.tiles[0].tileComps[comp].prec & 0x80) ? gTrue : gFalse;
-				img.tiles[0].tileComps[comp].prec =
-				    (img.tiles[0].tileComps[comp].prec & 0x7f) + 1;
-				for (i = 1; i < img.nXTiles * img.nYTiles; ++i)
+				img.tiles[0].tileComps[comp].sgned = (img.tiles[0].tileComps[comp].prec & 0x80) ? true : false;
+				img.tiles[0].tileComps[comp].prec  = (img.tiles[0].tileComps[comp].prec & 0x7f) + 1;
+				for (uint32_t i = 1; i < img.nXTiles * img.nYTiles; ++i)
 					img.tiles[i].tileComps[comp] = img.tiles[0].tileComps[comp];
 			}
-			haveSIZ = gTrue;
+			haveSIZ = true;
 			break;
 		case 0x52: // COD - coding style default
 			cover(21);
@@ -1049,12 +1039,12 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 			}
 			codeBlockW += 2;
 			codeBlockH += 2;
-			for (i = 0; i < img.nXTiles * img.nYTiles; ++i)
+			for (uint32_t i = 0; i < img.nXTiles * img.nYTiles; ++i)
 			{
 				img.tiles[i].progOrder = progOrder;
 				img.tiles[i].nLayers   = nLayers;
 				img.tiles[i].multiComp = multiComp;
-				for (comp = 0; comp < img.nComps; ++comp)
+				for (uint32_t comp = 0; comp < img.nComps; ++comp)
 				{
 					img.tiles[i].tileComps[comp].style          = style;
 					img.tiles[i].tileComps[comp].nDecompLevels  = nDecompLevels;
@@ -1062,13 +1052,12 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 					img.tiles[i].tileComps[comp].codeBlockH     = codeBlockH;
 					img.tiles[i].tileComps[comp].codeBlockStyle = codeBlockStyle;
 					img.tiles[i].tileComps[comp].transform      = transform;
-					img.tiles[i].tileComps[comp].resLevels =
-					    (JPXResLevel*)gmallocn(nDecompLevels + 1, sizeof(JPXResLevel));
-					for (r = 0; r <= nDecompLevels; ++r)
+					img.tiles[i].tileComps[comp].resLevels      = (JPXResLevel*)gmallocn(nDecompLevels + 1, sizeof(JPXResLevel));
+					for (uint32_t r = 0; r <= nDecompLevels; ++r)
 						img.tiles[i].tileComps[comp].resLevels[r].precincts = nullptr;
 				}
 			}
-			for (r = 0; r <= nDecompLevels; ++r)
+			for (uint32_t r = 0; r <= nDecompLevels; ++r)
 			{
 				if (style & 0x01)
 				{
@@ -1083,10 +1072,8 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 						error(errSyntaxError, getPos(), "Invalid precinct size in JPX COD marker segment");
 						return jpxDecodeFatalError;
 					}
-					img.tiles[0].tileComps[0].resLevels[r].precinctWidth =
-					    precinctSize & 0x0f;
-					img.tiles[0].tileComps[0].resLevels[r].precinctHeight =
-					    (precinctSize >> 4) & 0x0f;
+					img.tiles[0].tileComps[0].resLevels[r].precinctWidth  = precinctSize & 0x0f;
+					img.tiles[0].tileComps[0].resLevels[r].precinctHeight = (precinctSize >> 4) & 0x0f;
 				}
 				else
 				{
@@ -1094,23 +1081,21 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 					img.tiles[0].tileComps[0].resLevels[r].precinctHeight = 15;
 				}
 			}
-			for (i = 0; i < img.nXTiles * img.nYTiles; ++i)
+			for (uint32_t i = 0; i < img.nXTiles * img.nYTiles; ++i)
 			{
-				for (comp = 0; comp < img.nComps; ++comp)
+				for (uint32_t comp = 0; comp < img.nComps; ++comp)
 				{
 					if (!(i == 0 && comp == 0))
 					{
-						for (r = 0; r <= nDecompLevels; ++r)
+						for (uint32_t r = 0; r <= nDecompLevels; ++r)
 						{
-							img.tiles[i].tileComps[comp].resLevels[r].precinctWidth =
-							    img.tiles[0].tileComps[0].resLevels[r].precinctWidth;
-							img.tiles[i].tileComps[comp].resLevels[r].precinctHeight =
-							    img.tiles[0].tileComps[0].resLevels[r].precinctHeight;
+							img.tiles[i].tileComps[comp].resLevels[r].precinctWidth  = img.tiles[0].tileComps[0].resLevels[r].precinctWidth;
+							img.tiles[i].tileComps[comp].resLevels[r].precinctHeight = img.tiles[0].tileComps[0].resLevels[r].precinctHeight;
 						}
 					}
 				}
 			}
-			haveCOD = gTrue;
+			haveCOD = true;
 			break;
 		case 0x53: // COC - coding style component
 			cover(22);
@@ -1119,69 +1104,63 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 				error(errSyntaxError, getPos(), "JPX COC marker segment before COD segment");
 				return jpxDecodeFatalError;
 			}
-			comp = 0;
-			if ((img.nComps > 256 && !readUWord(&comp)) || (img.nComps <= 256 && !readUByte(&comp)) || comp >= img.nComps || !readUByte(&style) || !readUByte(&nDecompLevels) || !readUByte(&codeBlockW) || !readUByte(&codeBlockH) || !readUByte(&codeBlockStyle) || !readUByte(&transform))
 			{
-				error(errSyntaxError, getPos(), "Error in JPX COC marker segment");
-				return jpxDecodeFatalError;
-			}
-			if (nDecompLevels < 1 || nDecompLevels > 31 || codeBlockW > 8 || codeBlockH > 8)
-			{
-				error(errSyntaxError, getPos(), "Error in JPX COC marker segment");
-				return jpxDecodeFatalError;
-			}
-			style = (img.tiles[0].tileComps[comp].style & ~1) | (style & 1);
-			codeBlockW += 2;
-			codeBlockH += 2;
-			for (i = 0; i < img.nXTiles * img.nYTiles; ++i)
-			{
-				img.tiles[i].tileComps[comp].style          = style;
-				img.tiles[i].tileComps[comp].nDecompLevels  = nDecompLevels;
-				img.tiles[i].tileComps[comp].codeBlockW     = codeBlockW;
-				img.tiles[i].tileComps[comp].codeBlockH     = codeBlockH;
-				img.tiles[i].tileComps[comp].codeBlockStyle = codeBlockStyle;
-				img.tiles[i].tileComps[comp].transform      = transform;
-				img.tiles[i].tileComps[comp].resLevels =
-				    (JPXResLevel*)greallocn(
-				        img.tiles[i].tileComps[comp].resLevels,
-				        nDecompLevels + 1,
-				        sizeof(JPXResLevel));
-				for (r = 0; r <= nDecompLevels; ++r)
-					img.tiles[i].tileComps[comp].resLevels[r].precincts = nullptr;
-			}
-			for (r = 0; r <= nDecompLevels; ++r)
-			{
-				if (style & 0x01)
+				uint32_t comp = 0;
+				if ((img.nComps > 256 && !readUWord(&comp)) || (img.nComps <= 256 && !readUByte(&comp)) || comp >= img.nComps || !readUByte(&style) || !readUByte(&nDecompLevels) || !readUByte(&codeBlockW) || !readUByte(&codeBlockH) || !readUByte(&codeBlockStyle) || !readUByte(&transform))
 				{
-					if (!readUByte(&precinctSize))
-					{
-						error(errSyntaxError, getPos(), "Error in JPX COD marker segment");
-						return jpxDecodeFatalError;
-					}
-					if (r > 0 && ((precinctSize & 0x0f) == 0 || (precinctSize & 0xf0) == 0))
-					{
-						error(errSyntaxError, getPos(), "Invalid precinct size in JPX COD marker segment");
-						return jpxDecodeFatalError;
-					}
-					img.tiles[0].tileComps[comp].resLevels[r].precinctWidth =
-					    precinctSize & 0x0f;
-					img.tiles[0].tileComps[comp].resLevels[r].precinctHeight =
-					    (precinctSize >> 4) & 0x0f;
+					error(errSyntaxError, getPos(), "Error in JPX COC marker segment");
+					return jpxDecodeFatalError;
 				}
-				else
+				if (nDecompLevels < 1 || nDecompLevels > 31 || codeBlockW > 8 || codeBlockH > 8)
 				{
-					img.tiles[0].tileComps[comp].resLevels[r].precinctWidth  = 15;
-					img.tiles[0].tileComps[comp].resLevels[r].precinctHeight = 15;
+					error(errSyntaxError, getPos(), "Error in JPX COC marker segment");
+					return jpxDecodeFatalError;
 				}
-			}
-			for (i = 1; i < img.nXTiles * img.nYTiles; ++i)
-			{
-				for (r = 0; r <= img.tiles[i].tileComps[comp].nDecompLevels; ++r)
+				style = (img.tiles[0].tileComps[comp].style & ~1) | (style & 1);
+				codeBlockW += 2;
+				codeBlockH += 2;
+				for (uint32_t i = 0; i < img.nXTiles * img.nYTiles; ++i)
 				{
-					img.tiles[i].tileComps[comp].resLevels[r].precinctWidth =
-					    img.tiles[0].tileComps[comp].resLevels[r].precinctWidth;
-					img.tiles[i].tileComps[comp].resLevels[r].precinctHeight =
-					    img.tiles[0].tileComps[comp].resLevels[r].precinctHeight;
+					img.tiles[i].tileComps[comp].style          = style;
+					img.tiles[i].tileComps[comp].nDecompLevels  = nDecompLevels;
+					img.tiles[i].tileComps[comp].codeBlockW     = codeBlockW;
+					img.tiles[i].tileComps[comp].codeBlockH     = codeBlockH;
+					img.tiles[i].tileComps[comp].codeBlockStyle = codeBlockStyle;
+					img.tiles[i].tileComps[comp].transform      = transform;
+					img.tiles[i].tileComps[comp].resLevels      = (JPXResLevel*)greallocn(img.tiles[i].tileComps[comp].resLevels, nDecompLevels + 1, sizeof(JPXResLevel));
+					for (uint32_t r = 0; r <= nDecompLevels; ++r)
+						img.tiles[i].tileComps[comp].resLevels[r].precincts = nullptr;
+				}
+				for (uint32_t r = 0; r <= nDecompLevels; ++r)
+				{
+					if (style & 0x01)
+					{
+						if (!readUByte(&precinctSize))
+						{
+							error(errSyntaxError, getPos(), "Error in JPX COD marker segment");
+							return jpxDecodeFatalError;
+						}
+						if (r > 0 && ((precinctSize & 0x0f) == 0 || (precinctSize & 0xf0) == 0))
+						{
+							error(errSyntaxError, getPos(), "Invalid precinct size in JPX COD marker segment");
+							return jpxDecodeFatalError;
+						}
+						img.tiles[0].tileComps[comp].resLevels[r].precinctWidth  = precinctSize & 0x0f;
+						img.tiles[0].tileComps[comp].resLevels[r].precinctHeight = (precinctSize >> 4) & 0x0f;
+					}
+					else
+					{
+						img.tiles[0].tileComps[comp].resLevels[r].precinctWidth  = 15;
+						img.tiles[0].tileComps[comp].resLevels[r].precinctHeight = 15;
+					}
+				}
+				for (uint32_t i = 1; i < img.nXTiles * img.nYTiles; ++i)
+				{
+					for (uint32_t r = 0; r <= img.tiles[i].tileComps[comp].nDecompLevels; ++r)
+					{
+						img.tiles[i].tileComps[comp].resLevels[r].precinctWidth  = img.tiles[0].tileComps[comp].resLevels[r].precinctWidth;
+						img.tiles[i].tileComps[comp].resLevels[r].precinctHeight = img.tiles[0].tileComps[comp].resLevels[r].precinctHeight;
+					}
 				}
 			}
 			break;
@@ -1205,9 +1184,8 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 					return jpxDecodeFatalError;
 				}
 				img.tiles[0].tileComps[0].nQuantSteps = segLen - 3;
-				img.tiles[0].tileComps[0].quantSteps =
-				    (Guint*)greallocn(img.tiles[0].tileComps[0].quantSteps, img.tiles[0].tileComps[0].nQuantSteps, sizeof(Guint));
-				for (i = 0; i < img.tiles[0].tileComps[0].nQuantSteps; ++i)
+				img.tiles[0].tileComps[0].quantSteps  = (uint32_t*)greallocn(img.tiles[0].tileComps[0].quantSteps, img.tiles[0].tileComps[0].nQuantSteps, sizeof(uint32_t));
+				for (uint32_t i = 0; i < img.tiles[0].tileComps[0].nQuantSteps; ++i)
 				{
 					if (!readUByte(&img.tiles[0].tileComps[0].quantSteps[i]))
 					{
@@ -1219,8 +1197,7 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 			else if ((img.tiles[0].tileComps[0].quantStyle & 0x1f) == 0x01)
 			{
 				img.tiles[0].tileComps[0].nQuantSteps = 1;
-				img.tiles[0].tileComps[0].quantSteps =
-				    (Guint*)greallocn(img.tiles[0].tileComps[0].quantSteps, img.tiles[0].tileComps[0].nQuantSteps, sizeof(Guint));
+				img.tiles[0].tileComps[0].quantSteps  = (uint32_t*)greallocn(img.tiles[0].tileComps[0].quantSteps, img.tiles[0].tileComps[0].nQuantSteps, sizeof(uint32_t));
 				if (!readUWord(&img.tiles[0].tileComps[0].quantSteps[0]))
 				{
 					error(errSyntaxError, getPos(), "Error in JPX QCD marker segment");
@@ -1235,9 +1212,8 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 					return jpxDecodeFatalError;
 				}
 				img.tiles[0].tileComps[0].nQuantSteps = (segLen - 3) / 2;
-				img.tiles[0].tileComps[0].quantSteps =
-				    (Guint*)greallocn(img.tiles[0].tileComps[0].quantSteps, img.tiles[0].tileComps[0].nQuantSteps, sizeof(Guint));
-				for (i = 0; i < img.tiles[0].tileComps[0].nQuantSteps; ++i)
+				img.tiles[0].tileComps[0].quantSteps  = (uint32_t*)greallocn(img.tiles[0].tileComps[0].quantSteps, img.tiles[0].tileComps[0].nQuantSteps, sizeof(uint32_t));
+				for (uint32_t i = 0; i < img.tiles[0].tileComps[0].nQuantSteps; ++i)
 				{
 					if (!readUWord(&img.tiles[0].tileComps[0].quantSteps[i]))
 					{
@@ -1251,25 +1227,21 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 				error(errSyntaxError, getPos(), "Error in JPX QCD marker segment");
 				return jpxDecodeFatalError;
 			}
-			for (i = 0; i < img.nXTiles * img.nYTiles; ++i)
+			for (uint32_t i = 0; i < img.nXTiles * img.nYTiles; ++i)
 			{
-				for (comp = 0; comp < img.nComps; ++comp)
+				for (uint32_t comp = 0; comp < img.nComps; ++comp)
 				{
 					if (!(i == 0 && comp == 0))
 					{
-						img.tiles[i].tileComps[comp].quantStyle =
-						    img.tiles[0].tileComps[0].quantStyle;
-						img.tiles[i].tileComps[comp].nQuantSteps =
-						    img.tiles[0].tileComps[0].nQuantSteps;
-						img.tiles[i].tileComps[comp].quantSteps =
-						    (Guint*)greallocn(img.tiles[i].tileComps[comp].quantSteps, img.tiles[0].tileComps[0].nQuantSteps, sizeof(Guint));
-						for (j = 0; j < img.tiles[0].tileComps[0].nQuantSteps; ++j)
-							img.tiles[i].tileComps[comp].quantSteps[j] =
-							    img.tiles[0].tileComps[0].quantSteps[j];
+						img.tiles[i].tileComps[comp].quantStyle  = img.tiles[0].tileComps[0].quantStyle;
+						img.tiles[i].tileComps[comp].nQuantSteps = img.tiles[0].tileComps[0].nQuantSteps;
+						img.tiles[i].tileComps[comp].quantSteps  = (uint32_t*)greallocn(img.tiles[i].tileComps[comp].quantSteps, img.tiles[0].tileComps[0].nQuantSteps, sizeof(uint32_t));
+						for (uint32_t j = 0; j < img.tiles[0].tileComps[0].nQuantSteps; ++j)
+							img.tiles[i].tileComps[comp].quantSteps[j] = img.tiles[0].tileComps[0].quantSteps[j];
 					}
 				}
 			}
-			haveQCD = gTrue;
+			haveQCD = true;
 			break;
 		case 0x5d: // QCC - quantization component
 			cover(24);
@@ -1278,79 +1250,72 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 				error(errSyntaxError, getPos(), "JPX QCC marker segment before QCD segment");
 				return jpxDecodeFatalError;
 			}
-			comp = 0;
-			if ((img.nComps > 256 && !readUWord(&comp)) || (img.nComps <= 256 && !readUByte(&comp)) || comp >= img.nComps || !readUByte(&img.tiles[0].tileComps[comp].quantStyle))
 			{
-				error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
-				return jpxDecodeFatalError;
-			}
-			if ((img.tiles[0].tileComps[comp].quantStyle & 0x1f) == 0x00)
-			{
-				if (segLen <= (img.nComps > 256 ? 5U : 4U))
+				uint32_t comp = 0;
+				if ((img.nComps > 256 && !readUWord(&comp)) || (img.nComps <= 256 && !readUByte(&comp)) || comp >= img.nComps || !readUByte(&img.tiles[0].tileComps[comp].quantStyle))
 				{
 					error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
 					return jpxDecodeFatalError;
 				}
-				img.tiles[0].tileComps[comp].nQuantSteps =
-				    segLen - (img.nComps > 256 ? 5 : 4);
-				img.tiles[0].tileComps[comp].quantSteps =
-				    (Guint*)greallocn(img.tiles[0].tileComps[comp].quantSteps, img.tiles[0].tileComps[comp].nQuantSteps, sizeof(Guint));
-				for (i = 0; i < img.tiles[0].tileComps[comp].nQuantSteps; ++i)
+				if ((img.tiles[0].tileComps[comp].quantStyle & 0x1f) == 0x00)
 				{
-					if (!readUByte(&img.tiles[0].tileComps[comp].quantSteps[i]))
+					if (segLen <= (img.nComps > 256 ? 5U : 4U))
+					{
+						error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
+						return jpxDecodeFatalError;
+					}
+					img.tiles[0].tileComps[comp].nQuantSteps = segLen - (img.nComps > 256 ? 5 : 4);
+					img.tiles[0].tileComps[comp].quantSteps  = (uint32_t*)greallocn(img.tiles[0].tileComps[comp].quantSteps, img.tiles[0].tileComps[comp].nQuantSteps, sizeof(uint32_t));
+					for (uint32_t i = 0; i < img.tiles[0].tileComps[comp].nQuantSteps; ++i)
+					{
+						if (!readUByte(&img.tiles[0].tileComps[comp].quantSteps[i]))
+						{
+							error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
+							return jpxDecodeFatalError;
+						}
+					}
+				}
+				else if ((img.tiles[0].tileComps[comp].quantStyle & 0x1f) == 0x01)
+				{
+					img.tiles[0].tileComps[comp].nQuantSteps = 1;
+					img.tiles[0].tileComps[comp].quantSteps  = (uint32_t*)greallocn(img.tiles[0].tileComps[comp].quantSteps, img.tiles[0].tileComps[comp].nQuantSteps, sizeof(uint32_t));
+					if (!readUWord(&img.tiles[0].tileComps[comp].quantSteps[0]))
 					{
 						error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
 						return jpxDecodeFatalError;
 					}
 				}
-			}
-			else if ((img.tiles[0].tileComps[comp].quantStyle & 0x1f) == 0x01)
-			{
-				img.tiles[0].tileComps[comp].nQuantSteps = 1;
-				img.tiles[0].tileComps[comp].quantSteps =
-				    (Guint*)greallocn(img.tiles[0].tileComps[comp].quantSteps, img.tiles[0].tileComps[comp].nQuantSteps, sizeof(Guint));
-				if (!readUWord(&img.tiles[0].tileComps[comp].quantSteps[0]))
+				else if ((img.tiles[0].tileComps[comp].quantStyle & 0x1f) == 0x02)
 				{
-					error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
-					return jpxDecodeFatalError;
-				}
-			}
-			else if ((img.tiles[0].tileComps[comp].quantStyle & 0x1f) == 0x02)
-			{
-				if (segLen < (img.nComps > 256 ? 5U : 4U) + 2)
-				{
-					error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
-					return jpxDecodeFatalError;
-				}
-				img.tiles[0].tileComps[comp].nQuantSteps =
-				    (segLen - (img.nComps > 256 ? 5 : 4)) / 2;
-				img.tiles[0].tileComps[comp].quantSteps =
-				    (Guint*)greallocn(img.tiles[0].tileComps[comp].quantSteps, img.tiles[0].tileComps[comp].nQuantSteps, sizeof(Guint));
-				for (i = 0; i < img.tiles[0].tileComps[comp].nQuantSteps; ++i)
-				{
-					if (!readUWord(&img.tiles[0].tileComps[comp].quantSteps[i]))
+					if (segLen < (img.nComps > 256 ? 5U : 4U) + 2)
 					{
-						error(errSyntaxError, getPos(), "Error in JPX QCD marker segment");
+						error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
 						return jpxDecodeFatalError;
 					}
+					img.tiles[0].tileComps[comp].nQuantSteps = (segLen - (img.nComps > 256 ? 5 : 4)) / 2;
+					img.tiles[0].tileComps[comp].quantSteps  = (uint32_t*)greallocn(img.tiles[0].tileComps[comp].quantSteps, img.tiles[0].tileComps[comp].nQuantSteps, sizeof(uint32_t));
+					for (uint32_t i = 0; i < img.tiles[0].tileComps[comp].nQuantSteps; ++i)
+					{
+						if (!readUWord(&img.tiles[0].tileComps[comp].quantSteps[i]))
+						{
+							error(errSyntaxError, getPos(), "Error in JPX QCD marker segment");
+							return jpxDecodeFatalError;
+						}
+					}
 				}
-			}
-			else
-			{
-				error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
-				return jpxDecodeFatalError;
-			}
-			for (i = 1; i < img.nXTiles * img.nYTiles; ++i)
-			{
-				img.tiles[i].tileComps[comp].quantStyle =
-				    img.tiles[0].tileComps[comp].quantStyle;
-				img.tiles[i].tileComps[comp].nQuantSteps =
-				    img.tiles[0].tileComps[comp].nQuantSteps;
-				img.tiles[i].tileComps[comp].quantSteps =
-				    (Guint*)greallocn(img.tiles[i].tileComps[comp].quantSteps, img.tiles[0].tileComps[comp].nQuantSteps, sizeof(Guint));
-				for (j = 0; j < img.tiles[0].tileComps[comp].nQuantSteps; ++j)
-					img.tiles[i].tileComps[comp].quantSteps[j] =
-					    img.tiles[0].tileComps[comp].quantSteps[j];
+				else
+				{
+					error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
+					return jpxDecodeFatalError;
+				}
+				for (uint32_t i = 1; i < img.nXTiles * img.nYTiles; ++i)
+				{
+					img.tiles[i].tileComps[comp].quantStyle  = img.tiles[0].tileComps[comp].quantStyle;
+					img.tiles[i].tileComps[comp].nQuantSteps = img.tiles[0].tileComps[comp].nQuantSteps;
+					img.tiles[i].tileComps[comp].quantSteps  = (uint32_t*)greallocn(img.tiles[i].tileComps[comp].quantSteps, img.tiles[0].tileComps[comp].nQuantSteps, sizeof(uint32_t));
+					for (uint32_t j = 0; j < img.tiles[0].tileComps[comp].nQuantSteps; ++j)
+						img.tiles[i].tileComps[comp].quantSteps[j] = img.tiles[0].tileComps[comp].quantSteps[j];
+				}
 			}
 			break;
 		case 0x5e: // RGN - region of interest
@@ -1382,7 +1347,7 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 #else
 			nProgs = (segLen - 2) / (img.nComps > 256 ? 9 : 7);
 			progs  = (JPXProgOrder*)gmallocn(nProgs, sizeof(JPXProgOrder));
-			for (i = 0; i < nProgs; ++i)
+			for (uint32_t i = 0; i < nProgs; ++i)
 			{
 				if (!readUByte(&progs[i].startRes) || !(img.nComps > 256 && readUWord(&progs[i].startComp)) || !(img.nComps <= 256 && readUByte(&progs[i].startComp)) || !readUWord(&progs[i].endLayer) || !readUByte(&progs[i].endRes) || !(img.nComps > 256 && readUWord(&progs[i].endComp)) || !(img.nComps <= 256 && readUByte(&progs[i].endComp)) || !readUByte(&progs[i].progOrder))
 				{
@@ -1441,11 +1406,11 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 			break;
 		case 0x90: // SOT - start of tile
 			cover(32);
-			haveSOT = gTrue;
+			haveSOT = true;
 			break;
 		default:
 			cover(33);
-			error(errSyntaxError, getPos(), "Unknown marker segment {0:02x} in JPX stream", segType);
+			error(errSyntaxError, getPos(), "Unknown marker segment {:02x} in JPX stream", segType);
 			if (segLen > 2)
 				bufStr->discardChars(segLen - 2);
 			break;
@@ -1470,18 +1435,18 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 	}
 
 	//----- read the tile-parts
-	ok = gTrue;
+	ok = true;
 	while (1)
 	{
 		if (!readTilePart())
 		{
-			ok = gFalse;
+			ok = false;
 			break;
 		}
 		if (!readMarkerHdr(&segType, &segLen))
 		{
 			error(errSyntaxError, getPos(), "Error in JPX codestream");
-			ok = gFalse;
+			ok = false;
 			break;
 		}
 		if (segType != 0x90)
@@ -1493,11 +1458,11 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 	if (segType != 0xd9)
 	{ // EOC - end of codestream
 		error(errSyntaxError, getPos(), "Missing EOC marker in JPX codestream");
-		ok = gFalse;
+		ok = false;
 	}
 
 	//----- finish decoding the image
-	for (i = 0; i < img.nXTiles * img.nYTiles; ++i)
+	for (uint32_t i = 0; i < img.nXTiles * img.nYTiles; ++i)
 	{
 		tile = &img.tiles[i];
 		if (!tile->init)
@@ -1505,7 +1470,7 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 			error(errSyntaxError, getPos(), "Uninitialized tile in JPX codestream");
 			return jpxDecodeFatalError;
 		}
-		for (comp = 0; comp < img.nComps; ++comp)
+		for (uint32_t comp = 0; comp < img.nComps; ++comp)
 		{
 			tileComp = &tile->tileComps[comp];
 			inverseTransform(tileComp);
@@ -1515,11 +1480,10 @@ JPXDecodeResult JPXStream::readCodestream(Guint len)
 	}
 
 	//~ can free memory below tileComps here, and also tileComp.buf
-
 	return ok ? jpxDecodeOk : jpxDecodeNonFatalError;
 }
 
-GBool JPXStream::readTilePart()
+bool JPXStream::readTilePart()
 {
 	JPXTile*      tile;
 	JPXTileComp*  tileComp;
@@ -1528,24 +1492,24 @@ GBool JPXStream::readTilePart()
 	JPXSubband*   subband;
 	JPXCodeBlock* cb;
 	int*          sbCoeffs;
-	GBool         haveSOD;
-	Guint         tileIdx, tilePartLen, tilePartIdx, nTileParts;
-	GBool         tilePartToEOC;
-	Guint         style, progOrder, nLayers, multiComp, nDecompLevels;
-	Guint         codeBlockW, codeBlockH, codeBlockStyle, transform;
-	Guint         precinctSize, qStyle;
-	Guint         px0, py0, px1, py1;
-	Guint         preCol0, preCol1, preRow0, preRow1, preCol, preRow;
-	Guint         cbCol0, cbCol1, cbRow0, cbRow1, cbX, cbY;
-	Guint         n, nSBs, nx, ny, comp, segLen;
-	Guint         i, j, k, r, pre, sb, cbi, cbj;
+	bool          haveSOD;
+	uint32_t      tileIdx, tilePartLen, tilePartIdx, nTileParts;
+	bool          tilePartToEOC;
+	uint32_t      style, progOrder, nLayers, multiComp, nDecompLevels;
+	uint32_t      codeBlockW, codeBlockH, codeBlockStyle, transform;
+	uint32_t      precinctSize, qStyle;
+	uint32_t      px0, py0, px1, py1;
+	uint32_t      preCol0, preCol1, preRow0, preRow1, preCol, preRow;
+	uint32_t      cbCol0, cbCol1, cbRow0, cbRow1, cbX, cbY;
+	uint32_t      n, nSBs, nx, ny, comp, segLen;
+	uint32_t      i, j, k, r, pre, sb, cbi, cbj;
 	int           segType, level;
 
 	// process the SOT marker segment
 	if (!readUWord(&tileIdx) || !readULong(&tilePartLen) || !readUByte(&tilePartIdx) || !readUByte(&nTileParts))
 	{
 		error(errSyntaxError, getPos(), "Error in JPX SOT marker segment");
-		return gFalse;
+		return false;
 	}
 
 	// check tileIdx and tilePartIdx
@@ -1553,19 +1517,20 @@ GBool JPXStream::readTilePart()
 	if (tileIdx >= img.nXTiles * img.nYTiles || tilePartIdx != img.tiles[tileIdx].nextTilePart || (tilePartIdx > 0 && !img.tiles[tileIdx].init) || (tilePartIdx == 0 && img.tiles[tileIdx].init))
 	{
 		error(errSyntaxError, getPos(), "Weird tile-part header in JPX stream");
-		return gFalse;
+		return false;
 	}
 	++img.tiles[tileIdx].nextTilePart;
 
 	tilePartToEOC = tilePartLen == 0;
 	tilePartLen -= 12; // subtract size of SOT segment
 
-	haveSOD = gFalse;
-	do {
+	haveSOD = false;
+	do
+	{
 		if (!readMarkerHdr(&segType, &segLen))
 		{
 			error(errSyntaxError, getPos(), "Error in JPX tile-part codestream");
-			return gFalse;
+			return false;
 		}
 		tilePartLen -= 2 + segLen;
 		switch (segType)
@@ -1575,24 +1540,24 @@ GBool JPXStream::readTilePart()
 			if (tilePartIdx != 0)
 			{
 				error(errSyntaxError, getPos(), "Extraneous JPX COD marker segment");
-				return gFalse;
+				return false;
 			}
 			if (!readUByte(&style) || !readUByte(&progOrder) || !readUWord(&nLayers) || !readUByte(&multiComp) || !readUByte(&nDecompLevels) || !readUByte(&codeBlockW) || !readUByte(&codeBlockH) || !readUByte(&codeBlockStyle) || !readUByte(&transform))
 			{
 				error(errSyntaxError, getPos(), "Error in JPX COD marker segment");
-				return gFalse;
+				return false;
 			}
 			if (nDecompLevels < 1 || nDecompLevels > 31 || codeBlockW > 8 || codeBlockH > 8)
 			{
 				error(errSyntaxError, getPos(), "Error in JPX COD marker segment");
-				return gFalse;
+				return false;
 			}
 			codeBlockW += 2;
 			codeBlockH += 2;
 			img.tiles[tileIdx].progOrder = progOrder;
 			img.tiles[tileIdx].nLayers   = nLayers;
 			img.tiles[tileIdx].multiComp = multiComp;
-			for (comp = 0; comp < img.nComps; ++comp)
+			for (uint32_t comp = 0; comp < img.nComps; ++comp)
 			{
 				img.tiles[tileIdx].tileComps[comp].style          = style;
 				img.tiles[tileIdx].tileComps[comp].nDecompLevels  = nDecompLevels;
@@ -1600,32 +1565,26 @@ GBool JPXStream::readTilePart()
 				img.tiles[tileIdx].tileComps[comp].codeBlockH     = codeBlockH;
 				img.tiles[tileIdx].tileComps[comp].codeBlockStyle = codeBlockStyle;
 				img.tiles[tileIdx].tileComps[comp].transform      = transform;
-				img.tiles[tileIdx].tileComps[comp].resLevels =
-				    (JPXResLevel*)greallocn(
-				        img.tiles[tileIdx].tileComps[comp].resLevels,
-				        nDecompLevels + 1,
-				        sizeof(JPXResLevel));
-				for (r = 0; r <= nDecompLevels; ++r)
+				img.tiles[tileIdx].tileComps[comp].resLevels      = (JPXResLevel*)greallocn(img.tiles[tileIdx].tileComps[comp].resLevels, nDecompLevels + 1, sizeof(JPXResLevel));
+				for (uint32_t r = 0; r <= nDecompLevels; ++r)
 					img.tiles[tileIdx].tileComps[comp].resLevels[r].precincts = nullptr;
 			}
-			for (r = 0; r <= nDecompLevels; ++r)
+			for (uint32_t r = 0; r <= nDecompLevels; ++r)
 			{
 				if (style & 0x01)
 				{
 					if (!readUByte(&precinctSize))
 					{
 						error(errSyntaxError, getPos(), "Error in JPX COD marker segment");
-						return gFalse;
+						return false;
 					}
 					if (r > 0 && ((precinctSize & 0x0f) == 0 || (precinctSize & 0xf0) == 0))
 					{
 						error(errSyntaxError, getPos(), "Invalid precinct size in JPX COD marker segment");
-						return gFalse;
+						return false;
 					}
-					img.tiles[tileIdx].tileComps[0].resLevels[r].precinctWidth =
-					    precinctSize & 0x0f;
-					img.tiles[tileIdx].tileComps[0].resLevels[r].precinctHeight =
-					    (precinctSize >> 4) & 0x0f;
+					img.tiles[tileIdx].tileComps[0].resLevels[r].precinctWidth  = precinctSize & 0x0f;
+					img.tiles[tileIdx].tileComps[0].resLevels[r].precinctHeight = (precinctSize >> 4) & 0x0f;
 				}
 				else
 				{
@@ -1633,14 +1592,12 @@ GBool JPXStream::readTilePart()
 					img.tiles[tileIdx].tileComps[0].resLevels[r].precinctHeight = 15;
 				}
 			}
-			for (comp = 1; comp < img.nComps; ++comp)
+			for (uint32_t comp = 1; comp < img.nComps; ++comp)
 			{
-				for (r = 0; r <= nDecompLevels; ++r)
+				for (uint32_t r = 0; r <= nDecompLevels; ++r)
 				{
-					img.tiles[tileIdx].tileComps[comp].resLevels[r].precinctWidth =
-					    img.tiles[tileIdx].tileComps[0].resLevels[r].precinctWidth;
-					img.tiles[tileIdx].tileComps[comp].resLevels[r].precinctHeight =
-					    img.tiles[tileIdx].tileComps[0].resLevels[r].precinctHeight;
+					img.tiles[tileIdx].tileComps[comp].resLevels[r].precinctWidth  = img.tiles[tileIdx].tileComps[0].resLevels[r].precinctWidth;
+					img.tiles[tileIdx].tileComps[comp].resLevels[r].precinctHeight = img.tiles[tileIdx].tileComps[0].resLevels[r].precinctHeight;
 				}
 			}
 			break;
@@ -1649,51 +1606,44 @@ GBool JPXStream::readTilePart()
 			if (tilePartIdx != 0)
 			{
 				error(errSyntaxError, getPos(), "Extraneous JPX COC marker segment");
-				return gFalse;
+				return false;
 			}
 			comp = 0;
 			if ((img.nComps > 256 && !readUWord(&comp)) || (img.nComps <= 256 && !readUByte(&comp)) || comp >= img.nComps || !readUByte(&style) || !readUByte(&nDecompLevels) || !readUByte(&codeBlockW) || !readUByte(&codeBlockH) || !readUByte(&codeBlockStyle) || !readUByte(&transform))
 			{
 				error(errSyntaxError, getPos(), "Error in JPX COC marker segment");
-				return gFalse;
+				return false;
 			}
 			if (nDecompLevels < 1 || nDecompLevels > 31 || codeBlockW > 8 || codeBlockH > 8)
 			{
 				error(errSyntaxError, getPos(), "Error in JPX COC marker segment");
-				return gFalse;
+				return false;
 			}
-			img.tiles[tileIdx].tileComps[comp].style =
-			    (img.tiles[tileIdx].tileComps[comp].style & ~1) | (style & 1);
+			img.tiles[tileIdx].tileComps[comp].style          = (img.tiles[tileIdx].tileComps[comp].style & ~1) | (style & 1);
 			img.tiles[tileIdx].tileComps[comp].nDecompLevels  = nDecompLevels;
 			img.tiles[tileIdx].tileComps[comp].codeBlockW     = codeBlockW + 2;
 			img.tiles[tileIdx].tileComps[comp].codeBlockH     = codeBlockH + 2;
 			img.tiles[tileIdx].tileComps[comp].codeBlockStyle = codeBlockStyle;
 			img.tiles[tileIdx].tileComps[comp].transform      = transform;
-			img.tiles[tileIdx].tileComps[comp].resLevels =
-			    (JPXResLevel*)greallocn(
-			        img.tiles[tileIdx].tileComps[comp].resLevels,
-			        nDecompLevels + 1,
-			        sizeof(JPXResLevel));
-			for (r = 0; r <= nDecompLevels; ++r)
+			img.tiles[tileIdx].tileComps[comp].resLevels      = (JPXResLevel*)greallocn(img.tiles[tileIdx].tileComps[comp].resLevels, nDecompLevels + 1, sizeof(JPXResLevel));
+			for (uint32_t r = 0; r <= nDecompLevels; ++r)
 				img.tiles[tileIdx].tileComps[comp].resLevels[r].precincts = nullptr;
-			for (r = 0; r <= nDecompLevels; ++r)
+			for (uint32_t r = 0; r <= nDecompLevels; ++r)
 			{
 				if (style & 0x01)
 				{
 					if (!readUByte(&precinctSize))
 					{
 						error(errSyntaxError, getPos(), "Error in JPX COD marker segment");
-						return gFalse;
+						return false;
 					}
 					if (r > 0 && ((precinctSize & 0x0f) == 0 || (precinctSize & 0xf0) == 0))
 					{
 						error(errSyntaxError, getPos(), "Invalid precinct size in JPX COD marker segment");
-						return gFalse;
+						return false;
 					}
-					img.tiles[tileIdx].tileComps[comp].resLevels[r].precinctWidth =
-					    precinctSize & 0x0f;
-					img.tiles[tileIdx].tileComps[comp].resLevels[r].precinctHeight =
-					    (precinctSize >> 4) & 0x0f;
+					img.tiles[tileIdx].tileComps[comp].resLevels[r].precinctWidth  = precinctSize & 0x0f;
+					img.tiles[tileIdx].tileComps[comp].resLevels[r].precinctHeight = (precinctSize >> 4) & 0x0f;
 				}
 				else
 				{
@@ -1707,41 +1657,39 @@ GBool JPXStream::readTilePart()
 			if (tilePartIdx != 0)
 			{
 				error(errSyntaxError, getPos(), "Extraneous JPX QCD marker segment");
-				return gFalse;
+				return false;
 			}
 			if (!readUByte(&img.tiles[tileIdx].tileComps[0].quantStyle))
 			{
 				error(errSyntaxError, getPos(), "Error in JPX QCD marker segment");
-				return gFalse;
+				return false;
 			}
 			if ((img.tiles[tileIdx].tileComps[0].quantStyle & 0x1f) == 0x00)
 			{
 				if (segLen <= 3)
 				{
 					error(errSyntaxError, getPos(), "Error in JPX QCD marker segment");
-					return gFalse;
+					return false;
 				}
 				img.tiles[tileIdx].tileComps[0].nQuantSteps = segLen - 3;
-				img.tiles[tileIdx].tileComps[0].quantSteps =
-				    (Guint*)greallocn(img.tiles[tileIdx].tileComps[0].quantSteps, img.tiles[tileIdx].tileComps[0].nQuantSteps, sizeof(Guint));
-				for (i = 0; i < img.tiles[tileIdx].tileComps[0].nQuantSteps; ++i)
+				img.tiles[tileIdx].tileComps[0].quantSteps  = (uint32_t*)greallocn(img.tiles[tileIdx].tileComps[0].quantSteps, img.tiles[tileIdx].tileComps[0].nQuantSteps, sizeof(uint32_t));
+				for (uint32_t i = 0; i < img.tiles[tileIdx].tileComps[0].nQuantSteps; ++i)
 				{
 					if (!readUByte(&img.tiles[tileIdx].tileComps[0].quantSteps[i]))
 					{
 						error(errSyntaxError, getPos(), "Error in JPX QCD marker segment");
-						return gFalse;
+						return false;
 					}
 				}
 			}
 			else if ((img.tiles[tileIdx].tileComps[0].quantStyle & 0x1f) == 0x01)
 			{
 				img.tiles[tileIdx].tileComps[0].nQuantSteps = 1;
-				img.tiles[tileIdx].tileComps[0].quantSteps =
-				    (Guint*)greallocn(img.tiles[tileIdx].tileComps[0].quantSteps, img.tiles[tileIdx].tileComps[0].nQuantSteps, sizeof(Guint));
+				img.tiles[tileIdx].tileComps[0].quantSteps  = (uint32_t*)greallocn(img.tiles[tileIdx].tileComps[0].quantSteps, img.tiles[tileIdx].tileComps[0].nQuantSteps, sizeof(uint32_t));
 				if (!readUWord(&img.tiles[tileIdx].tileComps[0].quantSteps[0]))
 				{
 					error(errSyntaxError, getPos(), "Error in JPX QCD marker segment");
-					return gFalse;
+					return false;
 				}
 			}
 			else if ((img.tiles[tileIdx].tileComps[0].quantStyle & 0x1f) == 0x02)
@@ -1749,36 +1697,31 @@ GBool JPXStream::readTilePart()
 				if (segLen < 5)
 				{
 					error(errSyntaxError, getPos(), "Error in JPX QCD marker segment");
-					return gFalse;
+					return false;
 				}
 				img.tiles[tileIdx].tileComps[0].nQuantSteps = (segLen - 3) / 2;
-				img.tiles[tileIdx].tileComps[0].quantSteps =
-				    (Guint*)greallocn(img.tiles[tileIdx].tileComps[0].quantSteps, img.tiles[tileIdx].tileComps[0].nQuantSteps, sizeof(Guint));
-				for (i = 0; i < img.tiles[tileIdx].tileComps[0].nQuantSteps; ++i)
+				img.tiles[tileIdx].tileComps[0].quantSteps  = (uint32_t*)greallocn(img.tiles[tileIdx].tileComps[0].quantSteps, img.tiles[tileIdx].tileComps[0].nQuantSteps, sizeof(uint32_t));
+				for (uint32_t i = 0; i < img.tiles[tileIdx].tileComps[0].nQuantSteps; ++i)
 				{
 					if (!readUWord(&img.tiles[tileIdx].tileComps[0].quantSteps[i]))
 					{
 						error(errSyntaxError, getPos(), "Error in JPX QCD marker segment");
-						return gFalse;
+						return false;
 					}
 				}
 			}
 			else
 			{
 				error(errSyntaxError, getPos(), "Error in JPX QCD marker segment");
-				return gFalse;
+				return false;
 			}
-			for (comp = 1; comp < img.nComps; ++comp)
+			for (uint32_t comp = 1; comp < img.nComps; ++comp)
 			{
-				img.tiles[tileIdx].tileComps[comp].quantStyle =
-				    img.tiles[tileIdx].tileComps[0].quantStyle;
-				img.tiles[tileIdx].tileComps[comp].nQuantSteps =
-				    img.tiles[tileIdx].tileComps[0].nQuantSteps;
-				img.tiles[tileIdx].tileComps[comp].quantSteps =
-				    (Guint*)greallocn(img.tiles[tileIdx].tileComps[comp].quantSteps, img.tiles[tileIdx].tileComps[0].nQuantSteps, sizeof(Guint));
-				for (j = 0; j < img.tiles[tileIdx].tileComps[0].nQuantSteps; ++j)
-					img.tiles[tileIdx].tileComps[comp].quantSteps[j] =
-					    img.tiles[tileIdx].tileComps[0].quantSteps[j];
+				img.tiles[tileIdx].tileComps[comp].quantStyle  = img.tiles[tileIdx].tileComps[0].quantStyle;
+				img.tiles[tileIdx].tileComps[comp].nQuantSteps = img.tiles[tileIdx].tileComps[0].nQuantSteps;
+				img.tiles[tileIdx].tileComps[comp].quantSteps  = (uint32_t*)greallocn(img.tiles[tileIdx].tileComps[comp].quantSteps, img.tiles[tileIdx].tileComps[0].nQuantSteps, sizeof(uint32_t));
+				for (uint32_t j = 0; j < img.tiles[tileIdx].tileComps[0].nQuantSteps; ++j)
+					img.tiles[tileIdx].tileComps[comp].quantSteps[j] = img.tiles[tileIdx].tileComps[0].quantSteps[j];
 			}
 			break;
 		case 0x5d: // QCC - quantization component
@@ -1786,43 +1729,40 @@ GBool JPXStream::readTilePart()
 			if (tilePartIdx != 0)
 			{
 				error(errSyntaxError, getPos(), "Extraneous JPX QCC marker segment");
-				return gFalse;
+				return false;
 			}
 			comp = 0;
 			if ((img.nComps > 256 && !readUWord(&comp)) || (img.nComps <= 256 && !readUByte(&comp)) || comp >= img.nComps || !readUByte(&img.tiles[tileIdx].tileComps[comp].quantStyle))
 			{
 				error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
-				return gFalse;
+				return false;
 			}
 			if ((img.tiles[tileIdx].tileComps[comp].quantStyle & 0x1f) == 0x00)
 			{
 				if (segLen <= (img.nComps > 256 ? 5U : 4U))
 				{
 					error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
-					return gFalse;
+					return false;
 				}
-				img.tiles[tileIdx].tileComps[comp].nQuantSteps =
-				    segLen - (img.nComps > 256 ? 5 : 4);
-				img.tiles[tileIdx].tileComps[comp].quantSteps =
-				    (Guint*)greallocn(img.tiles[tileIdx].tileComps[comp].quantSteps, img.tiles[tileIdx].tileComps[comp].nQuantSteps, sizeof(Guint));
-				for (i = 0; i < img.tiles[tileIdx].tileComps[comp].nQuantSteps; ++i)
+				img.tiles[tileIdx].tileComps[comp].nQuantSteps = segLen - (img.nComps > 256 ? 5 : 4);
+				img.tiles[tileIdx].tileComps[comp].quantSteps  = (uint32_t*)greallocn(img.tiles[tileIdx].tileComps[comp].quantSteps, img.tiles[tileIdx].tileComps[comp].nQuantSteps, sizeof(uint32_t));
+				for (uint32_t i = 0; i < img.tiles[tileIdx].tileComps[comp].nQuantSteps; ++i)
 				{
 					if (!readUByte(&img.tiles[tileIdx].tileComps[comp].quantSteps[i]))
 					{
 						error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
-						return gFalse;
+						return false;
 					}
 				}
 			}
 			else if ((img.tiles[tileIdx].tileComps[comp].quantStyle & 0x1f) == 0x01)
 			{
 				img.tiles[tileIdx].tileComps[comp].nQuantSteps = 1;
-				img.tiles[tileIdx].tileComps[comp].quantSteps =
-				    (Guint*)greallocn(img.tiles[tileIdx].tileComps[comp].quantSteps, img.tiles[tileIdx].tileComps[comp].nQuantSteps, sizeof(Guint));
+				img.tiles[tileIdx].tileComps[comp].quantSteps  = (uint32_t*)greallocn(img.tiles[tileIdx].tileComps[comp].quantSteps, img.tiles[tileIdx].tileComps[comp].nQuantSteps, sizeof(uint32_t));
 				if (!readUWord(&img.tiles[tileIdx].tileComps[comp].quantSteps[0]))
 				{
 					error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
-					return gFalse;
+					return false;
 				}
 			}
 			else if ((img.tiles[tileIdx].tileComps[comp].quantStyle & 0x1f) == 0x02)
@@ -1830,25 +1770,23 @@ GBool JPXStream::readTilePart()
 				if (segLen < (img.nComps > 256 ? 5U : 4U) + 2)
 				{
 					error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
-					return gFalse;
+					return false;
 				}
-				img.tiles[tileIdx].tileComps[comp].nQuantSteps =
-				    (segLen - (img.nComps > 256 ? 5 : 4)) / 2;
-				img.tiles[tileIdx].tileComps[comp].quantSteps =
-				    (Guint*)greallocn(img.tiles[tileIdx].tileComps[comp].quantSteps, img.tiles[tileIdx].tileComps[comp].nQuantSteps, sizeof(Guint));
-				for (i = 0; i < img.tiles[tileIdx].tileComps[comp].nQuantSteps; ++i)
+				img.tiles[tileIdx].tileComps[comp].nQuantSteps = (segLen - (img.nComps > 256 ? 5 : 4)) / 2;
+				img.tiles[tileIdx].tileComps[comp].quantSteps  = (uint32_t*)greallocn(img.tiles[tileIdx].tileComps[comp].quantSteps, img.tiles[tileIdx].tileComps[comp].nQuantSteps, sizeof(uint32_t));
+				for (uint32_t i = 0; i < img.tiles[tileIdx].tileComps[comp].nQuantSteps; ++i)
 				{
 					if (!readUWord(&img.tiles[tileIdx].tileComps[comp].quantSteps[i]))
 					{
 						error(errSyntaxError, getPos(), "Error in JPX QCD marker segment");
-						return gFalse;
+						return false;
 					}
 				}
 			}
 			else
 			{
 				error(errSyntaxError, getPos(), "Error in JPX QCC marker segment");
-				return gFalse;
+				return false;
 			}
 			break;
 		case 0x5e: // RGN - region of interest
@@ -1856,20 +1794,20 @@ GBool JPXStream::readTilePart()
 			if (tilePartIdx != 0)
 			{
 				error(errSyntaxError, getPos(), "Extraneous JPX RGN marker segment");
-				return gFalse;
+				return false;
 			}
 #if 1 //~ ROI is unimplemented
 			error(errUnimplemented, -1, "Got a JPX RGN segment");
 			if (segLen > 2 && bufStr->discardChars(segLen - 2) != segLen - 2)
 			{
 				error(errSyntaxError, getPos(), "Error in JPX RGN marker segment");
-				return gFalse;
+				return false;
 			}
 #else
 			if ((img.nComps > 256 && !readUWord(&comp)) || (img.nComps <= 256 && !readUByte(&comp)) || comp >= img.nComps || !readUByte(&compInfo[comp].roi.style) || !readUByte(&compInfo[comp].roi.shift))
 			{
 				error(errSyntaxError, getPos(), "Error in JPX RGN marker segment");
-				return gFalse;
+				return false;
 			}
 #endif
 			break;
@@ -1880,7 +1818,7 @@ GBool JPXStream::readTilePart()
 			if (segLen > 2 && bufStr->discardChars(segLen - 2) != segLen - 2)
 			{
 				error(errSyntaxError, getPos(), "Error in JPX POC marker segment");
-				return gFalse;
+				return false;
 			}
 #else
 			nTileProgs = (segLen - 2) / (img.nComps > 256 ? 9 : 7);
@@ -1890,7 +1828,7 @@ GBool JPXStream::readTilePart()
 				if (!readUByte(&tileProgs[i].startRes) || !(img.nComps > 256 && readUWord(&tileProgs[i].startComp)) || !(img.nComps <= 256 && readUByte(&tileProgs[i].startComp)) || !readUWord(&tileProgs[i].endLayer) || !readUByte(&tileProgs[i].endRes) || !(img.nComps > 256 && readUWord(&tileProgs[i].endComp)) || !(img.nComps <= 256 && readUByte(&tileProgs[i].endComp)) || !readUByte(&tileProgs[i].progOrder))
 				{
 					error(errSyntaxError, getPos(), "Error in JPX POC marker segment");
-					return gFalse;
+					return false;
 				}
 			}
 #endif
@@ -1902,7 +1840,7 @@ GBool JPXStream::readTilePart()
 			if (segLen > 2 && bufStr->discardChars(segLen - 2) != segLen - 2)
 			{
 				error(errSyntaxError, getPos(), "Error in JPX PPT marker segment");
-				return gFalse;
+				return false;
 			}
 #endif
 		case 0x58: // PLT - packet length, tile-part header
@@ -1911,7 +1849,7 @@ GBool JPXStream::readTilePart()
 			if (segLen > 2 && bufStr->discardChars(segLen - 2) != segLen - 2)
 			{
 				error(errSyntaxError, getPos(), "Error in JPX PLT marker segment");
-				return gFalse;
+				return false;
 			}
 			break;
 		case 0x64: // COM - comment
@@ -1920,16 +1858,16 @@ GBool JPXStream::readTilePart()
 			if (segLen > 2 && bufStr->discardChars(segLen - 2) != segLen - 2)
 			{
 				error(errSyntaxError, getPos(), "Error in JPX COM marker segment");
-				return gFalse;
+				return false;
 			}
 			break;
 		case 0x93: // SOD - start of data
 			cover(43);
-			haveSOD = gTrue;
+			haveSOD = true;
 			break;
 		default:
 			cover(44);
-			error(errSyntaxError, getPos(), "Unknown marker segment {0:02x} in JPX tile-part stream", segType);
+			error(errSyntaxError, getPos(), "Unknown marker segment {:02x} in JPX tile-part stream", segType);
 			if (segLen > 2)
 				bufStr->discardChars(segLen - 2);
 			break;
@@ -1937,14 +1875,14 @@ GBool JPXStream::readTilePart()
 	}
 	while (!haveSOD);
 
-	for (comp = 0; comp < img.nComps; ++comp)
+	for (uint32_t comp = 0; comp < img.nComps; ++comp)
 	{
 		tileComp = &img.tiles[tileIdx].tileComps[comp];
 		qStyle   = tileComp->quantStyle & 0x1f;
 		if ((qStyle == 0 && tileComp->nQuantSteps < 3 * tileComp->nDecompLevels + 1) || (qStyle == 1 && tileComp->nQuantSteps < 1) || (qStyle == 2 && tileComp->nQuantSteps < 3 * tileComp->nDecompLevels + 1))
 		{
 			error(errSyntaxError, getPos(), "Too few quant steps in JPX tile part");
-			return gFalse;
+			return false;
 		}
 	}
 
@@ -1966,7 +1904,7 @@ GBool JPXStream::readTilePart()
 		tile->res              = 0;
 		tile->precinct         = 0;
 		tile->layer            = 0;
-		tile->done             = gFalse;
+		tile->done             = false;
 		tile->maxNDecompLevels = 0;
 		tile->maxNPrecincts    = 0;
 		for (comp = 0; comp < img.nComps; ++comp)
@@ -1985,7 +1923,7 @@ GBool JPXStream::readTilePart()
 			if (tileComp->w == 0 || tileComp->h == 0 || tileComp->w > INT_MAX / tileComp->h)
 			{
 				error(errSyntaxError, getPos(), "Invalid tile size or sample separation in JPX stream");
-				return gFalse;
+				return false;
 			}
 			tileComp->data = (int*)gmallocn(tileComp->w * tileComp->h, sizeof(int));
 			if (tileComp->x1 - tileComp->x0 > tileComp->y1 - tileComp->y0)
@@ -2056,8 +1994,7 @@ GBool JPXStream::readTilePart()
 				{
 					for (preCol = preCol0; preCol < preCol1; ++preCol)
 					{
-						precinct->subbands =
-						    (JPXSubband*)gmallocn(nSBs, sizeof(JPXSubband));
+						precinct->subbands = (JPXSubband*)gmallocn(nSBs, sizeof(JPXSubband));
 						for (sb = 0; sb < nSBs; ++sb)
 						{
 							precinct->subbands[sb].inclusion    = nullptr;
@@ -2095,19 +2032,15 @@ GBool JPXStream::readTilePart()
 							}
 							else if (sb == 0)
 							{ // (NL-r+1)HL
-								sbCoeffs = tileComp->data
-								    + resLevel->bx1[1] - resLevel->bx0[1];
+								sbCoeffs = tileComp->data + resLevel->bx1[1] - resLevel->bx0[1];
 							}
 							else if (sb == 1)
 							{ // (NL-r+1)LH
-								sbCoeffs = tileComp->data
-								    + (resLevel->by1[0] - resLevel->by0[0]) * tileComp->w;
+								sbCoeffs = tileComp->data + (resLevel->by1[0] - resLevel->by0[0]) * tileComp->w;
 							}
 							else
 							{ // (NL-r+1)HH
-								sbCoeffs = tileComp->data
-								    + (resLevel->by1[0] - resLevel->by0[0]) * tileComp->w
-								    + (resLevel->bx1[1] - resLevel->bx0[1]);
+								sbCoeffs = tileComp->data + (resLevel->by1[0] - resLevel->by0[0]) * tileComp->w + (resLevel->bx1[1] - resLevel->bx0[1]);
 							}
 							cbCol0         = jpxFloorDivPow2(px0, resLevel->codeBlockW);
 							cbCol1         = jpxCeilDivPow2(px1, resLevel->codeBlockW);
@@ -2115,11 +2048,8 @@ GBool JPXStream::readTilePart()
 							cbRow1         = jpxCeilDivPow2(py1, resLevel->codeBlockH);
 							subband->nXCBs = cbCol1 - cbCol0;
 							subband->nYCBs = cbRow1 - cbRow0;
-							n              = subband->nXCBs > subband->nYCBs ? subband->nXCBs
-							                                                 : subband->nYCBs;
-							for (subband->maxTTLevel = 0, --n;
-							     n;
-							     ++subband->maxTTLevel, n >>= 1)
+							n              = (subband->nXCBs > subband->nYCBs) ? subband->nXCBs : subband->nYCBs;
+							for (subband->maxTTLevel = 0, --n; n; ++subband->maxTTLevel, n >>= 1)
 								;
 							n = 0;
 							for (level = subband->maxTTLevel; level >= 0; --level)
@@ -2128,15 +2058,13 @@ GBool JPXStream::readTilePart()
 								ny = jpxCeilDivPow2(subband->nYCBs, level);
 								n += nx * ny;
 							}
-							subband->inclusion =
-							    (JPXTagTreeNode*)gmallocn(n, sizeof(JPXTagTreeNode));
-							subband->zeroBitPlane =
-							    (JPXTagTreeNode*)gmallocn(n, sizeof(JPXTagTreeNode));
+							subband->inclusion    = (JPXTagTreeNode*)gmallocn(n, sizeof(JPXTagTreeNode));
+							subband->zeroBitPlane = (JPXTagTreeNode*)gmallocn(n, sizeof(JPXTagTreeNode));
 							for (k = 0; k < n; ++k)
 							{
-								subband->inclusion[k].finished    = gFalse;
+								subband->inclusion[k].finished    = false;
 								subband->inclusion[k].val         = 0;
-								subband->zeroBitPlane[k].finished = gFalse;
+								subband->zeroBitPlane[k].finished = false;
 								subband->zeroBitPlane[k].val      = 0;
 							}
 							subband->cbs = (JPXCodeBlock*)gmallocn(subband->nXCBs * subband->nYCBs, sizeof(JPXCodeBlock));
@@ -2164,17 +2092,15 @@ GBool JPXStream::readTilePart()
 										cb->y0 = py0;
 									if (cb->y1 > py1)
 										cb->y1 = py1;
-									cb->seen           = gFalse;
+									cb->seen           = false;
 									cb->lBlock         = 3;
 									cb->nextPass       = jpxPassCleanup;
 									cb->nZeroBitPlanes = 0;
 									cb->dataLenSize    = 1;
-									cb->dataLen        = (Guint*)gmalloc(sizeof(Guint));
+									cb->dataLen        = (uint32_t*)gmalloc(sizeof(uint32_t));
 									if (r <= tileComp->nDecompLevels - reduction)
 									{
-										cb->coeffs = sbCoeffs
-										    + (cb->y0 - resLevel->by0[sb]) * tileComp->w
-										    + (cb->x0 - resLevel->bx0[sb]);
+										cb->coeffs  = sbCoeffs + (cb->y0 - resLevel->by0[sb]) * tileComp->w + (cb->x0 - resLevel->bx0[sb]);
 										cb->touched = (char*)gmalloc(1 << (resLevel->codeBlockW + resLevel->codeBlockH));
 										cb->len     = 0;
 										for (cbj = 0; cbj < cb->y1 - cb->y0; ++cbj)
@@ -2197,13 +2123,13 @@ GBool JPXStream::readTilePart()
 				}
 			}
 		}
-		tile->init = gTrue;
+		tile->init = true;
 	}
 
 	return readTilePartData(tileIdx, tilePartLen, tilePartToEOC);
 }
 
-GBool JPXStream::readTilePartData(Guint tileIdx, Guint tilePartLen, GBool tilePartToEOC)
+bool JPXStream::readTilePartData(uint32_t tileIdx, uint32_t tilePartLen, bool tilePartToEOC)
 {
 	JPXTile*      tile;
 	JPXTileComp*  tileComp;
@@ -2211,8 +2137,8 @@ GBool JPXStream::readTilePartData(Guint tileIdx, Guint tilePartLen, GBool tilePa
 	JPXPrecinct*  precinct;
 	JPXSubband*   subband;
 	JPXCodeBlock* cb;
-	Guint         ttVal;
-	Guint         bits, cbX, cbY, nx, ny, i, j, n, sb;
+	uint32_t      ttVal;
+	uint32_t      bits, cbX, cbY, nx, ny, i, j, n, sb;
 	int           level;
 
 	tile = &img.tiles[tileIdx];
@@ -2224,7 +2150,7 @@ GBool JPXStream::readTilePartData(Guint tileIdx, Guint tilePartLen, GBool tilePa
 		if (tile->done)
 		{
 			bufStr->discardChars(tilePartLen);
-			return gTrue;
+			return true;
 		}
 
 		if (tilePartToEOC)
@@ -2258,7 +2184,7 @@ GBool JPXStream::readTilePartData(Guint tileIdx, Guint tilePartLen, GBool tilePa
 		{
 			// packet is empty -- clear all code-block inclusion flags
 			cover(45);
-			for (sb = 0; sb < (Guint)(tile->res == 0 ? 1 : 3); ++sb)
+			for (sb = 0; sb < (uint32_t)(tile->res == 0 ? 1 : 3); ++sb)
 			{
 				subband = &precinct->subbands[sb];
 				for (cbY = 0; cbY < subband->nYCBs; ++cbY)
@@ -2266,14 +2192,14 @@ GBool JPXStream::readTilePartData(Guint tileIdx, Guint tilePartLen, GBool tilePa
 					for (cbX = 0; cbX < subband->nXCBs; ++cbX)
 					{
 						cb           = &subband->cbs[cbY * subband->nXCBs + cbX];
-						cb->included = gFalse;
+						cb->included = false;
 					}
 				}
 			}
 		}
 		else
 		{
-			for (sb = 0; sb < (Guint)(tile->res == 0 ? 1 : 3); ++sb)
+			for (sb = 0; sb < (uint32_t)(tile->res == 0 ? 1 : 3); ++sb)
 			{
 				subband = &precinct->subbands[sb];
 				for (cbY = 0; cbY < subband->nYCBs; ++cbY)
@@ -2286,7 +2212,7 @@ GBool JPXStream::readTilePartData(Guint tileIdx, Guint tilePartLen, GBool tilePa
 						if (cb->x0 >= cb->x1 || cb->y0 >= cb->y1)
 						{
 							cover(46);
-							cb->included = gFalse;
+							cb->included = false;
 							continue;
 						}
 
@@ -2316,7 +2242,7 @@ GBool JPXStream::readTilePartData(Guint tileIdx, Guint tilePartLen, GBool tilePa
 									if (!readBits(1, &bits))
 										goto err;
 									if (bits == 1)
-										subband->inclusion[j].finished = gTrue;
+										subband->inclusion[j].finished = true;
 									else
 										++ttVal;
 								}
@@ -2352,7 +2278,7 @@ GBool JPXStream::readTilePartData(Guint tileIdx, Guint tilePartLen, GBool tilePa
 										if (!readBits(1, &bits))
 											goto err;
 										if (bits == 1)
-											subband->zeroBitPlane[j].finished = gTrue;
+											subband->zeroBitPlane[j].finished = true;
 										else
 											++ttVal;
 									}
@@ -2426,7 +2352,7 @@ GBool JPXStream::readTilePartData(Guint tileIdx, Guint tilePartLen, GBool tilePa
 								if (cb->nCodingPasses > cb->dataLenSize)
 								{
 									cb->dataLenSize = cb->nCodingPasses;
-									cb->dataLen     = (Guint*)greallocn(cb->dataLen, cb->dataLenSize, sizeof(Guint));
+									cb->dataLen     = (uint32_t*)greallocn(cb->dataLen, cb->dataLenSize, sizeof(uint32_t));
 								}
 
 								// read the lengths
@@ -2439,9 +2365,7 @@ GBool JPXStream::readTilePartData(Guint tileIdx, Guint tilePartLen, GBool tilePa
 							else
 							{
 								// read the length
-								for (n = cb->lBlock, i = cb->nCodingPasses >> 1;
-								     i;
-								     ++n, i >>= 1)
+								for (n = cb->lBlock, i = cb->nCodingPasses >> 1; i; ++n, i >>= 1)
 									;
 								if (!readBits(n, &cb->dataLen[0]))
 									goto err;
@@ -2457,7 +2381,7 @@ GBool JPXStream::readTilePartData(Guint tileIdx, Guint tilePartLen, GBool tilePa
 
 		//----- packet data
 
-		for (sb = 0; sb < (Guint)(tile->res == 0 ? 1 : 3); ++sb)
+		for (sb = 0; sb < (uint32_t)(tile->res == 0 ? 1 : 3); ++sb)
 		{
 			subband = &precinct->subbands[sb];
 			for (cbY = 0; cbY < subband->nYCBs; ++cbY)
@@ -2468,13 +2392,13 @@ GBool JPXStream::readTilePartData(Guint tileIdx, Guint tilePartLen, GBool tilePa
 					if (cb->included)
 					{
 						if (!readCodeBlockData(tileComp, resLevel, precinct, subband, tile->res, sb, cb))
-							return gFalse;
+							return false;
 						if (tileComp->codeBlockStyle & 0x04)
 							for (i = 0; i < cb->nCodingPasses; ++i)
 								tilePartLen -= cb->dataLen[i];
 						else
 							tilePartLen -= cb->dataLen[0];
-						cb->seen = gTrue;
+						cb->seen = true;
 					}
 				}
 			}
@@ -2500,7 +2424,7 @@ nextPacket:
 							if (++tile->layer == tile->nLayers)
 							{
 								tile->layer = 0;
-								tile->done  = gTrue;
+								tile->done  = true;
 							}
 						}
 					}
@@ -2523,7 +2447,7 @@ nextPacket:
 							if (++tile->res == tile->maxNDecompLevels + 1)
 							{
 								tile->res  = 0;
-								tile->done = gTrue;
+								tile->done = true;
 							}
 						}
 					}
@@ -2547,7 +2471,7 @@ nextPacket:
 							if (++tile->res == tile->maxNDecompLevels + 1)
 							{
 								tile->res  = 0;
-								tile->done = gTrue;
+								tile->done = true;
 							}
 						}
 					}
@@ -2571,7 +2495,7 @@ nextPacket:
 							if (++tile->precinct == tile->maxNPrecincts)
 							{
 								tile->precinct = 0;
-								tile->done     = gTrue;
+								tile->done     = true;
 							}
 						}
 					}
@@ -2594,7 +2518,7 @@ nextPacket:
 							if (++tile->comp == img.nComps)
 							{
 								tile->comp = 0;
-								tile->done = gTrue;
+								tile->done = true;
 							}
 						}
 					}
@@ -2605,21 +2529,21 @@ nextPacket:
 		}
 	}
 
-	return gTrue;
+	return true;
 
 err:
 	error(errSyntaxError, getPos(), "Error in JPX stream");
-	return gFalse;
+	return false;
 }
 
-GBool JPXStream::readCodeBlockData(JPXTileComp* tileComp, JPXResLevel* resLevel, JPXPrecinct* precinct, JPXSubband* subband, Guint res, Guint sb, JPXCodeBlock* cb)
+bool JPXStream::readCodeBlockData(JPXTileComp* tileComp, JPXResLevel* resLevel, JPXPrecinct* precinct, JPXSubband* subband, uint32_t res, uint32_t sb, JPXCodeBlock* cb)
 {
-	int * coeff0, *coeff1, *coeff;
-	char *touched0, *touched1, *touched;
-	Guint horiz, vert, diag, all, cx, xorBit;
-	int   horizSign, vertSign, bit;
-	int   segSym;
-	Guint n, i, x, y0, y1;
+	int *    coeff0, *coeff1, *coeff;
+	char *   touched0, *touched1, *touched;
+	uint32_t horiz, vert, diag, all, cx, xorBit;
+	int      horizSign, vertSign, bit;
+	int      segSym;
+	uint32_t n, i, x, y0, y1;
 
 	if (res > tileComp->nDecompLevels - reduction)
 	{
@@ -2635,7 +2559,7 @@ GBool JPXStream::readCodeBlockData(JPXTileComp* tileComp, JPXResLevel* resLevel,
 			n = cb->dataLen[0];
 		}
 		bufStr->discardChars(n);
-		return gTrue;
+		return true;
 	}
 
 	if (cb->arithDecoder)
@@ -2676,18 +2600,11 @@ GBool JPXStream::readCodeBlockData(JPXTileComp* tileComp, JPXResLevel* resLevel,
 		//----- significance propagation pass
 		case jpxPassSigProp:
 			cover(65);
-			for (y0 = cb->y0, coeff0 = cb->coeffs, touched0 = cb->touched;
-			     y0 < cb->y1;
-			     y0 += 4, coeff0 += 4 * tileComp->w,
-			    touched0 += 4 << resLevel->codeBlockW)
+			for (y0 = cb->y0, coeff0 = cb->coeffs, touched0 = cb->touched; y0 < cb->y1; y0 += 4, coeff0 += 4 * tileComp->w, touched0 += 4 << resLevel->codeBlockW)
 			{
-				for (x = cb->x0, coeff1 = coeff0, touched1 = touched0;
-				     x < cb->x1;
-				     ++x, ++coeff1, ++touched1)
+				for (x = cb->x0, coeff1 = coeff0, touched1 = touched0; x < cb->x1; ++x, ++coeff1, ++touched1)
 				{
-					for (y1 = 0, coeff = coeff1, touched = touched1;
-					     y1 < 4 && y0 + y1 < cb->y1;
-					     ++y1, coeff += tileComp->w, touched += resLevel->cbW)
+					for (y1 = 0, coeff = coeff1, touched = touched1; y1 < 4 && y0 + y1 < cb->y1; ++y1, coeff += tileComp->w, touched += resLevel->cbW)
 					{
 						if (!*coeff)
 						{
@@ -2757,18 +2674,11 @@ GBool JPXStream::readCodeBlockData(JPXTileComp* tileComp, JPXResLevel* resLevel,
 		//----- magnitude refinement pass
 		case jpxPassMagRef:
 			cover(66);
-			for (y0 = cb->y0, coeff0 = cb->coeffs, touched0 = cb->touched;
-			     y0 < cb->y1;
-			     y0 += 4, coeff0 += 4 * tileComp->w,
-			    touched0 += 4 << resLevel->codeBlockW)
+			for (y0 = cb->y0, coeff0 = cb->coeffs, touched0 = cb->touched; y0 < cb->y1; y0 += 4, coeff0 += 4 * tileComp->w, touched0 += 4 << resLevel->codeBlockW)
 			{
-				for (x = cb->x0, coeff1 = coeff0, touched1 = touched0;
-				     x < cb->x1;
-				     ++x, ++coeff1, ++touched1)
+				for (x = cb->x0, coeff1 = coeff0, touched1 = touched0; x < cb->x1; ++x, ++coeff1, ++touched1)
 				{
-					for (y1 = 0, coeff = coeff1, touched = touched1;
-					     y1 < 4 && y0 + y1 < cb->y1;
-					     ++y1, coeff += tileComp->w, touched += resLevel->cbW)
+					for (y1 = 0, coeff = coeff1, touched = touched1; y1 < 4 && y0 + y1 < cb->y1; ++y1, coeff += tileComp->w, touched += resLevel->cbW)
 					{
 						if (*coeff && !*touched)
 						{
@@ -2817,14 +2727,9 @@ GBool JPXStream::readCodeBlockData(JPXTileComp* tileComp, JPXResLevel* resLevel,
 		//----- cleanup pass
 		case jpxPassCleanup:
 			cover(67);
-			for (y0 = cb->y0, coeff0 = cb->coeffs, touched0 = cb->touched;
-			     y0 < cb->y1;
-			     y0 += 4, coeff0 += 4 * tileComp->w,
-			    touched0 += 4 << resLevel->codeBlockW)
+			for (y0 = cb->y0, coeff0 = cb->coeffs, touched0 = cb->touched; y0 < cb->y1; y0 += 4, coeff0 += 4 * tileComp->w, touched0 += 4 << resLevel->codeBlockW)
 			{
-				for (x = cb->x0, coeff1 = coeff0, touched1 = touched0;
-				     x < cb->x1;
-				     ++x, ++coeff1, ++touched1)
+				for (x = cb->x0, coeff1 = coeff0, touched1 = touched0; x < cb->x1; ++x, ++coeff1, ++touched1)
 				{
 					y1 = 0;
 					if (y0 + 3 < cb->y1 && !(*touched1) && !(touched1[resLevel->cbW]) && !(touched1[2 * resLevel->cbW]) && !(touched1[3 * resLevel->cbW]) && (x == cb->x0 || y0 == cb->y0 || !coeff1[-(int)tileComp->w - 1]) && (y0 == cb->y0 || !coeff1[-(int)tileComp->w]) && (x == cb->x1 - 1 || y0 == cb->y0 || !coeff1[-(int)tileComp->w + 1]) && (x == cb->x0 || (!coeff1[-1] && !coeff1[tileComp->w - 1] && !coeff1[2 * tileComp->w - 1] && !coeff1[3 * tileComp->w - 1])) && (x == cb->x1 - 1 || (!coeff1[1] && !coeff1[tileComp->w + 1] && !coeff1[2 * tileComp->w + 1] && !coeff1[3 * tileComp->w + 1])) && ((tileComp->codeBlockStyle & 0x08) || ((x == cb->x0 || y0 + 4 == cb->y1 || !coeff1[4 * tileComp->w - 1]) && (y0 + 4 == cb->y1 || !coeff1[4 * tileComp->w]) && (x == cb->x1 - 1 || y0 + 4 == cb->y1 || !coeff1[4 * tileComp->w + 1]))))
@@ -2946,7 +2851,7 @@ GBool JPXStream::readCodeBlockData(JPXTileComp* tileComp, JPXResLevel* resLevel,
 	}
 
 	cb->arithDecoder->cleanup();
-	return gTrue;
+	return true;
 }
 
 // Inverse quantization, and wavelet transform (IDWT).  This also does
@@ -2959,11 +2864,11 @@ void JPXStream::inverseTransform(JPXTileComp* tileComp)
 	JPXCodeBlock* cb;
 	int *         coeff0, *coeff;
 	char *        touched0, *touched;
-	Guint         qStyle, guard, eps, shift;
+	uint32_t      qStyle, guard, eps, shift;
 	int           shift2;
 	double        mu;
 	int           val;
-	Guint         r, pre, cbX, cbY, x, y;
+	uint32_t      r, pre, cbX, cbY, x, y;
 
 	cover(68);
 
@@ -3003,13 +2908,9 @@ void JPXStream::inverseTransform(JPXTileComp* tileComp)
 		{
 			for (cbX = 0; cbX < subband->nXCBs; ++cbX)
 			{
-				for (y = cb->y0, coeff0 = cb->coeffs, touched0 = cb->touched;
-				     y < cb->y1;
-				     ++y, coeff0 += tileComp->w, touched0 += resLevel->cbW)
+				for (y = cb->y0, coeff0 = cb->coeffs, touched0 = cb->touched; y < cb->y1; ++y, coeff0 += tileComp->w, touched0 += resLevel->cbW)
 				{
-					for (x = cb->x0, coeff = coeff0, touched = touched0;
-					     x < cb->x1;
-					     ++x, ++coeff, ++touched)
+					for (x = cb->x0, coeff = coeff0, touched = touched0; x < cb->x1; ++x, ++coeff, ++touched)
 					{
 						val = *coeff;
 						if (val != 0)
@@ -3069,20 +2970,20 @@ void JPXStream::inverseTransform(JPXTileComp* tileComp)
 // - take (n)LL, (n)HL, (n)LH, and (n)HH from the upper-left corner
 //   of the tile-component data array
 // - leave the resulting (n-1)LL in the same place
-void JPXStream::inverseTransformLevel(JPXTileComp* tileComp, Guint r, JPXResLevel* resLevel)
+void JPXStream::inverseTransformLevel(JPXTileComp* tileComp, uint32_t r, JPXResLevel* resLevel)
 {
 	JPXPrecinct*  precinct;
 	JPXSubband*   subband;
 	JPXCodeBlock* cb;
 	int *         coeff0, *coeff;
 	char *        touched0, *touched;
-	Guint         qStyle, guard, eps, shift, t;
+	uint32_t      qStyle, guard, eps, shift, t;
 	int           shift2;
 	double        mu;
 	int           val;
 	int *         dataPtr, *bufPtr;
-	Guint         nx1, nx2, ny1, ny2, offset;
-	Guint         x, y, sb, pre, cbX, cbY;
+	uint32_t      nx1, nx2, ny1, ny2, offset;
+	uint32_t      x, y, sb, pre, cbX, cbY;
 
 	qStyle = tileComp->quantStyle & 0x1f;
 	guard  = (tileComp->quantStyle >> 5) & 7;
@@ -3146,13 +3047,9 @@ void JPXStream::inverseTransformLevel(JPXTileComp* tileComp, Guint r, JPXResLeve
 			{
 				for (cbX = 0; cbX < subband->nXCBs; ++cbX)
 				{
-					for (y = cb->y0, coeff0 = cb->coeffs, touched0 = cb->touched;
-					     y < cb->y1;
-					     ++y, coeff0 += tileComp->w, touched0 += resLevel->cbW)
+					for (y = cb->y0, coeff0 = cb->coeffs, touched0 = cb->touched; y < cb->y1; ++y, coeff0 += tileComp->w, touched0 += resLevel->cbW)
 					{
-						for (x = cb->x0, coeff = coeff0, touched = touched0;
-						     x < cb->x1;
-						     ++x, ++coeff, ++touched)
+						for (x = cb->x0, coeff = coeff0, touched = touched0; x < cb->x1; ++x, ++coeff, ++touched)
 						{
 							val = *coeff;
 							if (val != 0)
@@ -3201,27 +3098,19 @@ void JPXStream::inverseTransformLevel(JPXTileComp* tileComp, Guint r, JPXResLeve
 		if (resLevel->bx0[0] == resLevel->bx0[1])
 		{
 			// fetch LL/LH
-			for (x = 0, bufPtr = tileComp->buf + offset;
-			     x < nx1;
-			     ++x, bufPtr += 2)
+			for (x = 0, bufPtr = tileComp->buf + offset; x < nx1; ++x, bufPtr += 2)
 				*bufPtr = dataPtr[x];
 			// fetch HL/HH
-			for (x = nx1, bufPtr = tileComp->buf + offset + 1;
-			     x < nx2;
-			     ++x, bufPtr += 2)
+			for (x = nx1, bufPtr = tileComp->buf + offset + 1; x < nx2; ++x, bufPtr += 2)
 				*bufPtr = dataPtr[x];
 		}
 		else
 		{
 			// fetch LL/LH
-			for (x = 0, bufPtr = tileComp->buf + offset + 1;
-			     x < nx1;
-			     ++x, bufPtr += 2)
+			for (x = 0, bufPtr = tileComp->buf + offset + 1; x < nx1; ++x, bufPtr += 2)
 				*bufPtr = dataPtr[x];
 			// fetch HL/HH
-			for (x = nx1, bufPtr = tileComp->buf + offset;
-			     x < nx2;
-			     ++x, bufPtr += 2)
+			for (x = nx1, bufPtr = tileComp->buf + offset; x < nx2; ++x, bufPtr += 2)
 				*bufPtr = dataPtr[x];
 		}
 		inverseTransform1D(tileComp, tileComp->buf, offset, nx2);
@@ -3236,27 +3125,19 @@ void JPXStream::inverseTransformLevel(JPXTileComp* tileComp, Guint r, JPXResLeve
 		if (resLevel->by0[0] == resLevel->by0[1])
 		{
 			// fetch LL/HL
-			for (y = 0, bufPtr = tileComp->buf + offset;
-			     y < ny1;
-			     ++y, bufPtr += 2)
+			for (y = 0, bufPtr = tileComp->buf + offset; y < ny1; ++y, bufPtr += 2)
 				*bufPtr = dataPtr[y * tileComp->w];
 			// fetch LH/HH
-			for (y = ny1, bufPtr = tileComp->buf + offset + 1;
-			     y < ny2;
-			     ++y, bufPtr += 2)
+			for (y = ny1, bufPtr = tileComp->buf + offset + 1; y < ny2; ++y, bufPtr += 2)
 				*bufPtr = dataPtr[y * tileComp->w];
 		}
 		else
 		{
 			// fetch LL/HL
-			for (y = 0, bufPtr = tileComp->buf + offset + 1;
-			     y < ny1;
-			     ++y, bufPtr += 2)
+			for (y = 0, bufPtr = tileComp->buf + offset + 1; y < ny1; ++y, bufPtr += 2)
 				*bufPtr = dataPtr[y * tileComp->w];
 			// fetch LH/HH
-			for (y = ny1, bufPtr = tileComp->buf + offset;
-			     y < ny2;
-			     ++y, bufPtr += 2)
+			for (y = ny1, bufPtr = tileComp->buf + offset; y < ny2; ++y, bufPtr += 2)
 				*bufPtr = dataPtr[y * tileComp->w];
 		}
 		inverseTransform1D(tileComp, tileComp->buf, offset, ny2);
@@ -3265,10 +3146,8 @@ void JPXStream::inverseTransformLevel(JPXTileComp* tileComp, Guint r, JPXResLeve
 	}
 }
 
-void JPXStream::inverseTransform1D(JPXTileComp* tileComp, int* data, Guint offset, Guint n)
+void JPXStream::inverseTransform1D(JPXTileComp* tileComp, int* data, uint32_t offset, uint32_t n)
 {
-	Guint end, i;
-
 	//----- special case for length = 1
 	if (n == 1)
 	{
@@ -3283,7 +3162,7 @@ void JPXStream::inverseTransform1D(JPXTileComp* tileComp, int* data, Guint offse
 	{
 		cover(80);
 
-		end = offset + n;
+		const uint32_t end = offset + n;
 
 		//----- extend right
 		data[end] = data[end - 2];
@@ -3337,22 +3216,22 @@ void JPXStream::inverseTransform1D(JPXTileComp* tileComp, int* data, Guint offse
 		{
 			cover(84);
 			// step 1 (even)
-			for (i = 1; i <= end + 2; i += 2)
+			for (uint32_t i = 1; i <= end + 2; i += 2)
 				data[i] = (int)(idwtKappa * data[i]);
 			// step 2 (odd)
-			for (i = 0; i <= end + 3; i += 2)
+			for (uint32_t i = 0; i <= end + 3; i += 2)
 				data[i] = (int)(idwtIKappa * data[i]);
 			// step 3 (even)
-			for (i = 1; i <= end + 2; i += 2)
+			for (uint32_t i = 1; i <= end + 2; i += 2)
 				data[i] = (int)(data[i] - idwtDelta * (data[i - 1] + data[i + 1]));
 			// step 4 (odd)
-			for (i = 2; i <= end + 1; i += 2)
+			for (uint32_t i = 2; i <= end + 1; i += 2)
 				data[i] = (int)(data[i] - idwtGamma * (data[i - 1] + data[i + 1]));
 			// step 5 (even)
-			for (i = 3; i <= end; i += 2)
+			for (uint32_t i = 3; i <= end; i += 2)
 				data[i] = (int)(data[i] - idwtBeta * (data[i - 1] + data[i + 1]));
 			// step 6 (odd)
-			for (i = 4; i <= end - 1; i += 2)
+			for (uint32_t i = 4; i <= end - 1; i += 2)
 				data[i] = (int)(data[i] - idwtAlpha * (data[i - 1] + data[i + 1]));
 
 			//----- 5-3 reversible filter
@@ -3361,10 +3240,10 @@ void JPXStream::inverseTransform1D(JPXTileComp* tileComp, int* data, Guint offse
 		{
 			cover(85);
 			// step 1 (even)
-			for (i = 3; i <= end; i += 2)
+			for (uint32_t i = 3; i <= end; i += 2)
 				data[i] -= (data[i - 1] + data[i + 1] + 2) >> 2;
 			// step 2 (odd)
-			for (i = 4; i < end; i += 2)
+			for (uint32_t i = 4; i < end; i += 2)
 				data[i] += (data[i - 1] + data[i + 1]) >> 1;
 		}
 	}
@@ -3372,12 +3251,11 @@ void JPXStream::inverseTransform1D(JPXTileComp* tileComp, int* data, Guint offse
 
 // Inverse multi-component transform and DC level shift.  This also
 // converts fixed point samples back to integers.
-GBool JPXStream::inverseMultiCompAndDC(JPXTile* tile)
+bool JPXStream::inverseMultiCompAndDC(JPXTile* tile)
 {
 	JPXTileComp* tileComp;
 	int          coeff, d0, d1, d2, t, minVal, maxVal, zeroVal, shift, rounding;
 	int*         dataPtr;
-	Guint        j, comp, x, y;
 
 	//----- inverse multi-component transform
 
@@ -3385,23 +3263,22 @@ GBool JPXStream::inverseMultiCompAndDC(JPXTile* tile)
 	{
 		cover(86);
 		if (img.nComps < 3 || tile->tileComps[0].hSep != tile->tileComps[1].hSep || tile->tileComps[0].vSep != tile->tileComps[1].vSep || tile->tileComps[1].hSep != tile->tileComps[2].hSep || tile->tileComps[1].vSep != tile->tileComps[2].vSep)
-			return gFalse;
+			return false;
 
 		// inverse irreversible multiple component transform
 		if (tile->tileComps[0].transform == 0)
 		{
 			cover(87);
-			j = 0;
-			for (y = 0; y < tile->tileComps[0].h; ++y)
+			uint32_t j = 0;
+			for (uint32_t y = 0; y < tile->tileComps[0].h; ++y)
 			{
-				for (x = 0; x < tile->tileComps[0].w; ++x)
+				for (uint32_t x = 0; x < tile->tileComps[0].w; ++x)
 				{
 					d0                         = tile->tileComps[0].data[j];
 					d1                         = tile->tileComps[1].data[j];
 					d2                         = tile->tileComps[2].data[j];
 					tile->tileComps[0].data[j] = (int)(d0 + 1.402 * d2 + 0.5);
-					tile->tileComps[1].data[j] =
-					    (int)(d0 - 0.34413 * d1 - 0.71414 * d2 + 0.5);
+					tile->tileComps[1].data[j] = (int)(d0 - 0.34413 * d1 - 0.71414 * d2 + 0.5);
 					tile->tileComps[2].data[j] = (int)(d0 + 1.772 * d1 + 0.5);
 					++j;
 				}
@@ -3412,10 +3289,10 @@ GBool JPXStream::inverseMultiCompAndDC(JPXTile* tile)
 		else
 		{
 			cover(88);
-			j = 0;
-			for (y = 0; y < tile->tileComps[0].h; ++y)
+			uint32_t j = 0;
+			for (uint32_t y = 0; y < tile->tileComps[0].h; ++y)
 			{
-				for (x = 0; x < tile->tileComps[0].w; ++x)
+				for (uint32_t x = 0; x < tile->tileComps[0].w; ++x)
 				{
 					d0                         = tile->tileComps[0].data[j];
 					d1                         = tile->tileComps[1].data[j];
@@ -3430,7 +3307,7 @@ GBool JPXStream::inverseMultiCompAndDC(JPXTile* tile)
 	}
 
 	//----- DC level shift
-	for (comp = 0; comp < img.nComps; ++comp)
+	for (uint32_t comp = 0; comp < img.nComps; ++comp)
 	{
 		tileComp = &tile->tileComps[comp];
 
@@ -3441,9 +3318,9 @@ GBool JPXStream::inverseMultiCompAndDC(JPXTile* tile)
 			minVal  = -(1 << (tileComp->prec - 1));
 			maxVal  = (1 << (tileComp->prec - 1)) - 1;
 			dataPtr = tileComp->data;
-			for (y = 0; y < tileComp->h; ++y)
+			for (uint32_t y = 0; y < tileComp->h; ++y)
 			{
-				for (x = 0; x < tileComp->w; ++x)
+				for (uint32_t x = 0; x < tileComp->w; ++x)
 				{
 					coeff = *dataPtr;
 					if (tileComp->transform == 0)
@@ -3475,9 +3352,9 @@ GBool JPXStream::inverseMultiCompAndDC(JPXTile* tile)
 			dataPtr  = tileComp->data;
 			shift    = fracBits - tileComp->prec;
 			rounding = 1 << (shift - 1);
-			for (y = 0; y < tileComp->h; ++y)
+			for (uint32_t y = 0; y < tileComp->h; ++y)
 			{
-				for (x = 0; x < tileComp->w; ++x)
+				for (uint32_t x = 0; x < tileComp->w; ++x)
 				{
 					coeff = *dataPtr;
 					if (tileComp->transform == 0)
@@ -3502,23 +3379,24 @@ GBool JPXStream::inverseMultiCompAndDC(JPXTile* tile)
 		}
 	}
 
-	return gTrue;
+	return true;
 }
 
-GBool JPXStream::readBoxHdr(Guint* boxType, Guint* boxLen, Guint* dataLen)
+bool JPXStream::readBoxHdr(uint32_t* boxType, uint32_t* boxLen, uint32_t* dataLen)
 {
-	Guint len, lenH;
-
+	uint32_t len;
 	if (!readULong(&len) || !readULong(boxType))
-		return gFalse;
+		return false;
+
 	if (len == 1)
 	{
+		uint32_t lenH;
 		if (!readULong(&lenH) || !readULong(&len))
-			return gFalse;
+			return false;
 		if (lenH)
 		{
 			error(errSyntaxError, getPos(), "JPX stream contains a box larger than 2^32 bytes");
-			return gFalse;
+			return false;
 		}
 		*boxLen  = len;
 		*dataLen = len - 16;
@@ -3533,22 +3411,21 @@ GBool JPXStream::readBoxHdr(Guint* boxType, Guint* boxLen, Guint* dataLen)
 		*boxLen  = len;
 		*dataLen = len - 8;
 	}
-	return gTrue;
+	return true;
 }
 
-int JPXStream::readMarkerHdr(int* segType, Guint* segLen)
+int JPXStream::readMarkerHdr(int* segType, uint32_t* segLen)
 {
 	int c;
-
 	do {
 		do {
 			if ((c = bufStr->getChar()) == EOF)
-				return gFalse;
+				return false;
 		}
 		while (c != 0xff);
 		do {
 			if ((c = bufStr->getChar()) == EOF)
-				return gFalse;
+				return false;
 		}
 		while (c == 0xff);
 	}
@@ -3557,62 +3434,58 @@ int JPXStream::readMarkerHdr(int* segType, Guint* segLen)
 	if ((c >= 0x30 && c <= 0x3f) || c == 0x4f || c == 0x92 || c == 0x93 || c == 0xd9)
 	{
 		*segLen = 0;
-		return gTrue;
+		return true;
 	}
 	return readUWord(segLen);
 }
 
-GBool JPXStream::readUByte(Guint* x)
+bool JPXStream::readUByte(uint32_t* x)
 {
 	int c0;
-
 	if ((c0 = bufStr->getChar()) == EOF)
-		return gFalse;
-	*x = (Guint)c0;
-	return gTrue;
+		return false;
+	*x = (uint32_t)c0;
+	return true;
 }
 
-GBool JPXStream::readByte(int* x)
+bool JPXStream::readByte(int* x)
 {
 	int c0;
-
 	if ((c0 = bufStr->getChar()) == EOF)
-		return gFalse;
+		return false;
 	*x = c0;
 	if (c0 & 0x80)
 		*x |= -1 - 0xff;
-	return gTrue;
+	return true;
 }
 
-GBool JPXStream::readUWord(Guint* x)
+bool JPXStream::readUWord(uint32_t* x)
 {
 	int c0, c1;
-
 	if ((c0 = bufStr->getChar()) == EOF || (c1 = bufStr->getChar()) == EOF)
-		return gFalse;
-	*x = (Guint)((c0 << 8) | c1);
-	return gTrue;
+		return false;
+	*x = (uint32_t)((c0 << 8) | c1);
+	return true;
 }
 
-GBool JPXStream::readULong(Guint* x)
+bool JPXStream::readULong(uint32_t* x)
 {
 	int c0, c1, c2, c3;
-
 	if ((c0 = bufStr->getChar()) == EOF || (c1 = bufStr->getChar()) == EOF || (c2 = bufStr->getChar()) == EOF || (c3 = bufStr->getChar()) == EOF)
-		return gFalse;
-	*x = (Guint)((c0 << 24) | (c1 << 16) | (c2 << 8) | c3);
-	return gTrue;
+		return false;
+	*x = (uint32_t)((c0 << 24) | (c1 << 16) | (c2 << 8) | c3);
+	return true;
 }
 
-GBool JPXStream::readNBytes(int nBytes, GBool signd, int* x)
+bool JPXStream::readNBytes(int nBytes, bool signd, int* x)
 {
-	int y, c, i;
+	int c;
 
-	y = 0;
-	for (i = 0; i < nBytes; ++i)
+	int y = 0;
+	for (int i = 0; i < nBytes; ++i)
 	{
 		if ((c = bufStr->getChar()) == EOF)
-			return gFalse;
+			return false;
 		y = (y << 8) + c;
 	}
 	if (signd)
@@ -3621,24 +3494,23 @@ GBool JPXStream::readNBytes(int nBytes, GBool signd, int* x)
 			y |= -1 << (8 * nBytes);
 	}
 	*x = y;
-	return gTrue;
+	return true;
 }
 
-void JPXStream::startBitBuf(Guint byteCountA)
+void JPXStream::startBitBuf(uint32_t byteCountA)
 {
 	bitBufLen  = 0;
-	bitBufSkip = gFalse;
+	bitBufSkip = false;
 	byteCount  = byteCountA;
 }
 
-GBool JPXStream::readBits(int nBits, Guint* x)
+bool JPXStream::readBits(int nBits, uint32_t* x)
 {
 	int c;
 
 	while (bitBufLen < nBits)
 	{
-		if (byteCount == 0 || (c = bufStr->getChar()) == EOF)
-			return gFalse;
+		if (byteCount == 0 || (c = bufStr->getChar()) == EOF) return false;
 		--byteCount;
 		if (bitBufSkip)
 		{
@@ -3654,7 +3526,7 @@ GBool JPXStream::readBits(int nBits, Guint* x)
 	}
 	*x = (bitBuf >> (bitBufLen - nBits)) & ((1 << nBits) - 1);
 	bitBufLen -= nBits;
-	return gTrue;
+	return true;
 }
 
 void JPXStream::skipSOP()
@@ -3666,25 +3538,23 @@ void JPXStream::skipSOP()
 		bufStr->discardChars(6);
 		byteCount -= 6;
 		bitBufLen  = 0;
-		bitBufSkip = gFalse;
+		bitBufSkip = false;
 	}
 }
 
 void JPXStream::skipEPH()
 {
-	int k;
-
-	k = bitBufSkip ? 1 : 0;
-	if (byteCount >= (Guint)(k + 2) && bufStr->lookChar(k) == 0xff && bufStr->lookChar(k + 1) == 0x92)
+	const int k = bitBufSkip ? 1 : 0;
+	if (byteCount >= (uint32_t)(k + 2) && bufStr->lookChar(k) == 0xff && bufStr->lookChar(k + 1) == 0x92)
 	{
 		bufStr->discardChars(k + 2);
 		byteCount -= k + 2;
 		bitBufLen  = 0;
-		bitBufSkip = gFalse;
+		bitBufSkip = false;
 	}
 }
 
-Guint JPXStream::finishBitBuf()
+uint32_t JPXStream::finishBitBuf()
 {
 	if (bitBufSkip)
 	{

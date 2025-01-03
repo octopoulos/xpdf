@@ -6,19 +6,15 @@
 //
 //========================================================================
 
-#ifndef SPLASHFONTFILE_H
-#define SPLASHFONTFILE_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
 #include "SplashTypes.h"
 
 #if MULTITHREADED
 #	include "GMutex.h"
 #endif
 
-class GString;
 class SplashFontEngine;
 class SplashFont;
 class SplashFontFileID;
@@ -35,7 +31,7 @@ enum SplashFontType
 	splashFontCID,         // GfxFontType.fontCIDType0/fontCIDType0C
 	splashFontOpenTypeCFF, // GfxFontType.fontCIDType0COT
 	splashFontTrueType     // GfxFontType.fontTrueType/fontTrueTypeOT/
-	                   //             fontCIDType2/fontCIDType2OT
+	                       //             fontCIDType2/fontCIDType2OT
 };
 
 //------------------------------------------------------------------------
@@ -64,19 +60,19 @@ public:
 protected:
 	SplashFontFile(SplashFontFileID* idA, SplashFontType fontTypeA,
 #if LOAD_FONTS_FROM_MEM
-	               GString* fontBufA
+	               const std::string& fontBufA
 #else
-	               char* fileNameA, GBool deleteFileA
+	               char* fileNameA, bool deleteFileA
 #endif
 	);
 
 	SplashFontFileID* id;
 	SplashFontType    fontType;
 #if LOAD_FONTS_FROM_MEM
-	GString* fontBuf;
+	std::string fontBuf;
 #else
-	GString* fileName;
-	GBool    deleteFile;
+	std::string fileName;
+	bool        deleteFile;
 #endif
 #if MULTITHREADED
 	GAtomicCounter refCnt;
@@ -86,5 +82,3 @@ protected:
 
 	friend class SplashFontEngine;
 };
-
-#endif

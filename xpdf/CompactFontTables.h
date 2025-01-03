@@ -6,8 +6,7 @@
 //
 //========================================================================
 
-#ifndef COMPACTFONTINFO_H
-#define COMPACTFONTINFO_H
+#pragma once
 
 static char* type1CStdStrings[391] = {
 	".notdef",
@@ -403,7 +402,7 @@ static char* type1CStdStrings[391] = {
 	"Semibold"
 };
 
-static Gushort type1CISOAdobeCharset[229] = {
+static uint16_t type1CISOAdobeCharset[229] = {
 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
 	10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
 	20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
@@ -429,7 +428,7 @@ static Gushort type1CISOAdobeCharset[229] = {
 	220, 221, 222, 223, 224, 225, 226, 227, 228
 };
 
-static Gushort type1CExpertCharset[166] = {
+static uint16_t type1CExpertCharset[166] = {
 	0, 1, 229, 230, 231, 232, 233, 234, 235, 236,
 	237, 238, 13, 14, 15, 99, 239, 240, 241, 242,
 	243, 244, 245, 246, 247, 248, 27, 28, 249, 250,
@@ -449,7 +448,7 @@ static Gushort type1CExpertCharset[166] = {
 	373, 374, 375, 376, 377, 378
 };
 
-static Gushort type1CExpertSubsetCharset[87] = {
+static uint16_t type1CExpertSubsetCharset[87] = {
 	0, 1, 231, 232, 235, 236, 237, 238, 13, 14,
 	15, 99, 239, 240, 241, 242, 243, 244, 245, 246,
 	247, 248, 27, 28, 249, 250, 251, 253, 254, 255,
@@ -460,5 +459,3 @@ static Gushort type1CExpertSubsetCharset[87] = {
 	330, 331, 332, 333, 334, 335, 336, 337, 338, 339,
 	340, 341, 342, 343, 344, 345, 346
 };
-
-#endif

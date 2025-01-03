@@ -7,8 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
-#include <stdlib.h>
 #include <math.h>
 #include <limits.h>
 #include "gmem.h"
@@ -85,11 +83,11 @@ Annot::Annot(PDFDoc* docA, Dict* dict, Ref* refA)
 	double          t;
 	int             i;
 
-	ok              = gTrue;
-	doc             = docA;
-	xref            = doc->getXRef();
-	ref             = *refA;
-	type            = nullptr;
+	ok   = true;
+	doc  = docA;
+	xref = doc->getXRef();
+	ref  = *refA;
+	type.clear();
 	appearanceState = nullptr;
 	appearBuf       = nullptr;
 	borderStyle     = nullptr;
@@ -97,7 +95,7 @@ Annot::Annot(PDFDoc* docA, Dict* dict, Ref* refA)
 	//----- parse the type
 
 	if (dict->lookup("Subtype", &obj1)->isName())
-		type = new GString(obj1.getName());
+		type = obj1.getName();
 	obj1.free();
 
 	//----- parse the rectangle
@@ -133,7 +131,7 @@ Annot::Annot(PDFDoc* docA, Dict* dict, Ref* refA)
 	else
 	{
 		error(errSyntaxError, -1, "Bad bounding box for annotation");
-		ok = gFalse;
+		ok = false;
 	}
 	obj1.free();
 
@@ -257,17 +255,17 @@ Annot::Annot(PDFDoc* docA, Dict* dict, Ref* refA)
 	dict->lookup("AS", &asObj);
 	if (asObj.isName())
 	{
-		appearanceState = new GString(asObj.getName());
+		appearanceState = asObj.getName();
 	}
 	else if (apObj.isDict())
 	{
 		apObj.dictLookup("N", &obj1);
 		if (obj1.isDict() && obj1.dictGetLength() == 1)
-			appearanceState = new GString(obj1.dictGetKey(0));
+			appearanceState = obj1.dictGetKey(0);
 		obj1.free();
 	}
-	if (!appearanceState)
-		appearanceState = new GString("Off");
+	if (appearanceState.empty())
+		appearanceState = "Off";
 	asObj.free();
 
 	//----- get the annotation appearance
@@ -278,7 +276,7 @@ Annot::Annot(PDFDoc* docA, Dict* dict, Ref* refA)
 		apObj.dictLookupNF("N", &obj2);
 		if (obj1.isDict())
 		{
-			if (obj1.dictLookupNF(appearanceState->getCString(), &obj3)->isRef())
+			if (obj1.dictLookupNF(appearanceState.c_str(), &obj3)->isRef())
 				obj3.copy(&appearance);
 			obj3.free();
 		}
@@ -302,15 +300,8 @@ Annot::Annot(PDFDoc* docA, Dict* dict, Ref* refA)
 
 Annot::~Annot()
 {
-	if (type)
-		delete type;
-	if (appearanceState)
-		delete appearanceState;
 	appearance.free();
-	if (appearBuf)
-		delete appearBuf;
-	if (borderStyle)
-		delete borderStyle;
+	if (borderStyle) delete borderStyle;
 	ocObj.free();
 }
 
@@ -318,12 +309,12 @@ void Annot::generateAnnotAppearance(Object* annotObj)
 {
 	Object obj;
 	appearance.fetch(doc->getXRef(), &obj);
-	GBool alreadyHaveAppearance = obj.isStream();
+	bool alreadyHaveAppearance = obj.isStream();
 	obj.free();
 	if (alreadyHaveAppearance)
 		return;
 
-	if (!type || (type->cmp("Line") && type->cmp("PolyLine") && type->cmp("Polygon") && type->cmp("FreeText")))
+	if (type.empty() || (type != "Line" && type != "PolyLine" && type != "Polygon" && type != "FreeText"))
 		return;
 
 	Object annotObj2;
@@ -338,13 +329,13 @@ void Annot::generateAnnotAppearance(Object* annotObj)
 		return;
 	}
 
-	if (!type->cmp("Line"))
+	if (type == "Line")
 		generateLineAppearance(annotObj);
-	else if (!type->cmp("PolyLine"))
+	else if (type == "PolyLine")
 		generatePolyLineAppearance(annotObj);
-	else if (!type->cmp("Polygon"))
+	else if (type == "Polygon")
 		generatePolygonAppearance(annotObj);
-	else if (!type->cmp("FreeText"))
+	else if (type == "FreeText")
 		generateFreeTextAppearance(annotObj);
 
 	annotObj2.free();
@@ -362,27 +353,27 @@ void Annot::generateLineAppearance(Object* annotObj)
 	double           bx1, by1, bx2, by2;
 	double           leaderLen, leaderExtLen, leaderOffLen;
 	AnnotLineEndType lineEnd1, lineEnd2;
-	GBool            fill;
+	bool             fill;
 
-	appearBuf = new GString();
+	appearBuf.clear();
 
 	//----- check for transparency
 	if (annotObj->dictLookup("CA", &obj1)->isNum())
 	{
 		gfxStateDict.initDict(doc->getXRef());
 		gfxStateDict.dictAdd(copyString("ca"), obj1.copy(&obj2));
-		appearBuf->append("/GS1 gs\n");
+		appearBuf += "/GS1 gs\n";
 	}
 	obj1.free();
 
 	//----- set line style, colors
 	setLineStyle(borderStyle, &w);
 	setStrokeColor(borderStyle->getColor(), borderStyle->getNumColorComps());
-	fill = gFalse;
+	fill = false;
 	if (annotObj->dictLookup("IC", &obj1)->isArray())
 	{
 		if (setFillColor(&obj1))
-			fill = gTrue;
+			fill = true;
 	}
 	obj1.free();
 
@@ -508,23 +499,23 @@ void Annot::generateLineAppearance(Object* annotObj)
 	//----- draw leaders
 	if (leaderLen != 0)
 	{
-		appearBuf->appendf("{0:.4f} {1:.4f} m {2:.4f} {3:.4f} l\n", ax1, ay1, bx1, by1);
-		appearBuf->appendf("{0:.4f} {1:.4f} m {2:.4f} {3:.4f} l\n", ax2, ay2, bx2, by2);
+		appearBuf += fmt::format("{:.4f} {:.4f} m {:.4f} {:.4f} l\n", ax1, ay1, bx1, by1);
+		appearBuf += fmt::format("{:.4f} {:.4f} m {:.4f} {:.4f} l\n", ax2, ay2, bx2, by2);
 	}
 
 	//----- draw the line
-	appearBuf->appendf("{0:.4f} {1:.4f} m {2:.4f} {3:.4f} l\n", tx1, ty1, tx2, ty2);
-	appearBuf->append("S\n");
+	appearBuf += fmt::format("{:.4f} {:.4f} m {:.4f} {:.4f} l\n", tx1, ty1, tx2, ty2);
+	appearBuf += "S\n";
 
 	//----- draw the arrows
 	if (borderStyle->getType() == annotBorderDashed)
-		appearBuf->append("[] 0 d\n");
+		appearBuf += "[] 0 d\n";
 	drawLineArrow(lineEnd1, lx1, ly1, dx, dy, w, fill);
 	drawLineArrow(lineEnd2, lx2, ly2, -dx, -dy, w, fill);
 
 	//----- build the appearance stream dictionary
 	appearDict.initDict(doc->getXRef());
-	appearDict.dictAdd(copyString("Length"), obj1.initInt(appearBuf->getLength()));
+	appearDict.dictAdd(copyString("Length"), obj1.initInt(TO_INT(appearBuf.size())));
 	appearDict.dictAdd(copyString("Subtype"), obj1.initName("Form"));
 	obj1.initArray(doc->getXRef());
 	obj1.arrayAdd(obj2.initReal(0));
@@ -542,7 +533,7 @@ void Annot::generateLineAppearance(Object* annotObj)
 	}
 
 	//----- build the appearance stream
-	appearStream = new MemStream(appearBuf->getCString(), 0, appearBuf->getLength(), &appearDict);
+	appearStream = new MemStream(appearBuf.data(), 0, TO_UINT32(appearBuf.size()), &appearDict);
 	appearance.free();
 	appearance.initStream(appearStream);
 }
@@ -553,26 +544,25 @@ void Annot::generatePolyLineAppearance(Object* annotObj)
 	Object     gfxStateDict, appearDict, obj1, obj2;
 	MemStream* appearStream;
 	double     x1, y1, w;
-	int        i;
 
-	appearBuf = new GString();
+	std::string appearBuf;
 
 	//----- check for transparency
 	if (annotObj->dictLookup("CA", &obj1)->isNum())
 	{
 		gfxStateDict.initDict(doc->getXRef());
 		gfxStateDict.dictAdd(copyString("ca"), obj1.copy(&obj2));
-		appearBuf->append("/GS1 gs\n");
+		appearBuf += "/GS1 gs\n";
 	}
 	obj1.free();
 
 	//----- set line style, colors
 	setLineStyle(borderStyle, &w);
 	setStrokeColor(borderStyle->getColor(), borderStyle->getNumColorComps());
-	// fill = gFalse;
+	// fill = false;
 	// if (annotObj->dictLookup("IC", &obj1)->isArray()) {
 	//   if (setFillColor(&obj1)) {
-	//     fill = gTrue;
+	//     fill = true;
 	//   }
 	// }
 	// obj1.free();
@@ -583,7 +573,7 @@ void Annot::generatePolyLineAppearance(Object* annotObj)
 		obj1.free();
 		return;
 	}
-	for (i = 0; i + 1 < obj1.arrayGetLength(); i += 2)
+	for (int i = 0; i + 1 < obj1.arrayGetLength(); i += 2)
 	{
 		if (!obj1.arrayGet(i, &obj2)->isNum())
 		{
@@ -604,16 +594,16 @@ void Annot::generatePolyLineAppearance(Object* annotObj)
 		x1 -= xMin;
 		y1 -= yMin;
 		if (i == 0)
-			appearBuf->appendf("{0:.4f} {1:.4f} m\n", x1, y1);
+			appearBuf += fmt::format("{:.4f} {:.4f} m\n", x1, y1);
 		else
-			appearBuf->appendf("{0:.4f} {1:.4f} l\n", x1, y1);
+			appearBuf += fmt::format("{:.4f} {:.4f} l\n", x1, y1);
 	}
-	appearBuf->append("S\n");
+	appearBuf += "S\n";
 	obj1.free();
 
 	//----- build the appearance stream dictionary
 	appearDict.initDict(doc->getXRef());
-	appearDict.dictAdd(copyString("Length"), obj1.initInt(appearBuf->getLength()));
+	appearDict.dictAdd(copyString("Length"), obj1.initInt(TO_INT(appearBuf.size())));
 	appearDict.dictAdd(copyString("Subtype"), obj1.initName("Form"));
 	obj1.initArray(doc->getXRef());
 	obj1.arrayAdd(obj2.initReal(0));
@@ -631,7 +621,7 @@ void Annot::generatePolyLineAppearance(Object* annotObj)
 	}
 
 	//----- build the appearance stream
-	appearStream = new MemStream(appearBuf->getCString(), 0, appearBuf->getLength(), &appearDict);
+	appearStream = new MemStream(appearBuf.data(), 0, TO_UINT32(appearBuf.size()), &appearDict);
 	appearance.free();
 	appearance.initStream(appearStream);
 }
@@ -641,16 +631,15 @@ void Annot::generatePolygonAppearance(Object* annotObj)
 	Object     gfxStateDict, appearDict, obj1, obj2;
 	MemStream* appearStream;
 	double     x1, y1;
-	int        i;
 
-	appearBuf = new GString();
+	std::string appearBuf;
 
 	//----- check for transparency
 	if (annotObj->dictLookup("CA", &obj1)->isNum())
 	{
 		gfxStateDict.initDict(doc->getXRef());
 		gfxStateDict.dictAdd(copyString("ca"), obj1.copy(&obj2));
-		appearBuf->append("/GS1 gs\n");
+		appearBuf += "/GS1 gs\n";
 	}
 	obj1.free();
 
@@ -668,7 +657,7 @@ void Annot::generatePolygonAppearance(Object* annotObj)
 		obj1.free();
 		return;
 	}
-	for (i = 0; i + 1 < obj1.arrayGetLength(); i += 2)
+	for (int i = 0; i + 1 < obj1.arrayGetLength(); i += 2)
 	{
 		if (!obj1.arrayGet(i, &obj2)->isNum())
 		{
@@ -689,16 +678,16 @@ void Annot::generatePolygonAppearance(Object* annotObj)
 		x1 -= xMin;
 		y1 -= yMin;
 		if (i == 0)
-			appearBuf->appendf("{0:.4f} {1:.4f} m\n", x1, y1);
+			appearBuf += fmt::format("{:.4f} {:.4f} m\n", x1, y1);
 		else
-			appearBuf->appendf("{0:.4f} {1:.4f} l\n", x1, y1);
+			appearBuf += fmt::format("{:.4f} {:.4f} l\n", x1, y1);
 	}
-	appearBuf->append("f\n");
+	appearBuf += "f\n";
 	obj1.free();
 
 	//----- build the appearance stream dictionary
 	appearDict.initDict(doc->getXRef());
-	appearDict.dictAdd(copyString("Length"), obj1.initInt(appearBuf->getLength()));
+	appearDict.dictAdd(copyString("Length"), obj1.initInt(TO_INT(appearBuf.size())));
 	appearDict.dictAdd(copyString("Subtype"), obj1.initName("Form"));
 	obj1.initArray(doc->getXRef());
 	obj1.arrayAdd(obj2.initReal(0));
@@ -716,7 +705,7 @@ void Annot::generatePolygonAppearance(Object* annotObj)
 	}
 
 	//----- build the appearance stream
-	appearStream = new MemStream(appearBuf->getCString(), 0, appearBuf->getLength(), &appearDict);
+	appearStream = new MemStream(appearBuf.data(), 0, TO_UINT32(appearBuf.size()), &appearDict);
 	appearance.free();
 	appearance.initStream(appearStream);
 }
@@ -728,38 +717,37 @@ void Annot::generateFreeTextAppearance(Object* annotObj)
 {
 	Object     gfxStateDict, appearDict, obj1, obj2;
 	Object     resources, gsResources, fontResources, defaultFont;
-	GString *  text, *da;
 	double     lineWidth;
 	int        quadding, rot;
 	MemStream* appearStream;
 
-	appearBuf = new GString();
+	appearBuf.clear();
 
 	//----- check for transparency
 	if (annotObj->dictLookup("CA", &obj1)->isNum())
 	{
 		gfxStateDict.initDict(doc->getXRef());
 		gfxStateDict.dictAdd(copyString("ca"), obj1.copy(&obj2));
-		appearBuf->append("/GS1 gs\n");
+		appearBuf += "/GS1 gs\n";
 	}
 	obj1.free();
 
 	//----- draw the text
+	std::string text;
 	if (annotObj->dictLookup("Contents", &obj1)->isString())
-		text = obj1.getString()->copy();
-	else
-		text = new GString();
+		text = obj1.getString();
 	obj1.free();
 	if (annotObj->dictLookup("Q", &obj1)->isInt())
 		quadding = obj1.getInt();
 	else
 		quadding = 0;
 	obj1.free();
+
+	std::string da;
 	if (annotObj->dictLookup("DA", &obj1)->isString())
-		da = obj1.getString()->copy();
-	else
-		da = new GString();
+		da = obj1.getString();
 	obj1.free();
+
 	// the "Rotate" field is not defined in the PDF spec, but Acrobat
 	// looks at it
 	if (annotObj->dictLookup("Rotate", &obj1)->isInt())
@@ -768,19 +756,17 @@ void Annot::generateFreeTextAppearance(Object* annotObj)
 		rot = 0;
 	obj1.free();
 	drawText(text, da, quadding, 0, rot);
-	delete text;
-	delete da;
 
 	//----- draw the border
 	if (borderStyle->getWidth() != 0)
 	{
 		setLineStyle(borderStyle, &lineWidth);
-		appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} re s\n", 0.5 * lineWidth, 0.5 * lineWidth, xMax - xMin - lineWidth, yMax - yMin - lineWidth);
+		appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} re s\n", 0.5 * lineWidth, 0.5 * lineWidth, xMax - xMin - lineWidth, yMax - yMin - lineWidth);
 	}
 
 	//----- build the appearance stream dictionary
 	appearDict.initDict(doc->getXRef());
-	appearDict.dictAdd(copyString("Length"), obj1.initInt(appearBuf->getLength()));
+	appearDict.dictAdd(copyString("Length"), obj1.initInt(TO_INT(appearBuf.size())));
 	appearDict.dictAdd(copyString("Subtype"), obj1.initName("Form"));
 	obj1.initArray(doc->getXRef());
 	obj1.arrayAdd(obj2.initReal(0));
@@ -806,7 +792,7 @@ void Annot::generateFreeTextAppearance(Object* annotObj)
 	appearDict.dictAdd(copyString("Resources"), &resources);
 
 	//----- build the appearance stream
-	appearStream = new MemStream(appearBuf->getCString(), 0, appearBuf->getLength(), &appearDict);
+	appearStream = new MemStream(appearBuf.data(), 0, TO_UINT32(appearBuf.size()), &appearDict);
 	appearance.free();
 	appearance.initStream(appearStream);
 }
@@ -820,17 +806,17 @@ void Annot::setLineStyle(AnnotBorderStyle* bs, double* lineWidth)
 	if ((w = borderStyle->getWidth()) <= 0)
 		w = 0.1;
 	*lineWidth = w;
-	appearBuf->appendf("{0:.4f} w\n", w);
+	appearBuf += fmt::format("{:.4f} w\n", w);
 	// this treats beveled/inset/underline as solid
 	if (borderStyle->getType() == annotBorderDashed)
 	{
 		borderStyle->getDash(&dash, &dashLength);
-		appearBuf->append("[");
+		appearBuf += "[";
 		for (i = 0; i < dashLength; ++i)
-			appearBuf->appendf(" {0:.4f}", dash[i]);
-		appearBuf->append("] 0 d\n");
+			appearBuf += fmt::format(" {:.4f}", dash[i]);
+		appearBuf += "] 0 d\n";
 	}
-	appearBuf->append("0 j\n0 J\n");
+	appearBuf += "0 j\n0 J\n";
 }
 
 void Annot::setStrokeColor(double* color, int nComps)
@@ -838,28 +824,28 @@ void Annot::setStrokeColor(double* color, int nComps)
 	switch (nComps)
 	{
 	case 0:
-		appearBuf->append("0 G\n");
+		appearBuf += "0 G\n";
 		break;
 	case 1:
-		appearBuf->appendf("{0:.2f} G\n", color[0]);
+		appearBuf += fmt::format("{:.2f} G\n", color[0]);
 		break;
 	case 3:
-		appearBuf->appendf("{0:.2f} {1:.2f} {2:.2f} RG\n", color[0], color[1], color[2]);
+		appearBuf += fmt::format("{:.2f} {:.2f} {:.2f} RG\n", color[0], color[1], color[2]);
 		break;
 	case 4:
-		appearBuf->appendf("{0:.2f} {1:.2f} {2:.2f} {3:.2f} K\n", color[0], color[1], color[2], color[3]);
+		appearBuf += fmt::format("{:.2f} {:.2f} {:.2f} {:.2f} K\n", color[0], color[1], color[2], color[3]);
 		break;
 	}
 }
 
-GBool Annot::setFillColor(Object* colorObj)
+bool Annot::setFillColor(Object* colorObj)
 {
 	Object obj;
 	double color[4];
 	int    i;
 
 	if (!colorObj->isArray())
-		return gFalse;
+		return false;
 	for (i = 0; i < colorObj->arrayGetLength() && i < 4; ++i)
 	{
 		if (colorObj->arrayGet(i, &obj)->isNum())
@@ -871,16 +857,16 @@ GBool Annot::setFillColor(Object* colorObj)
 	switch (colorObj->arrayGetLength())
 	{
 	case 1:
-		appearBuf->appendf("{0:.2f} g\n", color[0]);
-		return gTrue;
+		appearBuf += fmt::format("{:.2f} g\n", color[0]);
+		return true;
 	case 3:
-		appearBuf->appendf("{0:.2f} {1:.2f} {2:.2f} rg\n", color[0], color[1], color[2]);
-		return gTrue;
+		appearBuf += fmt::format("{:.2f} {:.2f} {:.2f} rg\n", color[0], color[1], color[2]);
+		return true;
 	case 4:
-		appearBuf->appendf("{0:.2f} {1:.2f} {2:.2f} {3:.3f} k\n", color[0], color[1], color[2], color[3]);
-		return gTrue;
+		appearBuf += fmt::format("{:.2f} {:.2f} {:.2f} {:.3f} k\n", color[0], color[1], color[2], color[3]);
+		return true;
 	}
-	return gFalse;
+	return false;
 }
 
 AnnotLineEndType Annot::parseLineEndType(Object* obj)
@@ -948,7 +934,7 @@ void Annot::adjustLineEndpoint(AnnotLineEndType lineEnd, double x, double y, dou
 	*ty = y + w * dy;
 }
 
-void Annot::drawLineArrow(AnnotLineEndType lineEnd, double x, double y, double dx, double dy, double w, GBool fill)
+void Annot::drawLineArrow(AnnotLineEndType lineEnd, double x, double y, double dx, double dy, double w, bool fill)
 {
 	switch (lineEnd)
 	{
@@ -956,11 +942,11 @@ void Annot::drawLineArrow(AnnotLineEndType lineEnd, double x, double y, double d
 		break;
 	case annotLineEndSquare:
 		w *= lineEndSize1;
-		appearBuf->appendf("{0:.4f} {1:.4f} m\n", x + w * dx + 0.5 * w * dy, y + w * dy - 0.5 * w * dx);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x + 0.5 * w * dy, y - 0.5 * w * dx);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x - 0.5 * w * dy, y + 0.5 * w * dx);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x + w * dx - 0.5 * w * dy, y + w * dy + 0.5 * w * dx);
-		appearBuf->append(fill ? "b\n" : "s\n");
+		appearBuf += fmt::format("{:.4f} {:.4f} m\n", x + w * dx + 0.5 * w * dy, y + w * dy - 0.5 * w * dx);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x + 0.5 * w * dy, y - 0.5 * w * dx);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x - 0.5 * w * dy, y + 0.5 * w * dx);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x + w * dx - 0.5 * w * dy, y + w * dy + 0.5 * w * dx);
+		appearBuf += fill ? "b\n" : "s\n";
 		break;
 	case annotLineEndCircle:
 		w *= lineEndSize1;
@@ -968,51 +954,51 @@ void Annot::drawLineArrow(AnnotLineEndType lineEnd, double x, double y, double d
 		break;
 	case annotLineEndDiamond:
 		w *= lineEndSize1;
-		appearBuf->appendf("{0:.4f} {1:.4f} m\n", x, y);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x + 0.5 * w * dx - 0.5 * w * dy, y + 0.5 * w * dy + 0.5 * w * dx);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x + w * dx, y + w * dy);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x + 0.5 * w * dx + 0.5 * w * dy, y + 0.5 * w * dy - 0.5 * w * dx);
-		appearBuf->append(fill ? "b\n" : "s\n");
+		appearBuf += fmt::format("{:.4f} {:.4f} m\n", x, y);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x + 0.5 * w * dx - 0.5 * w * dy, y + 0.5 * w * dy + 0.5 * w * dx);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x + w * dx, y + w * dy);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x + 0.5 * w * dx + 0.5 * w * dy, y + 0.5 * w * dy - 0.5 * w * dx);
+		appearBuf += fill ? "b\n" : "s\n";
 		break;
 	case annotLineEndOpenArrow:
 		w *= lineEndSize2;
-		appearBuf->appendf("{0:.4f} {1:.4f} m\n", x + w * cos(lineArrowAngle) * dx + w * sin(lineArrowAngle) * dy, y + w * cos(lineArrowAngle) * dy - w * sin(lineArrowAngle) * dx);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x, y);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x + w * cos(lineArrowAngle) * dx - w * sin(lineArrowAngle) * dy, y + w * cos(lineArrowAngle) * dy + w * sin(lineArrowAngle) * dx);
-		appearBuf->append("S\n");
+		appearBuf += fmt::format("{:.4f} {:.4f} m\n", x + w * cos(lineArrowAngle) * dx + w * sin(lineArrowAngle) * dy, y + w * cos(lineArrowAngle) * dy - w * sin(lineArrowAngle) * dx);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x, y);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x + w * cos(lineArrowAngle) * dx - w * sin(lineArrowAngle) * dy, y + w * cos(lineArrowAngle) * dy + w * sin(lineArrowAngle) * dx);
+		appearBuf += "S\n";
 		break;
 	case annotLineEndClosedArrow:
 		w *= lineEndSize2;
-		appearBuf->appendf("{0:.4f} {1:.4f} m\n", x + w * cos(lineArrowAngle) * dx + w * sin(lineArrowAngle) * dy, y + w * cos(lineArrowAngle) * dy - w * sin(lineArrowAngle) * dx);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x, y);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x + w * cos(lineArrowAngle) * dx - w * sin(lineArrowAngle) * dy, y + w * cos(lineArrowAngle) * dy + w * sin(lineArrowAngle) * dx);
-		appearBuf->append(fill ? "b\n" : "s\n");
+		appearBuf += fmt::format("{:.4f} {:.4f} m\n", x + w * cos(lineArrowAngle) * dx + w * sin(lineArrowAngle) * dy, y + w * cos(lineArrowAngle) * dy - w * sin(lineArrowAngle) * dx);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x, y);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x + w * cos(lineArrowAngle) * dx - w * sin(lineArrowAngle) * dy, y + w * cos(lineArrowAngle) * dy + w * sin(lineArrowAngle) * dx);
+		appearBuf += fill ? "b\n" : "s\n";
 		break;
 	case annotLineEndButt:
 		w *= lineEndSize1;
-		appearBuf->appendf("{0:.4f} {1:.4f} m\n", x + 0.5 * w * dy, y - 0.5 * w * dx);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x - 0.5 * w * dy, y + 0.5 * w * dx);
-		appearBuf->append("S\n");
+		appearBuf += fmt::format("{:.4f} {:.4f} m\n", x + 0.5 * w * dy, y - 0.5 * w * dx);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x - 0.5 * w * dy, y + 0.5 * w * dx);
+		appearBuf += "S\n";
 		break;
 	case annotLineEndROpenArrow:
 		w *= lineEndSize2;
-		appearBuf->appendf("{0:.4f} {1:.4f} m\n", x + w * sin(lineArrowAngle) * dy, y - w * sin(lineArrowAngle) * dx);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x + w * cos(lineArrowAngle) * dx, y + w * cos(lineArrowAngle) * dy);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x - w * sin(lineArrowAngle) * dy, y + w * sin(lineArrowAngle) * dx);
-		appearBuf->append("S\n");
+		appearBuf += fmt::format("{:.4f} {:.4f} m\n", x + w * sin(lineArrowAngle) * dy, y - w * sin(lineArrowAngle) * dx);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x + w * cos(lineArrowAngle) * dx, y + w * cos(lineArrowAngle) * dy);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x - w * sin(lineArrowAngle) * dy, y + w * sin(lineArrowAngle) * dx);
+		appearBuf += "S\n";
 		break;
 	case annotLineEndRClosedArrow:
 		w *= lineEndSize2;
-		appearBuf->appendf("{0:.4f} {1:.4f} m\n", x + w * sin(lineArrowAngle) * dy, y - w * sin(lineArrowAngle) * dx);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x + w * cos(lineArrowAngle) * dx, y + w * cos(lineArrowAngle) * dy);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x - w * sin(lineArrowAngle) * dy, y + w * sin(lineArrowAngle) * dx);
-		appearBuf->append(fill ? "b\n" : "s\n");
+		appearBuf += fmt::format("{:.4f} {:.4f} m\n", x + w * sin(lineArrowAngle) * dy, y - w * sin(lineArrowAngle) * dx);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x + w * cos(lineArrowAngle) * dx, y + w * cos(lineArrowAngle) * dy);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x - w * sin(lineArrowAngle) * dy, y + w * sin(lineArrowAngle) * dx);
+		appearBuf += fill ? "b\n" : "s\n";
 		break;
 	case annotLineEndSlash:
 		w *= lineEndSize1;
-		appearBuf->appendf("{0:.4f} {1:.4f} m\n", x + 0.5 * w * cos(lineArrowAngle) * dy - 0.5 * w * sin(lineArrowAngle) * dx, y - 0.5 * w * cos(lineArrowAngle) * dx - 0.5 * w * sin(lineArrowAngle) * dy);
-		appearBuf->appendf("{0:.4f} {1:.4f} l\n", x - 0.5 * w * cos(lineArrowAngle) * dy + 0.5 * w * sin(lineArrowAngle) * dx, y + 0.5 * w * cos(lineArrowAngle) * dx + 0.5 * w * sin(lineArrowAngle) * dy);
-		appearBuf->append("S\n");
+		appearBuf += fmt::format("{:.4f} {:.4f} m\n", x + 0.5 * w * cos(lineArrowAngle) * dy - 0.5 * w * sin(lineArrowAngle) * dx, y - 0.5 * w * cos(lineArrowAngle) * dx - 0.5 * w * sin(lineArrowAngle) * dy);
+		appearBuf += fmt::format("{:.4f} {:.4f} l\n", x - 0.5 * w * cos(lineArrowAngle) * dy + 0.5 * w * sin(lineArrowAngle) * dx, y + 0.5 * w * cos(lineArrowAngle) * dx + 0.5 * w * sin(lineArrowAngle) * dy);
+		appearBuf += "S\n";
 		break;
 	}
 }
@@ -1021,61 +1007,57 @@ void Annot::drawLineArrow(AnnotLineEndType lineEnd, double x, double y, double d
 // <cmd> is used to draw the circle ("f", "s", or "b").
 void Annot::drawCircle(double cx, double cy, double r, const char* cmd)
 {
-	appearBuf->appendf("{0:.4f} {1:.4f} m\n", cx + r, cy);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx + r, cy + bezierCircle * r, cx + bezierCircle * r, cy + r, cx, cy + r);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx - bezierCircle * r, cy + r, cx - r, cy + bezierCircle * r, cx - r, cy);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx - r, cy - bezierCircle * r, cx - bezierCircle * r, cy - r, cx, cy - r);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx + bezierCircle * r, cy - r, cx + r, cy - bezierCircle * r, cx + r, cy);
-	appearBuf->appendf("{0:s}\n", cmd);
+	appearBuf += fmt::format("{:.4f} {:.4f} m\n", cx + r, cy);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx + r, cy + bezierCircle * r, cx + bezierCircle * r, cy + r, cx, cy + r);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx - bezierCircle * r, cy + r, cx - r, cy + bezierCircle * r, cx - r, cy);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx - r, cy - bezierCircle * r, cx - bezierCircle * r, cy - r, cx, cy - r);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx + bezierCircle * r, cy - r, cx + r, cy - bezierCircle * r, cx + r, cy);
+	appearBuf += fmt::format("{}\n", cmd);
 }
 
 // Draw the top-left half of an (approximate) circle of radius <r>
 // centered at (<cx>, <cy>).
 void Annot::drawCircleTopLeft(double cx, double cy, double r)
 {
-	double r2;
-
-	r2 = r / sqrt(2.0);
-	appearBuf->appendf("{0:.4f} {1:.4f} m\n", cx + r2, cy + r2);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx + (1 - bezierCircle) * r2, cy + (1 + bezierCircle) * r2, cx - (1 - bezierCircle) * r2, cy + (1 + bezierCircle) * r2, cx - r2, cy + r2);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx - (1 + bezierCircle) * r2, cy + (1 - bezierCircle) * r2, cx - (1 + bezierCircle) * r2, cy - (1 - bezierCircle) * r2, cx - r2, cy - r2);
-	appearBuf->append("S\n");
+	const double r2 = r / sqrt(2.0);
+	appearBuf += fmt::format("{:.4f} {:.4f} m\n", cx + r2, cy + r2);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx + (1 - bezierCircle) * r2, cy + (1 + bezierCircle) * r2, cx - (1 - bezierCircle) * r2, cy + (1 + bezierCircle) * r2, cx - r2, cy + r2);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx - (1 + bezierCircle) * r2, cy + (1 - bezierCircle) * r2, cx - (1 + bezierCircle) * r2, cy - (1 - bezierCircle) * r2, cx - r2, cy - r2);
+	appearBuf += "S\n";
 }
 
 // Draw the bottom-right half of an (approximate) circle of radius <r>
 // centered at (<cx>, <cy>).
 void Annot::drawCircleBottomRight(double cx, double cy, double r)
 {
-	double r2;
-
-	r2 = r / sqrt(2.0);
-	appearBuf->appendf("{0:.4f} {1:.4f} m\n", cx - r2, cy - r2);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx - (1 - bezierCircle) * r2, cy - (1 + bezierCircle) * r2, cx + (1 - bezierCircle) * r2, cy - (1 + bezierCircle) * r2, cx + r2, cy - r2);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx + (1 + bezierCircle) * r2, cy - (1 - bezierCircle) * r2, cx + (1 + bezierCircle) * r2, cy + (1 - bezierCircle) * r2, cx + r2, cy + r2);
-	appearBuf->append("S\n");
+	const double r2 = r / sqrt(2.0);
+	appearBuf += fmt::format("{:.4f} {:.4f} m\n", cx - r2, cy - r2);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx - (1 - bezierCircle) * r2, cy - (1 + bezierCircle) * r2, cx + (1 - bezierCircle) * r2, cy - (1 + bezierCircle) * r2, cx + r2, cy - r2);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx + (1 + bezierCircle) * r2, cy - (1 - bezierCircle) * r2, cx + (1 + bezierCircle) * r2, cy + (1 - bezierCircle) * r2, cx + r2, cy + r2);
+	appearBuf += "S\n";
 }
 
-void Annot::drawText(GString* text, GString* da, int quadding, double margin, int rot)
+void Annot::drawText(const std::string& text, const std::string& da, int quadding, double margin, int rot)
 {
-	GString *   text2, *tok;
-	GList*      daToks;
+	std::string tok;
+	VEC_STR     daToks;
 	const char* charName;
 	double      dx, dy, fontSize, fontSize2, x, y, w;
-	Gushort     charWidth;
+	uint16_t    charWidth;
 	int         tfPos, tmPos, i, j, c;
 
 	// check for a Unicode string
 	//~ this currently drops all non-Latin1 characters
-	if (text->getLength() >= 2 && text->getChar(0) == '\xfe' && text->getChar(1) == '\xff')
+	std::string text2;
+	if (text.size() >= 2 && text.at(0) == '\xfe' && text.at(1) == '\xff')
 	{
-		text2 = new GString();
-		for (i = 2; i + 1 < text->getLength(); i += 2)
+		for (i = 2; i + 1 < text.size(); i += 2)
 		{
-			c = ((text->getChar(i) & 0xff) << 8) + (text->getChar(i + 1) & 0xff);
+			c = ((text.at(i) & 0xff) << 8) + (text.at(i + 1) & 0xff);
 			if (c <= 0xff)
-				text2->append((char)c);
+				text2 += (char)c;
 			else
-				text2->append('?');
+				text2 += '?';
 		}
 	}
 	else
@@ -1085,33 +1067,29 @@ void Annot::drawText(GString* text, GString* da, int quadding, double margin, in
 
 	// parse the default appearance string
 	tfPos = tmPos = -1;
-	if (da)
+	if (da.size())
 	{
-		daToks = new GList();
-		i      = 0;
-		while (i < da->getLength())
+		i = 0;
+		while (i < da.size())
 		{
-			while (i < da->getLength() && Lexer::isSpace(da->getChar(i)))
+			while (i < da.size() && Lexer::isSpace(da.at(i)))
 				++i;
-			if (i < da->getLength())
+			if (i < da.size())
 			{
-				for (j = i + 1;
-				     j < da->getLength() && !Lexer::isSpace(da->getChar(j));
-				     ++j)
+				for (j = i + 1; j < da.size() && !Lexer::isSpace(da.at(j)); ++j)
 					;
-				daToks->append(new GString(da, i, j - i));
+				daToks.push_back(std::string(da, i, j - i));
 				i = j;
 			}
 		}
-		for (i = 2; i < daToks->getLength(); ++i)
-			if (i >= 2 && !((GString*)daToks->get(i))->cmp("Tf"))
+		for (i = 2; i < daToks.size(); ++i)
+			if (i >= 2 && daToks.at(i) == "Tf")
 				tfPos = i - 2;
-			else if (i >= 6 && !((GString*)daToks->get(i))->cmp("Tm"))
+			else if (i >= 6 && daToks.at(i) == "Tm")
 				tmPos = i - 6;
 	}
 	else
 	{
-		daToks = nullptr;
 	}
 
 	// get the font and font size
@@ -1119,37 +1097,35 @@ void Annot::drawText(GString* text, GString* da, int quadding, double margin, in
 	if (tfPos >= 0)
 	{
 		//~ where do we look up the font?
-		tok = (GString*)daToks->get(tfPos);
-		tok->clear();
-		tok->append("/xpdf_default_font");
-		tok      = (GString*)daToks->get(tfPos + 1);
-		fontSize = atof(tok->getCString());
+		daToks[tfPos] = "/xpdf_default_font";
+		tok           = daToks.at(tfPos + 1);
+		fontSize      = atof(tok.c_str());
 	}
 	else
 	{
 		error(errSyntaxError, -1, "Missing 'Tf' operator in annotation's DA string");
-		daToks->append(new GString("/xpdf_default_font"));
-		daToks->append(new GString("10"));
-		daToks->append(new GString("Tf"));
+		daToks.push_back("/xpdf_default_font");
+		daToks.push_back("10");
+		daToks.push_back("Tf");
 	}
 
 	// setup
-	appearBuf->append("q\n");
+	appearBuf += "q\n";
 	if (rot == 90)
 	{
-		appearBuf->appendf("0 1 -1 0 {0:.4f} 0 cm\n", xMax - xMin);
+		appearBuf += fmt::format("0 1 -1 0 {:.4f} 0 cm\n", xMax - xMin);
 		dx = yMax - yMin;
 		dy = xMax - xMin;
 	}
 	else if (rot == 180)
 	{
-		appearBuf->appendf("-1 0 0 -1 {0:.4f} {1:.4f} cm\n", xMax - xMin, yMax - yMin);
+		appearBuf += fmt::format("-1 0 0 -1 {:.4f} {:.4f} cm\n", xMax - xMin, yMax - yMin);
 		dx = xMax - yMax;
 		dy = yMax - yMin;
 	}
 	else if (rot == 270)
 	{
-		appearBuf->appendf("0 -1 1 0 0 {0:.4f} cm\n", yMax - yMin);
+		appearBuf += fmt::format("0 -1 1 0 0 {:.4f} cm\n", yMax - yMin);
 		dx = yMax - yMin;
 		dy = xMax - xMin;
 	}
@@ -1158,14 +1134,14 @@ void Annot::drawText(GString* text, GString* da, int quadding, double margin, in
 		dx = xMax - xMin;
 		dy = yMax - yMin;
 	}
-	appearBuf->append("BT\n");
+	appearBuf += "BT\n";
 
 	// compute string width
 	//~ this assumes we're substituting Helvetica/WinAnsiEncoding for everything
 	w = 0;
-	for (i = 0; i < text2->getLength(); ++i)
+	for (i = 0; i < text2.size(); ++i)
 	{
-		charName = winAnsiEncoding[text->getChar(i) & 0xff];
+		charName = winAnsiEncoding[text.at(i) & 0xff];
 		if (charName && builtinFonts[4].widths->getWidth(charName, &charWidth))
 			w += charWidth;
 		else
@@ -1181,11 +1157,7 @@ void Annot::drawText(GString* text, GString* da, int quadding, double margin, in
 			fontSize = fontSize2;
 		fontSize = floor(fontSize);
 		if (tfPos >= 0)
-		{
-			tok = (GString*)daToks->get(tfPos + 1);
-			tok->clear();
-			tok->appendf("{0:.4f}", fontSize);
-		}
+			daToks[tfPos + 1] = fmt::format("{:.4f}", fontSize);
 	}
 
 	// compute text start position
@@ -1208,57 +1180,51 @@ void Annot::drawText(GString* text, GString* da, int quadding, double margin, in
 	// set the font matrix
 	if (tmPos >= 0)
 	{
-		tok = (GString*)daToks->get(tmPos + 4);
-		tok->clear();
-		tok->appendf("{0:.4f}", x);
-		tok = (GString*)daToks->get(tmPos + 5);
-		tok->clear();
-		tok->appendf("{0:.4f}", y);
+		daToks[tmPos + 4] = fmt::format("{:.4f}", x);
+		daToks[tmPos + 5] = fmt::format("{:.4f}", y);
 	}
 
 	// write the DA string
-	if (daToks)
-		for (i = 0; i < daToks->getLength(); ++i)
-			appearBuf->append((GString*)daToks->get(i))->append(' ');
+	if (daToks.size())
+		for (i = 0; i < daToks.size(); ++i)
+		{
+			appearBuf += daToks.at(i);
+			appearBuf += ' ';
+		}
 
 	// write the font matrix (if not part of the DA string)
 	if (tmPos < 0)
-		appearBuf->appendf("1 0 0 1 {0:.4f} {1:.4f} Tm\n", x, y);
+		appearBuf += fmt::format("1 0 0 1 {:.4f} {:.4f} Tm\n", x, y);
 
 	// write the text string
-	appearBuf->append('(');
-	for (i = 0; i < text2->getLength(); ++i)
+	appearBuf += '(';
+	for (i = 0; i < text2.size(); ++i)
 	{
-		c = text2->getChar(i) & 0xff;
+		c = text2.at(i) & 0xff;
 		if (c == '(' || c == ')' || c == '\\')
 		{
-			appearBuf->append('\\');
-			appearBuf->append((char)c);
+			appearBuf += '\\';
+			appearBuf += (char)c;
 		}
 		else if (c < 0x20 || c >= 0x80)
 		{
-			appearBuf->appendf("\\{0:03o}", c);
+			appearBuf += fmt::format("\\{:03o}", c);
 		}
 		else
 		{
-			appearBuf->append((char)c);
+			appearBuf += (char)c;
 		}
 	}
-	appearBuf->append(") Tj\n");
+	appearBuf += ") Tj\n";
 
 	// cleanup
-	appearBuf->append("ET\n");
-	appearBuf->append("Q\n");
-
-	if (daToks)
-		deleteGList(daToks, GString);
-	if (text2 != text)
-		delete text2;
+	appearBuf += "ET\n";
+	appearBuf += "Q\n";
 }
 
-void Annot::draw(Gfx* gfx, GBool printing)
+void Annot::draw(Gfx* gfx, bool printing)
 {
-	GBool oc, isLink;
+	bool oc, isLink;
 
 	// check the flags
 	if ((flags & annotFlagHidden) || (printing && !(flags & annotFlagPrint)) || (!printing && (flags & annotFlagNoView)))
@@ -1269,7 +1235,7 @@ void Annot::draw(Gfx* gfx, GBool printing)
 		return;
 
 	// draw the appearance stream
-	isLink = type && !type->cmp("Link");
+	isLink = (type == "Link");
 	gfx->drawAnnot(&appearance, isLink ? borderStyle : (AnnotBorderStyle*)nullptr, xMin, yMin, xMax, yMax);
 }
 
@@ -1293,13 +1259,13 @@ public:
 	~PageAnnots();
 
 	GList* annots;               // list of annots on the page [Annot]
-	GBool  appearancesGenerated; // set after appearances have been generated
+	bool   appearancesGenerated; // set after appearances have been generated
 };
 
 PageAnnots::PageAnnots()
 {
 	annots               = new GList();
-	appearancesGenerated = gFalse;
+	appearancesGenerated = false;
 }
 
 PageAnnots::~PageAnnots()
@@ -1483,6 +1449,6 @@ void Annots::generateAnnotAppearances(int page)
 			Annot* annot = (Annot*)pa->annots->get(i);
 			annot->generateAnnotAppearance(nullptr);
 		}
-		pa->appearancesGenerated = gTrue;
+		pa->appearancesGenerated = true;
 	}
 }

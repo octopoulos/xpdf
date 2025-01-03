@@ -7,10 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
-#include <string.h>
-#include <stddef.h>
-#include <limits.h>
 #include "gmem.h"
 #include "gmempp.h"
 #include "gfile.h"
@@ -19,7 +15,6 @@
 #include "CharTypes.h"
 #include "PDFDoc.h"
 #include "XRef.h"
-#include "Array.h"
 #include "Dict.h"
 #include "Page.h"
 #include "Error.h"
@@ -38,11 +33,11 @@ public:
 	PageTreeNode(Ref refA, int countA, PageTreeNode* parentA);
 	~PageTreeNode();
 
-	Ref           ref;
-	int           count;
-	PageTreeNode* parent;
-	GList*        kids; // [PageTreeNode]
-	PageAttrs*    attrs;
+	Ref           ref    = {};
+	int           count  = 0;
+	PageTreeNode* parent = nullptr;
+	GList*        kids   = nullptr; // [PageTreeNode]
+	PageAttrs*    attrs  = nullptr;
 };
 
 PageTreeNode::PageTreeNode(Ref refA, int countA, PageTreeNode* parentA)
@@ -57,8 +52,7 @@ PageTreeNode::PageTreeNode(Ref refA, int countA, PageTreeNode* parentA)
 PageTreeNode::~PageTreeNode()
 {
 	delete attrs;
-	if (kids)
-		deleteGList(kids, PageTreeNode);
+	if (kids) deleteGList(kids, PageTreeNode);
 }
 
 //------------------------------------------------------------------------
@@ -71,8 +65,8 @@ public:
 	EmbeddedFile(TextString* nameA, Object* streamRefA);
 	~EmbeddedFile();
 
-	TextString* name;
-	Object      streamRef;
+	TextString* name      = nullptr;
+	Object      streamRef = {};
 };
 
 EmbeddedFile::EmbeddedFile(TextString* nameA, Object* streamRefA)
@@ -97,12 +91,11 @@ public:
 	PageLabelNode(int firstPageA, Dict* dict);
 	~PageLabelNode();
 
-	int         firstPage; // first page number covered by this node
-	int         lastPage;  // last page number covered by this node
-	TextString* prefix;    // label prefix (may be empty)
-	int         start;     // value of the numeric portion of this
-	                       //   label for the first page in the range
-	char        style;     // page label style
+	int         firstPage = 0;       // first page number covered by this node
+	int         lastPage  = 0;       // last page number covered by this node
+	TextString* prefix    = nullptr; // label prefix (may be empty)
+	int         start     = 0;       // value of the numeric portion of this label for the first page in the range
+	char        style     = 0;       // page label style
 };
 
 PageLabelNode::PageLabelNode(int firstPageA, Dict* dict)
@@ -149,17 +142,8 @@ Catalog::Catalog(PDFDoc* docA)
 	Object catDict;
 	Object obj, obj2;
 
-	ok            = gTrue;
-	doc           = docA;
-	xref          = doc->getXRef();
-	pageTree      = nullptr;
-	pages         = nullptr;
-	pageRefs      = nullptr;
-	numPages      = 0;
-	baseURI       = nullptr;
-	form          = nullptr;
-	embeddedFiles = nullptr;
-	pageLabels    = nullptr;
+	doc  = docA;
+	xref = doc->getXRef();
 #if MULTITHREADED
 	gInitMutex(&pageMutex);
 #endif
@@ -167,7 +151,7 @@ Catalog::Catalog(PDFDoc* docA)
 	xref->getCatalog(&catDict);
 	if (!catDict.isDict())
 	{
-		error(errSyntaxError, -1, "Catalog object is wrong type ({0:s})", catDict.getTypeName());
+		error(errSyntaxError, -1, "Catalog object is wrong type ({})", catDict.getTypeName());
 		goto err1;
 	}
 
@@ -189,25 +173,23 @@ Catalog::Catalog(PDFDoc* docA)
 	if (catDict.dictLookup("URI", &obj)->isDict())
 	{
 		if (obj.dictLookup("Base", &obj2)->isString())
-			baseURI = obj2.getString()->copy();
+			baseURI = obj2.getString();
 		obj2.free();
 	}
 	obj.free();
-	if (!baseURI || baseURI->getLength() == 0)
+	if (baseURI.empty())
 	{
-		if (baseURI)
-			delete baseURI;
-		if (doc->getFileName())
+		if (doc->getFileName().size())
 		{
-			baseURI = makePathAbsolute(grabPath(doc->getFileName()->getCString()));
-			if (baseURI->getChar(0) == '/')
-				baseURI->insert(0, "file://localhost");
+			baseURI = makePathAbsolute(grabPath(doc->getFileName().c_str()));
+			if (baseURI.at(0) == '/')
+				baseURI.insert(0, "file://localhost");
 			else
-				baseURI->insert(0, "file://localhost/");
+				baseURI.insert(0, "file://localhost/");
 		}
 		else
 		{
-			baseURI = new GString("file://localhost/");
+			baseURI = "file://localhost/";
 		}
 	}
 
@@ -253,20 +235,17 @@ err1:
 	catDict.free();
 	dests.initNull();
 	nameTree.initNull();
-	ok = gFalse;
+	ok = false;
 }
 
 Catalog::~Catalog()
 {
-	int i;
-
 	if (pageTree)
 		delete pageTree;
 	if (pages)
 	{
-		for (i = 0; i < numPages; ++i)
-			if (pages[i])
-				delete pages[i];
+		for (int i = 0; i < numPages; ++i)
+			if (pages[i]) delete pages[i];
 		gfree(pages);
 		gfree(pageRefs);
 	}
@@ -275,14 +254,11 @@ Catalog::~Catalog()
 #endif
 	dests.free();
 	nameTree.free();
-	if (baseURI)
-		delete baseURI;
 	metadata.free();
 	structTreeRoot.free();
 	outline.free();
 	acroForm.free();
-	if (form)
-		delete form;
+	if (form) delete form;
 	ocProperties.free();
 	if (embeddedFiles)
 		deleteGList(embeddedFiles, EmbeddedFile);
@@ -293,14 +269,12 @@ Catalog::~Catalog()
 
 Page* Catalog::getPage(int i)
 {
-	Page* page;
-
 #if MULTITHREADED
 	gLockMutex(&pageMutex);
 #endif
 	if (!pages[i - 1])
 		loadPage(i);
-	page = pages[i - 1];
+	Page* page = pages[i - 1];
 #if MULTITHREADED
 	gUnlockMutex(&pageMutex);
 #endif
@@ -309,14 +283,12 @@ Page* Catalog::getPage(int i)
 
 Ref* Catalog::getPageRef(int i)
 {
-	Ref* pageRef;
-
 #if MULTITHREADED
 	gLockMutex(&pageMutex);
 #endif
 	if (!pages[i - 1])
 		loadPage(i);
-	pageRef = &pageRefs[i - 1];
+	Ref* pageRef = &pageRefs[i - 1];
 #if MULTITHREADED
 	gUnlockMutex(&pageMutex);
 #endif
@@ -338,36 +310,33 @@ void Catalog::doneWithPage(int i)
 #endif
 }
 
-GString* Catalog::readMetadata()
+std::string Catalog::readMetadata()
 {
-	GString* s;
-	Dict*    dict;
-	Object   obj;
-	char     buf[4096];
-	int      n;
+	Object obj;
+	char   buf[4096];
 
 	if (!metadata.isStream())
-		return nullptr;
-	dict = metadata.streamGetDict();
+		return "";
+	Dict* dict = metadata.streamGetDict();
 	if (!dict->lookup("Subtype", &obj)->isName("XML"))
-		error(errSyntaxWarning, -1, "Unknown Metadata type: '{0:s}'", obj.isName() ? obj.getName() : "???");
+		error(errSyntaxWarning, -1, "Unknown Metadata type: '{}'", obj.isName() ? obj.getName() : "???");
 	obj.free();
-	s = new GString();
+
+	std::string s;
 	metadata.streamReset();
+	int n;
 	while ((n = metadata.streamGetBlock(buf, sizeof(buf))) > 0)
-		s->append(buf, n);
+		s.append(buf, n);
 	metadata.streamClose();
 	return s;
 }
 
 int Catalog::findPage(int num, int gen)
 {
-	int i;
-
 #if MULTITHREADED
 	gLockMutex(&pageMutex);
 #endif
-	for (i = 0; i < numPages; ++i)
+	for (int i = 0; i < numPages; ++i)
 	{
 		if (!pages[i])
 			loadPage(i + 1);
@@ -385,25 +354,24 @@ int Catalog::findPage(int num, int gen)
 	return 0;
 }
 
-LinkDest* Catalog::findDest(GString* name)
+LinkDest* Catalog::findDest(const std::string& name)
 {
 	LinkDest* dest;
 	Object    obj1, obj2;
-	GBool     found;
 
 	// try named destination dictionary then name tree
-	found = gFalse;
+	bool found = false;
 	if (dests.isDict())
 	{
-		if (!dests.dictLookup(name->getCString(), &obj1)->isNull())
-			found = gTrue;
+		if (!dests.dictLookup(name.c_str(), &obj1)->isNull())
+			found = true;
 		else
 			obj1.free();
 	}
 	if (!found && nameTree.isDict())
 	{
 		if (!findDestInTree(&nameTree, name, &obj1)->isNull())
-			found = gTrue;
+			found = true;
 		else
 			obj1.free();
 	}
@@ -438,31 +406,30 @@ LinkDest* Catalog::findDest(GString* name)
 	return dest;
 }
 
-Object* Catalog::findDestInTree(Object* tree, GString* name, Object* obj)
+Object* Catalog::findDestInTree(Object* tree, const std::string& name, Object* obj)
 {
 	Object names, name1;
 	Object kids, kid, limits, low, high;
-	GBool  done, found;
-	int    cmp, i;
+	bool   done, found;
 
 	// leaf node
 	if (tree->dictLookup("Names", &names)->isArray())
 	{
-		done = found = gFalse;
-		for (i = 0; !done && i < names.arrayGetLength(); i += 2)
+		done = found = false;
+		for (int i = 0; !done && i < names.arrayGetLength(); i += 2)
 		{
 			if (names.arrayGet(i, &name1)->isString())
 			{
-				cmp = name->cmp(name1.getString());
-				if (cmp == 0)
+				const auto& name1Str = name1.getString();
+				if (name == name1Str)
 				{
 					names.arrayGet(i + 1, obj);
-					found = gTrue;
-					done  = gTrue;
+					found = true;
+					done  = true;
 				}
-				else if (cmp < 0)
+				else if (name < name1Str)
 				{
-					done = gTrue;
+					done = true;
 				}
 			}
 			name1.free();
@@ -475,21 +442,21 @@ Object* Catalog::findDestInTree(Object* tree, GString* name, Object* obj)
 	names.free();
 
 	// root or intermediate node
-	done = gFalse;
+	done = false;
 	if (tree->dictLookup("Kids", &kids)->isArray())
 	{
-		for (i = 0; !done && i < kids.arrayGetLength(); ++i)
+		for (int i = 0; !done && i < kids.arrayGetLength(); ++i)
 		{
 			if (kids.arrayGet(i, &kid)->isDict())
 			{
 				if (kid.dictLookup("Limits", &limits)->isArray())
 				{
-					if (limits.arrayGet(0, &low)->isString() && name->cmp(low.getString()) >= 0)
+					if (limits.arrayGet(0, &low)->isString() && name >= low.getString())
 					{
-						if (limits.arrayGet(1, &high)->isString() && name->cmp(high.getString()) <= 0)
+						if (limits.arrayGet(1, &high)->isString() && name <= high.getString())
 						{
 							findDestInTree(&kid, name, obj);
-							done = gTrue;
+							done = true;
 						}
 						high.free();
 					}
@@ -509,23 +476,22 @@ Object* Catalog::findDestInTree(Object* tree, GString* name, Object* obj)
 	return obj;
 }
 
-GBool Catalog::readPageTree(Object* catDict)
+bool Catalog::readPageTree(Object* catDict)
 {
 	Object topPagesRef, topPagesObj, countObj;
-	int    i;
 
 	if (!catDict->dictLookupNF("Pages", &topPagesRef)->isRef())
 	{
-		error(errSyntaxError, -1, "Top-level pages reference is wrong type ({0:s})", topPagesRef.getTypeName());
+		error(errSyntaxError, -1, "Top-level pages reference is wrong type ({})", topPagesRef.getTypeName());
 		topPagesRef.free();
-		return gFalse;
+		return false;
 	}
 	if (!topPagesRef.fetch(xref, &topPagesObj)->isDict())
 	{
-		error(errSyntaxError, -1, "Top-level pages object is wrong type ({0:s})", topPagesObj.getTypeName());
+		error(errSyntaxError, -1, "Top-level pages object is wrong type ({})", topPagesObj.getTypeName());
 		topPagesObj.free();
 		topPagesRef.free();
-		return gFalse;
+		return false;
 	}
 	if (topPagesObj.dictLookup("Count", &countObj)->isInt())
 	{
@@ -556,20 +522,20 @@ GBool Catalog::readPageTree(Object* catDict)
 		topPagesObj.free();
 		topPagesRef.free();
 		numPages = 0;
-		return gFalse;
+		return false;
 	}
 	pageTree = new PageTreeNode(topPagesRef.getRef(), numPages, nullptr);
 	topPagesObj.free();
 	topPagesRef.free();
 	pages    = (Page**)greallocn(pages, numPages, sizeof(Page*));
 	pageRefs = (Ref*)greallocn(pageRefs, numPages, sizeof(Ref));
-	for (i = 0; i < numPages; ++i)
+	for (int i = 0; i < numPages; ++i)
 	{
 		pages[i]        = nullptr;
 		pageRefs[i].num = -1;
 		pageRefs[i].gen = -1;
 	}
-	return gTrue;
+	return true;
 }
 
 int Catalog::countPageTree(Object* pagesNodeRef, char* touchedObjs)
@@ -641,7 +607,6 @@ void Catalog::loadPage2(int pg, int relPg, PageTreeNode* node)
 	Object        pageRefObj, pageObj, kidsObj, kidRefObj, kidObj, countObj;
 	PageTreeNode *kidNode, *p;
 	PageAttrs*    attrs;
-	int           count, i;
 
 	if (relPg >= node->count)
 	{
@@ -669,7 +634,7 @@ void Catalog::loadPage2(int pg, int relPg, PageTreeNode* node)
 		pageRefObj.initRef(node->ref.num, node->ref.gen);
 		if (!pageRefObj.fetch(xref, &pageObj)->isDict())
 		{
-			error(errSyntaxError, -1, "Page tree object is wrong type ({0:s})", pageObj.getTypeName());
+			error(errSyntaxError, -1, "Page tree object is wrong type ({})", pageObj.getTypeName());
 			pageObj.free();
 			pageRefObj.free();
 			pages[pg - 1] = new Page(doc, pg);
@@ -687,12 +652,13 @@ void Catalog::loadPage2(int pg, int relPg, PageTreeNode* node)
 
 			// read the kids
 			node->kids = new GList();
-			for (i = 0; i < kidsObj.arrayGetLength(); ++i)
+			for (int i = 0; i < kidsObj.arrayGetLength(); ++i)
 			{
 				if (kidsObj.arrayGetNF(i, &kidRefObj)->isRef())
 				{
 					if (kidRefObj.fetch(xref, &kidObj)->isDict())
 					{
+						int count;
 						if (kidObj.dictLookup("Count", &countObj)->isInt())
 							count = countObj.getInt();
 						else
@@ -702,13 +668,13 @@ void Catalog::loadPage2(int pg, int relPg, PageTreeNode* node)
 					}
 					else
 					{
-						error(errSyntaxError, -1, "Page tree object is wrong type ({0:s})", kidObj.getTypeName());
+						error(errSyntaxError, -1, "Page tree object is wrong type ({})", kidObj.getTypeName());
 					}
 					kidObj.free();
 				}
 				else
 				{
-					error(errSyntaxError, -1, "Page tree reference is wrong type ({0:s})", kidRefObj.getTypeName());
+					error(errSyntaxError, -1, "Page tree reference is wrong type ({})", kidRefObj.getTypeName());
 				}
 				kidRefObj.free();
 			}
@@ -733,6 +699,7 @@ void Catalog::loadPage2(int pg, int relPg, PageTreeNode* node)
 	// recursively descend the tree
 	if (node->kids)
 	{
+		int i;
 		for (i = 0; i < node->kids->getLength(); ++i)
 		{
 			kidNode = (PageTreeNode*)node->kids->get(i);
@@ -757,13 +724,12 @@ void Catalog::loadPage2(int pg, int relPg, PageTreeNode* node)
 Object* Catalog::getDestOutputProfile(Object* destOutProf)
 {
 	Object catDict, intents, intent, subtype;
-	int    i;
 
 	if (!xref->getCatalog(&catDict)->isDict())
 		goto err1;
 	if (!catDict.dictLookup("OutputIntents", &intents)->isArray())
 		goto err2;
-	for (i = 0; i < intents.arrayGetLength(); ++i)
+	for (int i = 0; i < intents.arrayGetLength(); ++i)
 	{
 		intents.arrayGet(i, &intent);
 		if (!intent.isDict())
@@ -825,7 +791,6 @@ void Catalog::readEmbeddedFileTree(Object* nodeRef, char* touchedObjs)
 {
 	Object node, kidsObj, kidObj;
 	Object namesObj, nameObj, fileSpecObj;
-	int    i;
 
 	// check for an object loop
 	if (nodeRef->isRef())
@@ -848,7 +813,7 @@ void Catalog::readEmbeddedFileTree(Object* nodeRef, char* touchedObjs)
 
 	if (node.dictLookup("Kids", &kidsObj)->isArray())
 	{
-		for (i = 0; i < kidsObj.arrayGetLength(); ++i)
+		for (int i = 0; i < kidsObj.arrayGetLength(); ++i)
 		{
 			kidsObj.arrayGetNF(i, &kidObj);
 			readEmbeddedFileTree(&kidObj, touchedObjs);
@@ -859,7 +824,7 @@ void Catalog::readEmbeddedFileTree(Object* nodeRef, char* touchedObjs)
 	{
 		if (node.dictLookup("Names", &namesObj)->isArray())
 		{
-			for (i = 0; i + 1 < namesObj.arrayGetLength(); ++i)
+			for (int i = 0; i + 1 < namesObj.arrayGetLength(); ++i)
 			{
 				namesObj.arrayGet(i, &nameObj);
 				namesObj.arrayGet(i + 1, &fileSpecObj);
@@ -878,7 +843,6 @@ void Catalog::readEmbeddedFileTree(Object* nodeRef, char* touchedObjs)
 void Catalog::readFileAttachmentAnnots(Object* pageNodeRef, char* touchedObjs)
 {
 	Object pageNode, kids, kid, annots, annot, subtype, fileSpec, contents;
-	int    i;
 
 	// check for an invalid object reference (e.g., in a damaged PDF file)
 	if (pageNodeRef->isRef() && (pageNodeRef->getRefNum() < 0 || pageNodeRef->getRefNum() >= xref->getNumObjects()))
@@ -887,8 +851,7 @@ void Catalog::readFileAttachmentAnnots(Object* pageNodeRef, char* touchedObjs)
 	// check for a page tree loop
 	if (pageNodeRef->isRef())
 	{
-		if (touchedObjs[pageNodeRef->getRefNum()])
-			return;
+		if (touchedObjs[pageNodeRef->getRefNum()]) return;
 		touchedObjs[pageNodeRef->getRefNum()] = 1;
 		xref->fetch(pageNodeRef->getRefNum(), pageNodeRef->getRefGen(), &pageNode);
 	}
@@ -901,7 +864,7 @@ void Catalog::readFileAttachmentAnnots(Object* pageNodeRef, char* touchedObjs)
 	{
 		if (pageNode.dictLookup("Kids", &kids)->isArray())
 		{
-			for (i = 0; i < kids.arrayGetLength(); ++i)
+			for (int i = 0; i < kids.arrayGetLength(); ++i)
 			{
 				readFileAttachmentAnnots(kids.arrayGetNF(i, &kid), touchedObjs);
 				kid.free();
@@ -911,12 +874,11 @@ void Catalog::readFileAttachmentAnnots(Object* pageNodeRef, char* touchedObjs)
 		{
 			if (pageNode.dictLookup("Annots", &annots)->isArray())
 			{
-				for (i = 0; i < annots.arrayGetLength(); ++i)
+				for (int i = 0; i < annots.arrayGetLength(); ++i)
 				{
 					if (annots.arrayGet(i, &annot)->isDict())
 					{
-						if (annot.dictLookup("Subtype", &subtype)
-						        ->isName("FileAttachment"))
+						if (annot.dictLookup("Subtype", &subtype)->isName("FileAttachment"))
 						{
 							if (annot.dictLookup("FS", &fileSpec))
 							{
@@ -941,7 +903,6 @@ void Catalog::readFileAttachmentAnnots(Object* pageNodeRef, char* touchedObjs)
 void Catalog::readEmbeddedFile(Object* fileSpec, Object* name1)
 {
 	Object      name2, efObj, streamObj;
-	GString*    s;
 	TextString* name;
 
 	if (fileSpec->isDict())
@@ -954,19 +915,11 @@ void Catalog::readEmbeddedFile(Object* fileSpec, Object* name1)
 		{
 			name2.free();
 			if (fileSpec->dictLookup("F", &name2)->isString())
-			{
 				name = new TextString(name2.getString());
-			}
 			else if (name1 && name1->isString())
-			{
 				name = new TextString(name1->getString());
-			}
 			else
-			{
-				s    = new GString("?");
-				name = new TextString(s);
-				delete s;
-			}
+				name = new TextString("?");
 		}
 		name2.free();
 		if (fileSpec->dictLookup("EF", &efObj)->isDict())
@@ -1026,7 +979,6 @@ void Catalog::readPageLabelTree(Object* root)
 {
 	PageLabelNode *label0, *label1;
 	char*          touchedObjs;
-	int            i;
 
 	touchedObjs = (char*)gmalloc(xref->getNumObjects());
 	memset(touchedObjs, 0, xref->getNumObjects());
@@ -1043,7 +995,7 @@ void Catalog::readPageLabelTree(Object* root)
 
 	// set lastPage in each node
 	label0 = (PageLabelNode*)pageLabels->get(0);
-	for (i = 1; i < pageLabels->getLength(); ++i)
+	for (int i = 1; i < pageLabels->getLength(); ++i)
 	{
 		label1           = (PageLabelNode*)pageLabels->get(i);
 		label0->lastPage = label1->firstPage - 1;
@@ -1055,7 +1007,6 @@ void Catalog::readPageLabelTree(Object* root)
 void Catalog::readPageLabelTree2(Object* nodeRef, char* touchedObjs)
 {
 	Object node, nums, num, labelObj, kids, kid;
-	int    i;
 
 	// check for an object loop
 	if (nodeRef->isRef())
@@ -1078,7 +1029,7 @@ void Catalog::readPageLabelTree2(Object* nodeRef, char* touchedObjs)
 
 	if (node.dictLookup("Nums", &nums)->isArray())
 	{
-		for (i = 0; i < nums.arrayGetLength() - 1; i += 2)
+		for (int i = 0; i < nums.arrayGetLength() - 1; i += 2)
 		{
 			if (nums.arrayGet(i, &num)->isInt())
 			{
@@ -1093,7 +1044,7 @@ void Catalog::readPageLabelTree2(Object* nodeRef, char* touchedObjs)
 
 	if (node.dictLookup("Kids", &kids)->isArray())
 	{
-		for (i = 0; i < kids.arrayGetLength(); ++i)
+		for (int i = 0; i < kids.arrayGetLength(); ++i)
 		{
 			kids.arrayGetNF(i, &kid);
 			readPageLabelTree2(&kid, touchedObjs);
@@ -1108,135 +1059,121 @@ void Catalog::readPageLabelTree2(Object* nodeRef, char* touchedObjs)
 TextString* Catalog::getPageLabel(int pageNum)
 {
 	PageLabelNode* label;
-	TextString*    ts;
-	int            pageRangeNum;
-	GString*       suffix;
-
 	if (!pageLabels || !(label = findPageLabel(pageNum)))
 		return nullptr;
 
-	ts = new TextString(label->prefix);
+	auto ts = new TextString(label->prefix);
 
-	pageRangeNum = label->start + (pageNum - label->firstPage);
+	const int pageRangeNum = label->start + (pageNum - label->firstPage);
 
-	suffix = nullptr;
+	std::string suffix;
 	if (label->style == 'D')
-		suffix = GString::format("{0:d}", pageRangeNum);
+		suffix = fmt::format("{}", pageRangeNum);
 	else if (label->style == 'R')
-		suffix = makeRomanNumeral(pageRangeNum, gTrue);
+		suffix = makeRomanNumeral(pageRangeNum, true);
 	else if (label->style == 'r')
-		suffix = makeRomanNumeral(pageRangeNum, gFalse);
+		suffix = makeRomanNumeral(pageRangeNum, false);
 	else if (label->style == 'A')
-		suffix = makeLetterLabel(pageRangeNum, gTrue);
+		suffix = makeLetterLabel(pageRangeNum, true);
 	else if (label->style == 'a')
-		suffix = makeLetterLabel(pageRangeNum, gFalse);
-	if (suffix)
-	{
+		suffix = makeLetterLabel(pageRangeNum, false);
+	if (suffix.size())
 		ts->append(suffix);
-		delete suffix;
-	}
 
 	return ts;
 }
 
 PageLabelNode* Catalog::findPageLabel(int pageNum)
 {
-	PageLabelNode* label;
-	int            i;
-
 	//~ this could use a binary search
-	for (i = 0; i < pageLabels->getLength(); ++i)
+	for (int i = 0; i < pageLabels->getLength(); ++i)
 	{
-		label = (PageLabelNode*)pageLabels->get(i);
+		const auto label = (PageLabelNode*)pageLabels->get(i);
 		if (pageNum >= label->firstPage && pageNum <= label->lastPage)
 			return label;
 	}
 	return nullptr;
 }
 
-GString* Catalog::makeRomanNumeral(int num, GBool uppercase)
+std::string Catalog::makeRomanNumeral(int num, bool uppercase)
 {
-	GString* s;
-
-	s = new GString();
+	std::string s;
 	while (num >= 1000)
 	{
-		s->append(uppercase ? 'M' : 'm');
+		s += uppercase ? 'M' : 'm';
 		num -= 1000;
 	}
 	if (num >= 900)
 	{
-		s->append(uppercase ? "CM" : "cm");
+		s += uppercase ? "CM" : "cm";
 		num -= 900;
 	}
 	else if (num >= 500)
 	{
-		s->append(uppercase ? 'D' : 'd');
+		s += uppercase ? 'D' : 'd';
 		num -= 500;
 	}
 	else if (num >= 400)
 	{
-		s->append(uppercase ? "CD" : "cd");
+		s += uppercase ? "CD" : "cd";
 		num -= 400;
 	}
 	while (num >= 100)
 	{
-		s->append(uppercase ? 'C' : 'c');
+		s += uppercase ? 'C' : 'c';
 		num -= 100;
 	}
 	if (num >= 90)
 	{
-		s->append(uppercase ? "XC" : "xc");
+		s += uppercase ? "XC" : "xc";
 		num -= 90;
 	}
 	else if (num >= 50)
 	{
-		s->append(uppercase ? 'L' : 'l');
+		s += uppercase ? 'L' : 'l';
 		num -= 50;
 	}
 	else if (num >= 40)
 	{
-		s->append(uppercase ? "XL" : "xl");
+		s += uppercase ? "XL" : "xl";
 		num -= 40;
 	}
 	while (num >= 10)
 	{
-		s->append(uppercase ? 'X' : 'x');
+		s += uppercase ? 'X' : 'x';
 		num -= 10;
 	}
 	if (num >= 9)
 	{
-		s->append(uppercase ? "IX" : "ix");
+		s += uppercase ? "IX" : "ix";
 		num -= 9;
 	}
 	else if (num >= 5)
 	{
-		s->append(uppercase ? 'V' : 'v');
+		s += uppercase ? 'V' : 'v';
 		num -= 5;
 	}
 	else if (num >= 4)
 	{
-		s->append(uppercase ? "IV" : "iv");
+		s += uppercase ? "IV" : "iv";
 		num -= 4;
 	}
 	while (num >= 1)
 	{
-		s->append(uppercase ? 'I' : 'i');
+		s += uppercase ? 'I' : 'i';
 		num -= 1;
 	}
 	return s;
 }
 
-GString* Catalog::makeLetterLabel(int num, GBool uppercase)
+std::string Catalog::makeLetterLabel(int num, bool uppercase)
 {
-	GString* s;
-	int      m, n, i;
+	const int m = (num - 1) / 26 + 1;
+	const int n = (num - 1) % 26;
 
-	m = (num - 1) / 26 + 1;
-	n = (num - 1) % 26;
-	s = new GString();
-	for (i = 0; i < m; ++i)
-		s->append((char)((uppercase ? 'A' : 'a') + n));
+	std::string s;
+	for (int i = 0; i < m; ++i)
+		s += (char)((uppercase ? 'A' : 'a') + n);
 	return s;
 }
 
@@ -1269,32 +1206,28 @@ int Catalog::getPageNumFromPageLabel(TextString* pageLabel)
 // Attempts to convert pageLabel[prefixLength .. end] to an integer,
 // following the specified page label style.  If successful, sets *n
 // and returns true; else returns false.
-GBool Catalog::convertPageLabelToInt(TextString* pageLabel, int prefixLength, char style, int* n)
+bool Catalog::convertPageLabelToInt(TextString* pageLabel, int prefixLength, char style, int* n)
 {
-	Unicode* u;
-	Unicode  delta;
-	int      len, i;
-
-	len = pageLabel->getLength();
+	const int len = pageLabel->getLength();
 	if (len <= prefixLength)
-		return gFalse;
-	u = pageLabel->getUnicode();
+		return false;
+	const Unicode* u = pageLabel->getUnicode();
 	if (style == 'D')
 	{
 		*n = 0;
-		for (i = prefixLength; i < len; ++i)
+		for (int i = prefixLength; i < len; ++i)
 		{
 			if (u[i] < (Unicode)'0' || u[i] > (Unicode)'9')
-				return gFalse;
+				return false;
 			*n = *n * 10 + (u[i] - (Unicode)'0');
 		}
-		return gTrue;
+		return true;
 	}
 	else if (style == 'R' || style == 'r')
 	{
-		delta = style - 'R';
-		*n    = 0;
-		i     = prefixLength;
+		const Unicode delta = style - 'R';
+		*n                  = 0;
+		int i               = prefixLength;
 		while (i < len && u[i] == (Unicode)'M' + delta)
 		{
 			*n += 1000;
@@ -1365,26 +1298,26 @@ GBool Catalog::convertPageLabelToInt(TextString* pageLabel, int prefixLength, ch
 	else if (style == 'A' || style == 'a')
 	{
 		if (u[prefixLength] < (Unicode)style || u[prefixLength] > (Unicode)style + 25)
-			return gFalse;
-		for (i = prefixLength + 1; i < len; ++i)
+			return false;
+		for (int i = prefixLength + 1; i < len; ++i)
 			if (u[i] != u[prefixLength])
-				return gFalse;
+				return false;
 		*n = (len - prefixLength - 1) * 26 + (u[prefixLength] - (Unicode)style) + 1;
-		return gTrue;
+		return true;
 	}
-	return gFalse;
+	return false;
 }
 
-GBool Catalog::usesJavaScript()
+bool Catalog::usesJavaScript()
 {
 	Object catDict;
 	if (!xref->getCatalog(&catDict)->isDict())
 	{
 		catDict.free();
-		return gFalse;
+		return false;
 	}
 
-	GBool usesJS = gFalse;
+	bool usesJS = false;
 
 	// check for Catalog.Names.JavaScript
 	Object namesObj;
@@ -1393,7 +1326,7 @@ GBool Catalog::usesJavaScript()
 		Object jsNamesObj;
 		namesObj.dictLookup("JavaScript", &jsNamesObj);
 		if (jsNamesObj.isDict())
-			usesJS = gTrue;
+			usesJS = true;
 		jsNamesObj.free();
 	}
 	namesObj.free();
@@ -1414,18 +1347,18 @@ GBool Catalog::usesJavaScript()
 	return usesJS;
 }
 
-GBool Catalog::scanPageTreeForJavaScript(Object* pageNodeRef, char* touchedObjs)
+bool Catalog::scanPageTreeForJavaScript(Object* pageNodeRef, char* touchedObjs)
 {
 	// check for an invalid object reference (e.g., in a damaged PDF file)
 	if (pageNodeRef->isRef() && (pageNodeRef->getRefNum() < 0 || pageNodeRef->getRefNum() >= xref->getNumObjects()))
-		return gFalse;
+		return false;
 
 	// check for a page tree loop
 	Object pageNode;
 	if (pageNodeRef->isRef())
 	{
 		if (touchedObjs[pageNodeRef->getRefNum()])
-			return gFalse;
+			return false;
 		touchedObjs[pageNodeRef->getRefNum()] = 1;
 		xref->fetch(pageNodeRef->getRefNum(), pageNodeRef->getRefGen(), &pageNode);
 	}
@@ -1435,7 +1368,7 @@ GBool Catalog::scanPageTreeForJavaScript(Object* pageNodeRef, char* touchedObjs)
 	}
 
 	// scan the page tree node
-	GBool usesJS = gFalse;
+	bool usesJS = false;
 	if (pageNode.isDict())
 	{
 		Object kids;
@@ -1445,7 +1378,7 @@ GBool Catalog::scanPageTreeForJavaScript(Object* pageNodeRef, char* touchedObjs)
 			{
 				Object kid;
 				if (scanPageTreeForJavaScript(kids.arrayGetNF(i, &kid), touchedObjs))
-					usesJS = gTrue;
+					usesJS = true;
 				kid.free();
 			}
 		}
@@ -1456,7 +1389,7 @@ GBool Catalog::scanPageTreeForJavaScript(Object* pageNodeRef, char* touchedObjs)
 			if (pageNode.dictLookup("AA", &pageAA)->isDict())
 			{
 				if (scanAAForJavaScript(&pageAA))
-					usesJS = gTrue;
+					usesJS = true;
 			}
 			pageAA.free();
 
@@ -1475,7 +1408,7 @@ GBool Catalog::scanPageTreeForJavaScript(Object* pageNodeRef, char* touchedObjs)
 							if (annot.dictLookup("AA", &annotAA)->isDict())
 							{
 								if (scanAAForJavaScript(&annotAA))
-									usesJS = gTrue;
+									usesJS = true;
 							}
 							annotAA.free();
 						}
@@ -1493,9 +1426,9 @@ GBool Catalog::scanPageTreeForJavaScript(Object* pageNodeRef, char* touchedObjs)
 	return usesJS;
 }
 
-GBool Catalog::scanAAForJavaScript(Object* aaObj)
+bool Catalog::scanAAForJavaScript(Object* aaObj)
 {
-	GBool usesJS = gFalse;
+	bool usesJS = false;
 	for (int i = 0; i < aaObj->dictGetLength() && !usesJS; ++i)
 	{
 		Object action;
@@ -1503,7 +1436,7 @@ GBool Catalog::scanAAForJavaScript(Object* aaObj)
 		{
 			Object js;
 			if (!action.dictLookupNF("JS", &js)->isNull())
-				usesJS = gTrue;
+				usesJS = true;
 			js.free();
 		}
 		action.free();

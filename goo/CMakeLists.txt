@@ -8,22 +8,29 @@
 #
 # ========================================================================
 
+cmake_minimum_required(VERSION 3.17)
+
+set(CMAKE_CXX_STANDARD 20)
+
 include_directories("${PROJECT_SOURCE_DIR}")
 include_directories("${PROJECT_BINARY_DIR}")
 
 find_package(fmt CONFIG REQUIRED)
 find_path(UWEBSOCKETS_INCLUDE_DIRS "uwebsockets/App.h")
-include_directories("${UWEBSOCKETS_INCLUDE_DIRS}")
+include_directories(
+	.
+	"${UWEBSOCKETS_INCLUDE_DIRS}"
+)
 
 add_library(goo_objs OBJECT
 	FixedPoint.cc
+	gfile.cc
 	GHash.cc
 	GList.cc
-	GString.cc
-	gfile.cc
 	gmem.cc
 	gmempp.cc
-	parseargs.c
+	GString.cc
+	stdafx.h
 	Trace.cc
 )
 set_property(TARGET goo_objs

@@ -7,10 +7,8 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include "gmem.h"
 #include "gmempp.h"
-#include "GString.h"
 #include "GList.h"
 #include "Error.h"
 #include "Link.h"
@@ -73,11 +71,11 @@ OutlineItem::OutlineItem(Object* itemRefA, Dict* dict, OutlineItem* parentA, XRe
 	dict->lookupNF("Last", &lastRef);
 	dict->lookupNF("Next", &nextRef);
 
-	startsOpen = gFalse;
+	startsOpen = false;
 	if (dict->lookup("Count", &obj1)->isInt())
 	{
 		if (obj1.getInt() > 0)
-			startsOpen = gTrue;
+			startsOpen = true;
 	}
 	obj1.free();
 

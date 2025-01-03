@@ -7,11 +7,9 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <string.h>
 #include "gmem.h"
 #include "gmempp.h"
-#include "GString.h"
 #include "PDFDocEncoding.h"
 #include "UTF8.h"
 #include "TextString.h"
@@ -24,7 +22,7 @@ TextString::TextString()
 	len = size = 0;
 }
 
-TextString::TextString(GString* s)
+TextString::TextString(const std::string& s)
 {
 	u   = nullptr;
 	len = size = 0;
@@ -58,7 +56,7 @@ TextString* TextString::append(Unicode c)
 	return this;
 }
 
-TextString* TextString::append(GString* s)
+TextString* TextString::append(const std::string& s)
 {
 	return insert(len, s);
 }
@@ -89,18 +87,17 @@ TextString* TextString::insert(int idx, Unicode* u2, int n)
 	return this;
 }
 
-TextString* TextString::insert(int idx, GString* s)
+TextString* TextString::insert(int idx, const std::string& s)
 {
 	Unicode uBuf[100];
-	int     n, i;
 
 	if (idx >= 0 && idx <= len)
 	{
 		// look for a UTF-16BE BOM
-		if ((s->getChar(0) & 0xff) == 0xfe && (s->getChar(1) & 0xff) == 0xff)
+		if ((s.at(0) & 0xff) == 0xfe && (s.at(1) & 0xff) == 0xff)
 		{
-			i = 2;
-			n = 0;
+			int i = 2;
+			int n = 0;
 			while (getUTF16BE(s, &i, uBuf + n))
 			{
 				++n;
@@ -118,10 +115,10 @@ TextString* TextString::insert(int idx, GString* s)
 			// (technically, this isn't allowed by the PDF spec, but some
 			// PDF files use it)
 		}
-		else if ((s->getChar(0) & 0xff) == 0xff && (s->getChar(1) & 0xff) == 0xfe)
+		else if ((s.at(0) & 0xff) == 0xff && (s.at(1) & 0xff) == 0xfe)
 		{
-			i = 2;
-			n = 0;
+			int i = 2;
+			int n = 0;
 			while (getUTF16LE(s, &i, uBuf + n))
 			{
 				++n;
@@ -137,10 +134,10 @@ TextString* TextString::insert(int idx, GString* s)
 
 			// look for a UTF-8 BOM
 		}
-		else if ((s->getChar(0) & 0xff) == 0xef && (s->getChar(1) & 0xff) == 0xbb && (s->getChar(2) & 0xff) == 0xbf)
+		else if ((s.at(0) & 0xff) == 0xef && (s.at(1) & 0xff) == 0xbb && (s.at(2) & 0xff) == 0xbf)
 		{
-			i = 3;
-			n = 0;
+			int i = 3;
+			int n = 0;
 			while (getUTF8(s, &i, uBuf + n))
 			{
 				++n;
@@ -158,12 +155,12 @@ TextString* TextString::insert(int idx, GString* s)
 		}
 		else
 		{
-			n = s->getLength();
+			const int n = TO_INT(s.size());
 			expand(n);
 			if (idx < len)
 				memmove(u + idx + n, u + idx, (len - idx) * sizeof(Unicode));
-			for (i = 0; i < n; ++i)
-				u[idx + i] = pdfDocEncoding[s->getChar(i) & 0xff];
+			for (int i = 0; i < n; ++i)
+				u[idx + i] = pdfDocEncoding[s.at(i) & 0xff];
 			len += n;
 		}
 	}
@@ -195,48 +192,45 @@ void TextString::expand(int delta)
 	u = (Unicode*)greallocn(u, size, sizeof(Unicode));
 }
 
-GString* TextString::toPDFTextString()
+std::string TextString::toPDFTextString()
 {
-	GString* s;
-	GBool    useUnicode;
-	int      i;
-
-	useUnicode = gFalse;
-	for (i = 0; i < len; ++i)
+	bool useUnicode = false;
+	for (int i = 0; i < len; ++i)
 	{
 		if (u[i] >= 0x80)
 		{
-			useUnicode = gTrue;
+			useUnicode = true;
 			break;
 		}
 	}
-	s = new GString();
+
+	std::string s;
 	if (useUnicode)
 	{
-		s->append((char)0xfe);
-		s->append((char)0xff);
-		for (i = 0; i < len; ++i)
+		s += (char)0xfe;
+		s += (char)0xff;
+		for (int i = 0; i < len; ++i)
 		{
-			s->append((char)(u[i] >> 8));
-			s->append((char)u[i]);
+			s += (char)(u[i] >> 8);
+			s += (char)u[i];
 		}
 	}
 	else
 	{
-		for (i = 0; i < len; ++i)
-			s->append((char)u[i]);
+		for (int i = 0; i < len; ++i)
+			s += (char)u[i];
 	}
 	return s;
 }
 
-GString* TextString::toUTF8()
+std::string TextString::toUTF8()
 {
-	GString* s = new GString();
+	std::string s;
 	for (int i = 0; i < len; ++i)
 	{
 		char buf[8];
 		int  n = mapUTF8(u[i], buf, sizeof(buf));
-		s->append(buf, n);
+		s.append(buf, n);
 	}
 	return s;
 }

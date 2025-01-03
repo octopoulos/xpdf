@@ -6,8 +6,7 @@
 //
 //========================================================================
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
 //------------------------------------------------------------------------
 // version
@@ -31,7 +30,7 @@
 #define xpdfCopyright "Copyright 1996-2024 Glyph & Cog, LLC"
 
 // Windows resource file stuff
-#define winxpdfVersion "WinXpdf 4.05"
+#define winxpdfVersion   "WinXpdf 4.05"
 #define xpdfCopyrightAmp "Copyright 1996-2024 Glyph && Cog, LLC"
 
 //------------------------------------------------------------------------
@@ -40,11 +39,11 @@
 
 // default paper size (in points) for PostScript output
 #ifdef A4_PAPER
-#define defPaperWidth  595    // ISO A4 (210x297 mm)
-#define defPaperHeight 842
+#	define defPaperWidth  595 // ISO A4 (210x297 mm)
+#	define defPaperHeight 842
 #else
-#define defPaperWidth  612    // American letter (8.5x11")
-#define defPaperHeight 792
+#	define defPaperWidth  612 // American letter (8.5x11")
+#	define defPaperHeight 792
 #endif
 
 //------------------------------------------------------------------------
@@ -53,20 +52,20 @@
 
 // user config file name, relative to the user's home directory
 #if defined(VMS) || defined(_WIN32)
-#define xpdfUserConfigFile "xpdfrc"
+#	define xpdfUserConfigFile "xpdfrc"
 #else
-#define xpdfUserConfigFile ".xpdfrc"
+#	define xpdfUserConfigFile ".xpdfrc"
 #endif
 
 // system config file name (set via the configure script)
 #if defined(_WIN32)
 // under Windows, we get the directory with the executable and then
 // append this file name
-#define xpdfSysConfigFile "xpdfrc"
+#	define xpdfSysConfigFile "xpdfrc"
 #elif defined(SYSTEM_XPDFRC)
-#define xpdfSysConfigFile SYSTEM_XPDFRC
+#	define xpdfSysConfigFile SYSTEM_XPDFRC
 #else
-#define xpdfSysConfigFile "/etc/xpdfrc"
+#	define xpdfSysConfigFile "/etc/xpdfrc"
 #endif
 
 //------------------------------------------------------------------------
@@ -81,14 +80,14 @@
 //------------------------------------------------------------------------
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)
-#define popen _popen
-#define pclose _pclose
+#	define popen  _popen
+#	define pclose _pclose
 #endif
 
 #if defined(VMS) || defined(VMCMS) || defined(DOS) || defined(OS2) || defined(__EMX__) || defined(_WIN32) || defined(__DJGPP__)
-#define POPEN_READ_MODE "rb"
+#	define POPEN_READ_MODE "rb"
 #else
-#define POPEN_READ_MODE "r"
+#	define POPEN_READ_MODE "r"
 #endif
 
 //------------------------------------------------------------------------
@@ -96,13 +95,11 @@
 //------------------------------------------------------------------------
 
 #ifdef CDECL
-#undef CDECL
+#	undef CDECL
 #endif
 
 #if defined(_MSC_VER) || defined(__BORLANDC__)
-#define CDECL __cdecl
+#	define CDECL __cdecl
 #else
-#define CDECL
-#endif
-
+#	define CDECL
 #endif

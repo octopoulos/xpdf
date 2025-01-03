@@ -6,18 +6,14 @@
 //
 //========================================================================
 
-#ifndef XPDFAPP_H
-#define XPDFAPP_H
+#pragma once
 
 #include <aconf.h>
-
 #include <QApplication>
 #include <QColor>
 #include <QDateTime>
 #include <QSessionManager>
-#include "gtypes.h"
 
-class GString;
 class GList;
 class XpdfViewer;
 
@@ -58,11 +54,11 @@ public:
 	XpdfApp(int& argc, char** argv);
 	virtual ~XpdfApp();
 
-	int getNumViewers();
+	int getNumViewers() { return TO_INT(viewers.size()); }
 
-	XpdfViewer* newWindow(GBool fullScreen = gFalse, const char* remoteServerName = NULL, int x = -1, int y = -1, int width = -1, int height = -1);
+	XpdfViewer* newWindow(bool fullScreen = false, const char* remoteServerName = nullptr, int x = -1, int y = -1, int width = -1, int height = -1);
 
-	GBool openInNewWindow(QString fileName, int page = 1, QString dest = QString(), int rotate = 0, QString password = QString(), GBool fullScreen = gFalse, const char* remoteServerName = NULL);
+	bool openInNewWindow(QString fileName, int page = 1, QString dest = QString(), int rotate = 0, QString password = QString(), bool fullScreen = false, const char* remoteServerName = nullptr);
 
 	void closeWindowOrQuit(XpdfViewer* viewer);
 
@@ -78,11 +74,11 @@ public:
 
 	// Save the current session state. For managed sessions, {id} is the
 	// session ID.
-	void saveSession(const char* id, GBool interactive);
+	void saveSession(const char* id, bool interactive);
 
 	// Load the last saved session. For managed sessions, {id} is the
 	// session ID to load.
-	void loadSession(const char* id, GBool interactive);
+	void loadSession(const char* id, bool interactive);
 
 	//--- for use by XpdfViewer
 
@@ -96,7 +92,7 @@ public:
 
 	const QColor& getSelectionColor() { return selectionColor; }
 
-	GBool getReverseVideo() { return reverseVideo; }
+	bool getReverseVideo() { return reverseVideo; }
 
 	double getZoomScaleFactor() { return zoomScaleFactor; }
 
@@ -117,17 +113,15 @@ private:
 	QColor matteColor;
 	QColor fsMatteColor;
 	QColor selectionColor;
-	GBool  reverseVideo;
+	bool  reverseVideo;
 	double zoomScaleFactor;
 	int    zoomValues[maxZoomValues];
 	int    nZoomValues;
 
-	GList* viewers; // [XpdfViewer]
+	std::vector<XpdfViewer*> viewers;
 
 	QString             savedPagesFileName;
 	QDateTime           savedPagesFileTimestamp;
 	XpdfSavedPageNumber savedPageNumbers[maxSavedPageNumbers];
-	GBool               savedPagesFileChanged;
+	bool               savedPagesFileChanged;
 };
-
-#endif

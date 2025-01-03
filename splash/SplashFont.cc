@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <string.h>
 #include "gmem.h"
 #include "gmempp.h"
@@ -37,7 +36,7 @@ struct SplashFontCacheTag
 // SplashFont
 //------------------------------------------------------------------------
 
-SplashFont::SplashFont(SplashFontFile* fontFileA, SplashCoord* matA, SplashCoord* textMatA, GBool aaA)
+SplashFont::SplashFont(SplashFontFile* fontFileA, SplashCoord* matA, SplashCoord* textMatA, bool aaA)
 {
 	fontFile = fontFileA;
 	fontFile->incRefCnt();
@@ -51,16 +50,14 @@ SplashFont::SplashFont(SplashFontFile* fontFileA, SplashCoord* matA, SplashCoord
 	textMat[3] = textMatA[3];
 	aa         = aaA;
 
-	cache     = NULL;
-	cacheTags = NULL;
+	cache     = nullptr;
+	cacheTags = nullptr;
 
 	xMin = yMin = xMax = yMax = 0;
 }
 
 void SplashFont::initCache()
 {
-	int i;
-
 	// this should be (max - min + 1), but we add some padding to
 	// deal with rounding errors
 	glyphW = xMax - xMin + 3;
@@ -83,13 +80,11 @@ void SplashFont::initCache()
 
 	// set up the glyph pixmap cache
 	cacheAssoc = splashFontCacheAssoc;
-	for (cacheSets = splashFontCacheMaxSets;
-	     cacheSets > 1 && glyphSize > splashFontCacheSize / (cacheSets * cacheAssoc);
-	     cacheSets >>= 1)
+	for (cacheSets = splashFontCacheMaxSets; cacheSets > 1 && glyphSize > splashFontCacheSize / (cacheSets * cacheAssoc); cacheSets >>= 1)
 		;
-	cache     = (Guchar*)gmallocn(cacheSets * cacheAssoc, glyphSize);
+	cache     = (uint8_t*)gmallocn(cacheSets * cacheAssoc, glyphSize);
 	cacheTags = (SplashFontCacheTag*)gmallocn(cacheSets * cacheAssoc, sizeof(SplashFontCacheTag));
-	for (i = 0; i < cacheSets * cacheAssoc; ++i)
+	for (int i = 0; i < cacheSets * cacheAssoc; ++i)
 		cacheTags[i].mru = i & (cacheAssoc - 1);
 }
 
@@ -102,12 +97,12 @@ SplashFont::~SplashFont()
 		gfree(cacheTags);
 }
 
-GBool SplashFont::getGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitmap)
+bool SplashFont::getGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitmap)
 {
 	SplashGlyphBitmap bitmap2;
 	int               size;
-	Guchar*           p;
-	int               i, j, k;
+	uint8_t*          p;
+	int               i, k;
 
 	// no fractional coordinates for large glyphs or non-anti-aliased
 	// glyphs
@@ -118,7 +113,7 @@ GBool SplashFont::getGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitma
 	if (cache)
 	{
 		i = (c & (cacheSets - 1)) * cacheAssoc;
-		for (j = 0; j < cacheAssoc; ++j)
+		for (int j = 0; j < cacheAssoc; ++j)
 		{
 			if ((cacheTags[i + j].mru & 0x80000000) && cacheTags[i + j].c == c && (int)cacheTags[i + j].xFrac == xFrac && (int)cacheTags[i + j].yFrac == yFrac)
 			{
@@ -132,8 +127,8 @@ GBool SplashFont::getGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitma
 				cacheTags[i + j].mru = 0x80000000;
 				bitmap->aa           = aa;
 				bitmap->data         = cache + (i + j) * glyphSize;
-				bitmap->freeData     = gFalse;
-				return gTrue;
+				bitmap->freeData     = false;
+				return true;
 			}
 		}
 	}
@@ -144,14 +139,14 @@ GBool SplashFont::getGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitma
 
 	// generate the glyph bitmap
 	if (!makeGlyph(c, xFrac, yFrac, &bitmap2))
-		return gFalse;
+		return false;
 
 	// if the glyph doesn't fit in the bounding box, return a temporary
 	// uncached bitmap
 	if (!cache || bitmap2.w > glyphW || bitmap2.h > glyphH)
 	{
 		*bitmap = bitmap2;
-		return gTrue;
+		return true;
 	}
 
 	// insert glyph pixmap in cache
@@ -159,8 +154,8 @@ GBool SplashFont::getGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitma
 		size = bitmap2.w * bitmap2.h;
 	else
 		size = ((bitmap2.w + 7) >> 3) * bitmap2.h;
-	p = NULL; // make gcc happy
-	for (j = 0; j < cacheAssoc; ++j)
+	p = nullptr; // make gcc happy
+	for (int j = 0; j < cacheAssoc; ++j)
 	{
 		if ((cacheTags[i + j].mru & 0x7fffffff) == cacheAssoc - 1)
 		{
@@ -182,8 +177,8 @@ GBool SplashFont::getGlyph(int c, int xFrac, int yFrac, SplashGlyphBitmap* bitma
 	}
 	*bitmap          = bitmap2;
 	bitmap->data     = p;
-	bitmap->freeData = gFalse;
+	bitmap->freeData = false;
 	if (bitmap2.freeData)
 		gfree(bitmap2.data);
-	return gTrue;
+	return true;
 }

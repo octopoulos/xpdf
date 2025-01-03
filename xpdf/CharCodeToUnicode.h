@@ -8,11 +8,9 @@
 //
 //========================================================================
 
-#ifndef CHARCODETOUNICODE_H
-#define CHARCODETOUNICODE_H
+#pragma once
 
 #include <aconf.h>
-
 #include "CharTypes.h"
 
 #if MULTITHREADED
@@ -32,12 +30,12 @@ public:
 	// Read the CID-to-Unicode mapping for <collection> from the file
 	// specified by <fileName>.  Sets the initial reference count to 1.
 	// Returns nullptr on failure.
-	static CharCodeToUnicode* parseCIDToUnicode(GString* fileName, GString* collection);
+	static CharCodeToUnicode* parseCIDToUnicode(const std::string& fileName, const std::string& collection);
 
 	// Create a Unicode-to-Unicode mapping from the file specified by
 	// <fileName>.  Sets the initial reference count to 1.  Returns nullptr
 	// on failure.
-	static CharCodeToUnicode* parseUnicodeToUnicode(GString* fileName);
+	static CharCodeToUnicode* parseUnicodeToUnicode(const std::string& fileName);
 
 	// Create the CharCode-to-Unicode mapping for an 8-bit font.
 	// <toUnicode> is an array of 256 Unicode indexes.  Sets the initial
@@ -50,11 +48,10 @@ public:
 	static CharCodeToUnicode* make16BitToUnicode(Unicode* toUnicode);
 
 	// Parse a ToUnicode CMap for an 8- or 16-bit font.
-	static CharCodeToUnicode* parseCMap(GString* buf, int nBits);
+	static CharCodeToUnicode* parseCMap(const std::string& buf, int nBits);
 
-	// Parse a ToUnicode CMap for an 8- or 16-bit font, merging it into
-	// <this>.
-	void mergeCMap(GString* buf, int nBits);
+	// Parse a ToUnicode CMap for an 8- or 16-bit font, merging it into <this>.
+	void mergeCMap(const std::string& buf, int nBits);
 
 	~CharCodeToUnicode();
 
@@ -62,7 +59,7 @@ public:
 	void decRefCnt();
 
 	// Return true if this mapping matches the specified <tagA>.
-	GBool match(GString* tagA);
+	bool match(const std::string& tagA);
 
 	// Set the mapping for <c>.
 	void setMapping(CharCode c, Unicode* u, int len);
@@ -74,18 +71,18 @@ public:
 	// code supported by the mapping.
 	CharCode getLength() { return mapLen; }
 
-	GBool isIdentity() { return !map; }
+	bool isIdentity() { return !map; }
 
 private:
-	GBool parseCMap1(int (*getCharFunc)(void*), void* data, int nBits);
-	void  addMapping(CharCode code, char* uStr, int n, int offset);
-	int   parseUTF16String(char* uStr, int n, Unicode* uOut);
-	void  addMappingInt(CharCode code, Unicode u);
+	bool parseCMap1(int (*getCharFunc)(void*), void* data, int nBits);
+	void addMapping(CharCode code, char* uStr, int n, int offset);
+	int  parseUTF16String(char* uStr, int n, Unicode* uOut);
+	void addMappingInt(CharCode code, Unicode u);
 	CharCodeToUnicode();
-	CharCodeToUnicode(GString* tagA);
-	CharCodeToUnicode(GString* tagA, Unicode* mapA, CharCode mapLenA, GBool copyMap, CharCodeToUnicodeString* sMapA, int sMapLenA, int sMapSizeA);
+	CharCodeToUnicode(const std::string& tagA);
+	CharCodeToUnicode(const std::string& tagA, Unicode* mapA, CharCode mapLenA, bool copyMap, CharCodeToUnicodeString* sMapA, int sMapLenA, int sMapSizeA);
 
-	GString*                 tag;
+	std::string              tag;
 	Unicode*                 map;
 	CharCode                 mapLen;
 	CharCodeToUnicodeString* sMap;
@@ -108,7 +105,7 @@ public:
 	// Get the CharCodeToUnicode object for <tag>.  Increments its
 	// reference count; there will be one reference for the cache plus
 	// one for the caller of this function.  Returns nullptr on failure.
-	CharCodeToUnicode* getCharCodeToUnicode(GString* tag);
+	CharCodeToUnicode* getCharCodeToUnicode(const std::string& tag);
 
 	// Insert <ctu> into the cache, in the most-recently-used position.
 	void add(CharCodeToUnicode* ctu);
@@ -117,5 +114,3 @@ private:
 	CharCodeToUnicode** cache;
 	int                 size;
 };
-
-#endif

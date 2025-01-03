@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -102,7 +101,7 @@ Function* Function::parse(Object* funcObj, int expectedInputs, int expectedOutpu
 	}
 	else
 	{
-		error(errSyntaxError, -1, "Unimplemented function type ({0:d})", funcType);
+		error(errSyntaxError, -1, "Unimplemented function type ({})", funcType);
 		return nullptr;
 	}
 	if (!func->isOk())
@@ -121,7 +120,7 @@ Function* Function::parse(Object* funcObj, int expectedInputs, int expectedOutpu
 	return func;
 }
 
-GBool Function::init(Dict* dict)
+bool Function::init(Dict* dict)
 {
 	Object obj1, obj2;
 	int    i;
@@ -135,7 +134,7 @@ GBool Function::init(Dict* dict)
 	m = obj1.arrayGetLength() / 2;
 	if (m > funcMaxInputs)
 	{
-		error(errSyntaxError, -1, "Functions with more than {0:d} inputs are unsupported", funcMaxInputs);
+		error(errSyntaxError, -1, "Functions with more than {} inputs are unsupported", funcMaxInputs);
 		goto err2;
 	}
 	for (i = 0; i < m; ++i)
@@ -160,15 +159,15 @@ GBool Function::init(Dict* dict)
 	obj1.free();
 
 	//----- Range
-	hasRange = gFalse;
+	hasRange = false;
 	n        = 0;
 	if (dict->lookup("Range", &obj1)->isArray())
 	{
-		hasRange = gTrue;
+		hasRange = true;
 		n        = obj1.arrayGetLength() / 2;
 		if (n > funcMaxOutputs)
 		{
-			error(errSyntaxError, -1, "Functions with more than {0:d} outputs are unsupported", funcMaxOutputs);
+			error(errSyntaxError, -1, "Functions with more than {} outputs are unsupported", funcMaxOutputs);
 			goto err2;
 		}
 		for (i = 0; i < n; ++i)
@@ -193,13 +192,13 @@ GBool Function::init(Dict* dict)
 	}
 	obj1.free();
 
-	return gTrue;
+	return true;
 
 err1:
 	obj2.free();
 err2:
 	obj1.free();
-	return gFalse;
+	return false;
 }
 
 //------------------------------------------------------------------------
@@ -217,7 +216,7 @@ IdentityFunction::IdentityFunction(int nInputs)
 		domain[i][0] = 0;
 		domain[i][1] = 1;
 	}
-	hasRange = gFalse;
+	hasRange = false;
 }
 
 IdentityFunction::~IdentityFunction()
@@ -226,9 +225,7 @@ IdentityFunction::~IdentityFunction()
 
 void IdentityFunction::transform(double* in, double* out)
 {
-	int i;
-
-	for (i = 0; i < m; ++i)
+	for (int i = 0; i < m; ++i)
 		out[i] = in[i];
 }
 
@@ -238,24 +235,23 @@ void IdentityFunction::transform(double* in, double* out)
 
 SampledFunction::SampledFunction(Object* funcObj, Dict* dict)
 {
-	Stream* str;
-	int     sampleBits;
-	double  sampleMul;
-	Object  obj1, obj2;
-	Guint   buf, bitMask;
-	int     bits;
-	Guint   s;
-	double  in[funcMaxInputs];
-	int     i, j, t, bit, idx;
+	Stream*  str;
+	int      sampleBits;
+	double   sampleMul;
+	Object   obj1, obj2;
+	uint32_t buf, bitMask;
+	int      bits;
+	uint32_t s;
+	double   in[funcMaxInputs];
+	int      i, j, t, bit, idx;
 
 	idxOffset = nullptr;
 	samples   = nullptr;
 	sBuf      = nullptr;
-	ok        = gFalse;
+	ok        = false;
 
 	//----- initialize the generic stuff
-	if (!init(dict))
-		goto err1;
+	if (!init(dict)) goto err1;
 	if (!hasRange)
 	{
 		error(errSyntaxError, -1, "Type 0 function is missing range");
@@ -263,7 +259,7 @@ SampledFunction::SampledFunction(Object* funcObj, Dict* dict)
 	}
 	if (m > sampledFuncMaxInputs)
 	{
-		error(errSyntaxError, -1, "Sampled functions with more than {0:d} inputs are unsupported", sampledFuncMaxInputs);
+		error(errSyntaxError, -1, "Sampled functions with more than {} inputs are unsupported", sampledFuncMaxInputs);
 		goto err1;
 	}
 
@@ -454,7 +450,7 @@ SampledFunction::SampledFunction(Object* funcObj, Dict* dict)
 	}
 	transform(in, cacheOut);
 
-	ok = gTrue;
+	ok = true;
 	return;
 
 err3:
@@ -568,7 +564,7 @@ ExponentialFunction::ExponentialFunction(Object* funcObj, Dict* dict)
 	Object obj1, obj2;
 	int    i;
 
-	ok = gFalse;
+	ok = false;
 
 	//----- initialize the generic stuff
 	if (!init(dict))
@@ -590,7 +586,7 @@ ExponentialFunction::ExponentialFunction(Object* funcObj, Dict* dict)
 		n = obj1.arrayGetLength();
 		if (n > funcMaxOutputs)
 		{
-			error(errSyntaxError, -1, "Functions with more than {0:d} outputs are unsupported", funcMaxOutputs);
+			error(errSyntaxError, -1, "Functions with more than {} outputs are unsupported", funcMaxOutputs);
 			goto err2;
 		}
 		for (i = 0; i < n; ++i)
@@ -657,7 +653,7 @@ ExponentialFunction::ExponentialFunction(Object* funcObj, Dict* dict)
 	e = obj1.getNum();
 	obj1.free();
 
-	ok = gTrue;
+	ok = true;
 	return;
 
 err3:
@@ -711,7 +707,7 @@ StitchingFunction::StitchingFunction(Object* funcObj, Dict* dict, int expectedIn
 	Object obj1, obj2;
 	int    i;
 
-	ok     = gFalse;
+	ok     = false;
 	funcs  = nullptr;
 	bounds = nullptr;
 	encode = nullptr;
@@ -807,7 +803,7 @@ StitchingFunction::StitchingFunction(Object* funcObj, Dict* dict, int expectedIn
 		}
 	}
 
-	ok = gTrue;
+	ok = true;
 	return;
 
 err2:
@@ -830,7 +826,7 @@ StitchingFunction::StitchingFunction(StitchingFunction* func)
 	memcpy(encode, func->encode, 2 * k * sizeof(double));
 	scale = (double*)gmallocn(k, sizeof(double));
 	memcpy(scale, func->scale, k * sizeof(double));
-	ok = gTrue;
+	ok = true;
 }
 
 StitchingFunction::~StitchingFunction()
@@ -984,16 +980,15 @@ struct PSCode
 
 PostScriptFunction::PostScriptFunction(Object* funcObj, Dict* dict)
 {
-	Stream*  str;
-	GList*   tokens;
-	GString* tok;
-	double   in[funcMaxInputs];
-	int      tokPtr, codePtr, i;
+	Stream*     str;
+	VEC_STR     tokens;
+	std::string tok;
+	double      in[funcMaxInputs];
+	int         tokPtr, codePtr, i;
 
-	codeString = nullptr;
-	code       = nullptr;
-	codeSize   = 0;
-	ok         = gFalse;
+	code     = nullptr;
+	codeSize = 0;
+	ok       = false;
 
 	//----- initialize the generic stuff
 	if (!init(dict))
@@ -1013,15 +1008,14 @@ PostScriptFunction::PostScriptFunction(Object* funcObj, Dict* dict)
 	str = funcObj->getStream();
 
 	//----- tokenize the function
-	codeString = new GString();
-	tokens     = new GList();
+	codeString.clear();
 	str->reset();
-	while ((tok = getToken(str)))
-		tokens->append(tok);
+	while ((tok = getToken(str)).size())
+		tokens.push_back(tok);
 	str->close();
 
 	//----- parse the function
-	if (tokens->getLength() < 1 || ((GString*)tokens->get(0))->cmp("{"))
+	if (tokens.size() < 1 || tokens.at(0) == "{")
 	{
 		error(errSyntaxError, -1, "Expected '{{' at start of PostScript function");
 		goto err2;
@@ -1040,10 +1034,9 @@ PostScriptFunction::PostScriptFunction(Object* funcObj, Dict* dict)
 	}
 	transform(in, cacheOut);
 
-	ok = gTrue;
+	ok = true;
 
 err2:
-	deleteGList(tokens, GString);
 err1:
 	return;
 }
@@ -1051,7 +1044,7 @@ err1:
 PostScriptFunction::PostScriptFunction(PostScriptFunction* func)
 {
 	memcpy((void*)this, (void*)func, sizeof(PostScriptFunction));
-	codeString = func->codeString->copy();
+	codeString = func->codeString;
 	code       = (PSCode*)gmallocn(codeSize, sizeof(PSCode));
 	memcpy(code, func->code, codeSize * sizeof(PSCode));
 }
@@ -1059,8 +1052,6 @@ PostScriptFunction::PostScriptFunction(PostScriptFunction* func)
 PostScriptFunction::~PostScriptFunction()
 {
 	gfree(code);
-	if (codeString)
-		delete codeString;
 }
 
 void PostScriptFunction::transform(double* in, double* out)
@@ -1110,111 +1101,108 @@ void PostScriptFunction::transform(double* in, double* out)
 		cacheOut[i] = out[i];
 }
 
-GBool PostScriptFunction::parseCode(GList* tokens, int* tokPtr, int* codePtr)
+bool PostScriptFunction::parseCode(const VEC_STR& tokens, int* tokPtr, int* codePtr)
 {
-	GString* tok;
-	char*    p;
-	int      a, b, mid, cmp;
-	int      codePtr0, codePtr1;
+	int a, b, mid, cmp;
+	int codePtr0, codePtr1;
 
 	while (1)
 	{
-		if (*tokPtr >= tokens->getLength())
+		if (*tokPtr >= tokens.size())
 		{
 			error(errSyntaxError, -1, "Unexpected end of PostScript function stream");
-			return gFalse;
+			return false;
 		}
-		tok = (GString*)tokens->get((*tokPtr)++);
-		p   = tok->getCString();
+		auto        tok = tokens.at((*tokPtr)++);
+		const char* p   = tok.c_str();
 		if (isdigit(*p) || *p == '.' || *p == '-')
 		{
-			addCodeD(codePtr, psOpPush, atof(tok->getCString()));
+			addCodeD(codePtr, psOpPush, atof(tok.c_str()));
 		}
-		else if (!tok->cmp("{"))
+		else if (tok == "{")
 		{
 			codePtr0 = *codePtr;
 			addCodeI(codePtr, psOpJz, 0);
 			if (!parseCode(tokens, tokPtr, codePtr))
-				return gFalse;
-			if (*tokPtr >= tokens->getLength())
+				return false;
+			if (*tokPtr >= tokens.size())
 			{
 				error(errSyntaxError, -1, "Unexpected end of PostScript function stream");
-				return gFalse;
+				return false;
 			}
-			tok = (GString*)tokens->get((*tokPtr)++);
-			if (!tok->cmp("if"))
+			tok = tokens.at((*tokPtr)++);
+			if (tok == "if")
 			{
 				code[codePtr0].val.i = *codePtr;
 			}
-			else if (!tok->cmp("{"))
+			else if (tok == "{")
 			{
 				codePtr1 = *codePtr;
 				addCodeI(codePtr, psOpJ, 0);
 				code[codePtr0].val.i = *codePtr;
 				if (!parseCode(tokens, tokPtr, codePtr))
-					return gFalse;
-				if (*tokPtr >= tokens->getLength())
+					return false;
+				if (*tokPtr >= tokens.size())
 				{
 					error(errSyntaxError, -1, "Unexpected end of PostScript function stream");
-					return gFalse;
+					return false;
 				}
-				tok = (GString*)tokens->get((*tokPtr)++);
-				if (!tok->cmp("ifelse"))
+				tok = tokens.at((*tokPtr)++);
+				if (tok == "ifelse")
 				{
 					code[codePtr1].val.i = *codePtr;
 				}
 				else
 				{
 					error(errSyntaxError, -1, "Expected 'ifelse' in PostScript function stream");
-					return gFalse;
+					return false;
 				}
 			}
 			else
 			{
 				error(errSyntaxError, -1, "Expected 'if' in PostScript function stream");
-				return gFalse;
+				return false;
 			}
 		}
-		else if (!tok->cmp("}"))
+		else if (tok == "}")
 		{
 			break;
 		}
-		else if (!tok->cmp("if"))
+		else if (tok == "if")
 		{
 			error(errSyntaxError, -1, "Unexpected 'if' in PostScript function stream");
-			return gFalse;
+			return false;
 		}
-		else if (!tok->cmp("ifelse"))
+		else if (tok == "ifelse")
 		{
 			error(errSyntaxError, -1, "Unexpected 'ifelse' in PostScript function stream");
-			return gFalse;
+			return false;
 		}
 		else
 		{
 			a   = -1;
 			b   = nPSOps;
-			cmp = 0; // make gcc happy
-			// invariant: psOpNames[a] < tok < psOpNames[b]
+			cmp = 0; // make gcc happy invariant: psOpNames[a] < tok < psOpNames[b]
 			while (b - a > 1)
 			{
-				mid = (a + b) / 2;
-				cmp = tok->cmp(psOpNames[mid]);
-				if (cmp > 0)
+				mid               = (a + b) / 2;
+				const auto& name2 = psOpNames[mid];
+				if (tok > name2)
 					a = mid;
-				else if (cmp < 0)
+				else if (tok < name2)
 					b = mid;
 				else
 					a = b = mid;
 			}
 			if (cmp != 0)
 			{
-				error(errSyntaxError, -1, "Unknown operator '{0:t}' in PostScript function", tok);
-				return gFalse;
+				error(errSyntaxError, -1, "Unknown operator '{}' in PostScript function", tok);
+				return false;
 			}
 			addCode(codePtr, a);
 		}
 	}
-	return gTrue;
+	return true;
 }
 
 void PostScriptFunction::addCode(int* codePtr, int op)
@@ -1261,30 +1249,26 @@ void PostScriptFunction::addCodeD(int* codePtr, int op, double x)
 	++(*codePtr);
 }
 
-GString* PostScriptFunction::getToken(Stream* str)
+std::string PostScriptFunction::getToken(Stream* str)
 {
-	GString* s;
-	int      c;
-	GBool    comment;
+	std::string s;
+	int         c;
+	bool        comment;
 
-	s       = new GString();
-	comment = gFalse;
+	comment = false;
 	while (1)
 	{
 		if ((c = str->getChar()) == EOF)
-		{
-			delete s;
-			return nullptr;
-		}
-		codeString->append((char)c);
+			return "";
+		codeString += (char)c;
 		if (comment)
 		{
 			if (c == '\x0a' || c == '\x0d')
-				comment = gFalse;
+				comment = false;
 		}
 		else if (c == '%')
 		{
-			comment = gTrue;
+			comment = true;
 		}
 		else if (!isspace(c))
 		{
@@ -1293,30 +1277,30 @@ GString* PostScriptFunction::getToken(Stream* str)
 	}
 	if (c == '{' || c == '}')
 	{
-		s->append((char)c);
+		s += (char)c;
 	}
 	else if (isdigit(c) || c == '.' || c == '-')
 	{
 		while (1)
 		{
-			s->append((char)c);
+			s += (char)c;
 			c = str->lookChar();
 			if (c == EOF || !(isdigit(c) || c == '.' || c == '-'))
 				break;
 			str->getChar();
-			codeString->append((char)c);
+			codeString += (char)c;
 		}
 	}
 	else
 	{
 		while (1)
 		{
-			s->append((char)c);
+			s += (char)c;
 			c = str->lookChar();
 			if (c == EOF || !isalnum(c))
 				break;
 			str->getChar();
-			codeString->append((char)c);
+			codeString += (char)c;
 		}
 	}
 	return s;

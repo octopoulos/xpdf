@@ -6,11 +6,8 @@
 //
 //========================================================================
 
-#ifndef PDFDOCENCODING_H
-#define PDFDOCENCODING_H
+#pragma once
 
 #include "CharTypes.h"
 
 extern Unicode pdfDocEncoding[256];
-
-#endif

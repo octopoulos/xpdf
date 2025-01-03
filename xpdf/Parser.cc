@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stddef.h>
 #include <string.h>
 #include "gmempp.h"
@@ -19,11 +18,11 @@
 #include "XRef.h"
 #include "Error.h"
 
-// Max number of nested objects.  This is used to catch infinite loops
-// in the object structure.
+// Max number of nested objects.
+// This is used to catch infinite loops in the object structure.
 #define recursionLimit 500
 
-Parser::Parser(XRef* xrefA, Lexer* lexerA, GBool allowStreamsA)
+Parser::Parser(XRef* xrefA, Lexer* lexerA, bool allowStreamsA)
 {
 	xref         = xrefA;
 	lexer        = lexerA;
@@ -40,14 +39,14 @@ Parser::~Parser()
 	delete lexer;
 }
 
-Object* Parser::getObj(Object* obj, GBool simpleOnly, Guchar* fileKey, CryptAlgorithm encAlgorithm, int keyLength, int objNum, int objGen, int recursion)
+Object* Parser::getObj(Object* obj, bool simpleOnly, uint8_t* fileKey, CryptAlgorithm encAlgorithm, int keyLength, int objNum, int objGen, int recursion)
 {
 	char*          key;
 	Stream*        str;
 	Object         obj2;
 	int            num;
 	DecryptStream* decrypt;
-	GString *      s, *s2;
+	std::string    s;
 	int            c;
 
 	// refill buffer after inline image data
@@ -66,7 +65,7 @@ Object* Parser::getObj(Object* obj, GBool simpleOnly, Guchar* fileKey, CryptAlgo
 		shift();
 		obj->initArray(xref);
 		while (!buf1.isCmd("]") && !buf1.isEOF())
-			obj->arrayAdd(getObj(&obj2, gFalse, fileKey, encAlgorithm, keyLength, objNum, objGen, recursion + 1));
+			obj->arrayAdd(getObj(&obj2, false, fileKey, encAlgorithm, keyLength, objNum, objGen, recursion + 1));
 		if (buf1.isEOF())
 			error(errSyntaxError, getPos(), "End of file inside array");
 		shift();
@@ -93,13 +92,12 @@ Object* Parser::getObj(Object* obj, GBool simpleOnly, Guchar* fileKey, CryptAlgo
 					gfree(key);
 					break;
 				}
-				obj->dictAdd(key, getObj(&obj2, gFalse, fileKey, encAlgorithm, keyLength, objNum, objGen, recursion + 1));
+				obj->dictAdd(key, getObj(&obj2, false, fileKey, encAlgorithm, keyLength, objNum, objGen, recursion + 1));
 			}
 		}
 		if (buf1.isEOF())
 			error(errSyntaxError, getPos(), "End of file inside dictionary");
-		// stream objects are not allowed inside content streams or
-		// object streams
+		// stream objects are not allowed inside content streams or object streams
 		if (allowStreams && buf2.isCmd("stream"))
 		{
 			if ((str = makeStream(obj, fileKey, encAlgorithm, keyLength, objNum, objGen, recursion + 1)))
@@ -138,13 +136,13 @@ Object* Parser::getObj(Object* obj, GBool simpleOnly, Guchar* fileKey, CryptAlgo
 	}
 	else if (buf1.isString() && fileKey)
 	{
-		s  = buf1.getString();
-		s2 = new GString();
+		s = buf1.getString();
+		std::string s2;
 		obj2.initNull();
-		decrypt = new DecryptStream(new MemStream(s->getCString(), 0, s->getLength(), &obj2), fileKey, encAlgorithm, keyLength, objNum, objGen);
+		decrypt = new DecryptStream(new MemStream(s.data(), 0, s.size(), &obj2), fileKey, encAlgorithm, keyLength, objNum, objGen);
 		decrypt->reset();
 		while ((c = decrypt->getChar()) != EOF)
-			s2->append((char)c);
+			s2 += (char)c;
 		delete decrypt;
 		obj->initString(s2);
 		shift();
@@ -160,16 +158,15 @@ Object* Parser::getObj(Object* obj, GBool simpleOnly, Guchar* fileKey, CryptAlgo
 	return obj;
 }
 
-Stream* Parser::makeStream(Object* dict, Guchar* fileKey, CryptAlgorithm encAlgorithm, int keyLength, int objNum, int objGen, int recursion)
+Stream* Parser::makeStream(Object* dict, uint8_t* fileKey, CryptAlgorithm encAlgorithm, int keyLength, int objNum, int objGen, int recursion)
 {
 	// get stream start position
 	lexer->skipToNextLine();
 	Stream* curStr = lexer->getStream();
-	if (!curStr)
-		return nullptr;
+	if (!curStr) return nullptr;
 	GFileOffset pos = curStr->getPos();
 
-	GBool       haveLength = gFalse;
+	bool        haveLength = false;
 	GFileOffset length     = 0;
 	GFileOffset endPos;
 
@@ -177,7 +174,7 @@ Stream* Parser::makeStream(Object* dict, Guchar* fileKey, CryptAlgorithm encAlgo
 	if (xref && xref->getStreamEnd(pos, &endPos))
 	{
 		length     = endPos - pos;
-		haveLength = gTrue;
+		haveLength = true;
 
 		// get length from the stream object
 	}
@@ -187,8 +184,8 @@ Stream* Parser::makeStream(Object* dict, Guchar* fileKey, CryptAlgorithm encAlgo
 		dict->dictLookup("Length", &obj, recursion);
 		if (obj.isInt())
 		{
-			length     = (GFileOffset)(Guint)obj.getInt();
-			haveLength = gTrue;
+			length     = (GFileOffset)(uint32_t)obj.getInt();
+			haveLength = true;
 		}
 		else
 		{
@@ -197,21 +194,18 @@ Stream* Parser::makeStream(Object* dict, Guchar* fileKey, CryptAlgorithm encAlgo
 		obj.free();
 	}
 
-	// in badly damaged PDF files, we can run off the end of the input
-	// stream immediately after the "stream" token
-	if (!lexer->getStream())
-		return nullptr;
+	// in badly damaged PDF files, we can run off the end of the input stream immediately after the "stream" token
+	if (!lexer->getStream()) return nullptr;
 
-	// copy the base stream (Lexer will free stream objects when it gets
-	// to end of stream -- which can happen in the shift() calls below)
-	BaseStream* baseStr =
-	    (BaseStream*)lexer->getStream()->getBaseStream()->copy();
+	// copy the base stream (Lexer will free stream objects when it gets to end of stream
+	// -- which can happen in the shift() calls below)
+	BaseStream* baseStr = (BaseStream*)lexer->getStream()->getBaseStream()->copy();
 
 	// 'Length' attribute is missing -- search for 'endstream'
 	if (!haveLength)
 	{
-		GBool foundEndstream = gFalse;
-		char  endstreamBuf[8];
+		bool foundEndstream = false;
+		char endstreamBuf[8];
 		if ((curStr = lexer->getStream()))
 		{
 			int c;
@@ -220,7 +214,7 @@ Stream* Parser::makeStream(Object* dict, Guchar* fileKey, CryptAlgorithm encAlgo
 				if (c == 'e' && curStr->getBlock(endstreamBuf, 8) == 8 && !memcmp(endstreamBuf, "ndstream", 8))
 				{
 					length         = curStr->getPos() - 9 - pos;
-					foundEndstream = gTrue;
+					foundEndstream = true;
 					break;
 				}
 			}
@@ -234,7 +228,7 @@ Stream* Parser::makeStream(Object* dict, Guchar* fileKey, CryptAlgorithm encAlgo
 	}
 
 	// make new base stream
-	Stream* str = baseStr->makeSubStream(pos, gTrue, length, dict);
+	Stream* str = baseStr->makeSubStream(pos, true, length, dict);
 
 	// look for the 'endstream' marker
 	if (haveLength)
@@ -243,13 +237,11 @@ Stream* Parser::makeStream(Object* dict, Guchar* fileKey, CryptAlgorithm encAlgo
 		lexer->setPos(pos + length);
 
 		// check for 'endstream'
-		// NB: we never reuse the Parser object to parse objects after a
-		// stream, and we could (if the PDF file is damaged) be in the
-		// middle of binary data at this point, so we check the stream
-		// data directly for 'endstream', rather than calling shift() to
-		// parse objects
-		GBool foundEndstream = gFalse;
-		char  endstreamBuf[8];
+		// NB: we never reuse the Parser object to parse objects after a stream,
+		// and we could (if the PDF file is damaged) be in the middle of binary data at this point,
+		// so we check the stream data directly for 'endstream', rather than calling shift() to parse objects
+		bool foundEndstream = false;
+		char endstreamBuf[8];
 		if ((curStr = lexer->getStream()))
 		{
 			// skip up to 100 whitespace chars
@@ -263,20 +255,19 @@ Stream* Parser::makeStream(Object* dict, Guchar* fileKey, CryptAlgorithm encAlgo
 			if (c == 'e')
 			{
 				if (curStr->getBlock(endstreamBuf, 8) == 8 && !memcmp(endstreamBuf, "ndstream", 8))
-					foundEndstream = gTrue;
+					foundEndstream = true;
 			}
 		}
 		if (!foundEndstream)
 		{
 			error(errSyntaxError, getPos(), "Missing 'endstream'");
-			// kludge for broken PDF files: just add 5k to the length, and
-			// hope it's enough
+			// kludge for broken PDF files: just add 5k to the length, and hope it's enough
 			// (dict is now owned by str, so we need to copy it before deleting str)
 			Object obj;
 			dict->copy(&obj);
 			delete str;
 			length += 5000;
-			str = baseStr->makeSubStream(pos, gTrue, length, &obj);
+			str = baseStr->makeSubStream(pos, true, length, &obj);
 		}
 	}
 
@@ -288,18 +279,18 @@ Stream* Parser::makeStream(Object* dict, Guchar* fileKey, CryptAlgorithm encAlgo
 	{
 		// the 'Crypt' filter is used to mark unencrypted metadata streams
 		//~ this should also check for an empty DecodeParams entry
-		GBool  encrypted = gTrue;
+		bool   encrypted = true;
 		Object obj;
 		dict->dictLookup("Filter", &obj, recursion);
 		if (obj.isName("Crypt"))
 		{
-			encrypted = gFalse;
+			encrypted = false;
 		}
 		else if (obj.isArray() && obj.arrayGetLength() >= 1)
 		{
 			Object obj2;
 			if (obj.arrayGet(0, &obj2)->isName("Crypt"))
-				encrypted = gFalse;
+				encrypted = false;
 			obj2.free();
 		}
 		obj.free();
@@ -323,8 +314,7 @@ void Parser::shift()
 		}
 		else
 		{
-			// in a damaged content stream, if 'ID' shows up in the middle
-			// of a dictionary, we need to reset
+			// in a damaged content stream, if 'ID' shows up in the middle of a dictionary, we need to reset
 			inlineImg = 0;
 		}
 	}

@@ -7,11 +7,9 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <string.h>
 #include <math.h>
 #include "gmempp.h"
-#include "GString.h"
 #include "GList.h"
 #include "SplashBitmap.h"
 #include "GlobalParams.h"
@@ -23,9 +21,9 @@
 //------------------------------------------------------------------------
 
 // Divide a 16-bit value (in [0, 255*255]) by 255, returning an 8-bit result.
-static inline Guchar div255(int x)
+static inline uint8_t div255(int x)
 {
-	return (Guchar)((x + (x >> 8) + 0x80) >> 8);
+	return (uint8_t)((x + (x >> 8) + 0x80) >> 8);
 }
 
 //------------------------------------------------------------------------
@@ -37,7 +35,7 @@ TileCompositor::TileCompositor(DisplayState* stateA, TileMap* tileMapA, TileCach
 	tileMap     = tileMapA;
 	tileCache   = tileCacheA;
 	bitmap      = nullptr;
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 TileCompositor::~TileCompositor()
@@ -45,32 +43,31 @@ TileCompositor::~TileCompositor()
 	delete bitmap;
 }
 
-SplashBitmap* TileCompositor::getBitmap(GBool* finished)
+SplashBitmap* TileCompositor::getBitmap(bool* finished)
 {
 	GList*          tiles;
 	PlacedTileDesc* tile;
 	SplashBitmap*   tileBitmap;
-	GBool           allTilesFinished, tileFinished;
-	int             xSrc, ySrc, xDest, yDest, w, h, i;
+	bool            allTilesFinished, tileFinished;
+	int             xSrc, ySrc, xDest, yDest, w, h;
 
 	if (bitmapValid)
 	{
-		*finished = gTrue;
+		*finished = true;
 		return bitmap;
 	}
 	if (!bitmap || bitmap->getWidth() != state->getWinW() || bitmap->getHeight() != state->getWinH())
 	{
-		if (bitmap)
-			delete bitmap;
-		bitmap = new SplashBitmap(state->getWinW(), state->getWinH(), state->getBitmapRowPad(), state->getColorMode(), gFalse, gTrue, nullptr);
+		if (bitmap) delete bitmap;
+		bitmap = new SplashBitmap(state->getWinW(), state->getWinH(), state->getBitmapRowPad(), state->getColorMode(), false, true, nullptr);
 	}
 	clearBitmap();
 
 	//--- PDF content
-	allTilesFinished = gTrue;
+	allTilesFinished = true;
 	tiles            = tileMap->getTileList();
 	tileCache->setActiveTileList(tiles);
-	for (i = 0; i < tiles->getLength(); ++i)
+	for (int i = 0; i < tiles->getLength(); ++i)
 	{
 		tile = (PlacedTileDesc*)tiles->get(i);
 		if (tile->px >= 0)
@@ -115,8 +112,7 @@ SplashBitmap* TileCompositor::getBitmap(GBool* finished)
 	if (state->hasSelection())
 		drawSelection();
 
-	if (finished)
-		*finished = allTilesFinished;
+	if (finished) *finished = allTilesFinished;
 	bitmapValid = allTilesFinished;
 
 	return bitmap;
@@ -125,9 +121,9 @@ SplashBitmap* TileCompositor::getBitmap(GBool* finished)
 void TileCompositor::drawSelection()
 {
 	SelectRect* rect;
-	int         x0, y0, x1, y1, t, i;
+	int         x0, y0, x1, y1, t;
 
-	for (i = 0; i < state->getNumSelectRects(); ++i)
+	for (int i = 0; i < state->getNumSelectRects(); ++i)
 	{
 		rect = state->getSelectRect(i);
 		tileMap->cvtUserToWindow(rect->page, rect->x0, rect->y0, &x0, &y0);
@@ -170,72 +166,72 @@ void TileCompositor::drawSelection()
 
 void TileCompositor::paperColorChanged()
 {
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 void TileCompositor::matteColorChanged()
 {
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 void TileCompositor::selectColorChanged()
 {
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 void TileCompositor::reverseVideoChanged()
 {
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 void TileCompositor::docChanged()
 {
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 void TileCompositor::windowSizeChanged()
 {
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 void TileCompositor::displayModeChanged()
 {
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 void TileCompositor::zoomChanged()
 {
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 void TileCompositor::rotateChanged()
 {
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 void TileCompositor::scrollPositionChanged()
 {
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 void TileCompositor::selectionChanged()
 {
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 void TileCompositor::regionsChanged()
 {
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 void TileCompositor::optionalContentChanged()
 {
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 void TileCompositor::forceRedraw()
 {
-	bitmapValid = gFalse;
+	bitmapValid = false;
 }
 
 // Clear the bitmap to matteColor.  This only supports the RGB8 and
@@ -310,12 +306,12 @@ void TileCompositor::clearBitmap()
 // destBitmap.  This only supports the RGB8 and BGR8 color modes.
 // If [compositeWithPaper] is true, composites the source bitmap
 // with the paper color (used for incremental updates).
-void TileCompositor::blit(SplashBitmap* srcBitmap, int xSrc, int ySrc, SplashBitmap* destBitmap, int xDest, int yDest, int w, int h, GBool compositeWithPaper)
+void TileCompositor::blit(SplashBitmap* srcBitmap, int xSrc, int ySrc, SplashBitmap* destBitmap, int xDest, int yDest, int w, int h, bool compositeWithPaper)
 {
 	SplashColorPtr      srcData, destData, srcP, destP;
 	SplashColorPtr      paperColor;
-	Guchar *            alphaData, *alphaP;
-	Guchar              alpha, alpha1;
+	uint8_t *           alphaData, *alphaP;
+	uint8_t             alpha, alpha1;
 	SplashBitmapRowSize srcRowSize, destRowSize;
 	size_t              alphaRowSize;
 	int                 x, y;
@@ -352,7 +348,7 @@ void TileCompositor::blit(SplashBitmap* srcBitmap, int xSrc, int ySrc, SplashBit
 				}
 				else
 				{
-					alpha1   = (Guchar)(255 - alpha);
+					alpha1   = (uint8_t)(255 - alpha);
 					destP[0] = div255(alpha1 * paperColor[0] + alpha * srcP[0]);
 					destP[1] = div255(alpha1 * paperColor[1] + alpha * srcP[1]);
 					destP[2] = div255(alpha1 * paperColor[2] + alpha * srcP[2]);
@@ -378,7 +374,7 @@ void TileCompositor::blit(SplashBitmap* srcBitmap, int xSrc, int ySrc, SplashBit
 void TileCompositor::fill(int xDest, int yDest, int w, int h, SplashColorPtr color)
 {
 	SplashColorPtr      data, p;
-	Guchar              c0, c1, c2;
+	uint8_t             c0, c1, c2;
 	SplashBitmapRowSize rowSize;
 	int                 x, y;
 
@@ -432,7 +428,7 @@ void TileCompositor::fill(int xDest, int yDest, int w, int h, SplashColorPtr col
 void TileCompositor::applySelection(int xDest, int yDest, int w, int h, SplashColorPtr color)
 {
 	SplashColorPtr      data, p;
-	Guchar              c0, c1, c2;
+	uint8_t             c0, c1, c2;
 	SplashBitmapRowSize rowSize;
 	int                 x, y;
 
@@ -473,9 +469,9 @@ void TileCompositor::applySelection(int xDest, int yDest, int w, int h, SplashCo
 		p = &data[(yDest + y) * rowSize + 3 * xDest];
 		for (x = 0; x < w; ++x)
 		{
-			p[0] = (Guchar)((3 * p[0] + c0) / 4);
-			p[1] = (Guchar)((3 * p[1] + c1) / 4);
-			p[2] = (Guchar)((3 * p[2] + c2) / 4);
+			p[0] = (uint8_t)((3 * p[0] + c0) / 4);
+			p[1] = (uint8_t)((3 * p[1] + c1) / 4);
+			p[2] = (uint8_t)((3 * p[2] + c2) / 4);
 			p += 3;
 		}
 	}

@@ -14,8 +14,8 @@ struct PdfBitmap
 
 	~PdfBitmap()
 	{
-		if (alpha) delete[] alpha;
-		if (data) delete[] data;
+		if (alpha) free(alpha);
+		if (data) free(data);
 	}
 };
 

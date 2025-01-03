@@ -8,6 +8,10 @@
 #
 # ========================================================================
 
+cmake_minimum_required(VERSION 3.17)
+
+set(CMAKE_CXX_STANDARD 20)
+
 if(HAVE_SPLASH)
 	include_directories("${PROJECT_SOURCE_DIR}")
 	include_directories("${PROJECT_BINARY_DIR}")

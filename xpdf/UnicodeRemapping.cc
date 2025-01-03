@@ -7,13 +7,11 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdio.h>
 #include <string.h>
 #include "gmem.h"
 #include "gmempp.h"
 #include "gfile.h"
-#include "GString.h"
 #include "Error.h"
 #include "UnicodeRemapping.h"
 
@@ -51,19 +49,16 @@ static int hexCharVals[256] = {
 
 // Parse a <len>-byte hex string <s> into *<val>.  Returns false on
 // error.
-static GBool parseHex(char* s, int len, Guint* val)
+static bool parseHex(char* s, int len, uint32_t* val)
 {
-	int i, x;
-
 	*val = 0;
-	for (i = 0; i < len; ++i)
+	for (int i = 0; i < len; ++i)
 	{
-		x = hexCharVals[s[i] & 0xff];
-		if (x < 0)
-			return gFalse;
+		const int x = hexCharVals[s[i] & 0xff];
+		if (x < 0) return false;
 		*val = (*val << 4) + x;
 	}
-	return gTrue;
+	return true;
 }
 
 //------------------------------------------------------------------------
@@ -83,7 +78,7 @@ UnicodeRemapping::~UnicodeRemapping()
 
 void UnicodeRemapping::addRemapping(Unicode in, Unicode* out, int len)
 {
-	int i, j;
+	int j;
 
 	if (in < 256 && len == 1)
 	{
@@ -96,10 +91,9 @@ void UnicodeRemapping::addRemapping(Unicode in, Unicode* out, int len)
 		if (sMapLen == sMapSize)
 		{
 			sMapSize += 16;
-			sMap = (UnicodeRemappingString*)
-			    greallocn(sMap, sMapSize, sizeof(UnicodeRemappingString));
+			sMap = (UnicodeRemappingString*)greallocn(sMap, sMapSize, sizeof(UnicodeRemappingString));
 		}
-		i = findSMap(in);
+		const int i = findSMap(in);
 		if (i < sMapLen)
 			memmove(sMap + i + 1, sMap + i, (sMapLen - i) * sizeof(UnicodeRemappingString));
 		sMap[i].in = in;
@@ -110,38 +104,37 @@ void UnicodeRemapping::addRemapping(Unicode in, Unicode* out, int len)
 	}
 }
 
-void UnicodeRemapping::parseFile(GString* fileName)
+void UnicodeRemapping::parseFile(const std::string& fileName)
 {
 	FILE*   f;
 	char    buf[256];
 	Unicode in;
 	Unicode out[maxUnicodeString];
 	char*   tok;
-	int     line, n;
 
-	if (!(f = openFile(fileName->getCString(), "r")))
+	if (!(f = openFile(fileName.c_str(), "r")))
 	{
-		error(errSyntaxError, -1, "Couldn't open unicodeRemapping file '{0:t}'", fileName);
+		error(errSyntaxError, -1, "Couldn't open unicodeRemapping file '{}'", fileName);
 		return;
 	}
 
-	line = 0;
+	int line = 0;
 	while (getLine(buf, sizeof(buf), f))
 	{
 		++line;
 		if (!(tok = strtok(buf, " \t\r\n")) || !parseHex(tok, (int)strlen(tok), &in))
 		{
-			error(errSyntaxWarning, -1, "Bad line ({0:d}) in unicodeRemapping file '{1:t}'", line, fileName);
+			error(errSyntaxWarning, -1, "Bad line ({}) in unicodeRemapping file '{}'", line, fileName);
 			continue;
 		}
-		n = 0;
+		int n = 0;
 		while (n < maxUnicodeString)
 		{
 			if (!(tok = strtok(nullptr, " \t\r\n")))
 				break;
 			if (!parseHex(tok, (int)strlen(tok), &out[n]))
 			{
-				error(errSyntaxWarning, -1, "Bad line ({0:d}) in unicodeRemapping file '{1:t}'", line, fileName);
+				error(errSyntaxWarning, -1, "Bad line ({}) in unicodeRemapping file '{}'", line, fileName);
 				break;
 			}
 			++n;
@@ -155,14 +148,12 @@ void UnicodeRemapping::parseFile(GString* fileName)
 // Determine the location in sMap to insert/replace the entry for [u].
 int UnicodeRemapping::findSMap(Unicode u)
 {
-	int a, b, m;
-
-	a = -1;
-	b = sMapLen;
+	int a = -1;
+	int b = sMapLen;
 	// invariant: sMap[a].in < u <= sMap[b].in
 	while (b - a > 1)
 	{
-		m = (a + b) / 2;
+		const int m = (a + b) / 2;
 		if (sMap[m].in < u)
 			a = m;
 		else
@@ -173,20 +164,18 @@ int UnicodeRemapping::findSMap(Unicode u)
 
 int UnicodeRemapping::map(Unicode in, Unicode* out, int size)
 {
-	int a, b, m, i;
-
 	if (in < 256 && page0[in] != 0xffffffff)
 	{
 		out[0] = page0[in];
 		return 1;
 	}
 
-	a = -1;
-	b = sMapLen;
+	int a = -1;
+	int b = sMapLen;
 	// invariant: sMap[a].in < in < sMap[b].in
 	while (b - a > 1)
 	{
-		m = (a + b) / 2;
+		const int m = (a + b) / 2;
 		if (sMap[m].in < in)
 		{
 			a = m;
@@ -197,6 +186,7 @@ int UnicodeRemapping::map(Unicode in, Unicode* out, int size)
 		}
 		else
 		{
+			int i;
 			for (i = 0; i < sMap[m].len && i < size; ++i)
 				out[i] = sMap[m].out[i];
 			return i;

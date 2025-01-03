@@ -3,370 +3,289 @@
 // pdfinfo.cc
 //
 // Copyright 1998-2013 Glyph & Cog, LLC
+// updated by octopoulos @ 2024-12-29
 //
 //========================================================================
 
+// --cfgFileName "c:/web/gori/data/xpdf.cfg" -- "C:/web/gori/source/pdf/bug.pdf"
+
 #include <aconf.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <string.h>
-#include <time.h>
-#include <math.h>
-#include <ctype.h>
-#include "gmem.h"
-#include "gmempp.h"
-#include "parseargs.h"
-#include "GString.h"
-#include "gfile.h"
+#include "Error.h"
 #include "GlobalParams.h"
-#include "Object.h"
-#include "Stream.h"
-#include "Array.h"
-#include "Dict.h"
-#include "XRef.h"
-#include "Catalog.h"
 #include "Page.h"
 #include "PDFDoc.h"
-#include "CharTypes.h"
-#include "UnicodeMap.h"
 #include "TextString.h"
 #include "UTF8.h"
 #include "Zoox.h"
-#include "Error.h"
-#include "config.h"
 
-static void     printInfoString(Object* infoDict, const char* infoKey, ZxDoc* xmp, const char* xmpKey1, const char* xmpKey2, const char* text, GBool parseDate, UnicodeMap* uMap);
-static void     printCustomInfo(Object* infoDict, UnicodeMap* uMap);
-static GString* parseInfoDate(GString* s);
-static GString* parseXMPDate(GString* s);
-static void     printBox(const char* text, PDFRectangle* box);
+#include <CLI/CLI.hpp>
 
-static int   firstPage         = 1;
-static int   lastPage          = 0;
-static GBool printBoxes        = gFalse;
-static GBool printMetadata     = gFalse;
-static GBool rawDates          = gFalse;
-static GBool printCustom       = gFalse;
-static char  textEncName[128]  = "";
-static char  ownerPassword[33] = "\001";
-static char  userPassword[33]  = "\001";
-static char  cfgFileName[256]  = "";
-static GBool printVersion      = gFalse;
-static GBool printHelp         = gFalse;
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static ArgDesc argDesc[] = {
-	{ "-f", argInt, &firstPage, 0,     "first page to convert" },
-	{ "-l", argInt, &lastPage, 0,     "last page to convert" },
-	{ "-box", argFlag, &printBoxes, 0,     "print the page bounding boxes" },
-	{ "-meta", argFlag, &printMetadata, 0,     "print the document metadata (XML)" },
-	{ "-rawdates", argFlag, &rawDates, 0,     "print the undecoded date strings directly from the PDF file" },
-	{ "-custom", argFlag, &printCustom, 0,     "print the custom info dictionary fields" },
-	{ "-enc", argString, textEncName, sizeof(textEncName),     "output text encoding name" },
-	{ "-opw", argString, ownerPassword, sizeof(ownerPassword),     "owner password (for encrypted files)" },
-	{ "-upw", argString, userPassword, sizeof(userPassword),     "user password (for encrypted files)" },
-	{ "-cfg", argString, cfgFileName, sizeof(cfgFileName),     "configuration file to use in place of .xpdfrc" },
-	{ "-v", argFlag, &printVersion, 0,     "print copyright and version info" },
-	{ "-h", argFlag, &printHelp, 0,     "print usage information" },
-	{ "-help", argFlag, &printHelp, 0,     "print usage information" },
-	{ "--help", argFlag, &printHelp, 0,     "print usage information" },
-	{ "-?", argFlag, &printHelp, 0,     "print usage information" },
-	{ nullptr }
-};
+static void        printInfoString(Object* infoDict, const char* infoKey, ZxDoc* xmp, const char* xmpKey1, const char* xmpKey2, const char* text, bool parseDate, UnicodeMap* uMap);
+static void        printCustomInfo(Object* infoDict, UnicodeMap* uMap);
+static std::string parseInfoDate(const std::string& s);
+static std::string parseXMPDate(const std::string& s);
+static void        printBox(const char* text, PDFRectangle* box);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char* argv[])
 {
-#if USE_EXCEPTIONS
-	try
-	{
-#endif
+	// OPTIONS
+	//////////
 
-		PDFDoc*        doc;
-		char*          fileName;
-		GString *      ownerPW, *userPW;
-		UnicodeMap*    uMap;
-		Page*          page;
-		Object         info, xfa;
-		Object*        acroForm;
-		char           buf[256];
-		double         w, h, wISO, hISO;
-		FILE*          f;
-		GString*       metadata;
-		ZxDoc*         xmp;
-		int            permFlags, keyLength, encVersion;
-		GBool          ownerPasswordOk;
+	CLI_BEGIN("pdfinfo");
+
+	// name, type, default, implicit, needApp, help
+	// clang-format off
+	CLI_OPTION(cfgFileName  , std::string, "", "", 0, "configuration file to use in place of .xpdfrc");
+	CLI_OPTION(firstPage    , int        , 1 , 1 , 0, "first page to convert");
+	CLI_OPTION(lastPage     , int        , 0 , 0 , 0, "last page to convert");
+	CLI_OPTION(ownerPassword, std::string, "", "", 0, "owner password (for encrypted files)");
+	CLI_OPTION(printBoxes   , int        , 0 , 1 , 0, "print the page bounding boxes");
+	CLI_OPTION(printCustom  , int        , 0 , 1 , 0, "print the custom info dictionary fields");
+	CLI_OPTION(printMetadata, int        , 0 , 1 , 0, "print the document metadata (XML)");
+	CLI_OPTION(printVersion , int        , 0 , 1 , 0, "print copyright and version info");
+	CLI_OPTION(rawDates     , int        , 0 , 1 , 0, "print the undecoded date strings directly from the PDF file");
+	CLI_OPTION(textEncName  , std::string, "", "", 0, "output text encoding name");
+	CLI_OPTION(userPassword , std::string, "", "", 0, "user password (for encrypted files)");
+	//
+	CLI_REQUIRED(fileName, std::string, 1, "<PDF-file>");
+	// clang-format on
+
+	CLI11_PARSE(cli, argc, argv);
+	CLI_NEEDAPP();
+
+	UnicodeMap* uMap;
+	Object      info;
+	Object*     acroForm;
+	char        buf[256];
+	std::string metadata;
+	ZxDoc*      xmp;
+	bool        multiPage;
+
+	// config file
+	{
+		if (CLI_STRING(cfgFileName) && !std::filesystem::exists(cfgFileName))
+			error(errConfig, -1, "Config file '{}' doesn't exist or isn't a file", cfgFileName);
+
+		globalParams = std::make_shared<GlobalParams>(cfgFileName.c_str());
+		if (CLI_STRING(textEncName)) globalParams->setTextEncoding(textEncName.c_str());
+	}
+
+	// get mapping to output encoding
+	if (!(uMap = globalParams->getTextEncoding()))
+	{
+		error(errConfig, -1, "Couldn't get text encoding");
+		return 99;
+	}
+
+	// open PDF file
+	auto doc = std::make_unique<PDFDoc>(fileName, ownerPassword, userPassword);
+	if (!doc->isOk()) return 1;
+
+	// get page range
+	if (firstPage < 1) firstPage = 1;
+	if (lastPage == 0)
+	{
+		multiPage = false;
+		lastPage  = 1;
+	}
+	else
+	{
+		multiPage = true;
+	}
+	if (lastPage < 1 || lastPage > doc->getNumPages())
+		lastPage = doc->getNumPages();
+
+	// print doc info
+	doc->getDocInfo(&info);
+	if ((metadata = doc->readMetadata()).size())
+		xmp = ZxDoc::loadMem(metadata.c_str(), metadata.size());
+	else
+		xmp = nullptr;
+	// clang-format off
+	printInfoString(&info, "Title"       , xmp, "dc:title"       , nullptr         , "Title:          ", false    , uMap);
+	printInfoString(&info, "Subject"     , xmp, "dc:description" , nullptr         , "Subject:        ", false    , uMap);
+	printInfoString(&info, "Keywords"    , xmp, "pdf:Keywords"   , nullptr         , "Keywords:       ", false    , uMap);
+	printInfoString(&info, "Author"      , xmp, "dc:creator"     , nullptr         , "Author:         ", false    , uMap);
+	printInfoString(&info, "Creator"     , xmp, "xmp:CreatorTool", nullptr         , "Creator:        ", false    , uMap);
+	printInfoString(&info, "Producer"    , xmp, "pdf:Producer"   , nullptr         , "Producer:       ", false    , uMap);
+	printInfoString(&info, "CreationDate", xmp, "xap:CreateDate" , "xmp:CreateDate", "CreationDate:   ", !rawDates, uMap);
+	printInfoString(&info, "ModDate"     , xmp, "xap:ModifyDate" , "xmp:ModifyDate", "ModDate:        ", !rawDates, uMap);
+	// clang-format on
+	if (printCustom)
+		printCustomInfo(&info, uMap);
+	info.free();
+	if (xmp) delete xmp;
+
+	// print tagging info
+	printf("Tagged:         %s\n", doc->getStructTreeRoot()->isDict() ? "yes" : "no");
+
+	// print form info
+	if ((acroForm = doc->getCatalog()->getAcroForm())->isDict())
+	{
+		Object xfa;
+		acroForm->dictLookup("XFA", &xfa);
+		if (xfa.isStream() || xfa.isArray())
+			if (doc->getCatalog()->getNeedsRendering())
+				printf("Form:           dynamic XFA\n");
+			else
+				printf("Form:           static XFA\n");
+		else
+			printf("Form:           AcroForm\n");
+		xfa.free();
+	}
+	else
+	{
+		printf("Form:           none\n");
+	}
+
+	// print page count
+	printf("Pages:          %d\n", doc->getNumPages());
+
+	// print encryption info
+	if (doc->isEncrypted())
+	{
 		CryptAlgorithm encAlgorithm;
-		GBool          ok;
-		int            exitCode;
-		int            pg, i;
-		GBool          multiPage;
-
-		exitCode = 99;
-
-		// parse args
-		fixCommandLine(&argc, &argv);
-		ok = parseArgs(argDesc, &argc, argv);
-		if (!ok || argc != 2 || printVersion || printHelp)
-		{
-			fprintf(stderr, "pdfinfo version %s [www.xpdfreader.com]\n", xpdfVersion);
-			fprintf(stderr, "%s\n", xpdfCopyright);
-			if (!printVersion)
-				printUsage("pdfinfo", "<PDF-file>", argDesc);
-			goto err0;
-		}
-		fileName = argv[1];
-
-		// read config file
-		if (cfgFileName[0] && !pathIsFile(cfgFileName))
-			error(errConfig, -1, "Config file '{0:s}' doesn't exist or isn't a file", cfgFileName);
-		globalParams = new GlobalParams(cfgFileName);
-		if (textEncName[0])
-			globalParams->setTextEncoding(textEncName);
-
-		// get mapping to output encoding
-		if (!(uMap = globalParams->getTextEncoding()))
-		{
-			error(errConfig, -1, "Couldn't get text encoding");
-			goto err1;
-		}
-
-		// open PDF file
-		if (ownerPassword[0] != '\001')
-			ownerPW = new GString(ownerPassword);
-		else
-			ownerPW = nullptr;
-		if (userPassword[0] != '\001')
-			userPW = new GString(userPassword);
-		else
-			userPW = nullptr;
-		doc = new PDFDoc(fileName, ownerPW, userPW);
-		if (userPW)
-			delete userPW;
-		if (ownerPW)
-			delete ownerPW;
-		if (!doc->isOk())
-		{
-			exitCode = 1;
-			goto err2;
-		}
-
-		// get page range
-		if (firstPage < 1)
-			firstPage = 1;
-		if (lastPage == 0)
-		{
-			multiPage = gFalse;
-			lastPage  = 1;
-		}
-		else
-		{
-			multiPage = gTrue;
-		}
-		if (lastPage < 1 || lastPage > doc->getNumPages())
-			lastPage = doc->getNumPages();
-
-		// print doc info
-		doc->getDocInfo(&info);
-		if ((metadata = doc->readMetadata()))
-			xmp = ZxDoc::loadMem(metadata->getCString(), metadata->getLength());
-		else
-			xmp = nullptr;
-		printInfoString(&info, "Title", xmp, "dc:title", nullptr, "Title:          ", gFalse, uMap);
-		printInfoString(&info, "Subject", xmp, "dc:description", nullptr, "Subject:        ", gFalse, uMap);
-		printInfoString(&info, "Keywords", xmp, "pdf:Keywords", nullptr, "Keywords:       ", gFalse, uMap);
-		printInfoString(&info, "Author", xmp, "dc:creator", nullptr, "Author:         ", gFalse, uMap);
-		printInfoString(&info, "Creator", xmp, "xmp:CreatorTool", nullptr, "Creator:        ", gFalse, uMap);
-		printInfoString(&info, "Producer", xmp, "pdf:Producer", nullptr, "Producer:       ", gFalse, uMap);
-		printInfoString(&info, "CreationDate", xmp, "xap:CreateDate", "xmp:CreateDate", "CreationDate:   ", !rawDates, uMap);
-		printInfoString(&info, "ModDate", xmp, "xap:ModifyDate", "xmp:ModifyDate", "ModDate:        ", !rawDates, uMap);
-		if (printCustom)
-			printCustomInfo(&info, uMap);
-		info.free();
-		if (xmp)
-			delete xmp;
-
-		// print tagging info
-		printf("Tagged:         %s\n", doc->getStructTreeRoot()->isDict() ? "yes" : "no");
-
-		// print form info
-		if ((acroForm = doc->getCatalog()->getAcroForm())->isDict())
-		{
-			acroForm->dictLookup("XFA", &xfa);
-			if (xfa.isStream() || xfa.isArray())
-				if (doc->getCatalog()->getNeedsRendering())
-					printf("Form:           dynamic XFA\n");
-				else
-					printf("Form:           static XFA\n");
-			else
-				printf("Form:           AcroForm\n");
-			xfa.free();
-		}
-		else
-		{
-			printf("Form:           none\n");
-		}
-
-		// print page count
-		printf("Pages:          %d\n", doc->getNumPages());
-
-		// print encryption info
-		if (doc->isEncrypted())
-		{
-			doc->getXRef()->getEncryption(&permFlags, &ownerPasswordOk, &keyLength, &encVersion, &encAlgorithm);
-			printf("Encrypted:      %s %d-bit\n", encAlgorithm == cryptRC4 ? "RC4" : "AES", keyLength * 8);
-			printf("Permissions:    print:%s copy:%s change:%s addNotes:%s\n", doc->okToPrint(gTrue) ? "yes" : "no", doc->okToCopy(gTrue) ? "yes" : "no", doc->okToChange(gTrue) ? "yes" : "no", doc->okToAddNotes(gTrue) ? "yes" : "no");
-		}
-		else
-		{
-			printf("Encrypted:      no\n");
-		}
-
-		// print page size
-		for (pg = firstPage; pg <= lastPage; ++pg)
-		{
-			w = doc->getPageCropWidth(pg);
-			h = doc->getPageCropHeight(pg);
-			if (multiPage)
-				printf("Page %4d size: %g x %g pts", pg, w, h);
-			else
-				printf("Page size:      %g x %g pts", w, h);
-			if ((fabs(w - 612) < 0.1 && fabs(h - 792) < 0.1) || (fabs(w - 792) < 0.1 && fabs(h - 612) < 0.1))
-			{
-				printf(" (letter)");
-			}
-			else
-			{
-				hISO = sqrt(sqrt(2.0)) * 7200 / 2.54;
-				wISO = hISO / sqrt(2.0);
-				for (i = 0; i <= 6; ++i)
-				{
-					if ((fabs(w - wISO) < 1 && fabs(h - hISO) < 1) || (fabs(w - hISO) < 1 && fabs(h - wISO) < 1))
-					{
-						printf(" (A%d)", i);
-						break;
-					}
-					hISO = wISO;
-					wISO /= sqrt(2.0);
-				}
-			}
-			printf(" (rotated %d degrees)", doc->getPageRotate(pg));
-			printf("\n");
-		}
-
-		// print the boxes
-		if (printBoxes)
-		{
-			if (multiPage)
-			{
-				for (pg = firstPage; pg <= lastPage; ++pg)
-				{
-					page = doc->getCatalog()->getPage(pg);
-					snprintf(buf, sizeof(buf), "Page %4d MediaBox: ", pg);
-					printBox(buf, page->getMediaBox());
-					snprintf(buf, sizeof(buf), "Page %4d CropBox:  ", pg);
-					printBox(buf, page->getCropBox());
-					snprintf(buf, sizeof(buf), "Page %4d BleedBox: ", pg);
-					printBox(buf, page->getBleedBox());
-					snprintf(buf, sizeof(buf), "Page %4d TrimBox:  ", pg);
-					printBox(buf, page->getTrimBox());
-					snprintf(buf, sizeof(buf), "Page %4d ArtBox:   ", pg);
-					printBox(buf, page->getArtBox());
-				}
-			}
-			else if (doc->getNumPages() > 0)
-			{
-				page = doc->getCatalog()->getPage(firstPage);
-				printBox("MediaBox:       ", page->getMediaBox());
-				printBox("CropBox:        ", page->getCropBox());
-				printBox("BleedBox:       ", page->getBleedBox());
-				printBox("TrimBox:        ", page->getTrimBox());
-				printBox("ArtBox:         ", page->getArtBox());
-			}
-		}
-
-		// print file size
-		f = openFile(fileName, "rb");
-		if (f)
-		{
-			gfseek(f, 0, SEEK_END);
-			printf("File size:      %u bytes\n", (Guint)gftell(f));
-			fclose(f);
-		}
-
-		// print linearization info
-		printf("Optimized:      %s\n", doc->isLinearized() ? "yes" : "no");
-
-		// print JavaScript info
-		printf("JavaScript:     %s\n", doc->usesJavaScript() ? "yes" : "no");
-
-		// print PDF version
-		printf("PDF version:    %.1f\n", doc->getPDFVersion());
-
-		// print the metadata
-		if (printMetadata && metadata)
-		{
-			fputs("Metadata:\n", stdout);
-			fputs(metadata->getCString(), stdout);
-			fputc('\n', stdout);
-		}
-
-		if (metadata)
-			delete metadata;
-
-		exitCode = 0;
-
-		// clean up
-err2:
-		uMap->decRefCnt();
-		delete doc;
-err1:
-		delete globalParams;
-err0:
-
-		// check for memory leaks
-		Object::memCheck(stderr);
-		gMemReport(stderr);
-
-		return exitCode;
-
-#if USE_EXCEPTIONS
+		int            encVersion;
+		int            keyLength;
+		bool           ownerPasswordOk;
+		int            permFlags;
+		doc->getXRef()->getEncryption(&permFlags, &ownerPasswordOk, &keyLength, &encVersion, &encAlgorithm);
+		printf("Encrypted:      %s %d-bit\n", encAlgorithm == cryptRC4 ? "RC4" : "AES", keyLength * 8);
+		printf("Permissions:    print:%s copy:%s change:%s addNotes:%s\n", doc->okToPrint(true) ? "yes" : "no", doc->okToCopy(true) ? "yes" : "no", doc->okToChange(true) ? "yes" : "no", doc->okToAddNotes(true) ? "yes" : "no");
 	}
-	catch (GMemException e)
+	else
 	{
-		fprintf(stderr, "Out of memory\n");
-		return 98;
+		printf("Encrypted:      no\n");
 	}
-#endif
+
+	// print page size
+	for (int pg = firstPage; pg <= lastPage; ++pg)
+	{
+		const double w = doc->getPageCropWidth(pg);
+		const double h = doc->getPageCropHeight(pg);
+		if (multiPage)
+			printf("Page %4d size: %g x %g pts", pg, w, h);
+		else
+			printf("Page size:      %g x %g pts", w, h);
+		if ((fabs(w - 612) < 0.1 && fabs(h - 792) < 0.1) || (fabs(w - 792) < 0.1 && fabs(h - 612) < 0.1))
+		{
+			printf(" (letter)");
+		}
+		else
+		{
+			double hISO = sqrt(sqrt(2.0)) * 7200 / 2.54;
+			double wISO = hISO / sqrt(2.0);
+			for (int i = 0; i <= 6; ++i)
+			{
+				if ((fabs(w - wISO) < 1 && fabs(h - hISO) < 1) || (fabs(w - hISO) < 1 && fabs(h - wISO) < 1))
+				{
+					printf(" (A%d)", i);
+					break;
+				}
+				hISO = wISO;
+				wISO /= sqrt(2.0);
+			}
+		}
+		printf(" (rotated %d degrees)", doc->getPageRotate(pg));
+		printf("\n");
+	}
+
+	// print the boxes
+	if (printBoxes)
+	{
+		if (multiPage)
+		{
+			for (int pg = firstPage; pg <= lastPage; ++pg)
+			{
+				Page* page = doc->getCatalog()->getPage(pg);
+				snprintf(buf, sizeof(buf), "Page %4d MediaBox: ", pg);
+				printBox(buf, page->getMediaBox());
+				snprintf(buf, sizeof(buf), "Page %4d CropBox:  ", pg);
+				printBox(buf, page->getCropBox());
+				snprintf(buf, sizeof(buf), "Page %4d BleedBox: ", pg);
+				printBox(buf, page->getBleedBox());
+				snprintf(buf, sizeof(buf), "Page %4d TrimBox:  ", pg);
+				printBox(buf, page->getTrimBox());
+				snprintf(buf, sizeof(buf), "Page %4d ArtBox:   ", pg);
+				printBox(buf, page->getArtBox());
+			}
+		}
+		else if (doc->getNumPages() > 0)
+		{
+			Page* page = doc->getCatalog()->getPage(firstPage);
+			printBox("MediaBox:       ", page->getMediaBox());
+			printBox("CropBox:        ", page->getCropBox());
+			printBox("BleedBox:       ", page->getBleedBox());
+			printBox("TrimBox:        ", page->getTrimBox());
+			printBox("ArtBox:         ", page->getArtBox());
+		}
+	}
+
+	// print file size
+	FILE* f = openFile(fileName.c_str(), "rb");
+	if (f)
+	{
+		gfseek(f, 0, SEEK_END);
+		printf("File size:      %u bytes\n", (uint32_t)gftell(f));
+		fclose(f);
+	}
+
+	// print linearization info
+	printf("Optimized:      %s\n", doc->isLinearized() ? "yes" : "no");
+
+	// print JavaScript info
+	printf("JavaScript:     %s\n", doc->usesJavaScript() ? "yes" : "no");
+
+	// print PDF version
+	printf("PDF version:    %.1f\n", doc->getPDFVersion());
+
+	// print the metadata
+	if (printMetadata && metadata.size())
+	{
+		fputs("Metadata:\n", stdout);
+		fputs(metadata.c_str(), stdout);
+		fputc('\n', stdout);
+	}
+
+	// clean up
+	uMap->decRefCnt();
+
+	// check for memory leaks
+	Object::memCheck(stderr);
+	gMemReport(stderr);
+	return 0;
 }
 
-static void printInfoString(Object* infoDict, const char* infoKey, ZxDoc* xmp, const char* xmpKey1, const char* xmpKey2, const char* text, GBool parseDate, UnicodeMap* uMap)
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void printInfoString(Object* infoDict, const char* infoKey, ZxDoc* xmp, const char* xmpKey1, const char* xmpKey2, const char* text, bool parseDate, UnicodeMap* uMap)
 {
 	Object      obj;
 	TextString* s;
 	Unicode*    u;
-	Unicode     uu;
 	char        buf[8];
-	GString *   value, *tmp;
+	std::string value, tmp;
 	ZxElement * rdf, *elem, *child;
 	ZxNode *    node, *node2;
-	int         i, n;
-
-	value = nullptr;
 
 	//-- check the info dictionary
 	if (infoDict->isDict())
 	{
 		if (infoDict->dictLookup(infoKey, &obj)->isString())
 		{
-			if (!parseDate || !(value = parseInfoDate(obj.getString())))
+			if (!parseDate || (value = parseInfoDate(obj.getString())).empty())
 			{
-				s     = new TextString(obj.getString());
-				u     = s->getUnicode();
-				value = new GString();
-				for (i = 0; i < s->getLength(); ++i)
+				s = new TextString(obj.getString());
+				u = s->getUnicode();
+				value.clear();
+				for (int i = 0; i < s->getLength(); ++i)
 				{
-					n = uMap->mapUnicode(u[i], buf, sizeof(buf));
-					value->append(buf, n);
+					const int n = uMap->mapUnicode(u[i], buf, sizeof(buf));
+					value.append(buf, n);
 				}
 				delete s;
 			}
@@ -401,17 +320,16 @@ static void printInfoString(Object* infoDict, const char* infoKey, ZxDoc* xmp, c
 						}
 						if (node2 && node2->isCharData())
 						{
-							if (value)
-								delete value;
-							if (!parseDate || !(value = parseXMPDate(((ZxCharData*)node2)->getData())))
+							if (!parseDate || (value = parseXMPDate(((ZxCharData*)node2)->getData())).empty())
 							{
-								tmp   = ((ZxCharData*)node2)->getData();
-								i     = 0;
-								value = new GString();
+								tmp       = ((ZxCharData*)node2)->getData();
+								int     i = 0;
+								Unicode uu;
+								value.clear();
 								while (getUTF8(tmp, &i, &uu))
 								{
-									n = uMap->mapUnicode(uu, buf, sizeof(buf));
-									value->append(buf, n);
+									const int n = uMap->mapUnicode(uu, buf, sizeof(buf));
+									value.append(buf, n);
 								}
 							}
 						}
@@ -422,12 +340,11 @@ static void printInfoString(Object* infoDict, const char* infoKey, ZxDoc* xmp, c
 		}
 	}
 
-	if (value)
+	if (value.size())
 	{
 		fputs(text, stdout);
-		fwrite(value->getCString(), 1, value->getLength(), stdout);
+		fwrite(value.c_str(), 1, value.size(), stdout);
 		fputc('\n', stdout);
-		delete value;
 	}
 }
 
@@ -461,18 +378,17 @@ static void printCustomInfo(Object* infoDict, UnicodeMap* uMap)
 	}
 }
 
-static GString* parseInfoDate(GString* s)
+static std::string parseInfoDate(const std::string& s)
 {
 	int       year, mon, day, hour, min, sec, n;
 	struct tm tmStruct;
 	char      buf[256];
-	char*     p;
 
-	p = s->getCString();
+	const char* p = s.c_str();
 	if (p[0] == 'D' && p[1] == ':')
 		p += 2;
 	if ((n = sscanf(p, "%4d%2d%2d%2d%2d%2d", &year, &mon, &day, &hour, &min, &sec)) < 1)
-		return nullptr;
+		return "";
 	switch (n)
 	{
 	case 1: mon = 1;
@@ -492,18 +408,17 @@ static GString* parseInfoDate(GString* s)
 	tmStruct.tm_isdst = -1;
 	// compute the tm_wday and tm_yday fields
 	if (!(mktime(&tmStruct) != (time_t)-1 && strftime(buf, sizeof(buf), "%c", &tmStruct)))
-		return nullptr;
-	return new GString(buf);
+		return "";
+	return buf;
 }
 
-static GString* parseXMPDate(GString* s)
+static std::string parseXMPDate(const std::string& s)
 {
 	int       year, mon, day, hour, min, sec, tz;
 	struct tm tmStruct;
 	char      buf[256];
-	char*     p;
 
-	p = s->getCString();
+	const char* p = s.c_str();
 	if (isdigit(p[0]) && isdigit(p[1]) && isdigit(p[2]) && isdigit(p[3]))
 	{
 		buf[0] = p[0];
@@ -516,7 +431,7 @@ static GString* parseXMPDate(GString* s)
 	}
 	else
 	{
-		return nullptr;
+		return "";
 	}
 	mon = day = 1;
 	hour = min = sec = 0;
@@ -585,8 +500,8 @@ static GString* parseXMPDate(GString* s)
 	// compute the tm_wday and tm_yday fields
 	//~ this ignores the timezone
 	if (!(mktime(&tmStruct) != (time_t)-1 && strftime(buf, sizeof(buf), "%c", &tmStruct)))
-		return nullptr;
-	return new GString(buf);
+		return "";
+	return buf;
 }
 
 static void printBox(const char* text, PDFRectangle* box)

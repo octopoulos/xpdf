@@ -3,29 +3,23 @@
 // pdffonts.cc
 //
 // Copyright 2001-2007 Glyph & Cog, LLC
+// updated by octopoulos @ 2024-12-29
 //
 //========================================================================
 
+// --cfgFileName "c:/web/gori/data/xpdf.cfg" -- "C:/web/gori/source/pdf/bug.pdf"
+
 #include <aconf.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <string.h>
-#include <math.h>
-#include <limits.h>
-#include "gmem.h"
-#include "gmempp.h"
-#include "parseargs.h"
-#include "GString.h"
-#include "GlobalParams.h"
-#include "Error.h"
-#include "Object.h"
-#include "Dict.h"
-#include "GfxFont.h"
-#include "Annot.h"
 #include "AcroForm.h"
+#include "Annot.h"
+#include "Error.h"
+#include "GfxFont.h"
+#include "GlobalParams.h"
 #include "PDFDoc.h"
-#include "config.h"
+
+#include <CLI/CLI.hpp>
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // NB: this must match the definition of GfxFontType in GfxFont.h.
 static const char* fontTypeNames[] = {
@@ -43,205 +37,145 @@ static const char* fontTypeNames[] = {
 	"CID TrueType (OT)"
 };
 
-static void  scanFonts(Object* obj, PDFDoc* doc);
-static void  scanFonts(Dict* resDict, PDFDoc* doc);
-static void  scanFont(GfxFont* font, PDFDoc* doc);
-static GBool checkObject(Object* in, Object* out);
+static void scanFonts(Object* obj, PDFDoc* doc, int showFontLoc, int showFontLocPS);
+static void scanFonts(Dict* resDict, PDFDoc* doc, int showFontLoc, int showFontLocPS);
+static void scanFont(GfxFont* font, PDFDoc* doc, int showFontLoc, int showFontLocPS);
+static bool checkObject(Object* in, Object* out, PDFDoc* doc);
 
-static int   firstPage         = 1;
-static int   lastPage          = 0;
-static GBool showFontLoc       = gFalse;
-static GBool showFontLocPS     = gFalse;
-static char  ownerPassword[33] = "\001";
-static char  userPassword[33]  = "\001";
-static char  cfgFileName[256]  = "";
-static GBool printVersion      = gFalse;
-static GBool printHelp         = gFalse;
-
-// clang-format off
-static ArgDesc argDesc[] = {
-	{ "-f"    , argInt   , &firstPage    , 0                    , "first page to examine"                                          },
-	{ "-l"    , argInt   , &lastPage     , 0                    , "last page to examine"                                           },
-	{ "-loc"  , argFlag  , &showFontLoc  , 0                    , "print extended info on font location"                           },
-	{ "-locPS", argFlag  , &showFontLocPS, 0                    , "print extended info on font location for PostScript conversion" },
-	{ "-opw"  , argString, ownerPassword , sizeof(ownerPassword), "owner password (for encrypted files)"                           },
-	{ "-upw"  , argString, userPassword  , sizeof(userPassword) , "user password (for encrypted files)"                            },
-	{ "-cfg"  , argString, cfgFileName   , sizeof(cfgFileName)  , "configuration file to use in place of .xpdfrc"                  },
-	{ "-v"    , argFlag  , &printVersion , 0                    , "print copyright and version info"                               },
-	{ "-h"    , argFlag  , &printHelp    , 0                    , "print usage information"                                        },
-	{ "-help" , argFlag  , &printHelp    , 0                    , "print usage information"                                        },
-	{ "--help", argFlag  , &printHelp    , 0                    , "print usage information"                                        },
-	{ "-?"    , argFlag  , &printHelp    , 0                    , "print usage information"                                        },
-	{ nullptr }
-};
-// clang-format on
-
-static PDFDoc* doc;
-
-static Ref* fonts;
-static int  fontsLen;
-static int  fontsSize;
-
+static Ref*  fonts;
+static int   fontsLen;
+static int   fontsSize;
 static char* seenObjs;
 static int   numObjects;
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int main(int argc, char* argv[])
 {
-#if USE_EXCEPTIONS
-	try
+	// OPTIONS
+	//////////
+
+	CLI_BEGIN("pdffonts");
+
+	// name, type, default, implicit, needApp, help
+	// clang-format off
+	CLI_OPTION(cfgFileName  , std::string, "", "", 0, "configuration file to use in place of .xpdfrc");
+	CLI_OPTION(firstPage    , int        , 1 , 1 , 0, "first page to convert");
+	CLI_OPTION(lastPage     , int        , 0 , 0 , 0, "last page to convert");
+	CLI_OPTION(ownerPassword, std::string, "", "", 0, "owner password (for encrypted files)");
+	CLI_OPTION(printVersion , int        , 0 , 1 , 0, "print copyright and version info");
+	CLI_OPTION(showFontLoc  , int        , 0 , 1 , 0, "print extended info on font location");
+	CLI_OPTION(showFontLocPS, int        , 0 , 1 , 0, "print extended info on font location for PostScript conversion");
+	CLI_OPTION(userPassword , std::string, "", "", 0, "user password (for encrypted files)");
+	//
+	CLI_REQUIRED(fileName, std::string, 1, "<PDF-file>");
+	// clang-format on
+
+	CLI11_PARSE(cli, argc, argv);
+	CLI_NEEDAPP();
+
+	Dict*     resDict;
+	AcroForm* form;
+
+	// config file
 	{
-#endif
+		if (CLI_STRING(cfgFileName) && !std::filesystem::exists(cfgFileName))
+			error(errConfig, -1, "Config file '{}' doesn't exist or isn't a file", cfgFileName);
 
-		char*     fileName;
-		GString * ownerPW, *userPW;
-		GBool     ok;
-		Page*     page;
-		Dict*     resDict;
-		Annots*   annots;
-		AcroForm* form;
-		Object    obj1, obj2;
-		int       pg, i, j;
-		int       exitCode;
-
-		exitCode = 99;
-
-		// parse args
-		fixCommandLine(&argc, &argv);
-		ok = parseArgs(argDesc, &argc, argv);
-		if (!ok || argc != 2 || printVersion || printHelp)
-		{
-			fprintf(stderr, "pdffonts version %s [www.xpdfreader.com]\n", xpdfVersion);
-			fprintf(stderr, "%s\n", xpdfCopyright);
-			if (!printVersion)
-				printUsage("pdffonts", "<PDF-file>", argDesc);
-			goto err0;
-		}
-		fileName = argv[1];
-
-		// read config file
-		if (cfgFileName[0] && !pathIsFile(cfgFileName))
-			error(errConfig, -1, "Config file '{0:s}' doesn't exist or isn't a file", cfgFileName);
-		globalParams = new GlobalParams(cfgFileName);
+		globalParams = std::make_shared<GlobalParams>(cfgFileName.c_str());
 		globalParams->setupBaseFonts(nullptr);
+	}
 
-		// open PDF file
-		if (ownerPassword[0] != '\001')
-			ownerPW = new GString(ownerPassword);
-		else
-			ownerPW = nullptr;
-		if (userPassword[0] != '\001')
-			userPW = new GString(userPassword);
-		else
-			userPW = nullptr;
-		doc = new PDFDoc(fileName, ownerPW, userPW);
-		if (userPW)
-			delete userPW;
-		if (ownerPW)
-			delete ownerPW;
-		if (!doc->isOk())
-		{
-			exitCode = 1;
-			goto err1;
-		}
+	// open PDF file
+	auto doc = std::make_unique<PDFDoc>(fileName, ownerPassword, userPassword);
+	if (!doc->isOk()) return 1;
 
-		// get page range
-		if (firstPage < 1)
-			firstPage = 1;
-		if (lastPage < 1 || lastPage > doc->getNumPages())
-			lastPage = doc->getNumPages();
+	// get page range
+	if (firstPage < 1) firstPage = 1;
+	if (lastPage < 1 || lastPage > doc->getNumPages())
+		lastPage = doc->getNumPages();
 
-		// scan the fonts
-		if (showFontLoc || showFontLocPS)
+	// scan the fonts
+	if (showFontLoc || showFontLocPS)
+	{
+		printf("name                                           type              emb sub uni prob object ID location\n");
+		printf("---------------------------------------------- ----------------- --- --- --- ---- --------- --------\n");
+	}
+	else
+	{
+		printf("name                                           type              emb sub uni prob object ID\n");
+		printf("---------------------------------------------- ----------------- --- --- --- ---- ---------\n");
+	}
+	fonts    = nullptr;
+	fontsLen = fontsSize = 0;
+	numObjects           = doc->getXRef()->getNumObjects();
+	seenObjs             = (char*)gmalloc(numObjects);
+	memset(seenObjs, 0, numObjects);
+	Annots* annots = doc->getAnnots();
+	for (int pg = firstPage; pg <= lastPage; ++pg)
+	{
+		Page* page = doc->getCatalog()->getPage(pg);
+		if ((resDict = page->getResourceDict()))
+			scanFonts(resDict, doc.get(), showFontLoc, showFontLocPS);
+		int nAnnots = annots->getNumAnnots(pg);
+		for (int i = 0; i < nAnnots; ++i)
 		{
-			printf("name                                           type              emb sub uni prob object ID location\n");
-			printf("---------------------------------------------- ----------------- --- --- --- ---- --------- --------\n");
-		}
-		else
-		{
-			printf("name                                           type              emb sub uni prob object ID\n");
-			printf("---------------------------------------------- ----------------- --- --- --- ---- ---------\n");
-		}
-		fonts    = nullptr;
-		fontsLen = fontsSize = 0;
-		numObjects           = doc->getXRef()->getNumObjects();
-		seenObjs             = (char*)gmalloc(numObjects);
-		memset(seenObjs, 0, numObjects);
-		annots = doc->getAnnots();
-		for (pg = firstPage; pg <= lastPage; ++pg)
-		{
-			page = doc->getCatalog()->getPage(pg);
-			if ((resDict = page->getResourceDict()))
-				scanFonts(resDict, doc);
-			int nAnnots = annots->getNumAnnots(pg);
-			for (i = 0; i < nAnnots; ++i)
+			Object obj1;
+			if (annots->getAnnot(pg, i)->getAppearance(&obj1)->isStream())
 			{
-				if (annots->getAnnot(pg, i)->getAppearance(&obj1)->isStream())
+				Object obj2;
+				obj1.streamGetDict()->lookupNF("Resources", &obj2);
+				scanFonts(&obj2, doc.get(), showFontLoc, showFontLocPS);
+				obj2.free();
+			}
+			obj1.free();
+		}
+	}
+	if ((form = doc->getCatalog()->getForm()))
+	{
+		for (int i = 0; i < form->getNumFields(); ++i)
+		{
+			Object obj1;
+			form->getField(i)->getResources(&obj1);
+			if (obj1.isArray())
+			{
+				for (int j = 0; j < obj1.arrayGetLength(); ++j)
 				{
-					obj1.streamGetDict()->lookupNF("Resources", &obj2);
-					scanFonts(&obj2, doc);
+					Object obj2;
+					obj1.arrayGetNF(j, &obj2);
+					scanFonts(&obj2, doc.get(), showFontLoc, showFontLocPS);
 					obj2.free();
 				}
-				obj1.free();
 			}
-		}
-		if ((form = doc->getCatalog()->getForm()))
-		{
-			for (i = 0; i < form->getNumFields(); ++i)
+			else if (obj1.isDict())
 			{
-				form->getField(i)->getResources(&obj1);
-				if (obj1.isArray())
-				{
-					for (j = 0; j < obj1.arrayGetLength(); ++j)
-					{
-						obj1.arrayGetNF(j, &obj2);
-						scanFonts(&obj2, doc);
-						obj2.free();
-					}
-				}
-				else if (obj1.isDict())
-				{
-					scanFonts(obj1.getDict(), doc);
-				}
-				obj1.free();
+				scanFonts(obj1.getDict(), doc.get(), showFontLoc, showFontLocPS);
 			}
+			obj1.free();
 		}
-
-		exitCode = 0;
-
-		// clean up
-		gfree(fonts);
-		gfree(seenObjs);
-err1:
-		delete doc;
-		delete globalParams;
-err0:
-
-		// check for memory leaks
-		Object::memCheck(stderr);
-		gMemReport(stderr);
-
-		return exitCode;
-
-#if USE_EXCEPTIONS
 	}
-	catch (GMemException e)
-	{
-		fprintf(stderr, "Out of memory\n");
-		return 98;
-	}
-#endif
+
+	// clean up
+	gfree(fonts);
+	gfree(seenObjs);
+
+	// check for memory leaks
+	Object::memCheck(stderr);
+	gMemReport(stderr);
+	return 0;
 }
 
-static void scanFonts(Object* obj, PDFDoc* doc)
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void scanFonts(Object* obj, PDFDoc* doc, int showFontLoc, int showFontLocPS)
 {
 	Object obj2;
-
-	if (checkObject(obj, &obj2) && obj2.isDict())
-		scanFonts(obj2.getDict(), doc);
+	if (checkObject(obj, &obj2, doc) && obj2.isDict())
+		scanFonts(obj2.getDict(), std::move(doc), showFontLoc, showFontLocPS);
 	obj2.free();
 }
 
-static void scanFonts(Dict* resDict, PDFDoc* doc)
+static void scanFonts(Dict* resDict, PDFDoc* doc, int showFontLoc, int showFontLocPS)
 {
 	Object       fontDict1, fontDict2, xObjDict1, xObjDict2, xObj1, xObj2;
 	Object       patternDict1, patternDict2, pattern1, pattern2;
@@ -250,12 +184,11 @@ static void scanFonts(Dict* resDict, PDFDoc* doc)
 	Ref          r;
 	GfxFontDict* gfxFontDict;
 	GfxFont*     font;
-	int          i;
 
 	// scan the fonts in this resource dictionary
 	gfxFontDict = nullptr;
 	resDict->lookupNF("Font", &fontDict1);
-	if (checkObject(&fontDict1, &fontDict2) && fontDict2.isDict())
+	if (checkObject(&fontDict1, &fontDict2, doc) && fontDict2.isDict())
 	{
 		if (fontDict1.isRef())
 		{
@@ -268,9 +201,9 @@ static void scanFonts(Dict* resDict, PDFDoc* doc)
 		}
 		if (gfxFontDict)
 		{
-			for (i = 0; i < gfxFontDict->getNumFonts(); ++i)
+			for (int i = 0; i < gfxFontDict->getNumFonts(); ++i)
 				if ((font = gfxFontDict->getFont(i)))
-					scanFont(font, doc);
+					scanFont(font, doc, showFontLoc, showFontLocPS);
 			delete gfxFontDict;
 		}
 	}
@@ -280,15 +213,15 @@ static void scanFonts(Dict* resDict, PDFDoc* doc)
 	// recursively scan any resource dictionaries in XObjects in this
 	// resource dictionary
 	resDict->lookupNF("XObject", &xObjDict1);
-	if (checkObject(&xObjDict1, &xObjDict2) && xObjDict2.isDict())
+	if (checkObject(&xObjDict1, &xObjDict2, doc) && xObjDict2.isDict())
 	{
-		for (i = 0; i < xObjDict2.dictGetLength(); ++i)
+		for (int i = 0; i < xObjDict2.dictGetLength(); ++i)
 		{
 			xObjDict2.dictGetValNF(i, &xObj1);
-			if (checkObject(&xObj1, &xObj2) && xObj2.isStream())
+			if (checkObject(&xObj1, &xObj2, doc) && xObj2.isStream())
 			{
 				xObj2.streamGetDict()->lookupNF("Resources", &resObj);
-				scanFonts(&resObj, doc);
+				scanFonts(&resObj, doc, showFontLoc, showFontLocPS);
 				resObj.free();
 			}
 			xObj2.free();
@@ -301,15 +234,15 @@ static void scanFonts(Dict* resDict, PDFDoc* doc)
 	// recursively scan any resource dictionaries in Patterns in this
 	// resource dictionary
 	resDict->lookupNF("Pattern", &patternDict1);
-	if (checkObject(&patternDict1, &patternDict2) && patternDict2.isDict())
+	if (checkObject(&patternDict1, &patternDict2, doc) && patternDict2.isDict())
 	{
-		for (i = 0; i < patternDict2.dictGetLength(); ++i)
+		for (int i = 0; i < patternDict2.dictGetLength(); ++i)
 		{
 			patternDict2.dictGetValNF(i, &pattern1);
-			if (checkObject(&pattern1, &pattern2) && pattern2.isStream())
+			if (checkObject(&pattern1, &pattern2, doc) && pattern2.isStream())
 			{
 				pattern2.streamGetDict()->lookupNF("Resources", &resObj);
-				scanFonts(&resObj, doc);
+				scanFonts(&resObj, doc, showFontLoc, showFontLocPS);
 				resObj.free();
 			}
 			pattern2.free();
@@ -319,24 +252,23 @@ static void scanFonts(Dict* resDict, PDFDoc* doc)
 	patternDict2.free();
 	patternDict1.free();
 
-	// recursively scan any resource dictionaries in ExtGStates in this
-	// resource dictionary
+	// recursively scan any resource dictionaries in ExtGStates in this resource dictionary
 	resDict->lookupNF("ExtGState", &gsDict1);
-	if (checkObject(&gsDict1, &gsDict2) && gsDict2.isDict())
+	if (checkObject(&gsDict1, &gsDict2, doc) && gsDict2.isDict())
 	{
-		for (i = 0; i < gsDict2.dictGetLength(); ++i)
+		for (int i = 0; i < gsDict2.dictGetLength(); ++i)
 		{
 			gsDict2.dictGetValNF(i, &gs1);
-			if (checkObject(&gs1, &gs2) && gs2.isDict())
+			if (checkObject(&gs1, &gs2, doc) && gs2.isDict())
 			{
 				gs2.dictLookupNF("SMask", &smask1);
-				if (checkObject(&smask1, &smask2) && smask2.isDict())
+				if (checkObject(&smask1, &smask2, doc) && smask2.isDict())
 				{
 					smask2.dictLookupNF("G", &smaskGroup1);
-					if (checkObject(&smaskGroup1, &smaskGroup2) && smaskGroup2.isStream())
+					if (checkObject(&smaskGroup1, &smaskGroup2, doc) && smaskGroup2.isStream())
 					{
 						smaskGroup2.streamGetDict()->lookupNF("Resources", &resObj);
-						scanFonts(&resObj, doc);
+						scanFonts(&resObj, doc, showFontLoc, showFontLocPS);
 						resObj.free();
 					}
 					smaskGroup2.free();
@@ -353,33 +285,31 @@ static void scanFonts(Dict* resDict, PDFDoc* doc)
 	gsDict1.free();
 }
 
-static void scanFont(GfxFont* font, PDFDoc* doc)
+static void scanFont(GfxFont* font, PDFDoc* doc, int showFontLoc, int showFontLocPS)
 {
 	Ref         fontRef, embRef;
 	Object      fontObj, toUnicodeObj;
-	GString*    name;
-	GBool       emb, subset, hasToUnicode;
+	bool        emb, subset, hasToUnicode;
 	GfxFontLoc* loc;
-	int         i;
 
 	fontRef = *font->getID();
 
 	// check for an already-seen font
-	for (i = 0; i < fontsLen; ++i)
+	for (int i = 0; i < fontsLen; ++i)
 		if (fontRef.num == fonts[i].num && fontRef.gen == fonts[i].gen)
 			return;
 
 	// font name
-	name = font->getName();
+	const auto name = font->getName();
 
 	// check for an embedded font
 	if (font->getType() == fontType3)
-		emb = gTrue;
+		emb = true;
 	else
 		emb = font->getEmbeddedFontID(&embRef);
 
 	// look for a ToUnicode map
-	hasToUnicode = gFalse;
+	hasToUnicode = false;
 	if (doc->getXRef()->fetch(fontRef.num, fontRef.gen, &fontObj)->isDict())
 	{
 		hasToUnicode = fontObj.dictLookup("ToUnicode", &toUnicodeObj)->isStream();
@@ -389,17 +319,18 @@ static void scanFont(GfxFont* font, PDFDoc* doc)
 
 	// check for a font subset name: capital letters followed by a '+'
 	// sign
-	subset = gFalse;
-	if (name)
+	subset = false;
+	if (name.size())
 	{
-		for (i = 0; i < name->getLength(); ++i)
-			if (name->getChar(i) < 'A' || name->getChar(i) > 'Z')
+		int i;
+		for (i = 0; i < name.size(); ++i)
+			if (name.at(i) < 'A' || name.at(i) > 'Z')
 				break;
-		subset = i > 0 && i < name->getLength() && name->getChar(i) == '+';
+		subset = i > 0 && i < name.size() && name.at(i) == '+';
 	}
 
 	// print the font info
-	printf("%-46s %-17s %-3s %-3s %-3s %-4s", name ? name->getCString() : "[none]", fontTypeNames[font->getType()], emb ? "yes" : "no", subset ? "yes" : "no", hasToUnicode ? "yes" : "no", font->problematicForUnicode() ? " X" : "");
+	printf("%-46s %-17s %-3s %-3s %-3s %-4s", name.size() ? name.c_str() : "[none]", fontTypeNames[font->getType()], emb ? "yes" : "no", subset ? "yes" : "no", hasToUnicode ? "yes" : "no", font->problematicForUnicode() ? " X" : "");
 	if (fontRef.gen >= 100000)
 		printf(" [none]");
 	else
@@ -421,15 +352,15 @@ static void scanFont(GfxFont* font, PDFDoc* doc)
 				}
 				else if (loc->locType == gfxFontLocExternal)
 				{
-					if (loc->path)
-						printf(" external: %s", loc->path->getCString());
+					if (!loc->path.empty())
+						printf(" external: %s", loc->path.string().c_str());
 					else
 						printf(" unavailable");
 				}
 				else if (loc->locType == gfxFontLocResident)
 				{
-					if (loc->path)
-						printf(" resident: %s", loc->path->getCString());
+					if (!loc->path.empty())
+						printf(" resident: %s", loc->path.string().c_str());
 					else
 						printf(" unavailable");
 				}
@@ -460,27 +391,27 @@ static void scanFont(GfxFont* font, PDFDoc* doc)
 	fonts[fontsLen++] = *font->getID();
 }
 
-static GBool checkObject(Object* in, Object* out)
+static bool checkObject(Object* in, Object* out, PDFDoc* doc)
 {
 	int objNum;
 
 	if (!in->isRef())
 	{
 		in->copy(out);
-		return gTrue;
+		return true;
 	}
 	objNum = in->getRefNum();
 	if (objNum < 0 || objNum >= numObjects)
 	{
 		out->initNull();
-		return gTrue;
+		return true;
 	}
 	if (seenObjs[objNum])
 	{
 		out->initNull();
-		return gFalse;
+		return false;
 	}
 	seenObjs[objNum] = (char)1;
 	in->fetch(doc->getXRef(), out);
-	return gTrue;
+	return true;
 }

@@ -7,10 +7,8 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdlib.h>
 #include "gmempp.h"
-#include "GString.h"
 #include "GList.h"
 #include "TileMap.h"
 #include "TileCache.h"
@@ -52,7 +50,7 @@ DisplayState::DisplayState(int maxTileWidthA, int maxTileHeightA, int tileCacheS
 		for (i = 0; i < splashColorModeNComps[colorMode]; ++i)
 			selectColor[i] = 0xa0;
 	}
-	reverseVideo = gFalse;
+	reverseVideo = false;
 
 	doc = nullptr;
 
@@ -62,14 +60,10 @@ DisplayState::DisplayState(int maxTileWidthA, int maxTileHeightA, int tileCacheS
 	rotate      = 0;
 	scrollPage  = 0;
 	scrollX = scrollY = 0;
-
-	selectRects = nullptr;
 }
 
 DisplayState::~DisplayState()
 {
-	if (selectRects)
-		deleteGList(selectRects, SelectRect);
 }
 
 void DisplayState::setPaperColor(SplashColorPtr paperColorA)
@@ -91,7 +85,7 @@ void DisplayState::setSelectColor(SplashColorPtr selectColorA)
 	tileCompositor->selectColorChanged();
 }
 
-void DisplayState::setReverseVideo(GBool reverseVideoA)
+void DisplayState::setReverseVideo(bool reverseVideoA)
 {
 	if (reverseVideo != reverseVideoA)
 	{
@@ -164,58 +158,52 @@ void DisplayState::setScrollPosition(int scrollPageA, int scrollXA, int scrollYA
 
 void DisplayState::setSelection(int selectPage, double selectX0, double selectY0, double selectX1, double selectY1)
 {
-	GList*      rects;
-	SelectRect* rect;
-
-	rect  = new SelectRect(selectPage, selectX0, selectY0, selectX1, selectY1);
-	rects = new GList();
-	rects->append(rect);
+	SelectRect rect(selectPage, selectX0, selectY0, selectX1, selectY1);
+	std::vector<SelectRect> rects;
+	rects.push_back(rect);
 	setSelection(rects);
 }
 
-void DisplayState::setSelection(GList* selectRectsA)
+void DisplayState::setSelection(std::vector<SelectRect>& selectRectsA)
 {
-	SelectRect *rect, *rectA;
-	int         i;
-
-	if (!selectRects && !selectRectsA)
+	if (selectRects.empty() && selectRectsA.empty())
 		return;
-	if (selectRects && selectRectsA && selectRects->getLength() == selectRectsA->getLength())
+	if (selectRects.size() && selectRectsA.size() && selectRects.size() == selectRectsA.size())
 	{
-		for (i = 0; i < selectRects->getLength(); ++i)
+		int i;
+		for (i = 0; i < selectRects.size(); ++i)
 		{
-			rect  = (SelectRect*)selectRects->get(i);
-			rectA = (SelectRect*)selectRectsA->get(i);
-			if (*rect != *rectA)
+			auto& rect  = selectRects.at(i);
+			auto& rectA = selectRectsA.at(i);
+			if (rect != rectA)
 				break;
 		}
-		if (i == selectRects->getLength())
+		if (i == selectRects.size())
 		{
-			deleteGList(selectRectsA, SelectRect);
+			selectRectsA.clear();
 			return;
 		}
 	}
-	if (selectRects)
-		deleteGList(selectRects, SelectRect);
+
 	selectRects = selectRectsA;
 	tileCompositor->selectionChanged();
 }
 
 void DisplayState::clearSelection()
 {
-	setSelection(nullptr);
+	std::vector<SelectRect> rects;
+	setSelection(rects);
 }
 
 int DisplayState::getNumSelectRects()
 {
-	if (!selectRects)
-		return 0;
-	return selectRects->getLength();
+	if (selectRects.empty()) return 0;
+	return (int)selectRects.size();
 }
 
 SelectRect* DisplayState::getSelectRect(int idx)
 {
-	return (SelectRect*)selectRects->get(idx);
+	return &selectRects.at(idx);
 }
 
 void DisplayState::optionalContentChanged()

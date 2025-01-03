@@ -6,11 +6,9 @@
 //
 //========================================================================
 
-#ifndef SPLASHSTATE_H
-#define SPLASHSTATE_H
+#pragma once
 
 #include <aconf.h>
-
 #include "SplashTypes.h"
 
 class SplashPattern;
@@ -43,8 +41,8 @@ class SplashState
 {
 public:
 	// Create a new state object, initialized with default settings.
-	SplashState(int width, int height, GBool vectorAntialias, SplashScreenParams* screenParams);
-	SplashState(int width, int height, GBool vectorAntialias, SplashScreen* screenA);
+	SplashState(int width, int height, bool vectorAntialias, SplashScreenParams* screenParams);
+	SplashState(int width, int height, bool vectorAntialias, SplashScreen* screenA);
 
 	// Copy a state object.
 	SplashState* copy() { return new SplashState(this); }
@@ -65,60 +63,57 @@ public:
 
 	// Returns true if the current line dash pattern contains one or
 	// more zero-length "on" sections (dashes).
-	GBool lineDashContainsZeroLengthDashes();
+	bool lineDashContainsZeroLengthDashes();
 
 	void        clipResetToRect(SplashCoord x0, SplashCoord y0, SplashCoord x1, SplashCoord y1);
 	SplashError clipToRect(SplashCoord x0, SplashCoord y0, SplashCoord x1, SplashCoord y1);
-	SplashError clipToPath(SplashPath* path, GBool eo);
+	SplashError clipToPath(SplashPath* path, bool eo);
 
 	// Set the soft mask bitmap.
-	void setSoftMask(SplashBitmap* softMaskA, GBool deleteBitmap = gTrue);
+	void setSoftMask(SplashBitmap* softMaskA, bool deleteBitmap = true);
 
 	// Set the transfer function.
-	void setTransfer(Guchar* red, Guchar* green, Guchar* blue, Guchar* gray);
+	void setTransfer(uint8_t* red, uint8_t* green, uint8_t* blue, uint8_t* gray);
 
 private:
 	SplashState(SplashState* state);
 
-	SplashCoord            matrix[6];
-	SplashPattern*         strokePattern;
-	SplashPattern*         fillPattern;
-	SplashScreen*          screen;
-	SplashBlendFunc        blendFunc;
-	SplashCoord            strokeAlpha;
-	SplashCoord            fillAlpha;
-	SplashCoord            lineWidth;
-	int                    lineCap;
-	int                    lineJoin;
-	SplashCoord            miterLimit;
-	SplashCoord            flatness;
-	SplashCoord*           lineDash;
-	int                    lineDashLength;
-	SplashCoord            lineDashPhase;
-	SplashStrokeAdjustMode strokeAdjust;
-	SplashClip*            clip;
-	GBool                  clipIsShared;
-	SplashBitmap*          softMask;
-	GBool                  deleteSoftMask;
-	GBool                  inNonIsolatedGroup;
-	GBool                  inKnockoutGroup;
-	Guchar*                rgbTransferR;
-	Guchar*                rgbTransferG;
-	Guchar*                rgbTransferB;
-	Guchar*                grayTransfer;
+	SplashCoord            matrix[6];          //
+	SplashPattern*         strokePattern;      //
+	SplashPattern*         fillPattern;        //
+	SplashScreen*          screen;             //
+	SplashBlendFunc        blendFunc;          //
+	SplashCoord            strokeAlpha;        //
+	SplashCoord            fillAlpha;          //
+	SplashCoord            lineWidth;          //
+	int                    lineCap;            //
+	int                    lineJoin;           //
+	SplashCoord            miterLimit;         //
+	SplashCoord            flatness;           //
+	SplashCoord*           lineDash;           //
+	int                    lineDashLength;     //
+	SplashCoord            lineDashPhase;      //
+	SplashStrokeAdjustMode strokeAdjust;       //
+	SplashClip*            clip;               //
+	bool                   clipIsShared;       //
+	SplashBitmap*          softMask;           //
+	bool                   deleteSoftMask;     //
+	bool                   inNonIsolatedGroup; //
+	bool                   inKnockoutGroup;    //
+	uint8_t*               rgbTransferR;       //
+	uint8_t*               rgbTransferG;       //
+	uint8_t*               rgbTransferB;       //
+	uint8_t*               grayTransfer;       //
 #if SPLASH_CMYK
-	Guchar* cmykTransferC;
-	Guchar* cmykTransferM;
-	Guchar* cmykTransferY;
-	Guchar* cmykTransferK;
+	uint8_t* cmykTransferC;
+	uint8_t* cmykTransferM;
+	uint8_t* cmykTransferY;
+	uint8_t* cmykTransferK;
 #endif
-	GBool transferIsShared;
-	Guint overprintMask;
-	GBool enablePathSimplification;
-
-	SplashState* next; // used by Splash class
+	bool         transferIsShared;         //
+	uint32_t     overprintMask;            //
+	bool         enablePathSimplification; //
+	SplashState* next;                     // used by Splash class
 
 	friend class Splash;
 };
-
-#endif

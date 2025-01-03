@@ -11,7 +11,6 @@
 #include <aconf.h>
 
 #if USE_FIXEDPOINT
-
 #	include "gmempp.h"
 #	include "FixedPoint.h"
 
@@ -88,9 +87,7 @@ FixedPoint FixedPoint::pow(FixedPoint x, FixedPoint y)
 
 int FixedPoint::mul(int x, int y)
 {
-	FixPtInt64 z;
-
-	z = ((FixPtInt64)x * y) >> fixptShift;
+	FixPtInt64 z = ((FixPtInt64)x * y) >> fixptShift;
 	if (z > 0x7fffffffLL)
 		return 0x7fffffff;
 	else if (z < -0x80000000LL)
@@ -101,9 +98,7 @@ int FixedPoint::mul(int x, int y)
 
 int FixedPoint::div(int x, int y)
 {
-	FixPtInt64 z;
-
-	z = ((FixPtInt64)x << fixptShift) / y;
+	FixPtInt64 z = ((FixPtInt64)x << fixptShift) / y;
 	if (z > 0x7fffffffLL)
 		return 0x7fffffff;
 	else if (z < -0x80000000LL)
@@ -112,24 +107,21 @@ int FixedPoint::div(int x, int y)
 		return (int)z;
 }
 
-GBool FixedPoint::divCheck(FixedPoint x, FixedPoint y, FixedPoint* result)
+bool FixedPoint::divCheck(FixedPoint x, FixedPoint y, FixedPoint* result)
 {
-	FixPtInt64 z;
-
-	z = ((FixPtInt64)x.val << fixptShift) / y.val;
+	FixPtInt64 z = ((FixPtInt64)x.val << fixptShift) / y.val;
 	if ((z == 0 && x != 0) || z >= ((FixPtInt64)1 << 31) || z < -((FixPtInt64)1 << 31))
-		return gFalse;
+		return false;
 	result->val = (int)z;
-	return gTrue;
+	return true;
 }
 
-GBool FixedPoint::checkDet(FixedPoint m11, FixedPoint m12, FixedPoint m21, FixedPoint m22, FixedPoint epsilon)
+bool FixedPoint::checkDet(FixedPoint m11, FixedPoint m12, FixedPoint m21, FixedPoint m22, FixedPoint epsilon)
 {
 	FixPtInt64 det, e;
 
-	det = (FixPtInt64)m11.val * (FixPtInt64)m22.val
-	    - (FixPtInt64)m12.val * (FixPtInt64)m21.val;
-	e = (FixPtInt64)epsilon.val << fixptShift;
+	det = (FixPtInt64)m11.val * (FixPtInt64)m22.val - (FixPtInt64)m12.val * (FixPtInt64)m21.val;
+	e   = (FixPtInt64)epsilon.val << fixptShift;
 	// NB: this comparison has to be >= not > because epsilon can be
 	// truncated to zero as a fixed point value.
 	return det >= e || det <= -e;

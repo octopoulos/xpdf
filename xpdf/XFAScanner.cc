@@ -7,8 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
-#include "GString.h"
 #include "GHash.h"
 #include "Object.h"
 #include "Error.h"
@@ -49,7 +47,7 @@ XFAFieldLayoutInfo::XFAFieldLayoutInfo(XFAFieldLayoutHAlign hAlignA, XFAFieldLay
 
 //------------------------------------------------------------------------
 
-XFAFieldPictureInfo::XFAFieldPictureInfo(XFAFieldPictureSubtype subtypeA, GString* formatA)
+XFAFieldPictureInfo::XFAFieldPictureInfo(XFAFieldPictureSubtype subtypeA, const std::string& formatA)
 {
 	subtype = subtypeA;
 	format  = formatA;
@@ -57,12 +55,11 @@ XFAFieldPictureInfo::XFAFieldPictureInfo(XFAFieldPictureSubtype subtypeA, GStrin
 
 XFAFieldPictureInfo::~XFAFieldPictureInfo()
 {
-	delete format;
 }
 
 //------------------------------------------------------------------------
 
-XFAFieldBarcodeInfo::XFAFieldBarcodeInfo(GString* barcodeTypeA, double wideNarrowRatioA, double moduleWidthA, double moduleHeightA, int dataLengthA, int errorCorrectionLevelA, GString* textLocationA)
+XFAFieldBarcodeInfo::XFAFieldBarcodeInfo(const std::string& barcodeTypeA, double wideNarrowRatioA, double moduleWidthA, double moduleHeightA, int dataLengthA, int errorCorrectionLevelA, const std::string& textLocationA)
 {
 	barcodeType          = barcodeTypeA;
 	wideNarrowRatio      = wideNarrowRatioA;
@@ -75,13 +72,11 @@ XFAFieldBarcodeInfo::XFAFieldBarcodeInfo(GString* barcodeTypeA, double wideNarro
 
 XFAFieldBarcodeInfo::~XFAFieldBarcodeInfo()
 {
-	delete barcodeType;
-	delete textLocation;
 }
 
 //------------------------------------------------------------------------
 
-XFAField::XFAField(GString* nameA, GString* fullNameA, GString* valueA, XFAFieldLayoutInfo* layoutInfoA, XFAFieldPictureInfo* pictureInfoA, XFAFieldBarcodeInfo* barcodeInfoA)
+XFAField::XFAField(const std::string& nameA, const std::string& fullNameA, const std::string& valueA, XFAFieldLayoutInfo* layoutInfoA, XFAFieldPictureInfo* pictureInfoA, XFAFieldBarcodeInfo* barcodeInfoA)
     : name(nameA)
     , fullName(fullNameA)
     , value(valueA)
@@ -93,9 +88,6 @@ XFAField::XFAField(GString* nameA, GString* fullNameA, GString* valueA, XFAField
 
 XFAField::~XFAField()
 {
-	delete name;
-	delete fullName;
-	delete value;
 	delete layoutInfo;
 	delete pictureInfo;
 	delete barcodeInfo;
@@ -105,11 +97,9 @@ XFAField::~XFAField()
 
 XFAScanner* XFAScanner::load(Object* xfaObj)
 {
-	GString* xfaData = readXFAStreams(xfaObj);
-	if (!xfaData)
-		return nullptr;
-	ZxDoc* xml = ZxDoc::loadMem(xfaData->getCString(), xfaData->getLength());
-	delete xfaData;
+	const auto xfaData = readXFAStreams(xfaObj);
+	if (xfaData.empty()) return nullptr;
+	ZxDoc* xml = ZxDoc::loadMem(xfaData.c_str(), xfaData.size());
 	if (!xml)
 	{
 		error(errSyntaxError, -1, "Invalid XML in XFA form");
@@ -120,16 +110,14 @@ XFAScanner* XFAScanner::load(Object* xfaObj)
 
 	if (xml->getRoot())
 	{
-		GHash*     formValues = scanner->scanFormValues(xml->getRoot());
+		auto       formValues = scanner->scanFormValues(xml->getRoot());
 		ZxElement* dataElem   = nullptr;
-		ZxElement* datasets =
-		    xml->getRoot()->findFirstChildElement("xfa:datasets");
+		ZxElement* datasets   = xml->getRoot()->findFirstChildElement("xfa:datasets");
 		if (datasets)
 			dataElem = datasets->findFirstChildElement("xfa:data");
 		ZxElement* tmpl = xml->getRoot()->findFirstChildElement("template");
 		if (tmpl)
 			scanner->scanNode(tmpl, nullptr, nullptr, nullptr, nullptr, nullptr, dataElem, formValues);
-		deleteGHash(formValues, GString);
 	}
 
 	delete xml;
@@ -139,29 +127,29 @@ XFAScanner* XFAScanner::load(Object* xfaObj)
 
 XFAScanner::XFAScanner()
 {
-	fields = new GHash();
 }
 
 XFAScanner::~XFAScanner()
 {
-	deleteGHash(fields, XFAField);
 }
 
-XFAField* XFAScanner::findField(GString* acroFormFieldName)
+XFAField* XFAScanner::findField(const std::string& acroFormFieldName)
 {
-	return (XFAField*)fields->lookup(acroFormFieldName);
+	if (const auto& it = fields.find(acroFormFieldName); it != fields.end())
+		return &it->second;
+	return nullptr;
 }
 
-GString* XFAScanner::readXFAStreams(Object* xfaObj)
+std::string XFAScanner::readXFAStreams(Object* xfaObj)
 {
-	GString* data = new GString();
-	char     buf[4096];
-	int      n;
+	std::string data;
+	char        buf[4096];
+	int         n;
 	if (xfaObj->isStream())
 	{
 		xfaObj->streamReset();
 		while ((n = xfaObj->getStream()->getBlock(buf, sizeof(buf))) > 0)
-			data->append(buf, n);
+			data.append(buf, n);
 	}
 	else if (xfaObj->isArray())
 	{
@@ -172,49 +160,46 @@ GString* XFAScanner::readXFAStreams(Object* xfaObj)
 			{
 				error(errSyntaxError, -1, "XFA array element is wrong type");
 				obj.free();
-				delete data;
-				return nullptr;
+				return "";
 			}
 			obj.streamReset();
 			while ((n = obj.getStream()->getBlock(buf, sizeof(buf))) > 0)
-				data->append(buf, n);
+				data.append(buf, n);
 			obj.free();
 		}
 	}
 	else
 	{
 		error(errSyntaxError, -1, "XFA object is wrong type");
-		return nullptr;
+		return "";
 	}
 	return data;
 }
 
-GHash* XFAScanner::scanFormValues(ZxElement* xmlRoot)
+UMAP_STR_STR XFAScanner::scanFormValues(ZxElement* xmlRoot)
 {
-	GHash*     formValues = new GHash(gTrue);
-	ZxElement* formElem   = xmlRoot->findFirstChildElement("form");
+	UMAP_STR_STR formValues;
+	ZxElement*   formElem = xmlRoot->findFirstChildElement("form");
 	if (formElem)
 		scanFormNode(formElem, nullptr, formValues);
 	return formValues;
 }
 
-void XFAScanner::scanFormNode(ZxElement* elem, GString* fullName, GHash* formValues)
+void XFAScanner::scanFormNode(ZxElement* elem, const std::string& fullName, UMAP_STR_STR& formValues)
 {
 	GHash* fullNameIdx = new GHash();
-	for (ZxNode* node = elem->getFirstChild();
-	     node;
-	     node = node->getNextChild())
+	for (ZxNode* node = elem->getFirstChild(); node; node = node->getNextChild())
 	{
 		if (node->isElement("value"))
 		{
-			if (fullName)
+			if (fullName.size())
 			{
 				ZxNode* child1Node = ((ZxElement*)node)->getFirstChild();
 				if (child1Node && child1Node->isElement())
 				{
 					ZxNode* child2Node = ((ZxElement*)child1Node)->getFirstChild();
 					if (child2Node && child2Node->isCharData())
-						formValues->add(fullName->copy(), ((ZxCharData*)child2Node)->getData()->copy());
+						formValues.emplace(fullName, ((ZxCharData*)child2Node)->getData());
 				}
 			}
 		}
@@ -223,17 +208,16 @@ void XFAScanner::scanFormNode(ZxElement* elem, GString* fullName, GHash* formVal
 			ZxAttr* nameAttr = ((ZxElement*)node)->findAttr("name");
 			if (nameAttr && (node->isElement("subform") || node->isElement("field")))
 			{
-				GString* nodeName = nameAttr->getValue();
-				GString* childFullName;
-				if (fullName)
-					childFullName = GString::format("{0:t}.{1:t}", fullName, nodeName);
+				auto        nodeName = nameAttr->getValue();
+				std::string childFullName;
+				if (fullName.size())
+					childFullName = fmt::format("{}.{}", fullName, nodeName);
 				else
-					childFullName = nodeName->copy();
+					childFullName = nodeName;
 				int idx = fullNameIdx->lookupInt(nodeName);
-				childFullName->appendf("[{0:d}]", idx);
+				childFullName += fmt::format("[{}]", idx);
 				fullNameIdx->replace(nodeName, idx + 1);
 				scanFormNode((ZxElement*)node, childFullName, formValues);
-				delete childFullName;
 			}
 			else if (node->isElement("subform"))
 			{
@@ -244,49 +228,49 @@ void XFAScanner::scanFormNode(ZxElement* elem, GString* fullName, GHash* formVal
 	delete fullNameIdx;
 }
 
-void XFAScanner::scanNode(ZxElement* elem, GString* parentName, GString* parentFullName, GHash* nameIdx, GHash* fullNameIdx, GString* exclGroupName, ZxElement* dataElem, GHash* formValues)
+void XFAScanner::scanNode(ZxElement* elem, const std::string& parentName, const std::string& parentFullName, GHash* nameIdx, GHash* fullNameIdx, const std::string& exclGroupName, ZxElement* dataElem, UMAP_STR_STR& formValues)
 {
-	GString* nodeName = getNodeName(elem);
-	GHash*   childNameIdx;
-	if (!nameIdx || nodeName)
+	const auto nodeName = getNodeName(elem);
+	GHash*     childNameIdx;
+	if (!nameIdx || nodeName.size())
 		childNameIdx = new GHash();
 	else
 		childNameIdx = nameIdx;
-	GString* nodeFullName = getNodeFullName(elem);
-	GHash*   childFullNameIdx;
-	if (!fullNameIdx || (nodeFullName && !elem->isElement("area")))
+	const auto nodeFullName = getNodeFullName(elem);
+	GHash*     childFullNameIdx;
+	if (!fullNameIdx || (nodeFullName.size() && !elem->isElement("area")))
 		childFullNameIdx = new GHash();
 	else
 		childFullNameIdx = fullNameIdx;
 
-	GString* childName;
-	if (nodeName)
+	std::string childName;
+	if (nodeName.size())
 	{
-		if (parentName)
-			childName = GString::format("{0:t}.{1:t}", parentName, nodeName);
+		if (parentName.size())
+			childName = fmt::format("{}.{}", parentName, nodeName);
 		else
-			childName = nodeName->copy();
+			childName = nodeName;
 		int idx = nameIdx->lookupInt(nodeName);
 		nameIdx->replace(nodeName, idx + 1);
 		if (nodeIsBindGlobal(elem))
-			childName->appendf("[0]");
+			childName += fmt::format("[0]");
 		else
-			childName->appendf("[{0:d}]", idx);
+			childName += fmt::format("[{}]", idx);
 	}
 	else
 	{
 		childName = parentName;
 	}
-	GString* childFullName;
-	if (nodeFullName)
+	std::string childFullName;
+	if (nodeFullName.size())
 	{
-		if (parentFullName)
-			childFullName = GString::format("{0:t}.{1:t}", parentFullName, nodeFullName);
+		if (parentFullName.size())
+			childFullName = fmt::format("{}.{}", parentFullName, nodeFullName);
 		else
-			childFullName = nodeFullName->copy();
+			childFullName = nodeFullName;
 		int idx = fullNameIdx->lookupInt(nodeFullName);
 		fullNameIdx->replace(nodeFullName, idx + 1);
-		childFullName->appendf("[{0:d}]", idx);
+		childFullName += fmt::format("[{}]", idx);
 	}
 	else
 	{
@@ -295,58 +279,47 @@ void XFAScanner::scanNode(ZxElement* elem, GString* parentName, GString* parentF
 
 	if (elem->isElement("field"))
 	{
-		if (childName && childFullName)
+		if (childName.size() && childFullName.size())
 			scanField(elem, childName, childFullName, exclGroupName, dataElem, formValues);
 	}
 	else
 	{
-		GString* childExclGroupName;
+		std::string childExclGroupName;
 		if (elem->isElement("exclGroup"))
 			childExclGroupName = childName;
-		else
-			childExclGroupName = nullptr;
-		for (ZxNode* child = elem->getFirstChild();
-		     child;
-		     child = child->getNextChild())
+		for (ZxNode* child = elem->getFirstChild(); child; child = child->getNextChild())
 			if (child->isElement())
 				scanNode((ZxElement*)child, childName, childFullName, childNameIdx, childFullNameIdx, childExclGroupName, dataElem, formValues);
 	}
 
-	if (childName != parentName)
-		delete childName;
-	if (childFullName != parentFullName)
-		delete childFullName;
 	if (childNameIdx != nameIdx)
 		delete childNameIdx;
 	if (childFullNameIdx != fullNameIdx)
 		delete childFullNameIdx;
 }
 
-void XFAScanner::scanField(ZxElement* elem, GString* name, GString* fullName, GString* exclGroupName, ZxElement* dataElem, GHash* formValues)
+void XFAScanner::scanField(ZxElement* elem, const std::string& name, const std::string& fullName, const std::string& exclGroupName, ZxElement* dataElem, UMAP_STR_STR& formValues)
 {
-	GString*             value       = getFieldValue(elem, name, fullName, exclGroupName, dataElem, formValues);
+	std::string          value       = getFieldValue(elem, name, fullName, exclGroupName, dataElem, formValues);
 	XFAFieldLayoutInfo*  layoutInfo  = getFieldLayoutInfo(elem);
 	XFAFieldPictureInfo* pictureInfo = getFieldPictureInfo(elem);
 	XFAFieldBarcodeInfo* barcodeInfo = getFieldBarcodeInfo(elem);
-	XFAField*            field       = new XFAField(name->copy(), fullName->copy(), value, layoutInfo, pictureInfo, barcodeInfo);
-	fields->add(field->fullName, field);
+	fields.emplace(fullName, XFAField(name, fullName, value, layoutInfo, pictureInfo, barcodeInfo));
 }
 
-GString* XFAScanner::getFieldValue(ZxElement* elem, GString* name, GString* fullName, GString* exclGroupName, ZxElement* dataElem, GHash* formValues)
+std::string XFAScanner::getFieldValue(ZxElement* elem, const std::string& name, const std::string& fullName, const std::string& exclGroupName, ZxElement* dataElem, UMAP_STR_STR& formValues)
 {
-	GString* val = nullptr;
-
 	//--- check the <xfa:datasets> packet
-	val = getDatasetsValue(name->getCString(), dataElem);
-	if (!val && exclGroupName)
-		val = (GString*)getDatasetsValue(exclGroupName->getCString(), dataElem);
+	auto val = getDatasetsValue(name.c_str(), dataElem);
+	if (val.empty() && exclGroupName.size())
+		val = getDatasetsValue(exclGroupName.c_str(), dataElem);
 
 	//--- check the <form> element
-	if (!val)
-		val = (GString*)formValues->lookup(fullName);
+	if (val.empty())
+		val = FindDefault(formValues, fullName, "");
 
 	//--- check the <value> element within the field
-	if (!val)
+	if (val.empty())
 	{
 		ZxElement* valueElem = elem->findFirstChildElement("value");
 		if (valueElem)
@@ -362,8 +335,8 @@ GString* XFAScanner::getFieldValue(ZxElement* elem, GString* name, GString* full
 	}
 
 	//--- get the checkbutton item value
-	GString*   checkbuttonItem = nullptr;
-	ZxElement* uiElem          = elem->findFirstChildElement("ui");
+	std::string checkbuttonItem;
+	ZxElement*  uiElem = elem->findFirstChildElement("ui");
 	if (uiElem)
 	{
 		ZxNode* uiChild = uiElem->getFirstChild();
@@ -383,41 +356,34 @@ GString* XFAScanner::getFieldValue(ZxElement* elem, GString* name, GString* full
 		}
 	}
 	// convert XFA checkbutton value to AcroForm-style On/Off value
-	if (checkbuttonItem && val)
-		if (val->cmp(checkbuttonItem))
-			val = new GString("Off");
+	if (checkbuttonItem.size() && val.size())
+		if (val != checkbuttonItem)
+			val = "Off";
 		else
-			val = new GString("On");
-	else if (val)
-		val = val->copy();
+			val = "On";
 
 	return val;
 }
 
-GString* XFAScanner::getDatasetsValue(char* partName, ZxElement* elem)
+std::string XFAScanner::getDatasetsValue(const char* partName, ZxElement* elem)
 {
-	if (!elem)
-		return nullptr;
+	if (!elem) return "";
 
 	// partName = xxxx[nn].yyyy----
-	char* p = strchr(partName, '[');
-	if (!p)
-		return nullptr;
+	const char* p = strchr(partName, '[');
+	if (!p) return "";
 	int partLen = (int)(p - partName);
 	int idx     = atoi(p + 1);
 	p           = strchr(p + 1, '.');
-	if (p)
-		++p;
+	if (p) ++p;
 
 	int curIdx = 0;
-	for (ZxNode* node = elem->getFirstChild();
-	     node;
-	     node = node->getNextChild())
+	for (ZxNode* node = elem->getFirstChild(); node; node = node->getNextChild())
 	{
 		if (!node->isElement())
 			continue;
-		GString* nodeName = ((ZxElement*)node)->getType();
-		if (nodeName->getLength() != partLen || strncmp(nodeName->getCString(), partName, partLen))
+		const auto nodeName = ((ZxElement*)node)->getType();
+		if (nodeName.size() != partLen || strncmp(nodeName.c_str(), partName, partLen))
 			continue;
 		if (curIdx != idx)
 		{
@@ -426,52 +392,48 @@ GString* XFAScanner::getDatasetsValue(char* partName, ZxElement* elem)
 		}
 		if (p)
 		{
-			GString* val = getDatasetsValue(p, (ZxElement*)node);
-			if (val)
-				return val;
+			const auto val = getDatasetsValue(p, (ZxElement*)node);
+			if (val.size()) return val;
 			break;
 		}
 		else
 		{
 			ZxNode* child = ((ZxElement*)node)->getFirstChild();
-			if (!child || !child->isCharData())
-				return nullptr;
+			if (!child || !child->isCharData()) return "";
 			return ((ZxCharData*)child)->getData();
 		}
 	}
 
 	// search for an 'ancestor match'
-	if (p)
-		return getDatasetsValue(p, elem);
+	if (p) return getDatasetsValue(p, elem);
 
-	return nullptr;
+	return "";
 }
 
 XFAFieldLayoutInfo* XFAScanner::getFieldLayoutInfo(ZxElement* elem)
 {
 	ZxElement* paraElem = elem->findFirstChildElement("para");
-	if (!paraElem)
-		return nullptr;
+	if (!paraElem) return nullptr;
 	XFAFieldLayoutHAlign hAlign     = xfaFieldLayoutHAlignLeft;
 	ZxAttr*              hAlignAttr = paraElem->findAttr("hAlign");
 	if (hAlignAttr)
 	{
-		if (!hAlignAttr->getValue()->cmp("left"))
+		if (hAlignAttr->getValue() == "left")
 			hAlign = xfaFieldLayoutHAlignLeft;
-		else if (!hAlignAttr->getValue()->cmp("center"))
+		else if (hAlignAttr->getValue() == "center")
 			hAlign = xfaFieldLayoutHAlignCenter;
-		else if (!hAlignAttr->getValue()->cmp("right"))
+		else if (hAlignAttr->getValue() == "right")
 			hAlign = xfaFieldLayoutHAlignRight;
 	}
 	XFAFieldLayoutVAlign vAlign     = xfaFieldLayoutVAlignTop;
 	ZxAttr*              vAlignAttr = paraElem->findAttr("vAlign");
 	if (vAlignAttr)
 	{
-		if (!vAlignAttr->getValue()->cmp("top"))
+		if (vAlignAttr->getValue() == "top")
 			vAlign = xfaFieldLayoutVAlignTop;
-		else if (!vAlignAttr->getValue()->cmp("middle"))
+		else if (vAlignAttr->getValue() == "middle")
 			vAlign = xfaFieldLayoutVAlignMiddle;
-		else if (!vAlignAttr->getValue()->cmp("bottom"))
+		else if (vAlignAttr->getValue() == "bottom")
 			vAlign = xfaFieldLayoutVAlignBottom;
 	}
 	return new XFAFieldLayoutInfo(hAlign, vAlign);
@@ -480,8 +442,7 @@ XFAFieldLayoutInfo* XFAScanner::getFieldLayoutInfo(ZxElement* elem)
 XFAFieldPictureInfo* XFAScanner::getFieldPictureInfo(ZxElement* elem)
 {
 	ZxElement* uiElem = elem->findFirstChildElement("ui");
-	if (!uiElem)
-		return nullptr;
+	if (!uiElem) return nullptr;
 	XFAFieldPictureSubtype subtype;
 	if (uiElem->findFirstChildElement("dateTimeEdit"))
 		subtype = xfaFieldPictureDateTime;
@@ -496,7 +457,7 @@ XFAFieldPictureInfo* XFAScanner::getFieldPictureInfo(ZxElement* elem)
 	ZxNode*    pictureChildNode;
 	if (!(formatElem = elem->findFirstChildElement("format")) || !(pictureElem = formatElem->findFirstChildElement("picture")) || !(pictureChildNode = pictureElem->getFirstChild()) || !pictureChildNode->isCharData())
 		return nullptr;
-	GString* format = ((ZxCharData*)pictureChildNode)->getData()->copy();
+	const auto format = ((ZxCharData*)pictureChildNode)->getData();
 
 	return new XFAFieldPictureInfo(subtype, format);
 }
@@ -508,21 +469,19 @@ XFAFieldBarcodeInfo* XFAScanner::getFieldBarcodeInfo(ZxElement* elem)
 		return nullptr;
 
 	ZxAttr* attr;
-	if (!(attr = barcodeElem->findAttr("type")))
-		return nullptr;
-	GString* barcodeType = attr->getValue()->copy();
+	if (!(attr = barcodeElem->findAttr("type"))) return nullptr;
+	const auto barcodeType = attr->getValue();
 
 	double wideNarrowRatio = 3;
 	if ((attr = barcodeElem->findAttr("wideNarrowRatio")))
 	{
-		char* s     = attr->getValue()->getCString();
-		char* colon = strchr(s, ':');
+		const char* s     = attr->getValue().c_str();
+		const char* colon = strchr(s, ':');
 		if (colon)
 		{
-			GString* numStr = new GString(s, (int)(colon - s));
-			double   num    = atof(numStr->getCString());
-			delete numStr;
-			double den = atof(colon + 1);
+			const auto numStr = std::string(s, (int)(colon - s));
+			double     num    = atof(numStr.c_str());
+			double     den    = atof(colon + 1);
 			if (den == 0)
 				wideNarrowRatio = num;
 			else
@@ -544,68 +503,68 @@ XFAFieldBarcodeInfo* XFAScanner::getFieldBarcodeInfo(ZxElement* elem)
 
 	int dataLength = 0;
 	if ((attr = barcodeElem->findAttr("dataLength")))
-		dataLength = atoi(attr->getValue()->getCString());
+		dataLength = atoi(attr->getValue().c_str());
 
 	int errorCorrectionLevel = 0;
 	if ((attr = barcodeElem->findAttr("errorCorrectionLevel")))
-		errorCorrectionLevel = atoi(attr->getValue()->getCString());
+		errorCorrectionLevel = atoi(attr->getValue().c_str());
 
-	GString* textLocation;
+	std::string textLocation;
 	if ((attr = barcodeElem->findAttr("textLocation")))
-		textLocation = attr->getValue()->copy();
+		textLocation = attr->getValue();
 	else
-		textLocation = new GString("below");
+		textLocation = "below";
 
 	return new XFAFieldBarcodeInfo(barcodeType, wideNarrowRatio, moduleWidth, moduleHeight, dataLength, errorCorrectionLevel, textLocation);
 }
 
-double XFAScanner::getMeasurement(GString* s)
+double XFAScanner::getMeasurement(const std::string& s)
 {
-	int   i   = 0;
-	GBool neg = gFalse;
-	if (i < s->getLength() && s->getChar(i) == '+')
+	int  i   = 0;
+	bool neg = false;
+	if (i < s.size() && s.at(i) == '+')
 	{
 		++i;
 	}
-	else if (i < s->getLength() && s->getChar(i) == '-')
+	else if (i < s.size() && s.at(i) == '-')
 	{
-		neg = gTrue;
+		neg = true;
 		++i;
 	}
 	double val = 0;
-	while (i < s->getLength() && s->getChar(i) >= '0' && s->getChar(i) <= '9')
+	while (i < s.size() && s.at(i) >= '0' && s.at(i) <= '9')
 	{
-		val = val * 10 + s->getChar(i) - '0';
+		val = val * 10 + s.at(i) - '0';
 		++i;
 	}
-	if (i < s->getLength() && s->getChar(i) == '.')
+	if (i < s.size() && s.at(i) == '.')
 	{
 		++i;
 		double mul = 0.1;
-		while (i < s->getLength() && s->getChar(i) >= '0' && s->getChar(i) <= '9')
+		while (i < s.size() && s.at(i) >= '0' && s.at(i) <= '9')
 		{
-			val += mul * (s->getChar(i) - '0');
+			val += mul * (s.at(i) - '0');
 			mul *= 0.1;
 			++i;
 		}
 	}
 	if (neg)
 		val = -val;
-	if (i + 1 < s->getLength())
+	if (i + 1 < s.size())
 	{
-		if (s->getChar(i) == 'i' && s->getChar(i + 1) == 'n')
+		if (s.at(i) == 'i' && s.at(i + 1) == 'n')
 		{
 			val *= 72;
 		}
-		else if (s->getChar(i) == 'p' && s->getChar(i + 1) == 't')
+		else if (s.at(i) == 'p' && s.at(i + 1) == 't')
 		{
 			// no change
 		}
-		else if (s->getChar(i) == 'c' && s->getChar(i + 1) == 'm')
+		else if (s.at(i) == 'c' && s.at(i + 1) == 'm')
 		{
 			val *= 72 / 2.54;
 		}
-		else if (s->getChar(i) == 'm' && s->getChar(i + 1) == 'm')
+		else if (s.at(i) == 'm' && s.at(i + 1) == 'm')
 		{
 			val *= 72 / 25.4;
 		}
@@ -623,42 +582,35 @@ double XFAScanner::getMeasurement(GString* s)
 	return val;
 }
 
-GString* XFAScanner::getNodeName(ZxElement* elem)
+std::string XFAScanner::getNodeName(ZxElement* elem)
 {
-	if (elem->isElement("template") || elem->isElement("area") || elem->isElement("draw"))
-		return nullptr;
-	if (!elem->isElement("field") && nodeIsBindNone(elem))
-		return nullptr;
+	if (elem->isElement("template") || elem->isElement("area") || elem->isElement("draw")) return "";
+	if (!elem->isElement("field") && nodeIsBindNone(elem)) return "";
 	ZxAttr* nameAttr = elem->findAttr("name");
-	if (!nameAttr)
-		return nullptr;
+	if (!nameAttr) return "";
 	return nameAttr->getValue();
 }
 
-GString* XFAScanner::getNodeFullName(ZxElement* elem)
+std::string XFAScanner::getNodeFullName(ZxElement* elem)
 {
-	if (elem->isElement("template") || elem->isElement("draw"))
-		return nullptr;
+	if (elem->isElement("template") || elem->isElement("draw")) return "";
 	ZxAttr* nameAttr = elem->findAttr("name");
-	if (!nameAttr)
-		return nullptr;
+	if (!nameAttr) return "";
 	return nameAttr->getValue();
 }
 
-GBool XFAScanner::nodeIsBindGlobal(ZxElement* elem)
+bool XFAScanner::nodeIsBindGlobal(ZxElement* elem)
 {
 	ZxElement* bindElem = elem->findFirstChildElement("bind");
-	if (!bindElem)
-		return gFalse;
+	if (!bindElem) return false;
 	ZxAttr* attr = bindElem->findAttr("match");
-	return attr && !attr->getValue()->cmp("global");
+	return attr && attr->getValue() == "global";
 }
 
-GBool XFAScanner::nodeIsBindNone(ZxElement* elem)
+bool XFAScanner::nodeIsBindNone(ZxElement* elem)
 {
 	ZxElement* bindElem = elem->findFirstChildElement("bind");
-	if (!bindElem)
-		return gFalse;
+	if (!bindElem) return false;
 	ZxAttr* attr = bindElem->findAttr("match");
-	return attr && !attr->getValue()->cmp("none");
+	return attr && attr->getValue() == "none";
 }

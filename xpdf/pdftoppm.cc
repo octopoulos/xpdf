@@ -3,284 +3,189 @@
 // pdftoppm.cc
 //
 // Copyright 2003 Glyph & Cog, LLC
+// updated by octopoulos @ 2024-12-29
 //
 //========================================================================
 
+// --cfgFileName "c:/web/gori/data/xpdf.cfg" --freetypeYN -- "c:/web/gori/source/pdf/bug.pdf" "c:/web/gori/source/pdf/bug"
+
 #include <aconf.h>
-#include <stdio.h>
 #ifdef _WIN32
-#	include <io.h>
 #	include <fcntl.h>
 #endif
 #ifdef DEBUG_FP_LINUX
 #	include <fenv.h>
 #	include <fpu_control.h>
 #endif
-#include "gmem.h"
-#include "gmempp.h"
-#include "parseargs.h"
-#include "GString.h"
+#include "Error.h"
 #include "GlobalParams.h"
 #include "Object.h"
 #include "PDFDoc.h"
 #include "SplashBitmap.h"
-#include "Splash.h"
 #include "SplashOutputDev.h"
-#include "Error.h"
-#include "config.h"
 
-static int    firstPage  = 1;
-static int    lastPage   = 0;
-static double resolution = 150;
-static GBool  mono       = gFalse;
-static GBool  gray       = gFalse;
-#if SPLASH_CMYK
-static GBool cmyk = gFalse;
-#endif
-static int   rotate                 = 0;
-static char  enableFreeTypeStr[16]  = "";
-static char  antialiasStr[16]       = "";
-static char  vectorAntialiasStr[16] = "";
-static char  ownerPassword[33]      = "";
-static char  userPassword[33]       = "";
-static GBool verbose                = gFalse;
-static GBool quiet                  = gFalse;
-static char  cfgFileName[256]       = "";
-static GBool printVersion           = gFalse;
-static GBool printHelp              = gFalse;
+#include <CLI/CLI.hpp>
 
-// clang-format off
-static ArgDesc argDesc[] = {
-	{ "-f"       , argInt   , &firstPage        , 0                         , "first page to print"                           },
-	{ "-l"       , argInt   , &lastPage         , 0                         , "last page to print"                            },
-	{ "-r"       , argFP    , &resolution       , 0                         , "resolution, in DPI (default is 150)"           },
-	{ "-mono"    , argFlag  , &mono             , 0                         , "generate a monochrome PBM file"                },
-	{ "-gray"    , argFlag  , &gray             , 0                         , "generate a grayscale PGM file"                 },
-#if SPLASH_CMYK
-	{ "-cmyk"    , argFlag  , &cmyk             , 0                         , "generate a CMYK PAM file"                      },
-#endif
-	{ "-rot"     , argInt   , &rotate           , 0                         , "set page rotation: 0, 90, 180, or 270"         },
-#if HAVE_FREETYPE_H
-	{ "-freetype", argString, enableFreeTypeStr , sizeof(enableFreeTypeStr) , "enable FreeType font rasterizer: yes, no"      },
-#endif
-	{ "-aa"      , argString, antialiasStr      , sizeof(antialiasStr)      , "enable font anti-aliasing: yes, no"            },
-	{ "-aaVector", argString, vectorAntialiasStr, sizeof(vectorAntialiasStr), "enable vector anti-aliasing: yes, no"          },
-	{ "-opw"     , argString, ownerPassword     , sizeof(ownerPassword)     , "owner password (for encrypted files)"          },
-	{ "-upw"     , argString, userPassword      , sizeof(userPassword)      , "user password (for encrypted files)"           },
-	{ "-verbose" , argFlag  , &verbose          , 0                         , "print per-page status information"             },
-	{ "-q"       , argFlag  , &quiet            , 0                         , "don't print any messages or errors"            },
-	{ "-cfg"     , argString, cfgFileName       , sizeof(cfgFileName)       , "configuration file to use in place of .xpdfrc" },
-	{ "-v"       , argFlag  , &printVersion     , 0                         , "print copyright and version info"              },
-	{ "-h"       , argFlag  , &printHelp        , 0                         , "print usage information"                       },
-	{ "-help"    , argFlag  , &printHelp        , 0                         , "print usage information"                       },
-	{ "--help"   , argFlag  , &printHelp        , 0                         , "print usage information"                       },
-	{ "-?"       , argFlag  , &printHelp        , 0                         , "print usage information"                       },
-	{ nullptr }
-};
-// clang-format on
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char* argv[])
 {
-#if USE_EXCEPTIONS
-	try
+	// OPTIONS
+	//////////
+
+	CLI_BEGIN("pdftoppm");
+
+	// name, type, default, implicit, needApp, help
+	// clang-format off
+	CLI_OPTION(antialiasYN  , std::string, "" , "", 0, "enable font anti-aliasing: yes, no");
+	CLI_OPTION(cfgFileName  , std::string, "" , "", 0, "configuration file to use in place of .xpdfrc");
+	CLI_OPTION(cmyk         , int        , 0  , 1 , 0, "generate a CMYK PAM file");
+	CLI_OPTION(firstPage    , int        , 1  , 1 , 0, "first page to convert");
+	CLI_OPTION(freetypeYN   , std::string, "" , "", 0, "enable FreeType font rasterizer: yes, no");
+	CLI_OPTION(gray         , int        , 0  , 1 , 0, "generate a grayscale PGM file");
+	CLI_OPTION(lastPage     , int        , 0  , 0 , 0, "last page to convert");
+	CLI_OPTION(mono         , int        , 0  , 1 , 0, "generate a monochrome PBM file");
+	CLI_OPTION(ownerPassword, std::string, "" , "", 0, "owner password (for encrypted files)");
+	CLI_OPTION(printVersion , int        , 0  , 1 , 0, "print copyright and version info");
+	CLI_OPTION(quiet        , int        , 0  , 1 , 0, "don't print any messages or errors");
+	CLI_OPTION(resolution   , int        , 150, 0 , 0, "resolution, in DPI (default is 150)");
+	CLI_OPTION(rotate       , int        , 0  , 0 , 0, "set page rotation: 0, 90, 180, or 270");
+	CLI_OPTION(userPassword , std::string, "" , "", 0, "user password (for encrypted files)");
+	CLI_OPTION(vectoraaYN   , std::string, "" , "", 0, "enable vector anti-aliasing: yes, no");
+	CLI_OPTION(verbose      , int        , 0  , 1 , 0, "print per-page status information");
+	//
+	CLI_REQUIRED(fileName, std::string, 1, "<PDF-file>");
+	CLI_REQUIRED(ppmRoot , std::string, 1, "<PPM-root>");
+	// clang-format on
+
+	CLI11_PARSE(cli, argc, argv);
+	CLI_NEEDAPP();
+
+	// config file
 	{
-#endif
+		if (CLI_STRING(cfgFileName) && !std::filesystem::exists(cfgFileName))
+			error(errConfig, -1, "Config file '{}' doesn't exist or isn't a file", cfgFileName);
 
-		PDFDoc*          doc;
-		char*            fileName;
-		char*            ppmRoot;
-		GString*         ppmFile;
-		GString *        ownerPW, *userPW;
-		SplashColor      paperColor;
-		SplashOutputDev* splashOut;
-		GBool            ok, toStdout, printStatusInfo;
-		int              exitCode;
-		int              pg, n;
-		const char*      ext;
-
-#ifdef DEBUG_FP_LINUX
-		// enable exceptions on floating point div-by-zero
-		feenableexcept(FE_DIVBYZERO);
-		// force 64-bit rounding: this avoids changes in output when minor
-		// code changes result in spills of x87 registers; it also avoids
-		// differences in output with valgrind's 64-bit floating point
-		// emulation (yes, this is a kludge; but it's pretty much
-		// unavoidable given the x87 instruction set; see gcc bug 323 for
-		// more info)
-		fpu_control_t cw;
-		_FPU_GETCW(cw);
-		cw = (fpu_control_t)((cw & ~_FPU_EXTENDED) | _FPU_DOUBLE);
-		_FPU_SETCW(cw);
-#endif
-
-		exitCode = 99;
-
-		// parse args
-		fixCommandLine(&argc, &argv);
-		ok = parseArgs(argDesc, &argc, argv);
-		n  = 0;
-		n += mono ? 1 : 0;
-		n += gray ? 1 : 0;
-#if SPLASH_CMYK
-		n += cmyk ? 1 : 0;
-#endif
-		if (n > 1)
-			ok = gFalse;
-		if (!ok || argc != 3 || printVersion || printHelp)
-		{
-			fprintf(stderr, "pdftoppm version %s [www.xpdfreader.com]\n", xpdfVersion);
-			fprintf(stderr, "%s\n", xpdfCopyright);
-			if (!printVersion)
-				printUsage("pdftoppm", "<PDF-file> <PPM-root>", argDesc);
-			goto err0;
-		}
-		fileName = argv[1];
-		ppmRoot  = argv[2];
-
-		// read config file
-		if (cfgFileName[0] && !pathIsFile(cfgFileName))
-			error(errConfig, -1, "Config file '{0:s}' doesn't exist or isn't a file", cfgFileName);
-		globalParams = new GlobalParams(cfgFileName);
+		globalParams = std::make_shared<GlobalParams>(cfgFileName.c_str());
 		globalParams->setupBaseFonts(nullptr);
-		if (enableFreeTypeStr[0])
+		if (CLI_STRING(freetypeYN))
 		{
-			if (!globalParams->setEnableFreeType(enableFreeTypeStr))
+			if (!globalParams->setEnableFreeType(freetypeYN.c_str()))
 				fprintf(stderr, "Bad '-freetype' value on command line\n");
 		}
-		if (antialiasStr[0])
+		if (CLI_STRING(antialiasYN))
 		{
-			if (!globalParams->setAntialias(antialiasStr))
+			if (!globalParams->setAntialias(antialiasYN.c_str()))
 				fprintf(stderr, "Bad '-aa' value on command line\n");
 		}
-		if (vectorAntialiasStr[0])
+		if (CLI_STRING(vectoraaYN))
 		{
-			if (!globalParams->setVectorAntialias(vectorAntialiasStr))
+			if (!globalParams->setVectorAntialias(vectoraaYN.c_str()))
 				fprintf(stderr, "Bad '-aaVector' value on command line\n");
 		}
-		if (verbose)
-			globalParams->setPrintStatusInfo(verbose);
-		if (quiet)
-			globalParams->setErrQuiet(quiet);
-
-		// open PDF file
-		if (ownerPassword[0])
-			ownerPW = new GString(ownerPassword);
-		else
-			ownerPW = nullptr;
-		if (userPassword[0])
-			userPW = new GString(userPassword);
-		else
-			userPW = nullptr;
-		doc = new PDFDoc(fileName, ownerPW, userPW);
-		if (userPW)
-			delete userPW;
-		if (ownerPW)
-			delete ownerPW;
-		if (!doc->isOk())
-		{
-			exitCode = 1;
-			goto err1;
-		}
-
-		// get page range
-		if (firstPage < 1)
-			firstPage = 1;
-		if (lastPage < 1 || lastPage > doc->getNumPages())
-			lastPage = doc->getNumPages();
-
-		// file name extension
-		if (mono)
-		{
-			ext = "pbm";
-		}
-		else if (gray)
-		{
-			ext = "pgm";
-#if SPLASH_CMYK
-		}
-		else if (cmyk)
-		{
-			ext = "pam";
-#endif
-		}
-		else
-		{
-			ext = "ppm";
-		}
-
-		// check for stdout; set up to print per-page status info
-		toStdout        = !strcmp(ppmRoot, "-");
-		printStatusInfo = !toStdout && globalParams->getPrintStatusInfo();
-
-		// write PPM files
-		if (mono)
-		{
-			paperColor[0] = 0xff;
-			splashOut     = new SplashOutputDev(splashModeMono1, 1, gFalse, paperColor);
-		}
-		else if (gray)
-		{
-			paperColor[0] = 0xff;
-			splashOut     = new SplashOutputDev(splashModeMono8, 1, gFalse, paperColor);
-#if SPLASH_CMYK
-		}
-		else if (cmyk)
-		{
-			paperColor[0] = paperColor[1] = paperColor[2] = paperColor[3] = 0;
-			splashOut                                                     = new SplashOutputDev(splashModeCMYK8, 1, gFalse, paperColor);
-#endif // SPLASH_CMYK
-		}
-		else
-		{
-			paperColor[0] = paperColor[1] = paperColor[2] = 0xff;
-			splashOut                                     = new SplashOutputDev(splashModeRGB8, 1, gFalse, paperColor);
-		}
-		splashOut->startDoc(doc->getXRef());
-		for (pg = firstPage; pg <= lastPage; ++pg)
-		{
-			if (printStatusInfo)
-			{
-				fflush(stderr);
-				printf("[processing page %d]\n", pg);
-				fflush(stdout);
-			}
-			doc->displayPage(splashOut, pg, resolution, resolution, rotate, gFalse, gTrue, gFalse);
-			if (toStdout)
-			{
-#ifdef _WIN32
-				_setmode(_fileno(stdout), _O_BINARY);
-#endif
-				splashOut->getBitmap()->writePNMFile(stdout);
-			}
-			else
-			{
-				ppmFile = GString::format("{0:s}-{1:06d}.{2:s}", ppmRoot, pg, ext);
-				splashOut->getBitmap()->writePNMFile(ppmFile->getCString());
-				delete ppmFile;
-			}
-		}
-		delete splashOut;
-
-		exitCode = 0;
-
-		// clean up
-err1:
-		delete doc;
-		delete globalParams;
-err0:
-
-		// check for memory leaks
-		Object::memCheck(stderr);
-		gMemReport(stderr);
-
-		return exitCode;
-
-#if USE_EXCEPTIONS
+		if (verbose) globalParams->setPrintStatusInfo(verbose);
+		if (quiet) globalParams->setErrQuiet(quiet);
 	}
-	catch (GMemException e)
+
+	int n = 0;
+	n += mono ? 1 : 0;
+	n += gray ? 1 : 0;
+	n += cmyk ? 1 : 0;
+	if (n > 1) return 99;
+
+#ifdef DEBUG_FP_LINUX
+	// enable exceptions on floating point div-by-zero
+	feenableexcept(FE_DIVBYZERO);
+	// force 64-bit rounding: this avoids changes in output when minor
+	// code changes result in spills of x87 registers; it also avoids
+	// differences in output with valgrind's 64-bit floating point
+	// emulation (yes, this is a kludge; but it's pretty much
+	// unavoidable given the x87 instruction set; see gcc bug 323 for
+	// more info)
+	fpu_control_t cw;
+	_FPU_GETCW(cw);
+	cw = (fpu_control_t)((cw & ~_FPU_EXTENDED) | _FPU_DOUBLE);
+	_FPU_SETCW(cw);
+#endif
+
+	// open PDF file
+	auto doc = std::make_unique<PDFDoc>(fileName, ownerPassword, userPassword);
+	if (!doc->isOk()) return 1;
+
+	// get page range
+	if (firstPage < 1) firstPage = 1;
+	if (lastPage < 1 || lastPage > doc->getNumPages())
+		lastPage = doc->getNumPages();
+
+	// file name extension
+	const char* ext;
+	// clang-format off
+	     if (mono) ext = "pbm";
+	else if (gray) ext = "pgm";
+	else if (cmyk) ext = "pam";
+	else           ext = "ppm";
+	// clang-format on
+
+	// check for stdout; set up to print per-page status info
+	const bool toStdout        = (ppmRoot == "-");
+	const bool printStatusInfo = !toStdout && globalParams->getPrintStatusInfo();
+
+	// write PPM files
+	SplashColor                      paperColor;
+	std::shared_ptr<SplashOutputDev> splashOut;
+	if (mono)
 	{
-		fprintf(stderr, "Out of memory\n");
-		return 98;
+		paperColor[0] = 0xff;
+		splashOut     = std::make_shared<SplashOutputDev>(splashModeMono1, 1, false, paperColor);
 	}
+	else if (gray)
+	{
+		paperColor[0] = 0xff;
+		splashOut     = std::make_shared<SplashOutputDev>(splashModeMono8, 1, false, paperColor);
+#if SPLASH_CMYK
+	}
+	else if (cmyk)
+	{
+		paperColor[0] = 0;
+		paperColor[1] = 0;
+		paperColor[2] = 0;
+		paperColor[3] = 0;
+		splashOut     = std::make_shared<SplashOutputDev>(splashModeCMYK8, 1, false, paperColor);
+#endif // SPLASH_CMYK
+	}
+	else
+	{
+		paperColor[0] = 0xff;
+		paperColor[1] = 0xff;
+		paperColor[2] = 0xff;
+		splashOut     = std::make_shared<SplashOutputDev>(splashModeRGB8, 1, false, paperColor);
+	}
+	splashOut->startDoc(doc->getXRef());
+	for (int pg = firstPage; pg <= lastPage; ++pg)
+	{
+		if (printStatusInfo)
+		{
+			fflush(stderr);
+			printf("[processing page %d]\n", pg);
+			fflush(stdout);
+		}
+		doc->displayPage(splashOut.get(), pg, resolution, resolution, rotate, false, true, false);
+		if (toStdout)
+		{
+#ifdef _WIN32
+			_setmode(_fileno(stdout), _O_BINARY);
 #endif
+			splashOut->getBitmap()->writePNMFile(stdout);
+		}
+		else
+		{
+			const auto ppmFile = fmt::format("{}-{:06}.{}", ppmRoot, pg, ext);
+			splashOut->getBitmap()->writePNMFile(ppmFile.c_str());
+		}
+	}
+
+	// check for memory leaks
+	Object::memCheck(stderr);
+	gMemReport(stderr);
+	return 0;
 }

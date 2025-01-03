@@ -6,12 +6,9 @@
 //
 //========================================================================
 
-#ifndef SPLASHFONTFILEID_H
-#define SPLASHFONTFILEID_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
 
 //------------------------------------------------------------------------
 // SplashFontFileID
@@ -22,7 +19,5 @@ class SplashFontFileID
 public:
 	SplashFontFileID();
 	virtual ~SplashFontFileID();
-	virtual GBool matches(SplashFontFileID* id) = 0;
+	virtual bool matches(SplashFontFileID* id) = 0;
 };
-
-#endif

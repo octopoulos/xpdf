@@ -6,16 +6,12 @@
 //
 //========================================================================
 
-#ifndef OPTIONALCONTENT_H
-#define OPTIONALCONTENT_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
 #include "Object.h"
 #include "CharTypes.h"
 
-class GString;
 class GList;
 class PDFDoc;
 class TextString;
@@ -45,12 +41,12 @@ public:
 	// Evaluate an optional content object -- either an OCG or an OCMD.
 	// If <obj> is a valid OCG or OCMD, sets *<visible> and returns
 	// true; otherwise returns false.
-	GBool evalOCObject(Object* obj, GBool* visible);
+	bool evalOCObject(Object* obj, bool* visible);
 
 private:
-	GBool evalOCVisibilityExpr(Object* expr, int recursion);
+	bool evalOCVisibilityExpr(Object* expr, int recursion);
 
-	XRef*          xref;
+	XRef*          xref;    //
 	GList*         ocgs;    // all OCGs [OptionalContentGroup]
 	OCDisplayNode* display; // root node of display tree
 };
@@ -73,7 +69,7 @@ public:
 	static OptionalContentGroup* parse(Ref* refA, Object* obj);
 	~OptionalContentGroup();
 
-	GBool matches(Ref* refA);
+	bool matches(Ref* refA);
 
 	Unicode* getName();
 	int      getNameLength();
@@ -82,23 +78,23 @@ public:
 
 	OCUsageState getPrintState() { return printState; }
 
-	GBool getState() { return state; }
+	bool getState() { return state; }
 
-	void setState(GBool stateA) { state = stateA; }
+	void setState(bool stateA) { state = stateA; }
 
-	GBool getInViewUsageAppDict() { return inViewUsageAppDict; }
+	bool getInViewUsageAppDict() { return inViewUsageAppDict; }
 
-	void setInViewUsageAppDict() { inViewUsageAppDict = gTrue; }
+	void setInViewUsageAppDict() { inViewUsageAppDict = true; }
 
 private:
 	OptionalContentGroup(Ref* refA, TextString* nameA, OCUsageState viewStateA, OCUsageState printStateA);
 
-	Ref          ref;
-	TextString*  name;
-	OCUsageState viewState,   // suggested state when viewing
-	    printState;           // suggested state when printing
-	GBool state;              // current state (on/off)
-	GBool inViewUsageAppDict; // true if this OCG is listed in a usage app dict with Event=View
+	Ref          ref;                //
+	TextString*  name;               //
+	OCUsageState viewState;          // suggested state when viewing
+	OCUsageState printState;         // suggested state when printing
+	bool         state;              // current state (on/off)
+	bool         inViewUsageAppDict; // true if this OCG is listed in a usage app dict with Event=View
 
 	friend class OCDisplayNode;
 };
@@ -123,7 +119,7 @@ public:
 	OCDisplayNode* getParent() { return parent; }
 
 private:
-	OCDisplayNode(GString* nameA);
+	OCDisplayNode(const std::string& nameA);
 	OCDisplayNode(OptionalContentGroup* ocgA);
 	void   addChild(OCDisplayNode* child);
 	void   addChildren(GList* childrenA);
@@ -134,5 +130,3 @@ private:
 	OCDisplayNode*        parent;   // parent node; nullptr at root
 	GList*                children; // nullptr if there are no children [OCDisplayNode]
 };
-
-#endif

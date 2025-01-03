@@ -6,12 +6,9 @@
 //
 //========================================================================
 
-#ifndef FOFIIDENTIFIER_H
-#define FOFIIDENTIFIER_H
+#pragma once
 
 #include <aconf.h>
-
-class GList;
 
 //------------------------------------------------------------------------
 // FoFiIdentifier
@@ -37,15 +34,12 @@ class FoFiIdentifier
 public:
 	// Identify a font file.
 	static FoFiIdentifierType identifyMem(char* file, int len);
-	static FoFiIdentifierType identifyFile(char* fileName);
+	static FoFiIdentifierType identifyFile(const char* fileName);
 	static FoFiIdentifierType identifyStream(int (*getChar)(void* data), void* data);
 
-	// Return a list of font names (GString *) in a font collection
-	// file.  Indexes into the returned list are indexes into the
-	// collection.  This function is only useful with TrueType
-	// collections and Mac dfont files.  Returns NULL on error
-	// (including invalid font type).
-	static GList* getFontList(char* fileName);
+	// Return a list of font names in a font collection file.
+	// Indexes into the returned list are indexes into the collection.
+	// This function is only useful with TrueType collections and Mac dfont files.
+	// Returns nullptr on error (including invalid font type).
+	static VEC_STR getFontList(const char* fileName);
 };
-
-#endif

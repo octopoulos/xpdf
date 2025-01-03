@@ -9,8 +9,7 @@
 //
 //========================================================================
 
-#ifndef GMUTEX_H
-#define GMUTEX_H
+#pragma once
 
 #include <aconf.h>
 #ifdef _WIN32
@@ -48,7 +47,7 @@ typedef CRITICAL_SECTION GMutex;
 
 typedef pthread_mutex_t GMutex;
 
-#	define gInitMutex(m)    pthread_mutex_init(m, NULL)
+#	define gInitMutex(m)    pthread_mutex_init(m, nullptr)
 #	define gDestroyMutex(m) pthread_mutex_destroy(m)
 #	define gLockMutex(m)    pthread_mutex_lock(m)
 #	define gUnlockMutex(m)  pthread_mutex_unlock(m)
@@ -99,5 +98,3 @@ static inline GAtomicCounter gAtomicDecrement(GAtomicCounter* counter)
 #endif
 	return newVal;
 }
-
-#endif // GMUTEX_H

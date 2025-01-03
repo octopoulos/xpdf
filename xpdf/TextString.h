@@ -10,14 +10,10 @@
 //
 //========================================================================
 
-#ifndef TEXTSTRING_H
-#define TEXTSTRING_H
+#pragma once
 
 #include <aconf.h>
-
 #include "CharTypes.h"
-
-class GString;
 
 //------------------------------------------------------------------------
 
@@ -28,7 +24,7 @@ public:
 	TextString();
 
 	// Create a TextString from a PDF text string.
-	TextString(GString* s);
+	TextString(const std::string& s);
 
 	// Copy a TextString.
 	TextString(TextString* s);
@@ -37,13 +33,13 @@ public:
 
 	// Append a Unicode character or PDF text string to this TextString.
 	TextString* append(Unicode c);
-	TextString* append(GString* s);
+	TextString* append(const std::string& s);
 
 	// Insert a Unicode character, sequence of Unicode characters, or
 	// PDF text string in this TextString.
 	TextString* insert(int idx, Unicode c);
 	TextString* insert(int idx, Unicode* u2, int n);
-	TextString* insert(int idx, GString* s);
+	TextString* insert(int idx, const std::string& s);
 
 	// Get the Unicode characters in the TextString.
 	int getLength() { return len; }
@@ -51,17 +47,15 @@ public:
 	Unicode* getUnicode() { return u; }
 
 	// Create a PDF text string from a TextString.
-	GString* toPDFTextString();
+	std::string toPDFTextString();
 
 	// Convert a TextString to UTF-8.
-	GString* toUTF8();
+	std::string toUTF8();
 
 private:
 	void expand(int delta);
 
-	Unicode* u; // NB: not null-terminated
-	int      len;
-	int      size;
+	Unicode* u;    // NB: not null-terminated
+	int      len;  //
+	int      size; //
 };
-
-#endif

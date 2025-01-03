@@ -6,8 +6,7 @@
 //
 //========================================================================
 
-#ifndef CATALOG_H
-#define CATALOG_H
+#pragma once
 
 #include <aconf.h>
 
@@ -43,7 +42,7 @@ public:
 	~Catalog();
 
 	// Is catalog valid?
-	GBool isOk() { return ok; }
+	bool isOk() { return ok; }
 
 	// Get number of pages.
 	int getNumPages() { return numPages; }
@@ -59,11 +58,11 @@ public:
 	void doneWithPage(int i);
 
 	// Return base URI, or nullptr if none.
-	GString* getBaseURI() { return baseURI; }
+	std::string getBaseURI() { return baseURI; }
 
 	// Return the contents of the metadata stream, or nullptr if there is
 	// no metadata.
-	GString* readMetadata();
+	std::string readMetadata();
 
 	// Return the structure tree root object.
 	Object* getStructTreeRoot() { return &structTreeRoot; }
@@ -74,7 +73,7 @@ public:
 
 	// Find a named destination.  Returns the link destination, or
 	// nullptr if <name> is not a destination.
-	LinkDest* findDest(GString* name);
+	LinkDest* findDest(const std::string& name);
 
 	Object* getDests() { return &dests; }
 
@@ -86,7 +85,7 @@ public:
 
 	AcroForm* getForm() { return form; }
 
-	GBool getNeedsRendering() { return needsRendering; }
+	bool getNeedsRendering() { return needsRendering; }
 
 	Object* getOCProperties() { return &ocProperties; }
 
@@ -101,7 +100,7 @@ public:
 	Object*  getEmbeddedFileStreamObj(int idx, Object* strObj);
 
 	// Return true if the document has page labels.
-	GBool hasPageLabels() { return pageLabels != nullptr; }
+	bool hasPageLabels() { return pageLabels != nullptr; }
 
 	// Get the page label for page number [pageNum].  Returns nullptr if
 	// the PDF file doesn't have page labels.
@@ -115,35 +114,35 @@ public:
 	Object* getViewerPreferences() { return &viewerPrefs; }
 
 	// Return true if the document uses JavaScript.
-	GBool usesJavaScript();
+	bool usesJavaScript();
 
 private:
-	PDFDoc*       doc;
-	XRef*         xref;     // the xref table for this PDF file
-	PageTreeNode* pageTree; // the page tree
-	Page**        pages;    // array of pages
-	Ref*          pageRefs; // object ID for each page
+	PDFDoc*       doc      = nullptr; //
+	XRef*         xref     = nullptr; // the xref table for this PDF file
+	PageTreeNode* pageTree = nullptr; // the page tree
+	Page**        pages    = nullptr; // array of pages
+	Ref*          pageRefs = nullptr; // object ID for each page
 #if MULTITHREADED
 	GMutex pageMutex;
 #endif
-	int       numPages;       // number of pages
-	Object    dests;          // named destination dictionary
-	Object    nameTree;       // name tree
-	GString*  baseURI;        // base URI for URI-type links
-	Object    metadata;       // metadata stream
-	Object    structTreeRoot; // structure tree root dictionary
-	Object    outline;        // outline dictionary
-	Object    acroForm;       // AcroForm dictionary
-	GBool     needsRendering; // NeedsRendering flag
-	AcroForm* form;           // parsed form
-	Object    ocProperties;   // OCProperties dictionary
-	GList*    embeddedFiles;  // embedded file list [EmbeddedFile]
-	GList*    pageLabels;     // page labels [PageLabelNode]
-	Object    viewerPrefs;    // ViewerPreferences object
-	GBool     ok;             // true if catalog is valid
+	int         numPages       = 0;       // number of pages
+	Object      dests          = {};      // named destination dictionary
+	Object      nameTree       = {};      // name tree
+	std::string baseURI        = "";      // base URI for URI-type links
+	Object      metadata       = {};      // metadata stream
+	Object      structTreeRoot = {};      // structure tree root dictionary
+	Object      outline        = {};      // outline dictionary
+	Object      acroForm       = {};      // AcroForm dictionary
+	bool        needsRendering = false;   // NeedsRendering flag
+	AcroForm*   form           = nullptr; // parsed form
+	Object      ocProperties   = {};      // OCProperties dictionary
+	GList*      embeddedFiles  = nullptr; // embedded file list [EmbeddedFile]
+	GList*      pageLabels     = nullptr; // page labels [PageLabelNode]
+	Object      viewerPrefs    = {};      // ViewerPreferences object
+	bool        ok             = true;    // true if catalog is valid
 
-	Object*        findDestInTree(Object* tree, GString* name, Object* obj);
-	GBool          readPageTree(Object* catDict);
+	Object*        findDestInTree(Object* tree, const std::string& name, Object* obj);
+	bool           readPageTree(Object* catDict);
 	int            countPageTree(Object* pagesNodeRef, char* touchedObjs);
 	void           loadPage(int pg);
 	void           loadPage2(int pg, int relPg, PageTreeNode* node);
@@ -154,11 +153,9 @@ private:
 	void           readPageLabelTree(Object* root);
 	void           readPageLabelTree2(Object* node, char* touchedObjs);
 	PageLabelNode* findPageLabel(int pageNum);
-	GString*       makeRomanNumeral(int num, GBool uppercase);
-	GString*       makeLetterLabel(int num, GBool uppercase);
-	GBool          convertPageLabelToInt(TextString* pageLabel, int prefixLength, char style, int* n);
-	GBool          scanPageTreeForJavaScript(Object* pageNodeRef, char* touchedObjs);
-	GBool          scanAAForJavaScript(Object* aaObj);
+	std::string    makeRomanNumeral(int num, bool uppercase);
+	std::string    makeLetterLabel(int num, bool uppercase);
+	bool           convertPageLabelToInt(TextString* pageLabel, int prefixLength, char style, int* n);
+	bool           scanPageTreeForJavaScript(Object* pageNodeRef, char* touchedObjs);
+	bool           scanAAForJavaScript(Object* aaObj);
 };
-
-#endif

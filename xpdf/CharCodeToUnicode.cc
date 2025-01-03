@@ -7,13 +7,11 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdio.h>
 #include <string.h>
 #include "gmem.h"
 #include "gmempp.h"
 #include "gfile.h"
-#include "GString.h"
 #include "Error.h"
 #include "GlobalParams.h"
 #include "PSTokenizer.h"
@@ -34,16 +32,15 @@ struct CharCodeToUnicodeString
 
 struct GStringIndex
 {
-	GString* s;
-	int      i;
+	std::string s;
+	int         i;
 };
 
 static int getCharFromGString(void* data)
 {
 	GStringIndex* idx = (GStringIndex*)data;
-	if (idx->i >= idx->s->getLength())
-		return EOF;
-	return idx->s->getChar(idx->i++) & 0xff;
+	if (idx->i >= idx->s.size()) return EOF;
+	return idx->s.at(idx->i++) & 0xff;
 }
 
 static int getCharFromFile(void* data)
@@ -74,19 +71,16 @@ static int hexCharVals[256] = {
 
 // Parse a <len>-byte hex string <s> into *<val>.  Returns false on
 // error.
-static GBool parseHex(char* s, int len, Guint* val)
+static bool parseHex(char* s, int len, uint32_t* val)
 {
-	int i, x;
-
 	*val = 0;
-	for (i = 0; i < len; ++i)
+	for (int i = 0; i < len; ++i)
 	{
-		x = hexCharVals[s[i] & 0xff];
-		if (x < 0)
-			return gFalse;
+		const int x = hexCharVals[s[i] & 0xff];
+		if (x < 0) return false;
 		*val = (*val << 4) + x;
 	}
-	return gTrue;
+	return true;
 }
 
 //------------------------------------------------------------------------
@@ -96,7 +90,7 @@ CharCodeToUnicode* CharCodeToUnicode::makeIdentityMapping()
 	return new CharCodeToUnicode();
 }
 
-CharCodeToUnicode* CharCodeToUnicode::parseCIDToUnicode(GString* fileName, GString* collection)
+CharCodeToUnicode* CharCodeToUnicode::parseCIDToUnicode(const std::string& fileName, const std::string& collection)
 {
 	FILE*              f;
 	Unicode*           mapA;
@@ -105,9 +99,9 @@ CharCodeToUnicode* CharCodeToUnicode::parseCIDToUnicode(GString* fileName, GStri
 	Unicode            u;
 	CharCodeToUnicode* ctu;
 
-	if (!(f = openFile(fileName->getCString(), "r")))
+	if (!(f = openFile(fileName.c_str(), "r")))
 	{
-		error(errSyntaxError, -1, "Couldn't open cidToUnicode file '{0:t}'", fileName);
+		error(errSyntaxError, -1, "Couldn't open cidToUnicode file '{}'", fileName);
 		return nullptr;
 	}
 
@@ -128,19 +122,19 @@ CharCodeToUnicode* CharCodeToUnicode::parseCIDToUnicode(GString* fileName, GStri
 		}
 		else
 		{
-			error(errSyntaxWarning, -1, "Bad line ({0:d}) in cidToUnicode file '{1:t}'", (int)(mapLenA + 1), fileName);
+			error(errSyntaxWarning, -1, "Bad line ({}) in cidToUnicode file '{}'", (int)(mapLenA + 1), fileName);
 			mapA[mapLenA] = 0;
 		}
 		++mapLenA;
 	}
 	fclose(f);
 
-	ctu = new CharCodeToUnicode(collection->copy(), mapA, mapLenA, gTrue, nullptr, 0, 0);
+	ctu = new CharCodeToUnicode(collection, mapA, mapLenA, true, nullptr, 0, 0);
 	gfree(mapA);
 	return ctu;
 }
 
-CharCodeToUnicode* CharCodeToUnicode::parseUnicodeToUnicode(GString* fileName)
+CharCodeToUnicode* CharCodeToUnicode::parseUnicodeToUnicode(const std::string& fileName)
 {
 	FILE*                    f;
 	Unicode*                 mapA;
@@ -153,9 +147,9 @@ CharCodeToUnicode* CharCodeToUnicode::parseUnicodeToUnicode(GString* fileName)
 	CharCodeToUnicode*       ctu;
 	int                      line, n, i;
 
-	if (!(f = openFile(fileName->getCString(), "r")))
+	if (!(f = openFile(fileName.c_str(), "r")))
 	{
-		error(errSyntaxError, -1, "Couldn't open unicodeToUnicode file '{0:t}'", fileName);
+		error(errSyntaxError, -1, "Couldn't open unicodeToUnicode file '{}'", fileName);
 		return nullptr;
 	}
 
@@ -172,7 +166,7 @@ CharCodeToUnicode* CharCodeToUnicode::parseUnicodeToUnicode(GString* fileName)
 		++line;
 		if (!(tok = strtok(buf, " \t\r\n")) || !parseHex(tok, (int)strlen(tok), &u0))
 		{
-			error(errSyntaxWarning, -1, "Bad line ({0:d}) in unicodeToUnicode file '{1:t}'", line, fileName);
+			error(errSyntaxWarning, -1, "Bad line ({}) in unicodeToUnicode file '{}'", line, fileName);
 			continue;
 		}
 		n = 0;
@@ -182,14 +176,14 @@ CharCodeToUnicode* CharCodeToUnicode::parseUnicodeToUnicode(GString* fileName)
 				break;
 			if (!parseHex(tok, (int)strlen(tok), &uBuf[n]))
 			{
-				error(errSyntaxWarning, -1, "Bad line ({0:d}) in unicodeToUnicode file '{1:t}'", line, fileName);
+				error(errSyntaxWarning, -1, "Bad line ({}) in unicodeToUnicode file '{}'", line, fileName);
 				break;
 			}
 			++n;
 		}
 		if (n < 1)
 		{
-			error(errSyntaxWarning, -1, "Bad line ({0:d}) in unicodeToUnicode file '{1:t}'", line, fileName);
+			error(errSyntaxWarning, -1, "Bad line ({}) in unicodeToUnicode file '{}'", line, fileName);
 			continue;
 		}
 		if (u0 >= size)
@@ -224,27 +218,27 @@ CharCodeToUnicode* CharCodeToUnicode::parseUnicodeToUnicode(GString* fileName)
 	}
 	fclose(f);
 
-	ctu = new CharCodeToUnicode(fileName->copy(), mapA, len, gTrue, sMapA, sMapLenA, sMapSizeA);
+	ctu = new CharCodeToUnicode(fileName, mapA, len, true, sMapA, sMapLenA, sMapSizeA);
 	gfree(mapA);
 	return ctu;
 }
 
 CharCodeToUnicode* CharCodeToUnicode::make8BitToUnicode(Unicode* toUnicode)
 {
-	return new CharCodeToUnicode(nullptr, toUnicode, 256, gTrue, nullptr, 0, 0);
+	return new CharCodeToUnicode("", toUnicode, 256, true, nullptr, 0, 0);
 }
 
 CharCodeToUnicode* CharCodeToUnicode::make16BitToUnicode(Unicode* toUnicode)
 {
-	return new CharCodeToUnicode(nullptr, toUnicode, 65536, gTrue, nullptr, 0, 0);
+	return new CharCodeToUnicode("", toUnicode, 65536, true, nullptr, 0, 0);
 }
 
-CharCodeToUnicode* CharCodeToUnicode::parseCMap(GString* buf, int nBits)
+CharCodeToUnicode* CharCodeToUnicode::parseCMap(const std::string& buf, int nBits)
 {
 	CharCodeToUnicode* ctu;
 	GStringIndex       idx;
 
-	ctu   = new CharCodeToUnicode(nullptr);
+	ctu   = new CharCodeToUnicode("");
 	idx.s = buf;
 	idx.i = 0;
 	if (!ctu->parseCMap1(&getCharFromGString, &idx, nBits))
@@ -255,28 +249,27 @@ CharCodeToUnicode* CharCodeToUnicode::parseCMap(GString* buf, int nBits)
 	return ctu;
 }
 
-void CharCodeToUnicode::mergeCMap(GString* buf, int nBits)
+void CharCodeToUnicode::mergeCMap(const std::string& buf, int nBits)
 {
 	GStringIndex idx;
-
 	idx.s = buf;
 	idx.i = 0;
 	parseCMap1(&getCharFromGString, &idx, nBits);
 }
 
-GBool CharCodeToUnicode::parseCMap1(int (*getCharFunc)(void*), void* data, int nBits)
+bool CharCodeToUnicode::parseCMap1(int (*getCharFunc)(void*), void* data, int nBits)
 {
 	PSTokenizer* pst;
 	char         tok1[256], tok2[256], tok3[256];
 	int          n1, n2, n3;
 	CharCode     i;
 	CharCode     maxCode, code1, code2;
-	GString*     name;
 	FILE*        f;
-	GBool        ok;
+	bool         ok;
 
-	ok      = gFalse;
-	maxCode = (nBits == 8) ? 0xff : (nBits == 16) ? 0xffff : 0xffffffff;
+	ok      = false;
+	maxCode = (nBits == 8) ? 0xff : (nBits == 16) ? 0xffff
+	                                              : 0xffffffff;
 	pst     = new PSTokenizer(getCharFunc, data);
 	pst->getToken(tok1, sizeof(tok1), &n1);
 	while (pst->getToken(tok2, sizeof(tok2), &n2))
@@ -286,7 +279,7 @@ GBool CharCodeToUnicode::parseCMap1(int (*getCharFunc)(void*), void* data, int n
 			if (globalParams->getIgnoreWrongSizeToUnicode() && tok2[0] == '<' && tok2[n2 - 1] == '>' && n2 - 2 != nBits / 4)
 			{
 				error(errSyntaxWarning, -1, "Incorrect character size in ToUnicode CMap");
-				ok = gFalse;
+				ok = false;
 				break;
 			}
 			while (pst->getToken(tok1, sizeof(tok1), &n1) && strcmp(tok1, "endcodespacerange"))
@@ -296,18 +289,17 @@ GBool CharCodeToUnicode::parseCMap1(int (*getCharFunc)(void*), void* data, int n
 		{
 			if (tok1[0] == '/')
 			{
-				name = new GString(tok1 + 1);
+				const auto name = std::string(tok1 + 1);
 				if ((f = globalParams->findToUnicodeFile(name)))
 				{
 					if (parseCMap1(&getCharFromFile, f, nBits))
-						ok = gTrue;
+						ok = true;
 					fclose(f);
 				}
 				else
 				{
-					error(errSyntaxError, -1, "Couldn't find ToUnicode CMap file for '{1:t}'", name);
+					error(errSyntaxError, -1, "Couldn't find ToUnicode CMap file for '{}'", name);
 				}
-				delete name;
 			}
 			pst->getToken(tok1, sizeof(tok1), &n1);
 		}
@@ -336,7 +328,7 @@ GBool CharCodeToUnicode::parseCMap1(int (*getCharFunc)(void*), void* data, int n
 				if (code1 > maxCode)
 					error(errSyntaxWarning, -1, "Invalid entry in bfchar block in ToUnicode CMap");
 				addMapping(code1, tok2 + 1, n2 - 2, 0);
-				ok = gTrue;
+				ok = true;
 			}
 			pst->getToken(tok1, sizeof(tok1), &n1);
 		}
@@ -381,7 +373,7 @@ GBool CharCodeToUnicode::parseCMap1(int (*getCharFunc)(void*), void* data, int n
 							{
 								tok1[n1 - 1] = '\0';
 								addMapping(code1 + i, tok1 + 1, n1 - 2, 0);
-								ok = gTrue;
+								ok = true;
 							}
 						}
 						else
@@ -397,7 +389,7 @@ GBool CharCodeToUnicode::parseCMap1(int (*getCharFunc)(void*), void* data, int n
 					for (i = 0; code1 <= code2; ++code1, ++i)
 					{
 						addMapping(code1, tok3 + 1, n3 - 2, i);
-						ok = gTrue;
+						ok = true;
 					}
 				}
 				else
@@ -436,7 +428,7 @@ GBool CharCodeToUnicode::parseCMap1(int (*getCharFunc)(void*), void* data, int n
 				if (code1 > maxCode)
 					error(errSyntaxWarning, -1, "Invalid entry in cidchar block in ToUnicode CMap");
 				addMappingInt(code1, atoi(tok2));
-				ok = gTrue;
+				ok = true;
 			}
 			pst->getToken(tok1, sizeof(tok1), &n1);
 		}
@@ -474,7 +466,7 @@ GBool CharCodeToUnicode::parseCMap1(int (*getCharFunc)(void*), void* data, int n
 				for (i = atoi(tok3); code1 <= code2; ++code1, ++i)
 				{
 					addMappingInt(code1, i);
-					ok = gTrue;
+					ok = true;
 				}
 			}
 			pst->getToken(tok1, sizeof(tok1), &n1);
@@ -491,9 +483,8 @@ GBool CharCodeToUnicode::parseCMap1(int (*getCharFunc)(void*), void* data, int n
 
 void CharCodeToUnicode::addMapping(CharCode code, char* uStr, int n, int offset)
 {
-	CharCode oldLen, i;
-	Unicode  u[maxUnicodeString];
-	int      uLen, j;
+	Unicode u[maxUnicodeString];
+	int     uLen;
 
 	if (code > 0xffffff)
 	{
@@ -505,12 +496,12 @@ void CharCodeToUnicode::addMapping(CharCode code, char* uStr, int n, int offset)
 		return;
 	if (code >= mapLen)
 	{
-		oldLen = mapLen;
-		mapLen = mapLen ? 2 * mapLen : 256;
+		const CharCode oldLen = mapLen;
+		mapLen                = mapLen ? 2 * mapLen : 256;
 		if (code >= mapLen)
 			mapLen = (code + 256) & ~255;
 		map = (Unicode*)greallocn(map, mapLen, sizeof(Unicode));
-		for (i = oldLen; i < mapLen; ++i)
+		for (CharCode i = oldLen; i < mapLen; ++i)
 			map[i] = 0;
 	}
 	if (uLen == 1)
@@ -527,7 +518,7 @@ void CharCodeToUnicode::addMapping(CharCode code, char* uStr, int n, int offset)
 		}
 		map[code]       = 0;
 		sMap[sMapLen].c = code;
-		for (j = 0; j < uLen; ++j)
+		for (int j = 0; j < uLen; ++j)
 			sMap[sMapLen].u[j] = u[j];
 		sMap[sMapLen].u[uLen - 1] += offset;
 		sMap[sMapLen].len = uLen;
@@ -564,8 +555,6 @@ int CharCodeToUnicode::parseUTF16String(char* uStr, int n, Unicode* uOut)
 
 void CharCodeToUnicode::addMappingInt(CharCode code, Unicode u)
 {
-	CharCode oldLen, i;
-
 	if (code > 0xffffff)
 	{
 		// This is an arbitrary limit to avoid integer overflow issues.
@@ -574,12 +563,12 @@ void CharCodeToUnicode::addMappingInt(CharCode code, Unicode u)
 	}
 	if (code >= mapLen)
 	{
-		oldLen = mapLen;
-		mapLen = mapLen ? 2 * mapLen : 256;
+		const CharCode oldLen = mapLen;
+		mapLen                = mapLen ? 2 * mapLen : 256;
 		if (code >= mapLen)
 			mapLen = (code + 256) & ~255;
 		map = (Unicode*)greallocn(map, mapLen, sizeof(Unicode));
-		for (i = oldLen; i < mapLen; ++i)
+		for (CharCode i = oldLen; i < mapLen; ++i)
 			map[i] = 0;
 	}
 	map[code] = u;
@@ -587,29 +576,28 @@ void CharCodeToUnicode::addMappingInt(CharCode code, Unicode u)
 
 CharCodeToUnicode::CharCodeToUnicode()
 {
-	tag     = nullptr;
-	map     = nullptr;
-	mapLen  = 0;
-	sMap    = nullptr;
-	sMapLen = sMapSize = 0;
-	refCnt             = 1;
+	map      = nullptr;
+	mapLen   = 0;
+	sMap     = nullptr;
+	sMapLen  = 0;
+	sMapSize = 0;
+	refCnt   = 1;
 }
 
-CharCodeToUnicode::CharCodeToUnicode(GString* tagA)
+CharCodeToUnicode::CharCodeToUnicode(const std::string& tagA)
 {
-	CharCode i;
-
 	tag    = tagA;
 	mapLen = 256;
 	map    = (Unicode*)gmallocn(mapLen, sizeof(Unicode));
-	for (i = 0; i < mapLen; ++i)
+	for (CharCode i = 0; i < mapLen; ++i)
 		map[i] = 0;
-	sMap    = nullptr;
-	sMapLen = sMapSize = 0;
-	refCnt             = 1;
+	sMap     = nullptr;
+	sMapLen  = 0;
+	sMapSize = 0;
+	refCnt   = 1;
 }
 
-CharCodeToUnicode::CharCodeToUnicode(GString* tagA, Unicode* mapA, CharCode mapLenA, GBool copyMap, CharCodeToUnicodeString* sMapA, int sMapLenA, int sMapSizeA)
+CharCodeToUnicode::CharCodeToUnicode(const std::string& tagA, Unicode* mapA, CharCode mapLenA, bool copyMap, CharCodeToUnicodeString* sMapA, int sMapLenA, int sMapSizeA)
 {
 	tag    = tagA;
 	mapLen = mapLenA;
@@ -630,8 +618,6 @@ CharCodeToUnicode::CharCodeToUnicode(GString* tagA, Unicode* mapA, CharCode mapL
 
 CharCodeToUnicode::~CharCodeToUnicode()
 {
-	if (tag)
-		delete tag;
 	gfree(map);
 	gfree(sMap);
 }
@@ -647,7 +633,7 @@ void CharCodeToUnicode::incRefCnt()
 
 void CharCodeToUnicode::decRefCnt()
 {
-	GBool done;
+	bool done;
 
 #if MULTITHREADED
 	done = gAtomicDecrement(&refCnt) == 0;
@@ -658,9 +644,9 @@ void CharCodeToUnicode::decRefCnt()
 		delete this;
 }
 
-GBool CharCodeToUnicode::match(GString* tagA)
+bool CharCodeToUnicode::match(const std::string& tagA)
 {
-	return tag && !tag->cmp(tagA);
+	return tag == tagA;
 }
 
 void CharCodeToUnicode::setMapping(CharCode c, Unicode* u, int len)
@@ -698,7 +684,7 @@ void CharCodeToUnicode::setMapping(CharCode c, Unicode* u, int len)
 
 int CharCodeToUnicode::mapToUnicode(CharCode c, Unicode* u, int size)
 {
-	int i, j;
+	int j;
 
 	if (!map)
 	{
@@ -712,7 +698,7 @@ int CharCodeToUnicode::mapToUnicode(CharCode c, Unicode* u, int size)
 		u[0] = map[c];
 		return 1;
 	}
-	for (i = 0; i < sMapLen; ++i)
+	for (int i = 0; i < sMapLen; ++i)
 	{
 		if (sMap[i].c == c)
 		{
@@ -728,40 +714,35 @@ int CharCodeToUnicode::mapToUnicode(CharCode c, Unicode* u, int size)
 
 CharCodeToUnicodeCache::CharCodeToUnicodeCache(int sizeA)
 {
-	int i;
-
 	size  = sizeA;
 	cache = (CharCodeToUnicode**)gmallocn(size, sizeof(CharCodeToUnicode*));
-	for (i = 0; i < size; ++i)
+	for (int i = 0; i < size; ++i)
 		cache[i] = nullptr;
 }
 
 CharCodeToUnicodeCache::~CharCodeToUnicodeCache()
 {
-	int i;
-
-	for (i = 0; i < size; ++i)
+	for (int i = 0; i < size; ++i)
 		if (cache[i])
 			cache[i]->decRefCnt();
 	gfree(cache);
 }
 
-CharCodeToUnicode* CharCodeToUnicodeCache::getCharCodeToUnicode(GString* tag)
+CharCodeToUnicode* CharCodeToUnicodeCache::getCharCodeToUnicode(const std::string& tag)
 {
 	CharCodeToUnicode* ctu;
-	int                i, j;
 
 	if (cache[0] && cache[0]->match(tag))
 	{
 		cache[0]->incRefCnt();
 		return cache[0];
 	}
-	for (i = 1; i < size; ++i)
+	for (int i = 1; i < size; ++i)
 	{
 		if (cache[i] && cache[i]->match(tag))
 		{
 			ctu = cache[i];
-			for (j = i; j >= 1; --j)
+			for (int j = i; j >= 1; --j)
 				cache[j] = cache[j - 1];
 			cache[0] = ctu;
 			ctu->incRefCnt();
@@ -773,11 +754,9 @@ CharCodeToUnicode* CharCodeToUnicodeCache::getCharCodeToUnicode(GString* tag)
 
 void CharCodeToUnicodeCache::add(CharCodeToUnicode* ctu)
 {
-	int i;
-
 	if (cache[size - 1])
 		cache[size - 1]->decRefCnt();
-	for (i = size - 1; i >= 1; --i)
+	for (int i = size - 1; i >= 1; --i)
 		cache[i] = cache[i - 1];
 	cache[0] = ctu;
 	ctu->incRefCnt();

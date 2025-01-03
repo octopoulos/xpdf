@@ -42,12 +42,12 @@
 
 XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, XpdfWidget* widget)
 {
-	GString*                 pdfFileName;
+	std::string              pdfFileName;
 	CFStringRef              s;
 	CFURLRef                 url;
 	CGPDFDocumentRef         pdfDoc;
 	CGPDFPageRef             pdfPage;
-	GString*                 printerName;
+	std::string              printerName;
 	CFArrayRef               printerList, pageFormatList;
 	char                     prtName[512];
 	PMPrinter                printer;
@@ -63,30 +63,30 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 	QPrinter::PaperSource    paperSource;
 	QPageLayout::Orientation pageOrientation;
 	FILE*                    f;
-	GBool                    deletePDFFile;
+	bool                     deletePDFFile;
 	int                      startPage, endPage, pg, i;
 
 	//--- get PDF file name
 
-	deletePDFFile = gFalse;
+	deletePDFFile = false;
 	if (doc->getFileName())
 	{
-		pdfFileName = doc->getFileName()->copy();
+		pdfFileName = doc->getFileName();
 	}
 	else
 	{
 		if (!openTempFile(&pdfFileName, &f, "wb", ".pdf"))
 			goto err0;
 		fclose(f);
-		deletePDFFile = gTrue;
+		deletePDFFile = true;
 		if (!doc->saveAs(pdfFileName))
 			goto err1;
 	}
 
 	//--- load the PDF file
 
-	s   = CFStringCreateWithCString(NULL, pdfFileName->getCString(), kCFStringEncodingUTF8);
-	url = CFURLCreateWithFileSystemPath(NULL, s, kCFURLPOSIXPathStyle, false);
+	s   = CFStringCreateWithCString(nullptr, pdfFileName.c_str(), kCFStringEncodingUTF8);
+	url = CFURLCreateWithFileSystemPath(nullptr, s, kCFURLPOSIXPathStyle, false);
 	CFRelease(s);
 	pdfDoc = CGPDFDocumentCreateWithURL(url);
 	CFRelease(url);
@@ -105,8 +105,7 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 	{
 		CFRelease(pdfDoc);
 		if (deletePDFFile)
-			unlink(pdfFileName->getCString());
-		delete pdfFileName;
+			unlink(pdfFileName.c_str());
 		return XpdfWidget::pdfErrBadPageNum;
 	}
 
@@ -125,7 +124,7 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 		goto err3;
 	if (PMSessionDefaultPrintSettings(session, printSettings))
 		goto err4;
-	s = CFStringCreateWithCString(NULL, pdfFileName->getCString(), kCFStringEncodingUTF8);
+	s = CFStringCreateWithCString(nullptr, pdfFileName.c_str(), kCFStringEncodingUTF8);
 	PMPrintSettingsSetJobName(printSettings, s);
 	CFRelease(s);
 
@@ -133,8 +132,8 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 
 	if (!prt->outputFileName().isEmpty())
 	{
-		s   = CFStringCreateWithCString(NULL, prt->outputFileName().toUtf8().constData(), kCFStringEncodingUTF8);
-		url = CFURLCreateWithFileSystemPath(NULL, s, kCFURLPOSIXPathStyle, false);
+		s   = CFStringCreateWithCString(nullptr, prt->outputFileName().toUtf8().constData(), kCFStringEncodingUTF8);
+		url = CFURLCreateWithFileSystemPath(nullptr, s, kCFURLPOSIXPathStyle, false);
 		CFRelease(s);
 		if (PMSessionSetDestination(session, printSettings, kPMDestinationFile, kPMDocumentFormatPDF, url))
 		{
@@ -149,8 +148,8 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 	{
 		if (PMServerCreatePrinterList(kPMServerLocal, &printerList))
 			goto err4;
-		printer     = NULL;
-		printerName = new GString(prt->printerName().toUtf8().constData());
+		printer     = nullptr;
+		printerName = prt->printerName().toStdString();
 		for (i = 0; i < CFArrayGetCount(printerList); ++i)
 		{
 			printer = (PMPrinter)CFArrayGetValueAtIndex(printerList, i);
@@ -161,7 +160,7 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 #		endif
 			if (CFStringGetCString(s, prtName, sizeof(prtName), kCFStringEncodingUTF8))
 			{
-				if (!strcmp(prtName, printerName->getCString()))
+				if (!strcmp(prtName, printerName.c_str()))
 					break;
 			}
 		}
@@ -197,7 +196,7 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 		goto err4;
 	if (PMSessionCreatePageFormatList(session, printer, &pageFormatList))
 		goto err4;
-	pageFormat = NULL;
+	pageFormat = nullptr;
 	for (i = 0; i < CFArrayGetCount(pageFormatList); ++i)
 	{
 		pageFormat = (PMPageFormat)CFArrayGetValueAtIndex(pageFormatList, i);
@@ -207,7 +206,7 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 			PMRetain(pageFormat);
 			break;
 		}
-		pageFormat = NULL;
+		pageFormat = nullptr;
 	}
 	CFRelease(pageFormatList);
 	if (!pageFormat)
@@ -243,7 +242,7 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 		widget->updatePrintStatus(pg, startPage, endPage);
 		if (widget->isPrintCanceled())
 			goto err6;
-		if (PMSessionBeginPageNoDialog(session, pageFormat, NULL))
+		if (PMSessionBeginPageNoDialog(session, pageFormat, nullptr))
 			goto err6;
 		if (PMSessionGetCGGraphicsContext(session, &ctx))
 			goto err6;
@@ -265,7 +264,7 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 
 	CFRelease(pdfDoc);
 	if (deletePDFFile)
-		unlink(pdfFileName->getCString());
+		unlink(pdfFileName.c_str());
 	delete pdfFileName;
 
 	return XpdfWidget::pdfOk;
@@ -282,7 +281,7 @@ err2:
 	CFRelease(pdfDoc);
 err1:
 	if (deletePDFFile)
-		unlink(pdfFileName->getCString());
+		unlink(pdfFileName.c_str());
 	delete pdfFileName;
 err0:
 	return XpdfWidget::pdfErrPrinting;
@@ -306,14 +305,14 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 	QSize                 paperSizePts;
 	QPrinter::PaperSource paperSource;
 	QPrinter::DuplexMode  duplex;
-	GString*              psFileName;
+	std::string           psFileName;
 	FILE*                 psFile;
 	PSOutputDev*          psOut;
-	GString*              printerName;
+	std::string           printerName;
 	cups_dest_t *         dests, *dest;
 	cups_option_t*        options;
 	const char *          paperSizeStr, *paperSourceStr;
-	GString*              s;
+	std::string           s;
 	int                   nDests, nOptions;
 	int                   pg;
 
@@ -339,7 +338,7 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 
 	if (!prt->outputFileName().isEmpty())
 	{
-		psFileName = NULL; // don't delete the PS file
+		psFileName.clear(); // don't delete the PS file
 		if (!(psFile = fopen(prt->outputFileName().toUtf8().constData(), "wb")))
 			goto err0;
 
@@ -371,7 +370,7 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 			fclose(psFile);
 			goto err1;
 		}
-		doc->displayPage(psOut, pg, 72, 72, 0, !globalParams->getPSUseCropBoxAsPage(), gTrue, gTrue);
+		doc->displayPage(psOut, pg, 72, 72, 0, !globalParams->getPSUseCropBoxAsPage(), true, true);
 		widget->updatePrintStatus(pg + 1, startPage, endPage);
 	}
 	delete psOut;
@@ -383,23 +382,22 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 	{
 		if (!prt->printerName().isEmpty())
 		{
-			printerName = new GString(prt->printerName().toLocal8Bit().constData());
+			printerName = prt->printerName().toStdString();
 		}
 		else
 		{
 			nDests = cupsGetDests(&dests);
-			if (!(dest = cupsGetDest(NULL, NULL, nDests, dests)))
+			if (!(dest = cupsGetDest(nullptr, nullptr, nDests, dests)))
 			{
-				unlink(psFileName->getCString());
-				delete psFileName;
+				unlink(psFileName.c_str());
 				cupsFreeDests(nDests, dests);
 				return XpdfWidget::pdfErrBadPrinter;
 			}
-			printerName = new GString(dest->name);
+			printerName = dest->name;
 			cupsFreeDests(nDests, dests);
 		}
 
-		options  = NULL;
+		options  = nullptr;
 		nOptions = 0;
 
 		switch (paperSize)
@@ -409,19 +407,18 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 		case QPageSize::DLE: paperSizeStr = "DL"; break;
 		case QPageSize::Legal: paperSizeStr = "Legal"; break;
 		case QPageSize::Letter: paperSizeStr = "Letter"; break;
-		default: paperSizeStr = NULL; break;
+		default: paperSizeStr = nullptr; break;
 		}
 		switch (paperSource)
 		{
 		case QPrinter::LargeCapacity: paperSourceStr = "LargeCapacity"; break;
 		case QPrinter::Lower: paperSourceStr = "Lower"; break;
-		default: paperSourceStr = NULL; break;
+		default: paperSourceStr = nullptr; break;
 		}
 		if (paperSizeStr && paperSourceStr)
 		{
-			s = GString::format("{0:s},{1:s}", paperSizeStr, paperSourceStr);
-			cupsAddOption("media", s->getCString(), nOptions, &options);
-			delete s;
+			const auto s = fmt::format("{},{}", paperSizeStr, paperSourceStr);
+			cupsAddOption("media", s.c_str(), nOptions, &options);
 			++nOptions;
 		}
 		else if (paperSizeStr)
@@ -453,28 +450,21 @@ XpdfWidget::ErrorCode printPDF(PDFDoc* doc, QPrinter* prt, int hDPI, int vDPI, X
 			break;
 		}
 
-		if (!cupsPrintFile(printerName->getCString(), psFileName->getCString(), doc->getFileName() ? doc->getFileName()->getCString() : "Xpdf printing", nOptions, options))
+		if (!cupsPrintFile(printerName.c_str(), psFileName.c_str(), doc->getFileName() ? doc->getFileName().c_str() : "Xpdf printing", nOptions, options))
 		{
 			cupsFreeOptions(nOptions, options);
-			delete printerName;
 			goto err1;
 		}
 		cupsFreeOptions(nOptions, options);
 
-		delete printerName;
-
-		unlink(psFileName->getCString());
-		delete psFileName;
+		unlink(psFileName.c_str());
 	}
 
 	return XpdfWidget::pdfOk;
 
 err1:
-	if (psFileName)
-	{
-		unlink(psFileName->getCString());
-		delete psFileName;
-	}
+	if (psFileName.size())
+		unlink(psFileName.c_str());
 err0:
 	return XpdfWidget::pdfErrPrinting;
 }

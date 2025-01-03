@@ -7,9 +7,7 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include "gmempp.h"
-#include "GString.h"
 #include "PDFDoc.h"
 #include "Decrypt.h"
 #include "Error.h"
@@ -33,7 +31,7 @@ SecurityHandler* SecurityHandler::make(PDFDoc* docA, Object* encryptDictA)
 	}
 	else if (filterObj.isName())
 	{
-		error(errSyntaxError, -1, "Couldn't find the '{0:s}' security handler", filterObj.getName());
+		error(errSyntaxError, -1, "Couldn't find the '{}' security handler", filterObj.getName());
 		secHdlr = nullptr;
 	}
 	else
@@ -54,13 +52,13 @@ SecurityHandler::~SecurityHandler()
 {
 }
 
-GBool SecurityHandler::checkEncryption(GString* ownerPassword, GString* userPassword)
+bool SecurityHandler::checkEncryption(const std::string& ownerPassword, const std::string& userPassword)
 {
 	void* authData;
-	GBool ok;
+	bool  ok;
 	int   i;
 
-	if (ownerPassword || userPassword)
+	if (ownerPassword.size() || userPassword.size())
 		authData = makeAuthData(ownerPassword, userPassword);
 	else
 		authData = nullptr;
@@ -87,7 +85,7 @@ GBool SecurityHandler::checkEncryption(GString* ownerPassword, GString* userPass
 class StandardAuthData
 {
 public:
-	StandardAuthData(GString* ownerPasswordA, GString* userPasswordA)
+	StandardAuthData(const std::string& ownerPasswordA, const std::string& userPasswordA)
 	{
 		ownerPassword = ownerPasswordA;
 		userPassword  = userPasswordA;
@@ -95,14 +93,10 @@ public:
 
 	~StandardAuthData()
 	{
-		if (ownerPassword)
-			delete ownerPassword;
-		if (userPassword)
-			delete userPassword;
 	}
 
-	GString* ownerPassword;
-	GString* userPassword;
+	std::string ownerPassword;
+	std::string userPassword;
 };
 
 StandardSecurityHandler::StandardSecurityHandler(PDFDoc* docA, Object* encryptDictA)
@@ -115,7 +109,7 @@ StandardSecurityHandler::StandardSecurityHandler(PDFDoc* docA, Object* encryptDi
 	Object cryptFilterObj, cfmObj, cfLengthObj;
 	Object encryptMetadataObj;
 
-	ok            = gFalse;
+	ok            = false;
 	fileID        = nullptr;
 	ownerKey      = nullptr;
 	userKey       = nullptr;
@@ -147,7 +141,7 @@ StandardSecurityHandler::StandardSecurityHandler(PDFDoc* docA, Object* encryptDi
 		fileKeyLength = 5;
 	else
 		fileKeyLength = lengthObj.getInt() / 8;
-	encryptMetadata = gTrue;
+	encryptMetadata = true;
 
 	//--- check for a crypt filter (which can modify the parameters)
 	//~ this currently only handles a subset of crypt filter functionality
@@ -218,7 +212,7 @@ StandardSecurityHandler::StandardSecurityHandler(PDFDoc* docA, Object* encryptDi
 	//--- version-specific parameters
 	if (encRevision <= 4)
 	{
-		if (ownerKeyObj.getString()->getLength() != 32 || userKeyObj.getString()->getLength() != 32)
+		if (ownerKeyObj.getString().size() != 32 || userKeyObj.getString().size() != 32)
 		{
 			error(errSyntaxError, -1, "Invalid encryption key length");
 			// this is non-fatal -- see below
@@ -227,54 +221,54 @@ StandardSecurityHandler::StandardSecurityHandler(PDFDoc* docA, Object* encryptDi
 	else if (encRevision <= 6)
 	{
 		// the spec says 48 bytes, but Acrobat pads them out longer
-		if (ownerKeyObj.getString()->getLength() < 48 || userKeyObj.getString()->getLength() < 48 || !ownerEncObj.isString() || ownerEncObj.getString()->getLength() != 32 || !userEncObj.isString() || userEncObj.getString()->getLength() != 32)
+		if (ownerKeyObj.getString().size() < 48 || userKeyObj.getString().size() < 48 || !ownerEncObj.isString() || ownerEncObj.getString().size() != 32 || !userEncObj.isString() || userEncObj.getString().size() != 32)
 		{
 			error(errSyntaxError, -1, "Invalid encryption key length");
 			goto done;
 		}
 	}
 	permFlags = permObj.getInt();
-	ownerKey  = ownerKeyObj.getString()->copy();
-	userKey   = userKeyObj.getString()->copy();
+	ownerKey  = ownerKeyObj.getString();
+	userKey   = userKeyObj.getString();
 	if (encRevision <= 4)
 	{
 		// Adobe apparently zero-pads the U value (and maybe the O value?)
 		// if it's short
-		while (ownerKey->getLength() < 32)
-			ownerKey->append((char)0x00);
-		while (userKey->getLength() < 32)
-			userKey->append((char)0x00);
+		while (ownerKey.size() < 32)
+			ownerKey += (char)0x00;
+		while (userKey.size() < 32)
+			userKey += (char)0x00;
 	}
 	if (encVersion >= 1 && encVersion <= 2 && encRevision >= 2 && encRevision <= 3)
 	{
 		if (fileIDObj.isArray())
 		{
 			if (fileIDObj.arrayGet(0, &fileIDObj1)->isString())
-				fileID = fileIDObj1.getString()->copy();
+				fileID = fileIDObj1.getString();
 			else
-				fileID = new GString();
+				fileID.clear();
 			fileIDObj1.free();
 		}
 		else
 		{
-			fileID = new GString();
+			fileID.clear();
 		}
 		if (fileKeyLength > 16 || fileKeyLength <= 0)
 			fileKeyLength = 16;
-		ok = gTrue;
+		ok = true;
 	}
 	else if (encVersion == 5 && (encRevision == 5 || encRevision == 6))
 	{
-		fileID   = new GString(); // unused for V=R=5
-		ownerEnc = ownerEncObj.getString()->copy();
-		userEnc  = userEncObj.getString()->copy();
+		fileID.clear(); // unused for V=R=5
+		ownerEnc = ownerEncObj.getString();
+		userEnc  = userEncObj.getString();
 		if (fileKeyLength > 32 || fileKeyLength <= 0)
 			fileKeyLength = 32;
-		ok = gTrue;
+		ok = true;
 	}
 	else
 	{
-		error(errUnimplemented, -1, "Unsupported version/revision ({0:d}/{1:d}) of Standard security handler", encVersion, encRevision);
+		error(errUnimplemented, -1, "Unsupported version/revision ({}/{}) of Standard security handler", encVersion, encRevision);
 	}
 
 done:
@@ -291,36 +285,26 @@ done:
 
 StandardSecurityHandler::~StandardSecurityHandler()
 {
-	if (fileID)
-		delete fileID;
-	if (ownerKey)
-		delete ownerKey;
-	if (userKey)
-		delete userKey;
-	if (ownerEnc)
-		delete ownerEnc;
-	if (userEnc)
-		delete userEnc;
 }
 
-GBool StandardSecurityHandler::isUnencrypted()
+bool StandardSecurityHandler::isUnencrypted()
 {
 	return encVersion == -1 && encRevision == -1;
 }
 
-void* StandardSecurityHandler::makeAuthData(GString* ownerPassword, GString* userPassword)
+void* StandardSecurityHandler::makeAuthData(const std::string& ownerPassword, const std::string& userPassword)
 {
-	return new StandardAuthData(ownerPassword ? ownerPassword->copy() : (GString*)nullptr, userPassword ? userPassword->copy() : (GString*)nullptr);
+	return new StandardAuthData(ownerPassword, userPassword);
 }
 
 void* StandardSecurityHandler::getAuthData()
 {
-	PDFCore* core;
-	GString* password;
+	PDFCore*    core;
+	std::string password;
 
-	if (!(core = doc->getCore()) || !(password = core->getPassword()))
+	if (!(core = doc->getCore()) || (password = core->getPassword()).empty())
 		return nullptr;
-	return new StandardAuthData(password, password->copy());
+	return new StandardAuthData(password, password);
 }
 
 void StandardSecurityHandler::freeAuthData(void* authData)
@@ -328,12 +312,12 @@ void StandardSecurityHandler::freeAuthData(void* authData)
 	delete (StandardAuthData*)authData;
 }
 
-GBool StandardSecurityHandler::authorize(void* authData)
+bool StandardSecurityHandler::authorize(void* authData)
 {
-	GString *ownerPassword, *userPassword;
+	std::string ownerPassword, userPassword;
 
 	if (!ok)
-		return gFalse;
+		return false;
 	if (authData)
 	{
 		ownerPassword = ((StandardAuthData*)authData)->ownerPassword;
@@ -341,10 +325,8 @@ GBool StandardSecurityHandler::authorize(void* authData)
 	}
 	else
 	{
-		ownerPassword = nullptr;
-		userPassword  = nullptr;
 	}
 	if (!Decrypt::makeFileKey(encVersion, encRevision, fileKeyLength, ownerKey, userKey, ownerEnc, userEnc, permFlags, fileID, ownerPassword, userPassword, fileKey, encryptMetadata, &ownerPasswordOk))
-		return gFalse;
-	return gTrue;
+		return false;
+	return true;
 }

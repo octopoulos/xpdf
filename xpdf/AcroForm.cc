@@ -7,12 +7,10 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdlib.h>
 #include <math.h>
 #include "gmem.h"
 #include "gmempp.h"
-#include "GString.h"
 #include "GList.h"
 #include "GlobalParams.h"
 #include "Error.h"
@@ -76,7 +74,7 @@
 // 5 bars + 5 spaces -- each can be wide (1) or narrow (0)
 // (there are always exactly 3 wide elements;
 // the last space is always narrow)
-static Guchar code3Of9Data[128][10] = {
+static uint8_t code3Of9Data[128][10] = {
 	{0,  0, 0, 0, 0, 0, 0, 0, 0, 0}, // 0x00
 	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -208,7 +206,7 @@ static Guchar code3Of9Data[128][10] = {
 };
 
 // 3 bars + 3 spaces -- each can be 1, 2, 3, or 4 units wide
-static Guchar code128Data[107][6] = {
+static uint8_t code128Data[107][6] = {
 	{2,  1, 2, 2, 2, 2},
 	{ 2, 2, 2, 1, 2, 2},
 	{ 2, 2, 2, 2, 2, 1},
@@ -363,7 +361,7 @@ AcroForm* AcroForm::load(PDFDoc* docA, Catalog* catalog, Object* acroFormObjA)
 			{
 				acroForm->xfaScanner = XFAScanner::load(&xfaObj);
 				if (!catalog->getNeedsRendering())
-					acroForm->isStaticXFA = gTrue;
+					acroForm->isStaticXFA = true;
 			}
 			xfaObj.free();
 		}
@@ -479,11 +477,11 @@ AcroForm::AcroForm(PDFDoc* docA, Object* acroFormObjA)
 {
 	doc = docA;
 	acroFormObjA->copy(&acroFormObj);
-	needAppearances = gFalse;
+	needAppearances = false;
 	annotPages      = new GList();
 	fields          = new GList();
 	xfaScanner      = nullptr;
-	isStaticXFA     = gFalse;
+	isStaticXFA     = false;
 }
 
 AcroForm::~AcroForm()
@@ -543,7 +541,7 @@ void AcroForm::scanField(Object* fieldRef, char* touchedObjs)
 {
 	AcroFormField* field;
 	Object         fieldObj, kidsObj, kidRef, kidObj, subtypeObj;
-	GBool          isTerminal;
+	bool           isTerminal;
 	int            i;
 
 	// check for an object loop
@@ -566,17 +564,17 @@ void AcroForm::scanField(Object* fieldRef, char* touchedObjs)
 	// reference (i.e., they're all form fields, not widget
 	// annotations), then this is a non-terminal field, and we need to
 	// scan the kids
-	isTerminal = gTrue;
+	isTerminal = true;
 	if (fieldObj.dictLookup("Kids", &kidsObj)->isArray())
 	{
-		isTerminal = gFalse;
+		isTerminal = false;
 		for (i = 0; !isTerminal && i < kidsObj.arrayGetLength(); ++i)
 		{
 			kidsObj.arrayGet(i, &kidObj);
 			if (kidObj.isDict())
 			{
 				if (kidObj.dictLookup("Parent", &subtypeObj)->isNull())
-					isTerminal = gTrue;
+					isTerminal = true;
 				subtypeObj.free();
 			}
 			kidObj.free();
@@ -602,11 +600,9 @@ void AcroForm::scanField(Object* fieldRef, char* touchedObjs)
 	fieldObj.free();
 }
 
-void AcroForm::draw(int pageNum, Gfx* gfx, GBool printing)
+void AcroForm::draw(int pageNum, Gfx* gfx, bool printing)
 {
-	int i;
-
-	for (i = 0; i < fields->getLength(); ++i)
+	for (int i = 0; i < fields->getLength(); ++i)
 		((AcroFormField*)fields->get(i))->draw(pageNum, gfx, printing);
 }
 
@@ -624,9 +620,8 @@ AcroFormField* AcroForm::findField(int pg, double x, double y)
 {
 	AcroFormField* field;
 	double         llx, lly, urx, ury;
-	int            i;
 
-	for (i = 0; i < fields->getLength(); ++i)
+	for (int i = 0; i < fields->getLength(); ++i)
 	{
 		field = (AcroFormField*)fields->get(i);
 		if (field->getPageNum() == pg)
@@ -643,9 +638,8 @@ int AcroForm::findFieldIdx(int pg, double x, double y)
 {
 	AcroFormField* field;
 	double         llx, lly, urx, ury;
-	int            i;
 
-	for (i = 0; i < fields->getLength(); ++i)
+	for (int i = 0; i < fields->getLength(); ++i)
 	{
 		field = (AcroFormField*)fields->get(i);
 		if (field->getPageNum() == pg)
@@ -664,11 +658,9 @@ int AcroForm::findFieldIdx(int pg, double x, double y)
 
 AcroFormField* AcroFormField::load(AcroForm* acroFormA, Object* fieldRefA)
 {
-	GString*          typeStr;
 	TextString*       nameA;
-	GString*          xfaName;
-	Guint             flagsA;
-	GBool             haveFlags, typeFromParentA;
+	uint32_t          flagsA;
+	bool              haveFlags, typeFromParentA;
 	Object            fieldObjA, parentObj, parentObj2, obj1, obj2;
 	AcroFormFieldType typeA;
 	XFAField*         xfaFieldA;
@@ -685,27 +677,27 @@ AcroFormField* AcroFormField::load(AcroForm* acroFormA, Object* fieldRefA)
 		nameA = new TextString();
 	obj1.free();
 
+	std::string typeStr;
 	if (fieldObjA.dictLookup("FT", &obj1)->isName())
 	{
-		typeStr         = new GString(obj1.getName());
-		typeFromParentA = gFalse;
+		typeStr         = obj1.getName();
+		typeFromParentA = false;
 	}
 	else
 	{
-		typeStr         = nullptr;
-		typeFromParentA = gTrue;
+		typeFromParentA = true;
 	}
 	obj1.free();
 
 	if (fieldObjA.dictLookup("Ff", &obj1)->isInt())
 	{
-		flagsA    = (Guint)obj1.getInt();
-		haveFlags = gTrue;
+		flagsA    = (uint32_t)obj1.getInt();
+		haveFlags = true;
 	}
 	else
 	{
 		flagsA    = 0;
-		haveFlags = gFalse;
+		haveFlags = false;
 	}
 	obj1.free();
 
@@ -723,10 +715,10 @@ AcroFormField* AcroFormField::load(AcroForm* acroFormA, Object* fieldRefA)
 		}
 		obj1.free();
 
-		if (!typeStr)
+		if (typeStr.empty())
 		{
 			if (parentObj.dictLookup("FT", &obj1)->isName())
-				typeStr = new GString(obj1.getName());
+				typeStr = obj1.getName();
 			obj1.free();
 		}
 
@@ -734,8 +726,8 @@ AcroFormField* AcroFormField::load(AcroForm* acroFormA, Object* fieldRefA)
 		{
 			if (parentObj.dictLookup("Ff", &obj1)->isInt())
 			{
-				flagsA    = (Guint)obj1.getInt();
-				haveFlags = gTrue;
+				flagsA    = (uint32_t)obj1.getInt();
+				haveFlags = true;
 			}
 			obj1.free();
 		}
@@ -748,7 +740,7 @@ AcroFormField* AcroFormField::load(AcroForm* acroFormA, Object* fieldRefA)
 	}
 	parentObj.free();
 
-	if (!typeStr)
+	if (typeStr.empty())
 	{
 		error(errSyntaxError, -1, "Missing type in AcroForm field");
 		goto err1;
@@ -761,39 +753,38 @@ AcroFormField* AcroFormField::load(AcroForm* acroFormA, Object* fieldRefA)
 	{
 		// convert field name to UTF-8, and remove segments that start
 		// with '#' -- to match the XFA field name
-		xfaName = nameA->toUTF8();
-		i0      = 0;
-		while (i0 < xfaName->getLength())
+		auto xfaName = nameA->toUTF8();
+		i0           = 0;
+		while (i0 < xfaName.size())
 		{
 			i1 = i0;
-			while (i1 < xfaName->getLength())
+			while (i1 < xfaName.size())
 			{
-				if (xfaName->getChar(i1) == '.')
+				if (xfaName.at(i1) == '.')
 				{
 					++i1;
 					break;
 				}
 				++i1;
 			}
-			if (xfaName->getChar(i0) == '#')
-				xfaName->del(i0, i1 - i0);
+			if (xfaName.at(i0) == '#')
+				xfaName.erase(i0, i1 - i0);
 			else
 				i0 = i1;
 		}
 		xfaFieldA = acroFormA->xfaScanner->findField(xfaName);
-		delete xfaName;
 	}
 
 	//----- check for a radio button
 
 	// this is a kludge: if we see a Btn-type field with kids, and the
 	// Ff entry is missing, assume the kids are radio buttons
-	if (typeFromParentA && !typeStr->cmp("Btn") && !haveFlags)
+	if (typeFromParentA && typeStr == "Btn" && !haveFlags)
 		flagsA = acroFormFlagRadio;
 
 	//----- determine field type
 
-	if (!typeStr->cmp("Btn"))
+	if (typeStr == "Btn")
 	{
 		if (flagsA & acroFormFlagPushbutton)
 			typeA = acroFormFieldPushbutton;
@@ -802,7 +793,7 @@ AcroFormField* AcroFormField::load(AcroForm* acroFormA, Object* fieldRefA)
 		else
 			typeA = acroFormFieldCheckbox;
 	}
-	else if (!typeStr->cmp("Tx"))
+	else if (typeStr == "Tx")
 	{
 		if (xfaFieldA && xfaFieldA->getBarcodeInfo())
 			typeA = acroFormFieldBarcode;
@@ -813,14 +804,14 @@ AcroFormField* AcroFormField::load(AcroForm* acroFormA, Object* fieldRefA)
 		else
 			typeA = acroFormFieldText;
 	}
-	else if (!typeStr->cmp("Ch"))
+	else if (typeStr == "Ch")
 	{
 		if (flagsA & acroFormFlagCombo)
 			typeA = acroFormFieldComboBox;
 		else
 			typeA = acroFormFieldListBox;
 	}
-	else if (!typeStr->cmp("Sig"))
+	else if (typeStr == "Sig")
 	{
 		typeA = acroFormFieldSignature;
 	}
@@ -829,20 +820,18 @@ AcroFormField* AcroFormField::load(AcroForm* acroFormA, Object* fieldRefA)
 		error(errSyntaxError, -1, "Invalid type in AcroForm field");
 		goto err1;
 	}
-	delete typeStr;
 
 	field = new AcroFormField(acroFormA, fieldRefA, &fieldObjA, typeA, nameA, flagsA, typeFromParentA, xfaFieldA);
 	fieldObjA.free();
 	return field;
 
 err1:
-	delete typeStr;
 	delete nameA;
 	fieldObjA.free();
 	return nullptr;
 }
 
-AcroFormField::AcroFormField(AcroForm* acroFormA, Object* fieldRefA, Object* fieldObjA, AcroFormFieldType typeA, TextString* nameA, Guint flagsA, GBool typeFromParentA, XFAField* xfaFieldA)
+AcroFormField::AcroFormField(AcroForm* acroFormA, Object* fieldRefA, Object* fieldObjA, AcroFormFieldType typeA, TextString* nameA, uint32_t flagsA, bool typeFromParentA, XFAField* xfaFieldA)
 {
 	acroForm = acroFormA;
 	fieldRefA->copy(&fieldRef);
@@ -918,13 +907,10 @@ Unicode* AcroFormField::getName(int* length)
 Unicode* AcroFormField::getValue(int* length)
 {
 	Object      obj1, obj2;
-	Unicode*    u;
-	char*       s;
+	Unicode*    u = nullptr;
 	TextString* ts;
-	GString*    gs;
 	int         n, i;
 
-	u       = nullptr;
 	*length = 0;
 
 	// if this field has a counterpart in the XFA form, take the value
@@ -932,7 +918,7 @@ Unicode* AcroFormField::getValue(int* length)
 	// AcroForm value)
 	if (xfaField)
 	{
-		if (xfaField->getValue())
+		if (xfaField->getValue().size())
 			u = utf8ToUnicode(xfaField->getValue(), length);
 
 		// no XFA form - take the AcroForm value
@@ -942,9 +928,9 @@ Unicode* AcroFormField::getValue(int* length)
 		fieldLookup("V", &obj1);
 		if (obj1.isName())
 		{
-			s = obj1.getName();
-			n = (int)strlen(s);
-			u = (Unicode*)gmallocn(n, sizeof(Unicode));
+			char* s = obj1.getName();
+			n       = (int)strlen(s);
+			u       = (Unicode*)gmallocn(n, sizeof(Unicode));
 			for (i = 0; i < n; ++i)
 				u[i] = s[i] & 0xff;
 			*length = n;
@@ -963,11 +949,11 @@ Unicode* AcroFormField::getValue(int* length)
 			obj1.dictLookup("Contents", &obj2);
 			if (obj2.isString())
 			{
-				gs = obj2.getString();
-				n  = gs->getLength();
-				u  = (Unicode*)gmallocn(n, sizeof(Unicode));
+				const auto gs = obj2.getString();
+				n             = TO_INT(gs.size());
+				u             = (Unicode*)gmallocn(n, sizeof(Unicode));
 				for (i = 0; i < n; ++i)
-					u[i] = gs->getChar(i) & 0xff;
+					u[i] = gs.at(i) & 0xff;
 				*length = n;
 			}
 			obj2.free();
@@ -1028,10 +1014,8 @@ void AcroFormField::getBBox(double* llx, double* lly, double* urx, double* ury)
 void AcroFormField::getFont(Ref* fontID, double* fontSize)
 {
 	Object daObj;
-	GList* daToks;
-	char*  fontTag;
 	double tfSize, m2, m3;
-	int    tfPos, tmPos, i;
+	int    tfPos, tmPos;
 
 	fontID->num = fontID->gen = -1;
 	*fontSize                 = 0;
@@ -1039,22 +1023,22 @@ void AcroFormField::getFont(Ref* fontID, double* fontSize)
 	if (fieldLookup("DA", &daObj)->isString())
 	{
 		// parse the default appearance string
-		daToks = tokenize(daObj.getString());
+		const auto daToks = tokenize(daObj.getString());
 		tfPos = tmPos = -1;
-		for (i = 2; i < daToks->getLength(); ++i)
-			if (!((GString*)daToks->get(i))->cmp("Tf"))
+		for (int i = 2; i < daToks.size(); ++i)
+			if (daToks.at(i) == "Tf")
 				tfPos = i - 2;
-			else if (i >= 6 && !((GString*)daToks->get(i))->cmp("Tm"))
+			else if (i >= 6 && daToks.at(i) == "Tm")
 				tmPos = i - 6;
 
 		// handle the Tf operator
 		if (tfPos >= 0)
 		{
-			fontTag = ((GString*)daToks->get(tfPos))->getCString();
+			const char* fontTag = daToks.at(tfPos).c_str();
 			if (*fontTag == '/')
 				++fontTag;
 			*fontID = findFontName(fontTag);
-			tfSize  = atof(((GString*)daToks->get(tfPos + 1))->getCString());
+			tfSize  = atof(daToks.at(tfPos + 1).c_str());
 		}
 		else
 		{
@@ -1065,26 +1049,24 @@ void AcroFormField::getFont(Ref* fontID, double* fontSize)
 		if (tmPos >= 0)
 		{
 			// transformed font size = sqrt(m[2]^2 + m[3]^2) * size
-			m2 = atof(((GString*)daToks->get(tfPos + 2))->getCString());
-			m3 = atof(((GString*)daToks->get(tfPos + 3))->getCString());
+			m2 = atof(daToks.at(tfPos + 2).c_str());
+			m3 = atof(daToks.at(tfPos + 3).c_str());
 			tfSize *= sqrt(m2 * m2 + m3 * m3);
 		}
 		*fontSize = tfSize;
-
-		deleteGList(daToks, GString);
 	}
 
 	daObj.free();
 }
 
-Ref AcroFormField::findFontName(char* fontTag)
+Ref AcroFormField::findFontName(const char* fontTag)
 {
 	Object drObj, fontDictObj, fontObj, baseFontObj;
 	Ref    fontID;
-	GBool  found;
+	bool   found;
 
 	fontID.num = fontID.gen = -1;
-	found                   = gFalse;
+	found                   = false;
 
 	if (fieldObj.dictLookup("DR", &drObj)->isDict())
 	{
@@ -1093,7 +1075,7 @@ Ref AcroFormField::findFontName(char* fontTag)
 			if (fontDictObj.dictLookupNF(fontTag, &fontObj)->isRef())
 			{
 				fontID = fontObj.getRef();
-				found  = gTrue;
+				found  = true;
 			}
 			fontObj.free();
 		}
@@ -1120,36 +1102,31 @@ Ref AcroFormField::findFontName(char* fontTag)
 void AcroFormField::getColor(double* red, double* green, double* blue)
 {
 	Object daObj;
-	GList* daToks;
-	int    i;
 
 	*red = *green = *blue = 0;
 
 	if (fieldLookup("DA", &daObj)->isString())
 	{
 		// parse the default appearance string
-		daToks = tokenize(daObj.getString());
-		for (i = 1; i < daToks->getLength(); ++i)
+		const auto daToks = tokenize(daObj.getString());
+		for (int i = 1; i < daToks.size(); ++i)
 		{
 			// handle the g operator
-			if (!((GString*)daToks->get(i))->cmp("g"))
+			if (daToks.at(i) == "g")
 			{
-				*red = *green = *blue =
-				    atof(((GString*)daToks->get(i - 1))->getCString());
+				*red = *green = *blue = atof(daToks.at(i - 1).c_str());
 				break;
 
 				// handle the rg operator
 			}
-			else if (i >= 3 && !((GString*)daToks->get(i))->cmp("rg"))
+			else if (i >= 3 && daToks.at(i) == "rg")
 			{
-				*red   = atof(((GString*)daToks->get(i - 3))->getCString());
-				*green = atof(((GString*)daToks->get(i - 2))->getCString());
-				*blue  = atof(((GString*)daToks->get(i - 1))->getCString());
+				*red   = atof(daToks.at(i - 3).c_str());
+				*green = atof(daToks.at(i - 2).c_str());
+				*blue  = atof(daToks.at(i - 1).c_str());
 				break;
 			}
 		}
-
-		deleteGList(daToks, GString);
 	}
 
 	daObj.free();
@@ -1168,7 +1145,7 @@ int AcroFormField::getMaxLen()
 	return len;
 }
 
-void AcroFormField::draw(int pageNum, Gfx* gfx, GBool printing)
+void AcroFormField::draw(int pageNum, Gfx* gfx, bool printing)
 {
 	Object kidsObj, annotRef, annotObj;
 	int    i;
@@ -1192,12 +1169,12 @@ void AcroFormField::draw(int pageNum, Gfx* gfx, GBool printing)
 	kidsObj.free();
 }
 
-void AcroFormField::drawAnnot(int pageNum, Gfx* gfx, GBool printing, Object* annotRef, Object* annotObj)
+void AcroFormField::drawAnnot(int pageNum, Gfx* gfx, bool printing, Object* annotRef, Object* annotObj)
 {
 	Object obj1, obj2;
 	double xMin, yMin, xMax, yMax, t;
 	int    annotFlags;
-	GBool  oc, render;
+	bool   oc, render;
 
 	if (!annotObj->isDict())
 		return;
@@ -1269,19 +1246,19 @@ void AcroFormField::drawAnnot(int pageNum, Gfx* gfx, GBool printing, Object* ann
 
 	//----- draw it
 
-	render = gFalse;
+	render = false;
 	if (acroForm->needAppearances)
 	{
-		render = gTrue;
+		render = true;
 	}
-	else if (xfaField && xfaField->getValue())
+	else if (xfaField && xfaField->getValue().size())
 	{
-		render = gTrue;
+		render = true;
 	}
 	else
 	{
 		if (!annotObj->dictLookup("AP", &obj1)->isDict())
-			render = gTrue;
+			render = true;
 		obj1.free();
 	}
 	if (render)
@@ -1331,31 +1308,30 @@ void AcroFormField::drawExistingAppearance(Gfx* gfx, Dict* annot, double xMin, d
 // Regenerate the appearance for this field, and draw it.
 void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double yMin, double xMax, double yMax)
 {
-	GString*        appearBuf;
 	Object          appearance, mkObj, ftObj, appearDict, drObj, apObj, asObj;
 	Object          resources, fontResources, defaultFont, gfxStateDict;
 	Object          obj1, obj2, obj3, obj4;
 	Dict*           mkDict;
 	MemStream*      appearStream;
 	GfxFontDict*    fontDict;
-	GBool           hasCaption;
+	bool            hasCaption;
 	double          dx, dy, r;
-	GString *       val, *caption, *da;
-	GString**       text;
-	GBool           done;
-	GBool*          selection;
+	bool            done;
+	bool*           selection;
 	AnnotBorderType borderType;
 	double          borderWidth;
 	double*         borderDash;
-	GString*        appearanceState;
 	int             borderDashLength, rot, quadding, vAlign, comb, nOptions, topIdx, i;
 
-	appearBuf = new GString();
+	std::string appearBuf;
+	std::string da;
+	std::string val;
+
 #if 0 //~debug
-	appearBuf->appendf("1 1 0 rg 0 0 {0:.4f} {1:.4f} re f\n", xMax - xMin, yMax - yMin);
+	appearBuf += fmt::format("1 1 0 rg 0 0 {:.4f} {:.4f} re f\n", xMax - xMin, yMax - yMin);
 #endif
 #if 0 //~debug
-	appearBuf->appendf("1 1 0 RG 0 0 {0:.4f} {1:.4f} re s\n", xMax - xMin, yMax - yMin);
+	appearBuf += fmt::format("1 1 0 RG 0 0 {:.4f} {:.4f} re s\n", xMax - xMin, yMax - yMin);
 #endif
 
 	// get the appearance characteristics (MK) dictionary
@@ -1369,8 +1345,8 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 	{
 		if (mkDict->lookup("BG", &obj1)->isArray() && obj1.arrayGetLength() > 0)
 		{
-			setColor(obj1.getArray(), gTrue, 0, appearBuf);
-			appearBuf->appendf("0 0 {0:.4f} {1:.4f} re f\n", xMax - xMin, yMax - yMin);
+			setColor(obj1.getArray(), true, 0, appearBuf);
+			appearBuf += fmt::format("0 0 {:.4f} {:.4f} re f\n", xMax - xMin, yMax - yMin);
 		}
 		obj1.free();
 	}
@@ -1479,25 +1455,25 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 					switch (borderType)
 					{
 					case annotBorderDashed:
-						appearBuf->append("[");
+						appearBuf += "[";
 						for (i = 0; i < borderDashLength; ++i)
-							appearBuf->appendf(" {0:.4f}", borderDash[i]);
-						appearBuf->append("] 0 d\n");
+							appearBuf += fmt::format(" {:.4f}", borderDash[i]);
+						appearBuf += "] 0 d\n";
 						// fall through to the solid case
 					case annotBorderSolid:
 					case annotBorderUnderlined:
-						appearBuf->appendf("{0:.4f} w\n", borderWidth);
-						setColor(obj1.getArray(), gFalse, 0, appearBuf);
+						appearBuf += fmt::format("{:.4f} w\n", borderWidth);
+						setColor(obj1.getArray(), false, 0, appearBuf);
 						drawCircle(0.5 * dx, 0.5 * dy, r - 0.5 * borderWidth, "s", appearBuf);
 						break;
 					case annotBorderBeveled:
 					case annotBorderInset:
-						appearBuf->appendf("{0:.4f} w\n", 0.5 * borderWidth);
-						setColor(obj1.getArray(), gFalse, 0, appearBuf);
+						appearBuf += fmt::format("{:.4f} w\n", 0.5 * borderWidth);
+						setColor(obj1.getArray(), false, 0, appearBuf);
 						drawCircle(0.5 * dx, 0.5 * dy, r - 0.25 * borderWidth, "s", appearBuf);
-						setColor(obj1.getArray(), gFalse, borderType == annotBorderBeveled ? 1 : -1, appearBuf);
+						setColor(obj1.getArray(), false, borderType == annotBorderBeveled ? 1 : -1, appearBuf);
 						drawCircleTopLeft(0.5 * dx, 0.5 * dy, r - 0.75 * borderWidth, appearBuf);
-						setColor(obj1.getArray(), gFalse, borderType == annotBorderBeveled ? -1 : 1, appearBuf);
+						setColor(obj1.getArray(), false, borderType == annotBorderBeveled ? -1 : 1, appearBuf);
 						drawCircleBottomRight(0.5 * dx, 0.5 * dy, r - 0.75 * borderWidth, appearBuf);
 						break;
 					}
@@ -1507,44 +1483,44 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 					switch (borderType)
 					{
 					case annotBorderDashed:
-						appearBuf->append("[");
+						appearBuf += "[";
 						for (i = 0; i < borderDashLength; ++i)
-							appearBuf->appendf(" {0:.4f}", borderDash[i]);
-						appearBuf->append("] 0 d\n");
+							appearBuf += fmt::format(" {:.4f}", borderDash[i]);
+						appearBuf += "] 0 d\n";
 						// fall through to the solid case
 					case annotBorderSolid:
-						appearBuf->appendf("{0:.4f} w\n", borderWidth);
-						setColor(obj1.getArray(), gFalse, 0, appearBuf);
-						appearBuf->appendf("{0:.4f} {0:.4f} {1:.4f} {2:.4f} re s\n", 0.5 * borderWidth, dx - borderWidth, dy - borderWidth);
+						appearBuf += fmt::format("{:.4f} w\n", borderWidth);
+						setColor(obj1.getArray(), false, 0, appearBuf);
+						appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} re s\n", 0.5 * borderWidth, 0.5 * borderWidth, dx - borderWidth, dy - borderWidth);
 						break;
 					case annotBorderBeveled:
 					case annotBorderInset:
-						setColor(obj1.getArray(), gTrue, borderType == annotBorderBeveled ? 1 : -1, appearBuf);
-						appearBuf->append("0 0 m\n");
-						appearBuf->appendf("0 {0:.4f} l\n", dy);
-						appearBuf->appendf("{0:.4f} {1:.4f} l\n", dx, dy);
-						appearBuf->appendf("{0:.4f} {1:.4f} l\n", dx - borderWidth, dy - borderWidth);
-						appearBuf->appendf("{0:.4f} {1:.4f} l\n", borderWidth, dy - borderWidth);
-						appearBuf->appendf("{0:.4f} {0:.4f} l\n", borderWidth);
-						appearBuf->append("f\n");
-						setColor(obj1.getArray(), gTrue, borderType == annotBorderBeveled ? -1 : 1, appearBuf);
-						appearBuf->append("0 0 m\n");
-						appearBuf->appendf("{0:.4f} 0 l\n", dx);
-						appearBuf->appendf("{0:.4f} {1:.4f} l\n", dx, dy);
-						appearBuf->appendf("{0:.4f} {1:.4f} l\n", dx - borderWidth, dy - borderWidth);
-						appearBuf->appendf("{0:.4f} {1:.4f} l\n", dx - borderWidth, borderWidth);
-						appearBuf->appendf("{0:.4f} {0:.4f} l\n", borderWidth);
-						appearBuf->append("f\n");
+						setColor(obj1.getArray(), true, borderType == annotBorderBeveled ? 1 : -1, appearBuf);
+						appearBuf += "0 0 m\n";
+						appearBuf += fmt::format("0 {:.4f} l\n", dy);
+						appearBuf += fmt::format("{:.4f} {:.4f} l\n", dx, dy);
+						appearBuf += fmt::format("{:.4f} {:.4f} l\n", dx - borderWidth, dy - borderWidth);
+						appearBuf += fmt::format("{:.4f} {:.4f} l\n", borderWidth, dy - borderWidth);
+						appearBuf += fmt::format("{:.4f} {:.4f} l\n", borderWidth, borderWidth);
+						appearBuf += "f\n";
+						setColor(obj1.getArray(), true, borderType == annotBorderBeveled ? -1 : 1, appearBuf);
+						appearBuf += "0 0 m\n";
+						appearBuf += fmt::format("{:.4f} 0 l\n", dx);
+						appearBuf += fmt::format("{:.4f} {:.4f} l\n", dx, dy);
+						appearBuf += fmt::format("{:.4f} {:.4f} l\n", dx - borderWidth, dy - borderWidth);
+						appearBuf += fmt::format("{:.4f} {:.4f} l\n", dx - borderWidth, borderWidth);
+						appearBuf += fmt::format("{:.4f} {:.4f} l\n", borderWidth, borderWidth);
+						appearBuf += "f\n";
 						break;
 					case annotBorderUnderlined:
-						appearBuf->appendf("{0:.4f} w\n", borderWidth);
-						setColor(obj1.getArray(), gFalse, 0, appearBuf);
-						appearBuf->appendf("0 0 m {0:.4f} 0 l s\n", dx);
+						appearBuf += fmt::format("{:.4f} w\n", borderWidth);
+						setColor(obj1.getArray(), false, 0, appearBuf);
+						appearBuf += fmt::format("0 0 m {:.4f} 0 l s\n", dx);
 						break;
 					}
 
 					// clip to the inside of the border
-					appearBuf->appendf("{0:.4f} {0:.4f} {1:.4f} {2:.4f} re W n\n", borderWidth, dx - 2 * borderWidth, dy - 2 * borderWidth);
+					appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} re W n\n", borderWidth, borderWidth, dx - 2 * borderWidth, dy - 2 * borderWidth);
 				}
 			}
 			obj1.free();
@@ -1564,9 +1540,7 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 
 	// get the default appearance string
 	if (fieldLookup("DA", &obj1)->isString())
-		da = obj1.getString()->copy();
-	else
-		da = nullptr;
+		da = obj1.getString();
 	obj1.free();
 
 	// get the rotation value
@@ -1581,20 +1555,20 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 	// get the appearance state
 	annot->lookup("AP", &apObj);
 	annot->lookup("AS", &asObj);
-	appearanceState = nullptr;
+	std::string appearanceState;
 	if (asObj.isName())
 	{
-		appearanceState = new GString(asObj.getName());
+		appearanceState = asObj.getName();
 	}
 	else if (apObj.isDict())
 	{
 		apObj.dictLookup("N", &obj1);
 		if (obj1.isDict() && obj1.dictGetLength() == 1)
-			appearanceState = new GString(obj1.dictGetKey(0));
+			appearanceState = obj1.dictGetKey(0);
 		obj1.free();
 	}
-	if (!appearanceState)
-		appearanceState = new GString("Off");
+	if (appearanceState.empty())
+		appearanceState = "Off";
 	asObj.free();
 	apObj.free();
 
@@ -1604,22 +1578,22 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 	// draw the field contents
 	if (ftObj.isName("Btn"))
 	{
-		caption = nullptr;
+		std::string caption;
 		if (mkDict)
 		{
 			if (mkDict->lookup("CA", &obj1)->isString())
-				caption = obj1.getString()->copy();
+				caption = obj1.getString();
 			obj1.free();
 		}
 		// radio button
 		if (flags & acroFormFlagRadio)
 		{
 			//~ Acrobat doesn't draw a caption if there is no AP dict (?)
-			if (value && unicodeStringEqual(value, valueLength, appearanceState->getCString()))
+			if (value && unicodeStringEqual(value, valueLength, appearanceState.c_str()))
 			{
-				if (caption)
+				if (caption.size())
 				{
-					drawText(caption, da, fontDict, gFalse, 0, acroFormQuadCenter, acroFormVAlignMiddleNoDescender, gFalse, gTrue, rot, 0, 0, xMax - xMin, yMax - yMin, borderWidth, gFalse, appearBuf);
+					drawText(caption, da, fontDict, false, 0, acroFormQuadCenter, acroFormVAlignMiddleNoDescender, false, true, rot, 0, 0, xMax - xMin, yMax - yMin, borderWidth, false, appearBuf);
 				}
 				else if (mkDict)
 				{
@@ -1627,7 +1601,7 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 					{
 						dx = xMax - xMin;
 						dy = yMax - yMin;
-						setColor(obj2.getArray(), gTrue, 0, appearBuf);
+						setColor(obj2.getArray(), true, 0, appearBuf);
 						drawCircle(0.5 * dx, 0.5 * dy, 0.2 * (dx < dy ? dx : dy), "f", appearBuf);
 					}
 					obj2.free();
@@ -1637,27 +1611,24 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 		}
 		else if (flags & acroFormFlagPushbutton)
 		{
-			if (caption)
-				drawText(caption, da, fontDict, gFalse, 0, acroFormQuadCenter, acroFormVAlignMiddle, gFalse, gFalse, rot, 0, 0, xMax - xMin, yMax - yMin, borderWidth, gFalse, appearBuf);
+			if (caption.size())
+				drawText(caption, da, fontDict, false, 0, acroFormQuadCenter, acroFormVAlignMiddle, false, false, rot, 0, 0, xMax - xMin, yMax - yMin, borderWidth, false, appearBuf);
 			// checkbox
 		}
 		else if (value && !(unicodeStringEqual(value, valueLength, "Off") || unicodeStringEqual(value, valueLength, "No") || unicodeStringEqual(value, valueLength, "0") || valueLength == 0))
 		{
-			if (!caption)
-				caption = new GString("3"); // ZapfDingbats checkmark
-			drawText(caption, da, fontDict, gFalse, 0, acroFormQuadCenter, acroFormVAlignMiddleNoDescender, gFalse, gTrue, rot, 0, 0, xMax - xMin, yMax - yMin, borderWidth, gFalse, appearBuf);
+			if (caption.empty())
+				caption = "3"; // ZapfDingbats checkmark
+			drawText(caption, da, fontDict, false, 0, acroFormQuadCenter, acroFormVAlignMiddleNoDescender, false, true, rot, 0, 0, xMax - xMin, yMax - yMin, borderWidth, false, appearBuf);
 		}
-		if (caption)
-			delete caption;
 	}
 	else if (ftObj.isName("Tx"))
 	{
-		XFAFieldBarcodeInfo* barcodeInfo = xfaField ? xfaField->getBarcodeInfo()
-		                                            : (XFAFieldBarcodeInfo*)nullptr;
+		XFAFieldBarcodeInfo* barcodeInfo = xfaField ? xfaField->getBarcodeInfo() : (XFAFieldBarcodeInfo*)nullptr;
 		if (value)
 		{
 			//~ value strings can be Unicode
-			GString* valueLatin1 = unicodeToLatin1(value, valueLength);
+			const auto valueLatin1 = unicodeToLatin1(value, valueLength);
 			if (barcodeInfo)
 			{
 				drawBarcode(valueLatin1, da, fontDict, rot, xMin, yMin, xMax, yMax, barcodeInfo, appearBuf);
@@ -1669,10 +1640,8 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 				else
 					quadding = acroFormQuadLeft;
 				obj2.free();
-				vAlign                         = (flags & acroFormFlagMultiline) ? acroFormVAlignTop
-				                                                                 : acroFormVAlignMiddle;
-				XFAFieldLayoutInfo* layoutInfo = xfaField ? xfaField->getLayoutInfo()
-				                                          : (XFAFieldLayoutInfo*)nullptr;
+				vAlign          = (flags & acroFormFlagMultiline) ? acroFormVAlignTop : acroFormVAlignMiddle;
+				auto layoutInfo = xfaField ? xfaField->getLayoutInfo() : (XFAFieldLayoutInfo*)nullptr;
 				if (layoutInfo)
 				{
 					switch (layoutInfo->hAlign)
@@ -1709,10 +1678,8 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 						comb = obj2.getInt();
 					obj2.free();
 				}
-				XFAFieldPictureInfo* pictureInfo =
-				    xfaField ? xfaField->getPictureInfo()
-				             : (XFAFieldPictureInfo*)nullptr;
-				GString* value2 = valueLatin1;
+				XFAFieldPictureInfo* pictureInfo = xfaField ? xfaField->getPictureInfo() : (XFAFieldPictureInfo*)nullptr;
+				auto                 value2      = valueLatin1;
 				if (pictureInfo)
 				{
 					switch (pictureInfo->subtype)
@@ -1728,11 +1695,8 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 						break;
 					}
 				}
-				drawText(value2, da, fontDict, flags & acroFormFlagMultiline, comb, quadding, vAlign, gTrue, gFalse, rot, 0, 0, xMax - xMin, yMax - yMin, borderWidth, gFalse, appearBuf);
-				if (value2 != valueLatin1)
-					delete value2;
+				drawText(value2, da, fontDict, flags & acroFormFlagMultiline, comb, quadding, vAlign, true, false, rot, 0, 0, xMax - xMin, yMax - yMin, borderWidth, false, appearBuf);
 			}
-			delete valueLatin1;
 		}
 	}
 	else if (ftObj.isName("Ch"))
@@ -1788,15 +1752,12 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 						obj2.arrayGet(i, &obj3);
 						if (obj3.isArray() && obj3.arrayGetLength() == 2)
 						{
-							if (obj3.arrayGet(0, &obj4)->isString() && obj4.getString()->cmp(val) == 0)
+							if (obj3.arrayGet(0, &obj4)->isString() && obj4.getString() == val)
 							{
 								obj4.free();
 								if (obj3.arrayGet(1, &obj4)->isString())
-								{
-									delete val;
-									val = obj4.getString()->copy();
-								}
-								done = gTrue;
+									val = obj4.getString();
+								done = true;
 							}
 							obj4.free();
 						}
@@ -1804,8 +1765,7 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 					}
 				}
 				obj2.free();
-				drawText(val, da, fontDict, gFalse, 0, quadding, vAlign, gTrue, gFalse, rot, 0, 0, xMax - xMin, yMax - yMin, borderWidth, gFalse, appearBuf);
-				delete val;
+				drawText(val, da, fontDict, false, 0, quadding, vAlign, true, false, rot, 0, 0, xMax - xMin, yMax - yMin, borderWidth, false, appearBuf);
 				//~ Acrobat draws a popup icon on the right side
 			}
 			// list box
@@ -1816,30 +1776,28 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 			{
 				nOptions = obj1.arrayGetLength();
 				// get the option text
-				text     = (GString**)gmallocn(nOptions, sizeof(GString*));
+				VEC_STR texts;
+				texts.resize(nOptions);
 				for (i = 0; i < nOptions; ++i)
 				{
-					text[i] = nullptr;
 					obj1.arrayGet(i, &obj2);
 					if (obj2.isString())
 					{
-						text[i] = obj2.getString()->copy();
+						texts[i] = obj2.getString();
 					}
 					else if (obj2.isArray() && obj2.arrayGetLength() == 2)
 					{
 						if (obj2.arrayGet(1, &obj3)->isString())
-							text[i] = obj3.getString()->copy();
+							texts[i] = obj3.getString();
 						obj3.free();
 					}
 					obj2.free();
-					if (!text[i])
-						text[i] = new GString();
 				}
 				// get the selected option(s)
-				selection = (GBool*)gmallocn(nOptions, sizeof(GBool));
+				selection = (bool*)gmallocn(nOptions, sizeof(bool));
 				//~ need to use the I field in addition to the V field
 				for (i = 0; i < nOptions; ++i)
-					selection[i] = unicodeStringEqual(value, valueLength, text[i]);
+					selection[i] = unicodeStringEqual(value, valueLength, texts[i]);
 				// get the top index
 				if (fieldObj.dictLookup("TI", &obj2)->isInt())
 				{
@@ -1853,10 +1811,7 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 				}
 				obj2.free();
 				// draw the text
-				drawListBox(text, selection, nOptions, topIdx, da, fontDict, quadding, xMin, yMin, xMax, yMax, borderWidth, appearBuf);
-				for (i = 0; i < nOptions; ++i)
-					delete text[i];
-				gfree(text);
+				drawListBox(texts, selection, nOptions, topIdx, da, fontDict, quadding, xMin, yMin, xMax, yMax, borderWidth, appearBuf);
 				gfree(selection);
 			}
 			obj1.free();
@@ -1868,14 +1823,11 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 		gfxStateDict.initDict(acroForm->doc->getXRef());
 		obj1.initReal(0.5);
 		gfxStateDict.dictAdd(copyString("ca"), &obj1);
-		appearBuf->append("/GS1 gs\n");
-		appearBuf->appendf("0.7 0.7 1 rg 0 0 {0:.2f} {1:.2f} re f\n", xMax - xMin, yMax - yMin);
-		caption = new GString("SIGN HERE");
-		if (da)
-			delete da;
-		da = new GString("/Helv 10 Tf 1 0 0 rg");
-		drawText(caption, da, fontDict, gFalse, 0, acroFormQuadLeft, acroFormVAlignMiddle, gFalse, gFalse, rot, 0, 0, xMax - xMin, yMax - yMin, borderWidth, gFalse, appearBuf);
-		delete caption;
+		appearBuf += "/GS1 gs\n";
+		appearBuf += fmt::format("0.7 0.7 1 rg 0 0 {:.2f} {:.2f} re f\n", xMax - xMin, yMax - yMin);
+		const std::string caption = "SIGN HERE";
+		da                        = "/Helv 10 Tf 1 0 0 rg";
+		drawText(caption, da, fontDict, false, 0, acroFormQuadLeft, acroFormVAlignMiddle, false, false, rot, 0, 0, xMax - xMin, yMax - yMin, borderWidth, false, appearBuf);
 	}
 	else
 	{
@@ -1884,13 +1836,9 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 
 	gfree(value);
 
-	delete appearanceState;
-	if (da)
-		delete da;
-
 	// build the appearance stream dictionary
 	appearDict.initDict(acroForm->doc->getXRef());
-	appearDict.dictAdd(copyString("Length"), obj1.initInt(appearBuf->getLength()));
+	appearDict.dictAdd(copyString("Length"), obj1.initInt(TO_INT(appearBuf.size())));
 	appearDict.dictAdd(copyString("Subtype"), obj1.initName("Form"));
 	obj1.initArray(acroForm->doc->getXRef());
 	obj1.arrayAdd(obj2.initReal(0));
@@ -1931,17 +1879,14 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 	appearDict.dictAdd(copyString("Resources"), &resources);
 
 	// build the appearance stream
-	appearStream = new MemStream(appearBuf->getCString(), 0, appearBuf->getLength(), &appearDict);
+	appearStream = new MemStream(appearBuf.data(), 0, TO_UINT32(appearBuf.size()), &appearDict);
 	appearance.initStream(appearStream);
 
 	// draw it
 	gfx->drawAnnot(&appearance, nullptr, xMin, yMin, xMax, yMax);
 
 	appearance.free();
-	delete appearBuf;
-	appearBuf = nullptr;
-	if (fontDict)
-		delete fontDict;
+	if (fontDict) delete fontDict;
 	ftObj.free();
 	mkObj.free();
 }
@@ -1950,7 +1895,7 @@ void AcroFormField::drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double
 // have 1, 3, or 4 elements).  If <adjust> is +1, color is brightened;
 // if <adjust> is -1, color is darkened; otherwise color is not
 // modified.
-void AcroFormField::setColor(Array* a, GBool fill, int adjust, GString* appearBuf)
+void AcroFormField::setColor(Array* a, bool fill, int adjust, std::string& appearBuf)
 {
 	Object obj1;
 	double color[4];
@@ -1976,19 +1921,17 @@ void AcroFormField::setColor(Array* a, GBool fill, int adjust, GString* appearBu
 		for (i = 0; i < nComps; ++i)
 			color[i] = 0.5 * color[i];
 	if (nComps == 4)
-		appearBuf->appendf("{0:.2f} {1:.2f} {2:.2f} {3:.2f} {4:c}\n", color[0], color[1], color[2], color[3], fill ? 'k' : 'K');
+		appearBuf += fmt::format("{:.2f} {:.2f} {:.2f} {:.2f} {:c}\n", color[0], color[1], color[2], color[3], fill ? 'k' : 'K');
 	else if (nComps == 3)
-		appearBuf->appendf("{0:.2f} {1:.2f} {2:.2f} {3:s}\n", color[0], color[1], color[2], fill ? "rg" : "RG");
+		appearBuf += fmt::format("{:.2f} {:.2f} {:.2f} {:s}\n", color[0], color[1], color[2], fill ? "rg" : "RG");
 	else
-		appearBuf->appendf("{0:.2f} {1:c}\n", color[0], fill ? 'g' : 'G');
+		appearBuf += fmt::format("{:.2f} {:c}\n", color[0], fill ? 'g' : 'G');
 }
 
 // Draw the variable text or caption for a field.
-void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, GBool multiline, int comb, int quadding, int vAlign, GBool txField, GBool forceZapfDingbats, int rot, double x, double y, double width, double height, double border, GBool whiteBackground, GString* appearBuf)
+void AcroFormField::drawText(const std::string& text, const std::string& da, GfxFontDict* fontDict, bool multiline, int comb, int quadding, int vAlign, bool txField, bool forceZapfDingbats, int rot, double x, double y, double width, double height, double border, bool whiteBackground, std::string& appearBuf)
 {
-	GString* text2;
-	GList*   daToks;
-	GString* tok;
+	VEC_STR  daToks;
 	GfxFont* font;
 	double   dx, dy;
 	double   fontSize, fontSize2, topBorder, xx, xPrev, yy, w, wMax;
@@ -2001,43 +1944,39 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 
 	// check for a Unicode string
 	//~ this currently drops all non-Latin1 characters
-	if (text->getLength() >= 2 && text->getChar(0) == '\xfe' && text->getChar(1) == '\xff')
+	std::string text2;
+	if (text.size() >= 2 && text.at(0) == '\xfe' && text.at(1) == '\xff')
 	{
-		text2 = new GString();
-		for (i = 2; i + 1 < text->getLength(); i += 2)
+		std::string text2;
+		for (i = 2; i + 1 < text.size(); i += 2)
 		{
-			c = ((text->getChar(i) & 0xff) << 8) + (text->getChar(i + 1) & 0xff);
+			c = ((text.at(i) & 0xff) << 8) + (text.at(i + 1) & 0xff);
 			if (c <= 0xff)
-				text2->append((char)c);
+				text2 += (char)c;
 			else
-				text2->append('?');
+				text2 += '?';
 		}
 	}
 	else
 	{
 		text2 = text;
 	}
-	if (text2->getLength() == 0)
-	{
-		if (text2 != text)
-			delete text2;
+	if (text2.size() == 0)
 		return;
-	}
 
 	// parse the default appearance string
 	tfPos = tmPos = -1;
-	if (da)
+	if (da.size())
 	{
 		daToks = tokenize(da);
-		for (i = 2; i < daToks->getLength(); ++i)
-			if (!((GString*)daToks->get(i))->cmp("Tf"))
+		for (i = 2; i < daToks.size(); ++i)
+			if (daToks.at(i) == "Tf")
 				tfPos = i - 2;
-			else if (i >= 6 && !((GString*)daToks->get(i))->cmp("Tm"))
+			else if (i >= 6 && daToks.at(i) == "Tm")
 				tmPos = i - 6;
 	}
 	else
 	{
-		daToks = nullptr;
 	}
 
 	// force ZapfDingbats
@@ -2046,12 +1985,9 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 	{
 		if (tfPos >= 0)
 		{
-			tok = (GString*)daToks->get(tfPos);
-			if (tok->cmp("/ZaDb"))
-			{
-				tok->clear();
-				tok->append("/ZaDb");
-			}
+			const auto& tok = daToks.at(tfPos);
+			if (tok != "/ZaDb")
+				daToks[tfPos] = "/ZaDb";
 		}
 	}
 
@@ -2060,54 +1996,53 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 	fontSize = 0;
 	if (tfPos >= 0)
 	{
-		tok = (GString*)daToks->get(tfPos);
-		if (tok->getLength() >= 1 && tok->getChar(0) == '/')
+		const auto& tok = daToks.at(tfPos);
+		if (tok.size() >= 1 && tok.at(0) == '/')
 		{
-			if (!fontDict || !(font = fontDict->lookup(tok->getCString() + 1)))
+			if (!fontDict || !(font = fontDict->lookup(tok.c_str() + 1)))
 			{
 				error(errSyntaxError, -1, "Unknown font in field's DA string");
-				tok->clear();
-				tok->append("/xpdf_default_font");
+				daToks[tfPos] = "/xpdf_default_font";
 			}
 		}
 		else
 		{
 			error(errSyntaxError, -1, "Invalid font name in 'Tf' operator in field's DA string");
 		}
-		tok      = (GString*)daToks->get(tfPos + 1);
-		fontSize = atof(tok->getCString());
+		{
+			const auto& tok = daToks.at(tfPos + 1);
+			fontSize        = atof(tok.c_str());
+		}
 	}
 	else
 	{
 		error(errSyntaxError, -1, "Missing 'Tf' operator in field's DA string");
 		fontSize = 0;
-		if (!daToks)
-			daToks = new GList();
-		tfPos = daToks->getLength();
-		daToks->append(new GString("/xpdf_default_font"));
-		daToks->append(new GString("10"));
-		daToks->append(new GString("Tf"));
+		tfPos    = TO_INT(daToks.size());
+		daToks.push_back("/xpdf_default_font");
+		daToks.push_back("10");
+		daToks.push_back("Tf");
 	}
 
 	// setup
 	if (txField)
-		appearBuf->append("/Tx BMC\n");
-	appearBuf->append("q\n");
+		appearBuf += "/Tx BMC\n";
+	appearBuf += "q\n";
 	if (rot == 90)
 	{
-		appearBuf->appendf("0 1 -1 0 {0:.4f} 0 cm\n", width);
+		appearBuf += fmt::format("0 1 -1 0 {:.4f} 0 cm\n", width);
 		dx = height;
 		dy = width;
 	}
 	else if (rot == 180)
 	{
-		appearBuf->appendf("-1 0 0 -1 {0:.4f} {1:.4f} cm\n", width, height);
+		appearBuf += fmt::format("-1 0 0 -1 {:.4f} {:.4f} cm\n", width, height);
 		dx = width;
 		dy = height;
 	}
 	else if (rot == 270)
 	{
-		appearBuf->appendf("0 -1 1 0 0 {0:.4f} cm\n", height);
+		appearBuf += fmt::format("0 -1 1 0 0 {:.4f} cm\n", height);
 		dx = height;
 		dy = width;
 	}
@@ -2138,7 +2073,7 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 				yy = dy - topBorder;
 				w  = 0;
 				i  = 0;
-				while (i < text2->getLength())
+				while (i < text2.size())
 				{
 					getNextLine(text2, i, font, fontSize, wMax, &j, &w, &k);
 					i = k;
@@ -2149,17 +2084,13 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 					break;
 			}
 			if (tfPos >= 0)
-			{
-				tok = (GString*)daToks->get(tfPos + 1);
-				tok->clear();
-				tok->appendf("{0:.2f}", fontSize);
-			}
+				daToks[tfPos + 1] = fmt::format("{:.2f}", fontSize);
 		}
 
 		// starting y coordinate
 		nLines = 0;
 		i      = 0;
-		while (i < text2->getLength())
+		while (i < text2.size())
 		{
 			getNextLine(text2, i, font, fontSize, wMax, &j, &w, &k);
 			i = k;
@@ -2199,32 +2130,31 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 		// line -- so move up a line here
 		yy += fontSize;
 
-		appearBuf->append("BT\n");
+		appearBuf += "BT\n";
 
 		// set the font matrix
 		if (tmPos >= 0)
 		{
-			tok = (GString*)daToks->get(tmPos + 4);
-			tok->clear();
-			tok->appendf("{0:.4f}", x);
-			tok = (GString*)daToks->get(tmPos + 5);
-			tok->clear();
-			tok->appendf("{0:.4f}", y + yy);
+			daToks[tmPos + 4] = fmt::format("{:.4f}", x);
+			daToks[tmPos + 5] = fmt::format("{:.4f}", y + yy);
 		}
 
 		// write the DA string
-		if (daToks)
-			for (i = 0; i < daToks->getLength(); ++i)
-				appearBuf->append((GString*)daToks->get(i))->append(' ');
+		if (daToks.size())
+			for (i = 0; i < daToks.size(); ++i)
+			{
+				appearBuf += daToks.at(i);
+				appearBuf += ' ';
+			}
 
 		// write the font matrix (if not part of the DA string)
 		if (tmPos < 0)
-			appearBuf->appendf("1 0 0 1 {0:.4f} {1:.4f} Tm\n", x, y + yy);
+			appearBuf += fmt::format("1 0 0 1 {:.4f} {:.4f} Tm\n", x, y + yy);
 
 		// write a series of lines of text
 		i     = 0;
 		xPrev = 0;
-		while (i < text2->getLength())
+		while (i < text2.size())
 		{
 			getNextLine(text2, i, font, fontSize, wMax, &j, &w, &k);
 
@@ -2244,33 +2174,33 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 			}
 
 			// draw the line
-			appearBuf->appendf("{0:.4f} {1:.4f} Td\n", xx - xPrev, -fontSize);
-			appearBuf->append('(');
+			appearBuf += fmt::format("{:.4f} {:.4f} Td\n", xx - xPrev, -fontSize);
+			appearBuf += '(';
 			for (; i < j; ++i)
 			{
-				c = text2->getChar(i) & 0xff;
+				c = text2.at(i) & 0xff;
 				if (c == '(' || c == ')' || c == '\\')
 				{
-					appearBuf->append('\\');
-					appearBuf->append((char)c);
+					appearBuf += '\\';
+					appearBuf += (char)c;
 				}
 				else if (c < 0x20 || c >= 0x80)
 				{
-					appearBuf->appendf("\\{0:03o}", c);
+					appearBuf += fmt::format("\\{:03o}", c);
 				}
 				else
 				{
-					appearBuf->append((char)c);
+					appearBuf += (char)c;
 				}
 			}
-			appearBuf->append(") Tj\n");
+			appearBuf += ") Tj\n";
 
 			// next line
 			i     = k;
 			xPrev = xx;
 		}
 
-		appearBuf->append("ET\n");
+		appearBuf += "ET\n";
 
 		// single-line text
 	}
@@ -2294,11 +2224,7 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 				if (fontSize > 10)
 					fontSize = 10;
 				if (tfPos >= 0)
-				{
-					tok = (GString*)daToks->get(tfPos + 1);
-					tok->clear();
-					tok->appendf("{0:.4f}", fontSize);
-				}
+					daToks[tfPos + 1] = fmt::format("{:.4f}", fontSize);
 			}
 
 			// compute text start position
@@ -2309,10 +2235,10 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 				xx = 0;
 				break;
 			case acroFormQuadCenter:
-				xx = ((comb - text2->getLength()) / 2) * w;
+				xx = ((comb - text2.size()) / 2) * w;
 				break;
 			case acroFormQuadRight:
-				xx = (comb - text2->getLength()) * w;
+				xx = (comb - text2.size()) * w;
 				break;
 			}
 			if (font)
@@ -2342,38 +2268,37 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 				break;
 			}
 
-			appearBuf->append("BT\n");
+			appearBuf += "BT\n";
 
 			// set the font matrix
 			if (tmPos >= 0)
 			{
-				tok = (GString*)daToks->get(tmPos + 4);
-				tok->clear();
-				tok->appendf("{0:.4f}", x + xx);
-				tok = (GString*)daToks->get(tmPos + 5);
-				tok->clear();
-				tok->appendf("{0:.4f}", y + yy);
+				daToks[tmPos + 4] = fmt::format("{:.4f}", x + xx);
+				daToks[tmPos + 5] = fmt::format("{:.4f}", y + yy);
 			}
 
 			// write the DA string
-			if (daToks)
-				for (i = 0; i < daToks->getLength(); ++i)
-					appearBuf->append((GString*)daToks->get(i))->append(' ');
+			if (daToks.size())
+				for (i = 0; i < daToks.size(); ++i)
+				{
+					appearBuf += daToks.at(i);
+					appearBuf += ' ';
+				}
 
 			// write the font matrix (if not part of the DA string)
 			if (tmPos < 0)
-				appearBuf->appendf("1 0 0 1 {0:.4f} {1:.4f} Tm\n", x + xx, y + yy);
+				appearBuf += fmt::format("1 0 0 1 {:.4f} {:.4f} Tm\n", x + xx, y + yy);
 
 			// write the text string
 			offset = 0;
-			for (i = 0; i < text2->getLength(); ++i)
+			for (i = 0; i < text2.size(); ++i)
 			{
-				c = text2->getChar(i) & 0xff;
+				c = text2.at(i) & 0xff;
 				if (c >= 0x20 && c < 0x80)
 				{
 					if (font && !font->isCIDFont())
 					{
-						charWidth = ((Gfx8BitFont*)font)->getWidth((Guchar)c) * fontSize;
+						charWidth = ((Gfx8BitFont*)font)->getWidth((uint8_t)c) * fontSize;
 					}
 					else
 					{
@@ -2381,11 +2306,11 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 						charWidth = 0.5 * fontSize;
 					}
 					offset2 = 0.5 * (w - charWidth);
-					appearBuf->appendf("{0:.4f} 0 Td\n", offset + offset2);
+					appearBuf += fmt::format("{:.4f} 0 Td\n", offset + offset2);
 					if (c == '(' || c == ')' || c == '\\')
-						appearBuf->appendf("(\\{0:c}) Tj\n", c);
+						appearBuf += fmt::format("(\\{}) Tj\n", c);
 					else
-						appearBuf->appendf("({0:c}) Tj\n", c);
+						appearBuf += fmt::format("({}) Tj\n", c);
 					offset = w - offset2;
 				}
 				else
@@ -2394,7 +2319,7 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 				}
 			}
 
-			appearBuf->append("ET\n");
+			appearBuf += "ET\n";
 
 			// regular (non-comb) formatting
 		}
@@ -2404,13 +2329,13 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 			if (font && !font->isCIDFont())
 			{
 				w = 0;
-				for (i = 0; i < text2->getLength(); ++i)
-					w += ((Gfx8BitFont*)font)->getWidth(text2->getChar(i));
+				for (i = 0; i < text2.size(); ++i)
+					w += ((Gfx8BitFont*)font)->getWidth(text2.at(i));
 			}
 			else
 			{
 				// otherwise, make a crude estimate
-				w = text2->getLength() * 0.5;
+				w = text2.size() * 0.5;
 			}
 
 			// compute font autosize
@@ -2424,11 +2349,7 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 				if (fontSize > 10)
 					fontSize = 10;
 				if (tfPos >= 0)
-				{
-					tok = (GString*)daToks->get(tfPos + 1);
-					tok->clear();
-					tok->appendf("{0:.4f}", fontSize);
-				}
+					daToks[tfPos + 1] = fmt::format("{:.4f}", fontSize);
 			}
 
 			// compute text start position
@@ -2474,74 +2395,66 @@ void AcroFormField::drawText(GString* text, GString* da, GfxFontDict* fontDict, 
 			}
 
 			if (whiteBackground)
-				appearBuf->appendf("q 1 g {0:.4f} {1:.4f} {2:.4f} {3:.4f} re f Q\n", xx - 0.25 * fontSize, yy - 0.35 * fontSize, w + 0.5 * fontSize, 1.2 * fontSize);
+				appearBuf += fmt::format("q 1 g {:.4f} {:.4f} {:.4f} {:.4f} re f Q\n", xx - 0.25 * fontSize, yy - 0.35 * fontSize, w + 0.5 * fontSize, 1.2 * fontSize);
 
-			appearBuf->append("BT\n");
+			appearBuf += "BT\n";
 
 			// set the font matrix
 			if (tmPos >= 0)
 			{
-				tok = (GString*)daToks->get(tmPos + 4);
-				tok->clear();
-				tok->appendf("{0:.4f}", x + xx);
-				tok = (GString*)daToks->get(tmPos + 5);
-				tok->clear();
-				tok->appendf("{0:.4f}", y + yy);
+				daToks[tmPos + 4] = fmt::format("{:.4f}", x + xx);
+				daToks[tmPos + 5] = fmt::format("{:.4f}", y + yy);
 			}
 
 			// write the DA string
-			if (daToks)
-				for (i = 0; i < daToks->getLength(); ++i)
-					appearBuf->append((GString*)daToks->get(i))->append(' ');
+			if (daToks.size())
+				for (i = 0; i < daToks.size(); ++i)
+				{
+					appearBuf += daToks.at(i);
+					appearBuf += ' ';
+				}
 
 			// write the font matrix (if not part of the DA string)
 			if (tmPos < 0)
-				appearBuf->appendf("1 0 0 1 {0:.4f} {1:.4f} Tm\n", x + xx, y + yy);
+				appearBuf += fmt::format("1 0 0 1 {:.4f} {:.4f} Tm\n", x + xx, y + yy);
 
 			// write the text string
-			appearBuf->append('(');
-			for (i = 0; i < text2->getLength(); ++i)
+			appearBuf += '(';
+			for (i = 0; i < text2.size(); ++i)
 			{
-				c = text2->getChar(i) & 0xff;
+				c = text2.at(i) & 0xff;
 				if (c == '(' || c == ')' || c == '\\')
 				{
-					appearBuf->append('\\');
-					appearBuf->append((char)c);
+					appearBuf += '\\';
+					appearBuf += (char)c;
 				}
 				else if (c < 0x20 || c >= 0x80)
 				{
-					appearBuf->appendf("\\{0:03o}", c);
+					appearBuf += fmt::format("\\{:03o}", c);
 				}
 				else
 				{
-					appearBuf->append((char)c);
+					appearBuf += (char)c;
 				}
 			}
-			appearBuf->append(") Tj\n");
+			appearBuf += ") Tj\n";
 		}
 
-		appearBuf->append("ET\n");
+		appearBuf += "ET\n";
 	}
 
 	// cleanup
-	appearBuf->append("Q\n");
+	appearBuf += "Q\n";
 	if (txField)
-		appearBuf->append("EMC\n");
-
-	if (daToks)
-		deleteGList(daToks, GString);
-	if (text2 != text)
-		delete text2;
+		appearBuf += "EMC\n";
 }
 
 // Draw the variable text or caption for a field.
-void AcroFormField::drawListBox(GString** text, GBool* selection, int nOptions, int topIdx, GString* da, GfxFontDict* fontDict, GBool quadding, double xMin, double yMin, double xMax, double yMax, double border, GString* appearBuf)
+void AcroFormField::drawListBox(const VEC_STR& texts, bool* selection, int nOptions, int topIdx, const std::string& da, GfxFontDict* fontDict, int quadding, double xMin, double yMin, double xMax, double yMax, double border, std::string& appearBuf)
 {
-	GList*   daToks;
-	GString* tok;
-	GfxFont* font;
-	double   fontSize, fontSize2, x, y, w, wMax;
-	int      tfPos, tmPos, i, j, c;
+	VEC_STR daToks;
+	double  fontSize, fontSize2, x, y, w, wMax;
+	int     tfPos, tmPos;
 
 	//~ if there is no MK entry, this should use the existing content stream,
 	//~ and only replace the marked content portion of it
@@ -2549,41 +2462,39 @@ void AcroFormField::drawListBox(GString** text, GBool* selection, int nOptions, 
 
 	// parse the default appearance string
 	tfPos = tmPos = -1;
-	if (da)
+	if (da.size())
 	{
 		daToks = tokenize(da);
-		for (i = 2; i < daToks->getLength(); ++i)
-			if (i >= 2 && !((GString*)daToks->get(i))->cmp("Tf"))
+		for (int i = 2; i < daToks.size(); ++i)
+			if (i >= 2 && daToks.at(i) == "Tf")
 				tfPos = i - 2;
-			else if (i >= 6 && !((GString*)daToks->get(i))->cmp("Tm"))
+			else if (i >= 6 && daToks.at(i) == "Tm")
 				tmPos = i - 6;
 	}
 	else
 	{
-		daToks = nullptr;
 	}
 
 	// get the font and font size
-	font     = nullptr;
-	fontSize = 0;
+	GfxFont* font = nullptr;
+	fontSize      = 0;
 	if (tfPos >= 0)
 	{
-		tok = (GString*)daToks->get(tfPos);
-		if (tok->getLength() >= 1 && tok->getChar(0) == '/')
+		auto tok = daToks.at(tfPos);
+		if (tok.size() >= 1 && tok.at(0) == '/')
 		{
-			if (!fontDict || !(font = fontDict->lookup(tok->getCString() + 1)))
+			if (!fontDict || !(font = fontDict->lookup(tok.c_str() + 1)))
 			{
 				error(errSyntaxError, -1, "Unknown font in field's DA string");
-				tok->clear();
-				tok->append("/xpdf_default_font");
+				daToks[tfPos] = "/xpdf_default_font";
 			}
 		}
 		else
 		{
 			error(errSyntaxError, -1, "Invalid font name in 'Tf' operator in field's DA string");
 		}
-		tok      = (GString*)daToks->get(tfPos + 1);
-		fontSize = atof(tok->getCString());
+		tok      = daToks.at(tfPos + 1);
+		fontSize = atof(tok.c_str());
 	}
 	else
 	{
@@ -2594,18 +2505,18 @@ void AcroFormField::drawListBox(GString** text, GBool* selection, int nOptions, 
 	if (fontSize == 0)
 	{
 		wMax = 0;
-		for (i = 0; i < nOptions; ++i)
+		for (int i = 0; i < nOptions; ++i)
 		{
 			if (font && !font->isCIDFont())
 			{
 				w = 0;
-				for (j = 0; j < text[i]->getLength(); ++j)
-					w += ((Gfx8BitFont*)font)->getWidth(text[i]->getChar(j));
+				for (int j = 0; j < texts[i].size(); ++j)
+					w += ((Gfx8BitFont*)font)->getWidth(texts[i].at(j));
 			}
 			else
 			{
 				// otherwise, make a crude estimate
-				w = text[i]->getLength() * 0.5;
+				w = texts[i].size() * 0.5;
 			}
 			if (w > wMax)
 				wMax = w;
@@ -2618,41 +2529,37 @@ void AcroFormField::drawListBox(GString** text, GBool* selection, int nOptions, 
 		if (fontSize > 10)
 			fontSize = 10;
 		if (tfPos >= 0)
-		{
-			tok = (GString*)daToks->get(tfPos + 1);
-			tok->clear();
-			tok->appendf("{0:.4f}", fontSize);
-		}
+			daToks[tfPos + 1] = fmt::format("{:.4f}", fontSize);
 	}
 
 	// draw the text
 	y = yMax - yMin - 1.1 * fontSize;
-	for (i = topIdx; i < nOptions; ++i)
+	for (int i = topIdx; i < nOptions; ++i)
 	{
 		// setup
-		appearBuf->append("q\n");
+		appearBuf += "q\n";
 
 		// draw the background if selected
 		if (selection[i])
 		{
-			appearBuf->append("0 g f\n");
-			appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} re f\n", border, y - 0.2 * fontSize, xMax - xMin - 2 * border, 1.1 * fontSize);
+			appearBuf += "0 g f\n";
+			appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} re f\n", border, y - 0.2 * fontSize, xMax - xMin - 2 * border, 1.1 * fontSize);
 		}
 
 		// setup
-		appearBuf->append("BT\n");
+		appearBuf += "BT\n";
 
 		// compute string width
 		if (font && !font->isCIDFont())
 		{
 			w = 0;
-			for (j = 0; j < text[i]->getLength(); ++j)
-				w += ((Gfx8BitFont*)font)->getWidth(text[i]->getChar(j));
+			for (int j = 0; j < texts[i].size(); ++j)
+				w += ((Gfx8BitFont*)font)->getWidth(texts[i].at(j));
 		}
 		else
 		{
 			// otherwise, make a crude estimate
-			w = text[i]->getLength() * 0.5;
+			w = texts[i].size() * 0.5;
 		}
 
 		// compute text start position
@@ -2674,65 +2581,61 @@ void AcroFormField::drawListBox(GString** text, GBool* selection, int nOptions, 
 		// set the font matrix
 		if (tmPos >= 0)
 		{
-			tok = (GString*)daToks->get(tmPos + 4);
-			tok->clear();
-			tok->appendf("{0:.4f}", x);
-			tok = (GString*)daToks->get(tmPos + 5);
-			tok->clear();
-			tok->appendf("{0:.4f}", y);
+			daToks[tmPos + 4] = fmt::format("{:.4f}", x);
+			daToks[tmPos + 5] = fmt::format("{:.4f}", y);
 		}
 
 		// write the DA string
-		if (daToks)
-			for (j = 0; j < daToks->getLength(); ++j)
-				appearBuf->append((GString*)daToks->get(j))->append(' ');
+		if (daToks.size())
+			for (int j = 0; j < daToks.size(); ++j)
+			{
+				appearBuf += daToks.at(j);
+				appearBuf += ' ';
+			}
 
 		// write the font matrix (if not part of the DA string)
 		if (tmPos < 0)
-			appearBuf->appendf("1 0 0 1 {0:.4f} {1:.4f} Tm\n", x, y);
+			appearBuf += fmt::format("1 0 0 1 {:.4f} {:.4f} Tm\n", x, y);
 
 		// change the text color if selected
 		if (selection[i])
-			appearBuf->append("1 g\n");
+			appearBuf += "1 g\n";
 
 		// write the text string
-		appearBuf->append('(');
-		for (j = 0; j < text[i]->getLength(); ++j)
+		appearBuf += '(';
+		for (int j = 0; j < texts[i].size(); ++j)
 		{
-			c = text[i]->getChar(j) & 0xff;
+			const char c = texts[i].at(j) & 0xff;
 			if (c == '(' || c == ')' || c == '\\')
 			{
-				appearBuf->append('\\');
-				appearBuf->append((char)c);
+				appearBuf += '\\';
+				appearBuf += (char)c;
 			}
 			else if (c < 0x20 || c >= 0x80)
 			{
-				appearBuf->appendf("\\{0:03o}", c);
+				appearBuf += fmt::format("\\{:03o}", c);
 			}
 			else
 			{
-				appearBuf->append((char)c);
+				appearBuf += (char)c;
 			}
 		}
-		appearBuf->append(") Tj\n");
+		appearBuf += ") Tj\n";
 
 		// cleanup
-		appearBuf->append("ET\n");
-		appearBuf->append("Q\n");
+		appearBuf += "ET\n";
+		appearBuf += "Q\n";
 
 		// next line
 		y -= 1.1 * fontSize;
 	}
-
-	if (daToks)
-		deleteGList(daToks, GString);
 }
 
 // Figure out how much text will fit on the next line.  Returns:
 // *end = one past the last character to be included
 // *width = width of the characters start .. end-1
 // *next = index of first character on the following line
-void AcroFormField::getNextLine(GString* text, int start, GfxFont* font, double fontSize, double wMax, int* end, double* width, int* next)
+void AcroFormField::getNextLine(const std::string& text, int start, GfxFont* font, double fontSize, double wMax, int* end, double* width, int* next)
 {
 	double w, dw;
 	int    j, k, c;
@@ -2740,14 +2643,14 @@ void AcroFormField::getNextLine(GString* text, int start, GfxFont* font, double 
 	// figure out how much text will fit on the line
 	//~ what does Adobe do with tabs?
 	w = 0;
-	for (j = start; j < text->getLength() && w <= wMax; ++j)
+	for (j = start; j < text.size() && w <= wMax; ++j)
 	{
-		c = text->getChar(j) & 0xff;
+		c = text.at(j) & 0xff;
 		if (c == 0x0a || c == 0x0d)
 			break;
 		if (font && !font->isCIDFont())
 		{
-			dw = ((Gfx8BitFont*)font)->getWidth((Guchar)c) * fontSize;
+			dw = ((Gfx8BitFont*)font)->getWidth((uint8_t)c) * fontSize;
 		}
 		else
 		{
@@ -2758,9 +2661,9 @@ void AcroFormField::getNextLine(GString* text, int start, GfxFont* font, double 
 	}
 	if (w > wMax)
 	{
-		for (k = j; k > start && text->getChar(k - 1) != ' '; --k)
+		for (k = j; k > start && text.at(k - 1) != ' '; --k)
 			;
-		for (; k > start && text->getChar(k - 1) == ' '; --k)
+		for (; k > start && text.at(k - 1) == ' '; --k)
 			;
 		if (k > start)
 			j = k;
@@ -2779,7 +2682,7 @@ void AcroFormField::getNextLine(GString* text, int start, GfxFont* font, double 
 	{
 		if (font && !font->isCIDFont())
 		{
-			dw = ((Gfx8BitFont*)font)->getWidth(text->getChar(k)) * fontSize;
+			dw = ((Gfx8BitFont*)font)->getWidth(text.at(k)) * fontSize;
 		}
 		else
 		{
@@ -2791,58 +2694,58 @@ void AcroFormField::getNextLine(GString* text, int start, GfxFont* font, double 
 	*width = w;
 
 	// next line
-	while (j < text->getLength() && text->getChar(j) == ' ')
+	while (j < text.size() && text.at(j) == ' ')
 		++j;
-	if (j < text->getLength() && text->getChar(j) == 0x0d)
+	if (j < text.size() && text.at(j) == 0x0d)
 		++j;
-	if (j < text->getLength() && text->getChar(j) == 0x0a)
+	if (j < text.size() && text.at(j) == 0x0a)
 		++j;
 	*next = j;
 }
 
 // Draw an (approximate) circle of radius <r> centered at (<cx>, <cy>).
 // <cmd> is used to draw the circle ("f", "s", or "b").
-void AcroFormField::drawCircle(double cx, double cy, double r, const char* cmd, GString* appearBuf)
+void AcroFormField::drawCircle(double cx, double cy, double r, const char* cmd, std::string& appearBuf)
 {
-	appearBuf->appendf("{0:.4f} {1:.4f} m\n", cx + r, cy);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx + r, cy + bezierCircle * r, cx + bezierCircle * r, cy + r, cx, cy + r);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx - bezierCircle * r, cy + r, cx - r, cy + bezierCircle * r, cx - r, cy);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx - r, cy - bezierCircle * r, cx - bezierCircle * r, cy - r, cx, cy - r);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx + bezierCircle * r, cy - r, cx + r, cy - bezierCircle * r, cx + r, cy);
-	appearBuf->appendf("{0:s}\n", cmd);
+	appearBuf += fmt::format("{:.4f} {:.4f} m\n", cx + r, cy);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx + r, cy + bezierCircle * r, cx + bezierCircle * r, cy + r, cx, cy + r);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx - bezierCircle * r, cy + r, cx - r, cy + bezierCircle * r, cx - r, cy);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx - r, cy - bezierCircle * r, cx - bezierCircle * r, cy - r, cx, cy - r);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx + bezierCircle * r, cy - r, cx + r, cy - bezierCircle * r, cx + r, cy);
+	appearBuf += fmt::format("{}\n", cmd);
 }
 
 // Draw the top-left half of an (approximate) circle of radius <r>
 // centered at (<cx>, <cy>).
-void AcroFormField::drawCircleTopLeft(double cx, double cy, double r, GString* appearBuf)
+void AcroFormField::drawCircleTopLeft(double cx, double cy, double r, std::string& appearBuf)
 {
 	double r2;
 
 	r2 = r / sqrt(2.0);
-	appearBuf->appendf("{0:.4f} {1:.4f} m\n", cx + r2, cy + r2);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx + (1 - bezierCircle) * r2, cy + (1 + bezierCircle) * r2, cx - (1 - bezierCircle) * r2, cy + (1 + bezierCircle) * r2, cx - r2, cy + r2);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx - (1 + bezierCircle) * r2, cy + (1 - bezierCircle) * r2, cx - (1 + bezierCircle) * r2, cy - (1 - bezierCircle) * r2, cx - r2, cy - r2);
-	appearBuf->append("S\n");
+	appearBuf += fmt::format("{:.4f} {:.4f} m\n", cx + r2, cy + r2);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx + (1 - bezierCircle) * r2, cy + (1 + bezierCircle) * r2, cx - (1 - bezierCircle) * r2, cy + (1 + bezierCircle) * r2, cx - r2, cy + r2);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx - (1 + bezierCircle) * r2, cy + (1 - bezierCircle) * r2, cx - (1 + bezierCircle) * r2, cy - (1 - bezierCircle) * r2, cx - r2, cy - r2);
+	appearBuf += "S\n";
 }
 
 // Draw the bottom-right half of an (approximate) circle of radius <r>
 // centered at (<cx>, <cy>).
-void AcroFormField::drawCircleBottomRight(double cx, double cy, double r, GString* appearBuf)
+void AcroFormField::drawCircleBottomRight(double cx, double cy, double r, std::string& appearBuf)
 {
 	double r2;
 
 	r2 = r / sqrt(2.0);
-	appearBuf->appendf("{0:.4f} {1:.4f} m\n", cx - r2, cy - r2);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx - (1 - bezierCircle) * r2, cy - (1 + bezierCircle) * r2, cx + (1 - bezierCircle) * r2, cy - (1 + bezierCircle) * r2, cx + r2, cy - r2);
-	appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} {4:.4f} {5:.4f} c\n", cx + (1 + bezierCircle) * r2, cy - (1 - bezierCircle) * r2, cx + (1 + bezierCircle) * r2, cy + (1 - bezierCircle) * r2, cx + r2, cy + r2);
-	appearBuf->append("S\n");
+	appearBuf += fmt::format("{:.4f} {:.4f} m\n", cx - r2, cy - r2);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx - (1 - bezierCircle) * r2, cy - (1 + bezierCircle) * r2, cx + (1 - bezierCircle) * r2, cy - (1 + bezierCircle) * r2, cx + r2, cy - r2);
+	appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} c\n", cx + (1 + bezierCircle) * r2, cy - (1 - bezierCircle) * r2, cx + (1 + bezierCircle) * r2, cy + (1 - bezierCircle) * r2, cx + r2, cy + r2);
+	appearBuf += "S\n";
 }
 
-void AcroFormField::drawBarcode(GString* value, GString* da, GfxFontDict* fontDict, int rot, double xMin, double yMin, double xMax, double yMax, XFAFieldBarcodeInfo* barcodeInfo, GString* appearBuf)
+void AcroFormField::drawBarcode(const std::string& value, const std::string& da, GfxFontDict* fontDict, int rot, double xMin, double yMin, double xMax, double yMax, XFAFieldBarcodeInfo* barcodeInfo, std::string& appearBuf)
 {
 	//--- handle rotation
 	double w, h;
-	appearBuf->append("q\n");
+	appearBuf += "q\n";
 	switch (rot)
 	{
 	case 0:
@@ -2851,17 +2754,17 @@ void AcroFormField::drawBarcode(GString* value, GString* da, GfxFontDict* fontDi
 		h = yMax - yMin;
 		break;
 	case 90:
-		appearBuf->appendf("0 1 -1 0 {0:.4f} 0 cm\n", xMax - xMin);
+		appearBuf += fmt::format("0 1 -1 0 {:.4f} 0 cm\n", xMax - xMin);
 		w = yMax - yMin;
 		h = xMax - xMin;
 		break;
 	case 180:
-		appearBuf->appendf("0 -1 1 0 0 {0:.4f} cm\n", yMax - yMin);
+		appearBuf += fmt::format("0 -1 1 0 0 {:.4f} cm\n", yMax - yMin);
 		w = yMax - yMin;
 		h = xMax - xMin;
 		break;
 	case 270:
-		appearBuf->appendf("0 -1 1 0 0 {0:.4f} cm\n", yMax - yMin);
+		appearBuf += fmt::format("0 -1 1 0 0 {:.4f} cm\n", yMax - yMin);
 		w = yMax - yMin;
 		h = xMax - xMin;
 		break;
@@ -2869,54 +2772,53 @@ void AcroFormField::drawBarcode(GString* value, GString* da, GfxFontDict* fontDi
 
 	//--- get the font size
 	double fontSize = 0.2 * h;
-	if (da)
+	if (da.size())
 	{
-		GList* daToks = tokenize(da);
-		for (int i = 2; i < daToks->getLength(); ++i)
+		const auto daToks = tokenize(da);
+		for (int i = 2; i < daToks.size(); ++i)
 		{
-			if (!((GString*)daToks->get(i))->cmp("Tf"))
+			if (daToks.at(i) == "Tf")
 			{
-				fontSize = atof(((GString*)daToks->get(i - 1))->getCString());
+				fontSize = atof(daToks.at(i - 1).c_str());
 				break;
 			}
 		}
-		deleteGList(daToks, GString);
 	}
 
 	//--- compute the embedded text type position
-	GBool  doText          = gTrue;
+	bool   doText          = true;
 	double yText           = 0;
 	int    vAlign          = acroFormVAlignTop;
 	double yBarcode        = 0;
 	double hBarcode        = 0;
-	GBool  whiteBackground = gFalse;
+	bool   whiteBackground = false;
 	//~ this uses an estimate of the font baseline position
-	if (barcodeInfo->textLocation && !barcodeInfo->textLocation->cmp("above"))
+	if (barcodeInfo->textLocation == "above")
 	{
 		yText    = h;
 		vAlign   = acroFormVAlignTop;
 		yBarcode = 0;
 		hBarcode = h - fontSize;
 	}
-	else if (barcodeInfo->textLocation && !barcodeInfo->textLocation->cmp("belowEmbedded"))
+	else if (barcodeInfo->textLocation == "belowEmbedded")
 	{
 		yText           = 0;
 		vAlign          = acroFormVAlignBottom;
 		yBarcode        = 0;
 		hBarcode        = h;
-		whiteBackground = gTrue;
+		whiteBackground = true;
 	}
-	else if (barcodeInfo->textLocation && !barcodeInfo->textLocation->cmp("aboveEmbedded"))
+	else if (barcodeInfo->textLocation == "aboveEmbedded")
 	{
 		yText           = h;
 		vAlign          = acroFormVAlignTop;
 		yBarcode        = 0;
 		hBarcode        = h;
-		whiteBackground = gTrue;
+		whiteBackground = true;
 	}
-	else if (barcodeInfo->textLocation && !barcodeInfo->textLocation->cmp("none"))
+	else if (barcodeInfo->textLocation == "none")
 	{
-		doText = gFalse;
+		doText = false;
 	}
 	else
 	{ // default is "below"
@@ -2928,56 +2830,54 @@ void AcroFormField::drawBarcode(GString* value, GString* da, GfxFontDict* fontDi
 	double wText = w;
 
 	//--- remove extraneous start/stop chars
-	GString* value2 = value->copy();
-	if (!barcodeInfo->barcodeType->cmp("code3Of9"))
+	std::string value2 = value;
+	if (barcodeInfo->barcodeType == "code3Of9")
 	{
-		if (value2->getLength() >= 1 && value2->getChar(0) == '*')
-			value2->del(0);
-		if (value2->getLength() >= 1 && value2->getChar(value2->getLength() - 1) == '*')
-			value2->del(value2->getLength() - 1);
+		if (value2.size() >= 1 && value2.at(0) == '*')
+			value2.erase(0);
+		if (value2.size() >= 1 && value2.at(value2.size() - 1) == '*')
+			value2.erase(value2.size() - 1);
 	}
 
 	//--- draw the bar code
-	if (!barcodeInfo->barcodeType->cmp("code3Of9"))
+	if (barcodeInfo->barcodeType == "code3Of9")
 	{
 		if (!barcodeInfo->dataLength)
 		{
 			error(errSyntaxError, -1, "Missing 'dataLength' attribute in barcode field");
-			goto err;
+			return;
 		}
-		appearBuf->append("0 g\n");
-		double wNarrow = w / ((7 + 3 * barcodeInfo->wideNarrowRatio) * (barcodeInfo->dataLength + 2));
-		double xx      = 0;
-		for (int i = -1; i <= value2->getLength(); ++i)
+		appearBuf += "0 g\n";
+		const double wNarrow = w / ((7 + 3 * barcodeInfo->wideNarrowRatio) * (barcodeInfo->dataLength + 2));
+		double       xx      = 0;
+		for (int i = -1; i <= value2.size(); ++i)
 		{
 			int c;
-			if (i < 0 || i >= value2->getLength())
+			if (i < 0 || i >= value2.size())
 				c = '*';
 			else
-				c = value2->getChar(i) & 0x7f;
+				c = value2.at(i) & 0x7f;
 			for (int j = 0; j < 10; j += 2)
 			{
-				appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} re f\n", xx, yBarcode, (code3Of9Data[c][j] ? barcodeInfo->wideNarrowRatio : 1) * wNarrow, hBarcode);
-				xx += ((code3Of9Data[c][j] ? barcodeInfo->wideNarrowRatio : 1) + (code3Of9Data[c][j + 1] ? barcodeInfo->wideNarrowRatio : 1))
-				    * wNarrow;
+				appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} re f\n", xx, yBarcode, (code3Of9Data[c][j] ? barcodeInfo->wideNarrowRatio : 1) * wNarrow, hBarcode);
+				xx += ((code3Of9Data[c][j] ? barcodeInfo->wideNarrowRatio : 1) + (code3Of9Data[c][j + 1] ? barcodeInfo->wideNarrowRatio : 1)) * wNarrow;
 			}
 		}
 		// center the text on the drawn barcode (not the max length barcode)
-		wText = (value2->getLength() + 2) * (7 + 3 * barcodeInfo->wideNarrowRatio)
-		    * wNarrow;
+		wText = (value2.size() + 2) * (7 + 3 * barcodeInfo->wideNarrowRatio) * wNarrow;
 	}
-	else if (!barcodeInfo->barcodeType->cmp("code128B"))
+	else if (barcodeInfo->barcodeType == "code128B")
 	{
 		if (!barcodeInfo->dataLength)
 		{
 			error(errSyntaxError, -1, "Missing 'dataLength' attribute in barcode field");
-			goto err;
+			return;
 		}
-		appearBuf->append("0 g\n");
-		double wNarrow  = w / (11 * (barcodeInfo->dataLength + 3) + 2);
-		double xx       = 0;
-		int    checksum = 0;
-		for (int i = -1; i <= value2->getLength() + 1; ++i)
+		appearBuf += "0 g\n";
+		const double wNarrow  = w / (11 * (barcodeInfo->dataLength + 3) + 2);
+		double       xx       = 0;
+		int          checksum = 0;
+		for (int i = -1; i <= value2.size() + 1; ++i)
 		{
 			int c;
 			if (i == -1)
@@ -2986,19 +2886,19 @@ void AcroFormField::drawBarcode(GString* value, GString* da, GfxFontDict* fontDi
 				c = 104;
 				checksum += c;
 			}
-			else if (i == value2->getLength())
+			else if (i == value2.size())
 			{
 				// checksum
 				c = checksum % 103;
 			}
-			else if (i == value2->getLength() + 1)
+			else if (i == value2.size() + 1)
 			{
 				// stop code
 				c = 106;
 			}
 			else
 			{
-				c = value2->getChar(i) & 0xff;
+				c = value2.at(i) & 0xff;
 				if (c >= 32 && c <= 127)
 					c -= 32;
 				else
@@ -3007,54 +2907,48 @@ void AcroFormField::drawBarcode(GString* value, GString* da, GfxFontDict* fontDi
 			}
 			for (int j = 0; j < 6; j += 2)
 			{
-				appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} re f\n", xx, yBarcode, code128Data[c][j] * wNarrow, hBarcode);
+				appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} re f\n", xx, yBarcode, code128Data[c][j] * wNarrow, hBarcode);
 				xx += (code128Data[c][j] + code128Data[c][j + 1]) * wNarrow;
 			}
 		}
 		// final bar of the stop code
-		appearBuf->appendf("{0:.4f} {1:.4f} {2:.4f} {3:.4f} re f\n", xx, yBarcode, 2 * wNarrow, hBarcode);
+		appearBuf += fmt::format("{:.4f} {:.4f} {:.4f} {:.4f} re f\n", xx, yBarcode, 2 * wNarrow, hBarcode);
 		// center the text on the drawn barcode (not the max length barcode)
-		wText = (11 * (value2->getLength() + 3) + 2) * wNarrow;
+		wText = (11 * (value2.size() + 3) + 2) * wNarrow;
 	}
-	else if (!barcodeInfo->barcodeType->cmp("pdf417"))
+	else if (barcodeInfo->barcodeType == "pdf417")
 	{
 		drawPDF417Barcode(w, h, barcodeInfo->moduleWidth, barcodeInfo->moduleHeight, barcodeInfo->errorCorrectionLevel, value2, appearBuf);
-		doText = gFalse;
+		doText = false;
 	}
 	else
 	{
-		error(errSyntaxError, -1, "Unimplemented barcode type '{0:t}' in barcode field", barcodeInfo->barcodeType);
+		error(errSyntaxError, -1, "Unimplemented barcode type '{}' in barcode field", barcodeInfo->barcodeType);
 	}
 	//~ add other barcode types here
 
 	//--- draw the embedded text
 	if (doText)
-		drawText(value2, da, fontDict, gFalse, 0, acroFormQuadCenter, vAlign, gFalse, gFalse, 0, 0, yText, wText, yText + fontSize, 0, whiteBackground, appearBuf);
+		drawText(value2, da, fontDict, false, 0, acroFormQuadCenter, vAlign, false, false, 0, 0, yText, wText, yText + fontSize, 0, whiteBackground, appearBuf);
 
-	appearBuf->append("Q\n");
-
-err:
-	delete value2;
+	appearBuf += "Q\n";
 }
 
-GList* AcroFormField::tokenize(GString* s)
+VEC_STR AcroFormField::tokenize(const std::string& s)
 {
-	GList* toks;
-	int    i, j;
+	VEC_STR toks;
+	int     j;
 
-	toks = new GList();
-	i    = 0;
-	while (i < s->getLength())
+	int i = 0;
+	while (i < s.size())
 	{
-		while (i < s->getLength() && Lexer::isSpace(s->getChar(i)))
+		while (i < s.size() && Lexer::isSpace(s.at(i)))
 			++i;
-		if (i < s->getLength())
+		if (i < s.size())
 		{
-			for (j = i + 1;
-			     j < s->getLength() && !Lexer::isSpace(s->getChar(j));
-			     ++j)
+			for (j = i + 1; j < s.size() && !Lexer::isSpace(s.at(j)); ++j)
 				;
-			toks->append(new GString(s, i, j - i));
+			toks.push_back(std::string(s, i, j - i));
 			i = j;
 		}
 	}
@@ -3270,7 +3164,7 @@ Object* AcroFormField::fieldLookup(Dict* dict, const char* key, Object* obj)
 	return obj;
 }
 
-Unicode* AcroFormField::utf8ToUnicode(GString* s, int* unicodeLength)
+Unicode* AcroFormField::utf8ToUnicode(const std::string& s, int* unicodeLength)
 {
 	int     n = 0;
 	int     i = 0;
@@ -3286,31 +3180,31 @@ Unicode* AcroFormField::utf8ToUnicode(GString* s, int* unicodeLength)
 	return uVec;
 }
 
-GString* AcroFormField::unicodeToLatin1(Unicode* u, int unicodeLength)
+std::string AcroFormField::unicodeToLatin1(Unicode* u, int unicodeLength)
 {
-	GString* s = new GString();
+	std::string s;
 	for (int i = 0; i < unicodeLength; ++i)
 		if (u[i] <= 0xff)
-			s->append((char)u[i]);
+			s += (char)u[i];
 	return s;
 }
 
-GBool AcroFormField::unicodeStringEqual(Unicode* u, int unicodeLength, GString* s)
+bool AcroFormField::unicodeStringEqual(Unicode* u, int unicodeLength, const std::string& s)
 {
-	if (s->getLength() != unicodeLength)
-		return gFalse;
+	if (s.size() != unicodeLength)
+		return false;
 	for (int i = 0; i < unicodeLength; ++i)
-		if ((Unicode)(s->getChar(i) & 0xff) != u[i])
-			return gFalse;
-	return gTrue;
+		if ((Unicode)(s.at(i) & 0xff) != u[i])
+			return false;
+	return true;
 }
 
-GBool AcroFormField::unicodeStringEqual(Unicode* u, int unicodeLength, const char* s)
+bool AcroFormField::unicodeStringEqual(Unicode* u, int unicodeLength, const char* s)
 {
 	for (int i = 0; i < unicodeLength; ++i)
 		if (!s[i] || (Unicode)(s[i] & 0xff) != u[i])
-			return gFalse;
-	return gTrue;
+			return false;
+	return true;
 }
 
 //------------------------------------------------------------------------
@@ -3322,41 +3216,41 @@ class PictureNode
 public:
 	virtual ~PictureNode() {}
 
-	virtual GBool isLiteral() { return gFalse; }
+	virtual bool isLiteral() { return false; }
 
-	virtual GBool isSign() { return gFalse; }
+	virtual bool isSign() { return false; }
 
-	virtual GBool isDigit() { return gFalse; }
+	virtual bool isDigit() { return false; }
 
-	virtual GBool isDecPt() { return gFalse; }
+	virtual bool isDecPt() { return false; }
 
-	virtual GBool isSeparator() { return gFalse; }
+	virtual bool isSeparator() { return false; }
 
-	virtual GBool isYear() { return gFalse; }
+	virtual bool isYear() { return false; }
 
-	virtual GBool isMonth() { return gFalse; }
+	virtual bool isMonth() { return false; }
 
-	virtual GBool isDay() { return gFalse; }
+	virtual bool isDay() { return false; }
 
-	virtual GBool isHour() { return gFalse; }
+	virtual bool isHour() { return false; }
 
-	virtual GBool isMinute() { return gFalse; }
+	virtual bool isMinute() { return false; }
 
-	virtual GBool isSecond() { return gFalse; }
+	virtual bool isSecond() { return false; }
 
-	virtual GBool isChar() { return gFalse; }
+	virtual bool isChar() { return false; }
 };
 
 class PictureLiteral : public PictureNode
 {
 public:
-	PictureLiteral(GString* sA) { s = sA; }
+	PictureLiteral(const std::string& sA) { s = sA; }
 
-	virtual ~PictureLiteral() { delete s; }
+	virtual ~PictureLiteral() {}
 
-	virtual GBool isLiteral() { return gTrue; }
+	virtual bool isLiteral() { return true; }
 
-	GString* s;
+	std::string s;
 };
 
 class PictureSign : public PictureNode
@@ -3364,7 +3258,7 @@ class PictureSign : public PictureNode
 public:
 	PictureSign(char cA) { c = cA; }
 
-	virtual GBool isSign() { return gTrue; }
+	virtual bool isSign() { return true; }
 
 	char c;
 };
@@ -3378,7 +3272,7 @@ public:
 		pos = 0;
 	}
 
-	virtual GBool isDigit() { return gTrue; }
+	virtual bool isDigit() { return true; }
 
 	char c;
 	int  pos;
@@ -3389,7 +3283,7 @@ class PictureDecPt : public PictureNode
 public:
 	PictureDecPt() {}
 
-	virtual GBool isDecPt() { return gTrue; }
+	virtual bool isDecPt() { return true; }
 };
 
 class PictureSeparator : public PictureNode
@@ -3397,7 +3291,7 @@ class PictureSeparator : public PictureNode
 public:
 	PictureSeparator() {}
 
-	virtual GBool isSeparator() { return gTrue; }
+	virtual bool isSeparator() { return true; }
 };
 
 class PictureYear : public PictureNode
@@ -3405,7 +3299,7 @@ class PictureYear : public PictureNode
 public:
 	PictureYear(int nDigitsA) { nDigits = nDigitsA; }
 
-	virtual GBool isYear() { return gTrue; }
+	virtual bool isYear() { return true; }
 
 	int nDigits;
 };
@@ -3415,7 +3309,7 @@ class PictureMonth : public PictureNode
 public:
 	PictureMonth(int nDigitsA) { nDigits = nDigitsA; }
 
-	virtual GBool isMonth() { return gTrue; }
+	virtual bool isMonth() { return true; }
 
 	int nDigits;
 };
@@ -3425,7 +3319,7 @@ class PictureDay : public PictureNode
 public:
 	PictureDay(int nDigitsA) { nDigits = nDigitsA; }
 
-	virtual GBool isDay() { return gTrue; }
+	virtual bool isDay() { return true; }
 
 	int nDigits;
 };
@@ -3433,16 +3327,16 @@ public:
 class PictureHour : public PictureNode
 {
 public:
-	PictureHour(GBool is24HourA, int nDigitsA)
+	PictureHour(bool is24HourA, int nDigitsA)
 	{
 		is24Hour = is24HourA;
 		nDigits  = nDigitsA;
 	}
 
-	virtual GBool isHour() { return gTrue; }
+	virtual bool isHour() { return true; }
 
-	GBool is24Hour;
-	int   nDigits;
+	bool is24Hour;
+	int  nDigits;
 };
 
 class PictureMinute : public PictureNode
@@ -3450,7 +3344,7 @@ class PictureMinute : public PictureNode
 public:
 	PictureMinute(int nDigitsA) { nDigits = nDigitsA; }
 
-	virtual GBool isMinute() { return gTrue; }
+	virtual bool isMinute() { return true; }
 
 	int nDigits;
 };
@@ -3460,7 +3354,7 @@ class PictureSecond : public PictureNode
 public:
 	PictureSecond(int nDigitsA) { nDigits = nDigitsA; }
 
-	virtual GBool isSecond() { return gTrue; }
+	virtual bool isSecond() { return true; }
 
 	int nDigits;
 };
@@ -3470,21 +3364,16 @@ class PictureChar : public PictureNode
 public:
 	PictureChar() {}
 
-	virtual GBool isChar() { return gTrue; }
+	virtual bool isChar() { return true; }
 };
 
-GString* AcroFormField::pictureFormatDateTime(GString* value, GString* picture)
+std::string AcroFormField::pictureFormatDateTime(const std::string& value, const std::string& picture)
 {
-	GList*       pic;
-	PictureNode* node;
-	GString *    ret, *s;
-	char         c;
-	int          year, month, day, hour, min, sec;
-	int          len, picStart, picEnd, u, n, i, j;
+	int year, month, day, hour, min, sec;
+	int u, n, i, j;
 
-	len = value->getLength();
-	if (len == 0)
-		return value->copy();
+	const int len = TO_INT(value.size());
+	if (len == 0) return value;
 
 	//--- parse the value
 
@@ -3500,16 +3389,16 @@ GString* AcroFormField::pictureFormatDateTime(GString* value, GString* picture)
 	year = month = day = hour = min = sec = 0;
 	i                                     = 0;
 	if (!(i + 4 <= len && isValidInt(value, i, 4)))
-		return value->copy();
+		return value;
 	year = convertInt(value, i, 4);
 	i += 4;
-	if (i < len && value->getChar(i) == '-')
+	if (i < len && value.at(i) == '-')
 		++i;
 	if (i + 2 <= len && isValidInt(value, i, 2))
 	{
 		month = convertInt(value, i, 2);
 		i += 2;
-		if (i < len && value->getChar(i) == '-')
+		if (i < len && value.at(i) == '-')
 			++i;
 		if (i + 2 <= len && isValidInt(value, i, 2))
 		{
@@ -3519,20 +3408,20 @@ GString* AcroFormField::pictureFormatDateTime(GString* value, GString* picture)
 	}
 	if (i < len)
 	{
-		if (value->getChar(i) != 'T')
-			return value->copy();
+		if (value.at(i) != 'T')
+			return value;
 		++i;
 		if (!(i + 2 <= len && isValidInt(value, i, 2)))
-			return value->copy();
+			return value;
 		hour = convertInt(value, i, 2);
 		i += 2;
-		if (i < len && value->getChar(i) == ':')
+		if (i < len && value.at(i) == ':')
 			++i;
 		if (i + 2 <= len && isValidInt(value, i, 2))
 		{
 			min = convertInt(value, i, 2);
 			i += 2;
-			if (i < len && value->getChar(i) == ':')
+			if (i < len && value.at(i) == ':')
 				++i;
 			if (i + 2 <= len && isValidInt(value, i, 2))
 			{
@@ -3542,21 +3431,18 @@ GString* AcroFormField::pictureFormatDateTime(GString* value, GString* picture)
 		}
 	}
 	if (i < len)
-		return value->copy();
+		return value;
 
 	//--- skip the category and locale in the picture
-
-	picStart = 0;
-	picEnd   = picture->getLength();
-	for (i = 0; i < picture->getLength(); ++i)
+	int picStart = 0;
+	int picEnd   = TO_INT(picture.size());
+	for (int i = 0; i < TO_INT(picture.size()); ++i)
 	{
-		c = picture->getChar(i);
+		const char c = picture.at(i);
 		if (c == '{')
 		{
 			picStart = i + 1;
-			for (picEnd = picStart;
-			     picEnd < picture->getLength() && picture->getChar(picEnd) != '}';
-			     ++picEnd)
+			for (picEnd = picStart; picEnd < picture.size() && picture.at(picEnd) != '}'; ++picEnd)
 				;
 			break;
 		}
@@ -3567,25 +3453,24 @@ GString* AcroFormField::pictureFormatDateTime(GString* value, GString* picture)
 	}
 
 	//--- parse the picture
-
-	pic = new GList();
-	i   = picStart;
+	std::vector<PictureNode> pictures;
+	i = picStart;
 	while (i < picEnd)
 	{
-		c = picture->getChar(i);
+		char c = picture.at(i);
 		++i;
 		if (c == '\'')
 		{
-			s = new GString();
+			std::string s;
 			while (i < picEnd)
 			{
-				c = picture->getChar(i);
+				c = picture.at(i);
 				if (c == '\'')
 				{
 					++i;
-					if (i < picEnd && picture->getChar(i) == '\'')
+					if (i < picEnd && picture.at(i) == '\'')
 					{
-						s->append('\'');
+						s += '\'';
 						++i;
 					}
 					else
@@ -3598,14 +3483,14 @@ GString* AcroFormField::pictureFormatDateTime(GString* value, GString* picture)
 					++i;
 					if (i == picEnd)
 						break;
-					c = picture->getChar(i);
+					c = picture.at(i);
 					++i;
 					if (c == 'u' && i + 4 <= picEnd)
 					{
 						u = 0;
 						for (j = 0; j < 4; ++j, ++i)
 						{
-							c = picture->getChar(i);
+							c = picture.at(i);
 							u <<= 4;
 							if (c >= '0' && c <= '9')
 								u += c - '0';
@@ -3616,103 +3501,102 @@ GString* AcroFormField::pictureFormatDateTime(GString* value, GString* picture)
 						}
 						//~ this should convert to UTF-8 (?)
 						if (u <= 0xff)
-							s->append((char)u);
+							s += (char)u;
 					}
 					else
 					{
-						s->append(c);
+						s += c;
 					}
 				}
 				else
 				{
-					s->append(c);
+					s += c;
 				}
 			}
-			pic->append(new PictureLiteral(s));
+			pictures.push_back(PictureLiteral(s));
 		}
 		else if (c == ',' || c == '-' || c == ':' || c == '/' || c == '.' || c == ' ')
 		{
-			s = new GString();
-			s->append(c);
-			pic->append(new PictureLiteral(s));
+			std::string s;
+			s += c;
+			pictures.push_back(PictureLiteral(s));
 		}
 		else if (c == 'Y')
 		{
-			for (n = 1; n < 4 && i < picEnd && picture->getChar(i) == 'Y'; ++n, ++i)
+			for (n = 1; n < 4 && i < picEnd && picture.at(i) == 'Y'; ++n, ++i)
 				;
-			pic->append(new PictureYear(n));
+			pictures.push_back(PictureYear(n));
 		}
 		else if (c == 'M')
 		{
-			for (n = 1; n < 2 && i < picEnd && picture->getChar(i) == 'M'; ++n, ++i)
+			for (n = 1; n < 2 && i < picEnd && picture.at(i) == 'M'; ++n, ++i)
 				;
-			pic->append(new PictureMonth(n));
+			pictures.push_back(PictureMonth(n));
 		}
 		else if (c == 'D')
 		{
-			for (n = 1; n < 2 && i < picEnd && picture->getChar(i) == 'D'; ++n, ++i)
+			for (n = 1; n < 2 && i < picEnd && picture.at(i) == 'D'; ++n, ++i)
 				;
-			pic->append(new PictureDay(n));
+			pictures.push_back(PictureDay(n));
 		}
 		else if (c == 'h')
 		{
-			for (n = 1; n < 2 && i < picEnd && picture->getChar(i) == 'h'; ++n, ++i)
+			for (n = 1; n < 2 && i < picEnd && picture.at(i) == 'h'; ++n, ++i)
 				;
-			pic->append(new PictureHour(gFalse, n));
+			pictures.push_back(PictureHour(false, n));
 		}
 		else if (c == 'H')
 		{
-			for (n = 1; n < 2 && i < picEnd && picture->getChar(i) == 'H'; ++n, ++i)
+			for (n = 1; n < 2 && i < picEnd && picture.at(i) == 'H'; ++n, ++i)
 				;
-			pic->append(new PictureHour(gTrue, n));
+			pictures.push_back(PictureHour(true, n));
 		}
 		else if (c == 'M')
 		{
-			for (n = 1; n < 2 && i < picEnd && picture->getChar(i) == 'M'; ++n, ++i)
+			for (n = 1; n < 2 && i < picEnd && picture.at(i) == 'M'; ++n, ++i)
 				;
-			pic->append(new PictureMinute(n));
+			pictures.push_back(PictureMinute(n));
 		}
 		else if (c == 'S')
 		{
-			for (n = 1; n < 2 && i < picEnd && picture->getChar(i) == 'S'; ++n, ++i)
+			for (n = 1; n < 2 && i < picEnd && picture.at(i) == 'S'; ++n, ++i)
 				;
-			pic->append(new PictureSecond(n));
+			pictures.push_back(PictureSecond(n));
 		}
 	}
 
 	//--- generate formatted text
-
-	ret = new GString();
-	for (i = 0; i < pic->getLength(); ++i)
+	std::string ret;
+	for (auto& pic : pictures)
 	{
-		node = (PictureNode*)pic->get(i);
+		auto node = (PictureNode*)&pic;
 		if (node->isLiteral())
 		{
-			ret->append(((PictureLiteral*)node)->s);
+			ret += ((PictureLiteral*)node)->s;
 		}
 		else if (node->isYear())
 		{
 			if (((PictureYear*)node)->nDigits == 2)
 				if (year >= 1930 && year < 2030)
-					ret->appendf("{0:02d}", year % 100);
+					ret += fmt::format("{:02}", year % 100);
 				else
-					ret->append("??");
+					ret += "??";
 			else
-				ret->appendf("{0:04d}", year);
+				ret += fmt::format("{:04}", year);
 		}
 		else if (node->isMonth())
 		{
 			if (((PictureMonth*)node)->nDigits == 1)
-				ret->appendf("{0:d}", month);
+				ret += fmt::format("{}", month);
 			else
-				ret->appendf("{0:02d}", month);
+				ret += fmt::format("{:02}", month);
 		}
 		else if (node->isDay())
 		{
 			if (((PictureDay*)node)->nDigits == 1)
-				ret->appendf("{0:d}", day);
+				ret += fmt::format("{}", day);
 			else
-				ret->appendf("{0:02d}", day);
+				ret += fmt::format("{:02}", day);
 		}
 		else if (node->isHour())
 		{
@@ -3727,43 +3611,33 @@ GString* AcroFormField::pictureFormatDateTime(GString* value, GString* picture)
 					n = 12;
 			}
 			if (((PictureHour*)node)->nDigits == 1)
-				ret->appendf("{0:d}", n);
+				ret += fmt::format("{}", n);
 			else
-				ret->appendf("{0:02d}", n);
+				ret += fmt::format("{:02}", n);
 		}
 		else if (node->isMinute())
 		{
 			if (((PictureMinute*)node)->nDigits == 1)
-				ret->appendf("{0:d}", min);
+				ret += fmt::format("{}", min);
 			else
-				ret->appendf("{0:02d}", min);
+				ret += fmt::format("{:02}", min);
 		}
 		else if (node->isSecond())
 		{
 			if (((PictureSecond*)node)->nDigits == 1)
-				ret->appendf("{0:d}", sec);
+				ret += fmt::format("{}", sec);
 			else
-				ret->appendf("{0:02d}", sec);
+				ret += fmt::format("{:02}", sec);
 		}
 	}
-	deleteGList(pic, PictureNode);
 
 	return ret;
 }
 
-GString* AcroFormField::pictureFormatNumber(GString* value, GString* picture)
+std::string AcroFormField::pictureFormatNumber(const std::string& value, const std::string& picture)
 {
-	GList*       pic;
-	PictureNode* node;
-	GString *    ret, *s;
-	GBool        neg, haveDigits;
-	char         c;
-	int          start, decPt, trailingZero, len;
-	int          picStart, picEnd, u, pos, i, j;
-
-	len = value->getLength();
-	if (len == 0)
-		return value->copy();
+	const int len = TO_INT(value.size());
+	if (!len) return value;
 
 	//--- parse the value
 
@@ -3773,37 +3647,35 @@ GString* AcroFormField::pictureFormatNumber(GString* value, GString* picture)
 	//  |   |    +------ trailingZero
 	//  |   +----------- decPt
 	//  +--------------- start
-	start = 0;
-	neg   = gFalse;
-	if (value->getChar(start) == '-')
+	int start = 0;
+	int neg   = false;
+	if (value.at(start) == '-')
 	{
-		neg = gTrue;
+		neg = true;
 		++start;
 	}
-	else if (value->getChar(start) == '+')
+	else if (value.at(start) == '+')
 	{
 		++start;
 	}
-	for (decPt = start; decPt < len && value->getChar(decPt) != '.'; ++decPt)
+
+	int decPt, trailingZero;
+	for (decPt = start; decPt < len && value.at(decPt) != '.'; ++decPt)
 		;
-	for (trailingZero = len;
-	     trailingZero > decPt && value->getChar(trailingZero - 1) == '0';
-	     --trailingZero)
+	for (trailingZero = len; trailingZero > decPt && value.at(trailingZero - 1) == '0'; --trailingZero)
 		;
 
 	//--- skip the category and locale in the picture
 
-	picStart = 0;
-	picEnd   = picture->getLength();
-	for (i = 0; i < picture->getLength(); ++i)
+	int picStart = 0;
+	int picEnd   = TO_INT(picture.size());
+	for (int i = 0; i < TO_INT(picture.size()); ++i)
 	{
-		c = picture->getChar(i);
+		const char c = picture.at(i);
 		if (c == '{')
 		{
 			picStart = i + 1;
-			for (picEnd = picStart;
-			     picEnd < picture->getLength() && picture->getChar(picEnd) != '}';
-			     ++picEnd)
+			for (picEnd = picStart; picEnd < picture.size() && picture.at(picEnd) != '}'; ++picEnd)
 				;
 			break;
 		}
@@ -3814,25 +3686,24 @@ GString* AcroFormField::pictureFormatNumber(GString* value, GString* picture)
 	}
 
 	//--- parse the picture
-
-	pic = new GList();
-	i   = picStart;
+	std::vector<PictureNode> pictures;
+	int                      i = picStart;
 	while (i < picEnd)
 	{
-		c = picture->getChar(i);
+		char c = picture.at(i);
 		++i;
 		if (c == '\'')
 		{
-			s = new GString();
+			std::string s;
 			while (i < picEnd)
 			{
-				c = picture->getChar(i);
+				c = picture.at(i);
 				if (c == '\'')
 				{
 					++i;
-					if (i < picEnd && picture->getChar(i) == '\'')
+					if (i < picEnd && picture.at(i) == '\'')
 					{
-						s->append('\'');
+						s += '\'';
 						++i;
 					}
 					else
@@ -3845,14 +3716,14 @@ GString* AcroFormField::pictureFormatNumber(GString* value, GString* picture)
 					++i;
 					if (i == picEnd)
 						break;
-					c = picture->getChar(i);
+					c = picture.at(i);
 					++i;
 					if (c == 'u' && i + 4 <= picEnd)
 					{
-						u = 0;
-						for (j = 0; j < 4; ++j, ++i)
+						int u = 0;
+						for (int j = 0; j < 4; ++j, ++i)
 						{
-							c = picture->getChar(i);
+							c = picture.at(i);
 							u <<= 4;
 							if (c >= '0' && c <= '9')
 								u += c - '0';
@@ -3863,54 +3734,54 @@ GString* AcroFormField::pictureFormatNumber(GString* value, GString* picture)
 						}
 						//~ this should convert to UTF-8 (?)
 						if (u <= 0xff)
-							s->append((char)u);
+							s += (char)u;
 					}
 					else
 					{
-						s->append(c);
+						s += c;
 					}
 				}
 				else
 				{
-					s->append(c);
+					s += c;
 					++i;
 				}
 			}
-			pic->append(new PictureLiteral(s));
+			pictures.push_back(PictureLiteral(s));
 		}
 		else if (c == '-' || c == ':' || c == '/' || c == ' ')
 		{
-			s = new GString();
-			s->append(c);
-			pic->append(new PictureLiteral(s));
+			std::string s;
+			s += c;
+			pictures.push_back(PictureLiteral(s));
 		}
 		else if (c == 's' || c == 'S')
 		{
-			pic->append(new PictureSign(c));
+			pictures.push_back(PictureSign(c));
 		}
 		else if (c == 'Z' || c == 'z' || c == '8' || c == '9')
 		{
-			pic->append(new PictureDigit(c));
+			pictures.push_back(PictureDigit(c));
 		}
 		else if (c == '.')
 		{
-			pic->append(new PictureDecPt());
+			pictures.push_back(PictureDecPt());
 		}
 		else if (c == ',')
 		{
-			pic->append(new PictureSeparator());
+			pictures.push_back(PictureSeparator());
 		}
 	}
-	for (i = 0; i < pic->getLength(); ++i)
+	for (i = 0; auto& pic : pictures)
 	{
-		node = (PictureNode*)pic->get(i);
-		if (node->isDecPt())
-			break;
+		auto node = (PictureNode*)&pic;
+		if (node->isDecPt()) break;
+		++i;
 	}
-	pos = 0;
-	for (j = i - 1; j >= 0; --j)
+	int pos = 0;
+	for (int j = i - 1; j >= 0; --j)
 	{
-		node = (PictureNode*)pic->get(j);
+		auto node = (PictureNode*)&pictures[j];
 		if (node->isDigit())
 		{
 			((PictureDigit*)node)->pos = pos;
@@ -3918,9 +3789,9 @@ GString* AcroFormField::pictureFormatNumber(GString* value, GString* picture)
 		}
 	}
 	pos = -1;
-	for (j = i + 1; j < pic->getLength(); ++j)
+	for (int j = i + 1; j < pictures.size(); ++j)
 	{
-		node = (PictureNode*)pic->get(j);
+		auto node = (PictureNode*)&pictures[j];
 		if (node->isDigit())
 		{
 			((PictureDigit*)node)->pos = pos;
@@ -3929,93 +3800,83 @@ GString* AcroFormField::pictureFormatNumber(GString* value, GString* picture)
 	}
 
 	//--- generate formatted text
-
-	ret        = new GString();
-	haveDigits = gFalse;
-	for (i = 0; i < pic->getLength(); ++i)
+	std::string ret;
+	bool        haveDigits = false;
+	for (int i = -1; auto& pic : pictures)
 	{
-		node = (PictureNode*)pic->get(i);
+		++i;
+		auto node = (PictureNode*)&pic;
 		if (node->isLiteral())
 		{
-			ret->append(((PictureLiteral*)node)->s);
+			ret += ((PictureLiteral*)node)->s;
 		}
 		else if (node->isSign())
 		{
 			if (((PictureSign*)node)->c == 'S')
-				ret->append(neg ? '-' : ' ');
+				ret += (neg ? '-' : ' ');
 			else if (neg)
-				ret->append('-');
+				ret += '-';
 		}
 		else if (node->isDigit())
 		{
-			pos = ((PictureDigit*)node)->pos;
-			c   = ((PictureDigit*)node)->c;
+			const int  pos = ((PictureDigit*)node)->pos;
+			const char c   = ((PictureDigit*)node)->c;
 			if (pos >= 0 && pos < decPt - start)
 			{
-				ret->append(value->getChar(decPt - 1 - pos));
-				haveDigits = gTrue;
+				ret += value.at(decPt - 1 - pos);
+				haveDigits = true;
 			}
 			else if (pos < 0 && -pos <= trailingZero - decPt - 1)
 			{
-				ret->append(value->getChar(decPt - pos));
-				haveDigits = gTrue;
+				ret += value.at(decPt - pos);
+				haveDigits = true;
 			}
 			else if (c == '8' && pos < 0 && -pos <= len - decPt - 1)
 			{
-				ret->append('0');
-				haveDigits = gTrue;
+				ret += '0';
+				haveDigits = true;
 			}
 			else if (c == '9')
 			{
-				ret->append('0');
-				haveDigits = gTrue;
+				ret += '0';
+				haveDigits = true;
 			}
 			else if (c == 'Z' && pos >= 0)
 			{
-				ret->append(' ');
+				ret += ' ';
 			}
 		}
 		else if (node->isDecPt())
 		{
-			if (!(i + 1 < pic->getLength() && ((PictureNode*)pic->get(i + 1))->isDigit() && ((PictureDigit*)pic->get(i + 1))->c == 'z') || trailingZero > decPt + 1)
-				ret->append('.');
+			if (!(i + 1 < pictures.size() && ((PictureNode*)&pictures[i + 1])->isDigit() && ((PictureDigit*)&pictures[i + 1])->c == 'z') || trailingZero > decPt + 1)
+				ret += '.';
 		}
 		else if (node->isSeparator())
 		{
 			if (haveDigits)
-				ret->append(',');
+				ret += ',';
 		}
 	}
-	deleteGList(pic, PictureNode);
 
 	return ret;
 }
 
-GString* AcroFormField::pictureFormatText(GString* value, GString* picture)
+std::string AcroFormField::pictureFormatText(const std::string& value, const std::string& picture)
 {
-	GList*       pic;
-	PictureNode* node;
-	GString *    ret, *s;
-	char         c;
-	int          len, picStart, picEnd, u, i, j;
-
-	len = value->getLength();
-	if (len == 0)
-		return value->copy();
+	const int len = TO_INT(value.size());
+	if (len == 0) return value;
 
 	//--- skip the category and locale in the picture
 
-	picStart = 0;
-	picEnd   = picture->getLength();
-	for (i = 0; i < picture->getLength(); ++i)
+	int picStart = 0;
+	int picEnd   = TO_INT(picture.size());
+	for (int i = 0; i < picture.size(); ++i)
 	{
-		c = picture->getChar(i);
+		const char c = picture.at(i);
 		if (c == '{')
 		{
 			picStart = i + 1;
-			for (picEnd = picStart;
-			     picEnd < picture->getLength() && picture->getChar(picEnd) != '}';
-			     ++picEnd)
+			for (picEnd = picStart; picEnd < picture.size() && picture.at(picEnd) != '}'; ++picEnd)
 				;
 			break;
 		}
@@ -4026,25 +3887,24 @@ GString* AcroFormField::pictureFormatText(GString* value, GString* picture)
 	}
 
 	//--- parse the picture
-
-	pic = new GList();
-	i   = picStart;
+	std::vector<PictureNode> pictures;
+	int                      i = picStart;
 	while (i < picEnd)
 	{
-		c = picture->getChar(i);
+		char c = picture.at(i);
 		++i;
 		if (c == '\'')
 		{
-			s = new GString();
+			std::string s;
 			while (i < picEnd)
 			{
-				c = picture->getChar(i);
+				c = picture.at(i);
 				if (c == '\'')
 				{
 					++i;
-					if (i < picEnd && picture->getChar(i) == '\'')
+					if (i < picEnd && picture.at(i) == '\'')
 					{
-						s->append('\'');
+						s += '\'';
 						++i;
 					}
 					else
@@ -4057,14 +3917,14 @@ GString* AcroFormField::pictureFormatText(GString* value, GString* picture)
 					++i;
 					if (i == picEnd)
 						break;
-					c = picture->getChar(i);
+					c = picture.at(i);
 					++i;
 					if (c == 'u' && i + 4 <= picEnd)
 					{
-						u = 0;
-						for (j = 0; j < 4; ++j, ++i)
+						int u = 0;
+						for (int j = 0; j < 4; ++j, ++i)
 						{
-							c = picture->getChar(i);
+							c = picture.at(i);
 							u <<= 4;
 							if (c >= '0' && c <= '9')
 								u += c - '0';
@@ -4075,84 +3935,75 @@ GString* AcroFormField::pictureFormatText(GString* value, GString* picture)
 						}
 						//~ this should convert to UTF-8 (?)
 						if (u <= 0xff)
-							s->append((char)u);
+							s += (char)u;
 					}
 					else
 					{
-						s->append(c);
+						s += c;
 					}
 				}
 				else
 				{
-					s->append(c);
+					s += c;
 					++i;
 				}
 			}
-			pic->append(new PictureLiteral(s));
+			pictures.push_back(PictureLiteral(s));
 		}
 		else if (c == ',' || c == '-' || c == ':' || c == '/' || c == '.' || c == ' ')
 		{
-			s = new GString();
-			s->append(c);
-			pic->append(new PictureLiteral(s));
+			std::string s;
+			s += c;
+			pictures.push_back(PictureLiteral(s));
 		}
 		else if (c == 'A' || c == 'X' || c == 'O' || c == '0' || c == '9')
 		{
-			pic->append(new PictureChar());
+			pictures.push_back(PictureChar());
 		}
 	}
 
 	//--- generate formatted text
 
-	ret = new GString();
-	j   = 0;
-	for (i = 0; i < pic->getLength(); ++i)
+	std::string ret;
+	for (int j = 0; const auto& pic : pictures)
 	{
-		node = (PictureNode*)pic->get(i);
+		const auto& node = (PictureNode*)&pic;
 		if (node->isLiteral())
 		{
-			ret->append(((PictureLiteral*)node)->s);
+			ret += ((PictureLiteral*)node)->s;
 		}
 		else if (node->isChar())
 		{
 			// if there are more chars in the picture than in the value,
 			// Adobe renders the value as-is, without picture formatting
-			if (j >= value->getLength())
+			if (j >= value.size())
 			{
-				delete ret;
-				ret = value->copy();
+				ret = value;
 				break;
 			}
-			ret->append(value->getChar(j));
+			ret += value.at(j);
 			++j;
 		}
 	}
-	deleteGList(pic, PictureNode);
 
 	return ret;
 }
 
-GBool AcroFormField::isValidInt(GString* s, int start, int len)
+bool AcroFormField::isValidInt(const std::string& s, int start, int len)
 {
-	int i;
-
-	for (i = 0; i < len; ++i)
-		if (!(start + i < s->getLength() && s->getChar(start + i) >= '0' && s->getChar(start + i) <= '9'))
-			return gFalse;
-	return gTrue;
+	for (int i = 0; i < len; ++i)
+		if (!(start + i < s.size() && s.at(start + i) >= '0' && s.at(start + i) <= '9'))
+			return false;
+	return true;
 }
 
-int AcroFormField::convertInt(GString* s, int start, int len)
+int AcroFormField::convertInt(const std::string& s, int start, int len)
 {
-	char c;
-	int  x, i;
-
-	x = 0;
-	for (i = 0; i < len && start + i < s->getLength(); ++i)
+	int x = 0;
+	for (int i = 0; i < len && start + i < s.size(); ++i)
 	{
-		c = s->getChar(start + i);
-		if (c < '0' || c > '9')
-			break;
+		const char c = s.at(start + i);
+		if (c < '0' || c > '9') break;
 		x = x * 10 + (c - '0');
 	}
 	return x;

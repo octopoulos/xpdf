@@ -6,12 +6,9 @@
 //
 //========================================================================
 
-#ifndef FOFITYPE1_H
-#define FOFITYPE1_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
 #include "FoFiBase.h"
 
 //------------------------------------------------------------------------
@@ -32,8 +29,7 @@ public:
 	// Return the font name.
 	char* getName();
 
-	// Return the encoding, as an array of 256 names (any of which may
-	// be NULL).
+	// Return the encoding, as an array of 256 names (any of which may be nullptr).
 	char** getEncoding();
 
 	// Return the font matrix as an array of six numbers.
@@ -43,7 +39,7 @@ public:
 	void writeEncoded(const char** newEncoding, FoFiOutputFunc outputFunc, void* outputStream);
 
 private:
-	FoFiType1(char* fileA, int lenA, GBool freeFileDataA);
+	FoFiType1(char* fileA, int lenA, bool freeFileDataA);
 
 	char* getNextLine(char* line);
 	void  parse();
@@ -52,7 +48,5 @@ private:
 	char*  name;
 	char** encoding;
 	double fontMatrix[6];
-	GBool  parsed;
+	bool   parsed;
 };
-
-#endif

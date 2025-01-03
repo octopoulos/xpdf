@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdlib.h>
 #include <string.h>
 #if HAVE_STD_SORT
@@ -35,7 +34,7 @@ struct SplashXPathPoint
 struct SplashXPathAdjust
 {
 	int         firstPt, lastPt; // range of points
-	GBool       vert;            // vertical or horizontal hint
+	bool        vert;            // vertical or horizontal hint
 	SplashCoord x0a, x0b,        // hint boundaries
 	    xma, xmb,
 	    x1a, x1b;
@@ -77,12 +76,12 @@ void SplashXPath::clampCoords(SplashCoord* x, SplashCoord* y)
 #endif
 }
 
-SplashXPath::SplashXPath(SplashPath* path, SplashCoord* matrix, SplashCoord flatness, GBool closeSubpaths, GBool simplify, SplashStrokeAdjustMode strokeAdjMode, SplashClip* clip)
+SplashXPath::SplashXPath(SplashPath* path, SplashCoord* matrix, SplashCoord flatness, bool closeSubpaths, bool simplify, SplashStrokeAdjustMode strokeAdjMode, SplashClip* clip)
 {
 	SplashXPathPoint* pts;
 	SplashCoord       x0, y0, x1, y1, x2, y2, x3, y3, xsp, ysp, t;
 	int               curSubpath, firstSegInSubpath, i;
-	GBool             adjusted;
+	bool              adjusted;
 
 	//--- transform the points
 	pts = (SplashXPathPoint*)gmallocn(path->length, sizeof(SplashXPathPoint));
@@ -96,11 +95,11 @@ SplashXPath::SplashXPath(SplashPath* path, SplashCoord* matrix, SplashCoord flat
 	if (path->hints)
 		adjusted = strokeAdjust(pts, path->hints, path->hintsLength, strokeAdjMode, clip);
 	else
-		adjusted = gFalse;
+		adjusted = false;
 
 	//--- construct the segments
 
-	segs   = NULL;
+	segs   = nullptr;
 	length = size = 0;
 
 	x0 = y0 = xsp = ysp = 0; // make gcc happy
@@ -164,7 +163,7 @@ SplashXPath::SplashXPath(SplashPath* path, SplashCoord* matrix, SplashCoord flat
 	finishSegments();
 
 	//--- check for a rectangle
-	isRect = gFalse;
+	isRect = false;
 	rectX0 = rectY0 = rectX1 = rectY1 = 0;
 	if (length == 4)
 	{
@@ -175,7 +174,7 @@ SplashXPath::SplashXPath(SplashPath* path, SplashCoord* matrix, SplashCoord flat
 #endif
 		if (segs[0].y0 == segs[0].y1 && segs[1].x0 == segs[1].x1 && segs[2].x0 == segs[2].x1 && segs[3].y0 == segs[3].y1)
 		{
-			isRect = gTrue;
+			isRect = true;
 			rectX0 = segs[1].x0;
 			rectX1 = segs[2].x0;
 			rectY0 = segs[0].y0;
@@ -183,7 +182,7 @@ SplashXPath::SplashXPath(SplashPath* path, SplashCoord* matrix, SplashCoord flat
 		}
 		else if (segs[0].x0 == segs[0].x1 && segs[1].y0 == segs[1].y1 && segs[2].x0 == segs[2].x1 && segs[3].y0 == segs[3].y1)
 		{
-			isRect = gTrue;
+			isRect = true;
 			rectX0 = segs[0].x0;
 			rectX1 = segs[2].x0;
 			rectY0 = segs[1].y0;
@@ -191,7 +190,7 @@ SplashXPath::SplashXPath(SplashPath* path, SplashCoord* matrix, SplashCoord flat
 		}
 		else if (segs[0].x0 == segs[0].x1 && segs[1].x0 == segs[1].x1 && segs[2].y0 == segs[2].y1 && segs[3].y0 == segs[3].y1)
 		{
-			isRect = gTrue;
+			isRect = true;
 			rectX0 = segs[0].x0;
 			rectX1 = segs[1].x0;
 			rectY0 = segs[2].y0;
@@ -215,7 +214,7 @@ SplashXPath::SplashXPath(SplashPath* path, SplashCoord* matrix, SplashCoord flat
 	}
 }
 
-GBool SplashXPath::strokeAdjust(SplashXPathPoint* pts, SplashPathHint* hints, int nHints, SplashStrokeAdjustMode strokeAdjMode, SplashClip* clip)
+bool SplashXPath::strokeAdjust(SplashXPathPoint* pts, SplashPathHint* hints, int nHints, SplashStrokeAdjustMode strokeAdjMode, SplashClip* clip)
 {
 	SplashXPathAdjust *adjusts, *adjust;
 	SplashPathHint*    hint;
@@ -223,18 +222,18 @@ GBool SplashXPath::strokeAdjust(SplashXPathPoint* pts, SplashPathHint* hints, in
 	SplashCoord        adj0, adj1, w, d;
 	int                xi0, xi1;
 	int                i, j;
-	GBool              adjusted;
+	bool               adjusted;
 
-	adjusted = gFalse;
+	adjusted = false;
 
 	// With CAD-mode stroke adjustment, and a simple rectangular clip
 	// region, stroke-adjusted edges that fall slightly outside the clip
 	// region are adjusted back inside the clip region.  This avoids
 	// problems with narrow lines in slightly mismatched clip
 	// rectangles, which appear to be generated somewhat commonly by
-	// buggy CAD software.  (Note: [clip] is NULL when called to build a
+	// buggy CAD software.  (Note: [clip] is nullptr when called to build a
 	// clip path.)
-	GBool       clipTweak = clip && clip->getIsSimple() && strokeAdjMode == splashStrokeAdjustCAD;
+	bool        clipTweak = clip && clip->getIsSimple() && strokeAdjMode == splashStrokeAdjustCAD;
 	SplashCoord cx0 = 0, cx1 = 0, cy0 = 0, cy1 = 0;
 	int         cxi0 = 0, cxi1 = 0, cyi0 = 0, cyi1 = 0;
 	if (clipTweak)
@@ -265,7 +264,7 @@ GBool SplashXPath::strokeAdjust(SplashXPathPoint* pts, SplashPathHint* hints, in
 		w    = -1;
 		if (splashAbs(x0 - x1) < 0.01 && splashAbs(x2 - x3) < 0.01)
 		{
-			adjusts[i].vert = gTrue;
+			adjusts[i].vert = true;
 			adj0            = x0;
 			adj1            = x2;
 			if (hint->projectingCap)
@@ -273,7 +272,7 @@ GBool SplashXPath::strokeAdjust(SplashXPathPoint* pts, SplashPathHint* hints, in
 		}
 		else if (splashAbs(y0 - y1) < 0.01 && splashAbs(y2 - y3) < 0.01)
 		{
-			adjusts[i].vert = gFalse;
+			adjusts[i].vert = false;
 			adj0            = y0;
 			adj1            = y2;
 			if (hint->projectingCap)
@@ -367,7 +366,7 @@ GBool SplashXPath::strokeAdjust(SplashXPathPoint* pts, SplashPathHint* hints, in
 			}
 		}
 	}
-	adjusted = gTrue;
+	adjusted = true;
 
 done:
 	gfree(adjusts);
@@ -404,7 +403,7 @@ void SplashXPath::grow(int nSegs)
 	}
 }
 
-void SplashXPath::addCurve(SplashCoord x0, SplashCoord y0, SplashCoord x1, SplashCoord y1, SplashCoord x2, SplashCoord y2, SplashCoord x3, SplashCoord y3, SplashCoord flatness, GBool first, GBool last, GBool end0, GBool end1)
+void SplashXPath::addCurve(SplashCoord x0, SplashCoord y0, SplashCoord x1, SplashCoord y1, SplashCoord x2, SplashCoord y2, SplashCoord x3, SplashCoord y3, SplashCoord flatness, bool first, bool last, bool end0, bool end1)
 {
 	SplashCoord cx[splashMaxCurveSplits + 1][3];
 	SplashCoord cy[splashMaxCurveSplits + 1][3];
@@ -517,7 +516,7 @@ void SplashXPath::addSegment(SplashCoord x0, SplashCoord y0, SplashCoord x1, Spl
 
 // Returns true if the angle between (x0,y0)-(x1,y1) and
 // (x1,y1)-(x2,y2) is close to 180 degrees.
-static GBool joinAngleIsFlat(SplashCoord x0, SplashCoord y0, SplashCoord x1, SplashCoord y1, SplashCoord x2, SplashCoord y2)
+static bool joinAngleIsFlat(SplashCoord x0, SplashCoord y0, SplashCoord x1, SplashCoord y1, SplashCoord x2, SplashCoord y2)
 {
 	SplashCoord dx1, dy1, dx2, dy2, d, len1, len2;
 
@@ -534,7 +533,7 @@ static GBool joinAngleIsFlat(SplashCoord x0, SplashCoord y0, SplashCoord x1, Spl
 // Returns true if (x1,y1) is sufficiently close to the segment
 // (x0,y0)-(x2,y2), looking at the perpendicular point-to-line
 // distance.
-static GBool pointCloseToSegment(SplashCoord x0, SplashCoord y0, SplashCoord x1, SplashCoord y1, SplashCoord x2, SplashCoord y2)
+static bool pointCloseToSegment(SplashCoord x0, SplashCoord y0, SplashCoord x1, SplashCoord y1, SplashCoord x2, SplashCoord y2)
 {
 	SplashCoord t1, t2, dx, dy;
 
@@ -562,8 +561,8 @@ static GBool pointCloseToSegment(SplashCoord x0, SplashCoord y0, SplashCoord x1,
 // segments in [first] .. [length]-1.
 void SplashXPath::mergeSegments(int first)
 {
-	GBool horiz, vert;
-	int   in, out, prev, i, j;
+	bool horiz, vert;
+	int  in, out, prev, i, j;
 
 	in = out = first;
 	while (in < length)

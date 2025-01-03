@@ -7,9 +7,7 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include "gmempp.h"
-#include "GString.h"
 #include "GList.h"
 #include "Error.h"
 #include "Object.h"
@@ -42,7 +40,6 @@ OptionalContent::OptionalContent(PDFDoc* doc)
 	Object                ocgList, defView, uad, obj1, obj2, obj3, obj4;
 	Ref                   ref1;
 	OptionalContentGroup* ocg;
-	int                   i, j;
 
 	xref    = doc->getXRef();
 	ocgs    = new GList();
@@ -53,7 +50,7 @@ OptionalContent::OptionalContent(PDFDoc* doc)
 		if (ocProps->dictLookup("OCGs", &ocgList)->isArray())
 		{
 			//----- read the OCG list
-			for (i = 0; i < ocgList.arrayGetLength(); ++i)
+			for (int i = 0; i < ocgList.arrayGetLength(); ++i)
 			{
 				if (ocgList.arrayGetNF(i, &obj1)->isRef())
 				{
@@ -72,7 +69,7 @@ OptionalContent::OptionalContent(PDFDoc* doc)
 				//----- read the usage app dicts
 				if (defView.dictLookup("AS", &obj1)->isArray())
 				{
-					for (i = 0; i < obj1.arrayGetLength(); ++i)
+					for (int i = 0; i < obj1.arrayGetLength(); ++i)
 					{
 						if (obj1.arrayGet(i, &uad)->isDict())
 						{
@@ -80,7 +77,7 @@ OptionalContent::OptionalContent(PDFDoc* doc)
 							{
 								if (uad.dictLookup("OCGs", &obj3)->isArray())
 								{
-									for (j = 0; j < obj3.arrayGetLength(); ++j)
+									for (int j = 0; j < obj3.arrayGetLength(); ++j)
 									{
 										if (obj3.arrayGetNF(j, &obj4)->isRef())
 										{
@@ -103,13 +100,13 @@ OptionalContent::OptionalContent(PDFDoc* doc)
 				//----- initial state from OCCD
 				if (defView.dictLookup("OFF", &obj1)->isArray())
 				{
-					for (i = 0; i < obj1.arrayGetLength(); ++i)
+					for (int i = 0; i < obj1.arrayGetLength(); ++i)
 					{
 						if (obj1.arrayGetNF(i, &obj2)->isRef())
 						{
 							ref1 = obj2.getRef();
 							if ((ocg = findOCG(&ref1)))
-								ocg->setState(gFalse);
+								ocg->setState(false);
 							else
 								error(errSyntaxError, -1, "Invalid OCG reference in OFF array in default viewing OCCD");
 						}
@@ -119,7 +116,7 @@ OptionalContent::OptionalContent(PDFDoc* doc)
 				obj1.free();
 
 				//----- initial state from OCG usage dict
-				for (i = 0; i < ocgs->getLength(); ++i)
+				for (int i = 0; i < ocgs->getLength(); ++i)
 				{
 					ocg = (OptionalContentGroup*)ocgs->get(i);
 					if (ocg->getInViewUsageAppDict() && ocg->getViewState() != ocUsageUnset)
@@ -163,9 +160,8 @@ OptionalContentGroup* OptionalContent::getOCG(int idx)
 OptionalContentGroup* OptionalContent::findOCG(Ref* ref)
 {
 	OptionalContentGroup* ocg;
-	int                   i;
 
-	for (i = 0; i < ocgs->getLength(); ++i)
+	for (int i = 0; i < ocgs->getLength(); ++i)
 	{
 		ocg = (OptionalContentGroup*)ocgs->get(i);
 		if (ocg->matches(ref))
@@ -174,31 +170,29 @@ OptionalContentGroup* OptionalContent::findOCG(Ref* ref)
 	return nullptr;
 }
 
-GBool OptionalContent::evalOCObject(Object* obj, GBool* visible)
+bool OptionalContent::evalOCObject(Object* obj, bool* visible)
 {
 	OptionalContentGroup* ocg;
 	int                   policy;
 	Ref                   ref;
 	Object                obj2, obj3, obj4, obj5;
-	GBool                 gotOCG;
-	int                   i;
+	bool                  gotOCG;
 
-	if (obj->isNull())
-		return gFalse;
+	if (obj->isNull()) return false;
 	if (obj->isRef())
 	{
 		ref = obj->getRef();
 		if ((ocg = findOCG(&ref)))
 		{
 			*visible = ocg->getState();
-			return gTrue;
+			return true;
 		}
 	}
 	obj->fetch(xref, &obj2);
 	if (!obj2.isDict("OCMD"))
 	{
 		obj2.free();
-		return gFalse;
+		return false;
 	}
 	if (obj2.dictLookup("VE", &obj3)->isArray())
 	{
@@ -240,10 +234,10 @@ GBool OptionalContent::evalOCObject(Object* obj, GBool* visible)
 				obj4.free();
 				obj3.free();
 				obj2.free();
-				return gFalse;
+				return false;
 			}
-			gotOCG = gFalse;
-			for (i = 0; i < obj4.arrayGetLength(); ++i)
+			gotOCG = false;
+			for (int i = 0; i < obj4.arrayGetLength(); ++i)
 			{
 				obj4.arrayGetNF(i, &obj5);
 				if (obj5.isRef())
@@ -251,7 +245,7 @@ GBool OptionalContent::evalOCObject(Object* obj, GBool* visible)
 					ref = obj5.getRef();
 					if ((ocg = findOCG(&ref)))
 					{
-						gotOCG = gTrue;
+						gotOCG = true;
 						switch (policy)
 						{
 						case ocPolicyAllOn:
@@ -279,28 +273,27 @@ GBool OptionalContent::evalOCObject(Object* obj, GBool* visible)
 				obj4.free();
 				obj3.free();
 				obj2.free();
-				return gFalse;
+				return false;
 			}
 			obj4.free();
 		}
 		obj3.free();
 	}
 	obj2.free();
-	return gTrue;
+	return true;
 }
 
-GBool OptionalContent::evalOCVisibilityExpr(Object* expr, int recursion)
+bool OptionalContent::evalOCVisibilityExpr(Object* expr, int recursion)
 {
 	OptionalContentGroup* ocg;
 	Object                expr2, op, obj;
 	Ref                   ref;
-	GBool                 ret;
-	int                   i;
+	bool                  ret;
 
 	if (recursion > visibilityExprRecursionLimit)
 	{
 		error(errSyntaxError, -1, "Loop detected in optional content visibility expression");
-		return gTrue;
+		return true;
 	}
 	if (expr->isRef())
 	{
@@ -313,7 +306,7 @@ GBool OptionalContent::evalOCVisibilityExpr(Object* expr, int recursion)
 	{
 		error(errSyntaxError, -1, "Invalid optional content visibility expression");
 		expr2.free();
-		return gTrue;
+		return true;
 	}
 	expr2.arrayGet(0, &op);
 	if (op.isName("Not"))
@@ -327,13 +320,13 @@ GBool OptionalContent::evalOCVisibilityExpr(Object* expr, int recursion)
 		else
 		{
 			error(errSyntaxError, -1, "Invalid optional content visibility expression");
-			ret = gTrue;
+			ret = true;
 		}
 	}
 	else if (op.isName("And"))
 	{
-		ret = gTrue;
-		for (i = 1; i < expr2.arrayGetLength() && ret; ++i)
+		ret = true;
+		for (int i = 1; i < expr2.arrayGetLength() && ret; ++i)
 		{
 			expr2.arrayGetNF(i, &obj);
 			ret = evalOCVisibilityExpr(&obj, recursion + 1);
@@ -342,8 +335,8 @@ GBool OptionalContent::evalOCVisibilityExpr(Object* expr, int recursion)
 	}
 	else if (op.isName("Or"))
 	{
-		ret = gFalse;
-		for (i = 1; i < expr2.arrayGetLength() && !ret; ++i)
+		ret = false;
+		for (int i = 1; i < expr2.arrayGetLength() && !ret; ++i)
 		{
 			expr2.arrayGetNF(i, &obj);
 			ret = evalOCVisibilityExpr(&obj, recursion + 1);
@@ -353,7 +346,7 @@ GBool OptionalContent::evalOCVisibilityExpr(Object* expr, int recursion)
 	else
 	{
 		error(errSyntaxError, -1, "Invalid optional content visibility expression");
-		ret = gTrue;
+		ret = true;
 	}
 	op.free();
 	expr2.free();
@@ -368,8 +361,7 @@ OptionalContentGroup* OptionalContentGroup::parse(Ref* refA, Object* obj)
 	Object       obj1, obj2, obj3;
 	OCUsageState viewStateA, printStateA;
 
-	if (!obj->isDict())
-		return nullptr;
+	if (!obj->isDict()) return nullptr;
 	if (!obj->dictLookup("Name", &obj1)->isString())
 	{
 		error(errSyntaxError, -1, "Missing or invalid Name in OCG");
@@ -418,8 +410,8 @@ OptionalContentGroup::OptionalContentGroup(Ref* refA, TextString* nameA, OCUsage
 	name               = nameA;
 	viewState          = viewStateA;
 	printState         = printStateA;
-	state              = gTrue;
-	inViewUsageAppDict = gFalse;
+	state              = true;
+	inViewUsageAppDict = false;
 }
 
 OptionalContentGroup::~OptionalContentGroup()
@@ -427,7 +419,7 @@ OptionalContentGroup::~OptionalContentGroup()
 	delete name;
 }
 
-GBool OptionalContentGroup::matches(Ref* refA)
+bool OptionalContentGroup::matches(Ref* refA)
 {
 	return refA->num == ref.num && refA->gen == ref.gen;
 }
@@ -450,7 +442,6 @@ OCDisplayNode* OCDisplayNode::parse(Object* obj, OptionalContent* oc, XRef* xref
 	Ref                   ref;
 	OptionalContentGroup* ocgA;
 	OCDisplayNode *       node, *child;
-	int                   i;
 
 	if (recursion > displayNodeRecursionLimit)
 	{
@@ -469,7 +460,7 @@ OCDisplayNode* OCDisplayNode::parse(Object* obj, OptionalContent* oc, XRef* xref
 		obj2.free();
 		return nullptr;
 	}
-	i = 0;
+	int i = 0;
 	if (obj2.arrayGetLength() >= 1)
 	{
 		if (obj2.arrayGet(0, &obj3)->isString())
@@ -517,7 +508,7 @@ OCDisplayNode::OCDisplayNode()
 	children = nullptr;
 }
 
-OCDisplayNode::OCDisplayNode(GString* nameA)
+OCDisplayNode::OCDisplayNode(const std::string& nameA)
 {
 	name     = new TextString(nameA);
 	ocg      = nullptr;
@@ -533,20 +524,17 @@ OCDisplayNode::OCDisplayNode(OptionalContentGroup* ocgA)
 
 void OCDisplayNode::addChild(OCDisplayNode* child)
 {
-	if (!children)
-		children = new GList();
+	if (!children) children = new GList();
 	children->append(child);
 	child->parent = this;
 }
 
 void OCDisplayNode::addChildren(GList* childrenA)
 {
-	int i;
-
 	if (!children)
 		children = new GList();
 	children->append(childrenA);
-	for (i = 0; i < childrenA->getLength(); ++i)
+	for (int i = 0; i < childrenA->getLength(); ++i)
 		((OCDisplayNode*)childrenA->get(i))->parent = this;
 	delete childrenA;
 }
@@ -554,11 +542,10 @@ void OCDisplayNode::addChildren(GList* childrenA)
 GList* OCDisplayNode::takeChildren()
 {
 	GList* childrenA;
-	int    i;
 
 	childrenA = children;
 	children  = nullptr;
-	for (i = 0; i < childrenA->getLength(); ++i)
+	for (int i = 0; i < childrenA->getLength(); ++i)
 		((OCDisplayNode*)childrenA->get(i))->parent = nullptr;
 	return childrenA;
 }
@@ -566,8 +553,7 @@ GList* OCDisplayNode::takeChildren()
 OCDisplayNode::~OCDisplayNode()
 {
 	delete name;
-	if (children)
-		deleteGList(children, OCDisplayNode);
+	if (children) deleteGList(children, OCDisplayNode);
 }
 
 Unicode* OCDisplayNode::getName()
@@ -582,8 +568,7 @@ int OCDisplayNode::getNameLength()
 
 int OCDisplayNode::getNumChildren()
 {
-	if (!children)
-		return 0;
+	if (!children) return 0;
 	return children->getLength();
 }
 

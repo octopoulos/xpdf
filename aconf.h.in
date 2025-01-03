@@ -138,6 +138,8 @@
 /*
  * Load fonts from memory
  */
-#cmakedefine LOAD_FONTS_FROM_MEM
+#cmakedefine01 LOAD_FONTS_FROM_MEM
+
+#include "stdafx.h"
 
 #endif

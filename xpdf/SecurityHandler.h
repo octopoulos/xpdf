@@ -6,15 +6,11 @@
 //
 //========================================================================
 
-#ifndef SECURITYHANDLER_H
-#define SECURITYHANDLER_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
 #include "Object.h"
 
-class GString;
 class PDFDoc;
 struct XpdfSecurityHandler;
 
@@ -31,7 +27,7 @@ public:
 	virtual ~SecurityHandler();
 
 	// Returns true if the file is actually unencrypted.
-	virtual GBool isUnencrypted() { return gFalse; }
+	virtual bool isUnencrypted() { return false; }
 
 	// Check the document's encryption.  If the document is encrypted,
 	// this will first try <ownerPassword> and <userPassword> (in
@@ -42,12 +38,12 @@ public:
 	// document can be opened (if it's unencrypted, or if a correct
 	// password is obtained); false otherwise (encrypted and no correct
 	// password).
-	GBool checkEncryption(GString* ownerPassword, GString* userPassword);
+	bool checkEncryption(const std::string& ownerPassword, const std::string& userPassword);
 
 	// Create authorization data for the specified owner and user
 	// passwords.  If the security handler doesn't support "batch" mode,
 	// this function should return nullptr.
-	virtual void* makeAuthData(GString* ownerPassword, GString* userPassword) = 0;
+	virtual void* makeAuthData(const std::string& ownerPassword, const std::string& userPassword) = 0;
 
 	// Construct authorization data, typically by prompting the user for
 	// a password.  Returns an authorization data object, or nullptr to
@@ -62,13 +58,13 @@ public:
 	// authorization data (which may be nullptr).  Returns true if
 	// successful (i.e., if at least the right to open the document was
 	// granted).
-	virtual GBool authorize(void* authData) = 0;
+	virtual bool authorize(void* authData) = 0;
 
 	// Return the various authorization parameters.  These are only
 	// valid after authorize has returned true.
 	virtual int            getPermissionFlags() = 0;
-	virtual GBool          getOwnerPasswordOk() = 0;
-	virtual Guchar*        getFileKey()         = 0;
+	virtual bool           getOwnerPasswordOk() = 0;
+	virtual uint8_t*       getFileKey()         = 0;
 	virtual int            getFileKeyLength()   = 0;
 	virtual int            getEncVersion()      = 0;
 	virtual CryptAlgorithm getEncAlgorithm()    = 0;
@@ -87,17 +83,17 @@ public:
 	StandardSecurityHandler(PDFDoc* docA, Object* encryptDictA);
 	virtual ~StandardSecurityHandler();
 
-	virtual GBool isUnencrypted();
-	virtual void* makeAuthData(GString* ownerPassword, GString* userPassword);
+	virtual bool  isUnencrypted();
+	virtual void* makeAuthData(const std::string& ownerPassword, const std::string& userPassword);
 	virtual void* getAuthData();
 	virtual void  freeAuthData(void* authData);
-	virtual GBool authorize(void* authData);
+	virtual bool  authorize(void* authData);
 
 	virtual int getPermissionFlags() { return permFlags; }
 
-	virtual GBool getOwnerPasswordOk() { return ownerPasswordOk; }
+	virtual bool getOwnerPasswordOk() { return ownerPasswordOk; }
 
-	virtual Guchar* getFileKey() { return fileKey; }
+	virtual uint8_t* getFileKey() { return fileKey; }
 
 	virtual int getFileKeyLength() { return fileKeyLength; }
 
@@ -106,19 +102,18 @@ public:
 	virtual CryptAlgorithm getEncAlgorithm() { return encAlgorithm; }
 
 private:
-	int            permFlags;
-	GBool          ownerPasswordOk;
-	Guchar         fileKey[32];
-	int            fileKeyLength;
-	int            encVersion;
-	int            encRevision;
-	CryptAlgorithm encAlgorithm;
-	GBool          encryptMetadata;
-
-	GString *ownerKey, *userKey;
-	GString *ownerEnc, *userEnc;
-	GString* fileID;
-	GBool    ok;
+	int            permFlags;       //
+	bool           ownerPasswordOk; //
+	uint8_t        fileKey[32];     //
+	int            fileKeyLength;   //
+	int            encVersion;      //
+	int            encRevision;     //
+	CryptAlgorithm encAlgorithm;    //
+	bool           encryptMetadata; //
+	std::string    ownerKey;        //
+	std::string    userKey;         //
+	std::string    ownerEnc;        //
+	std::string    userEnc;         //
+	std::string    fileID;          //
+	bool           ok;              //
 };
-
-#endif

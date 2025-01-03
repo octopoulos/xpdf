@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stddef.h>
 #include <string.h>
 #include "gmem.h"
@@ -42,9 +41,7 @@ Dict::Dict(XRef* xrefA)
 
 Dict::~Dict()
 {
-	int i;
-
-	for (i = 0; i < length; ++i)
+	for (int i = 0; i < length; ++i)
 	{
 		gfree(entries[i].key);
 		entries[i].val.free();
@@ -56,7 +53,6 @@ Dict::~Dict()
 void Dict::add(char* key, Object* val)
 {
 	DictEntry* e;
-	int        h;
 
 	if ((e = find(key)))
 	{
@@ -68,7 +64,8 @@ void Dict::add(char* key, Object* val)
 	{
 		if (length == size)
 			expand();
-		h                    = hash(key);
+
+		const int h          = hash(key);
 		entries[length].key  = key;
 		entries[length].val  = *val;
 		entries[length].next = hashTab[h];
@@ -79,15 +76,13 @@ void Dict::add(char* key, Object* val)
 
 void Dict::expand()
 {
-	int h, i;
-
 	size *= 2;
 	entries = (DictEntry*)greallocn(entries, size, sizeof(DictEntry));
 	hashTab = (DictEntry**)greallocn(hashTab, 2 * size - 1, sizeof(DictEntry*));
 	memset(hashTab, 0, (2 * size - 1) * sizeof(DictEntry*));
-	for (i = 0; i < length; ++i)
+	for (int i = 0; i < length; ++i)
 	{
-		h               = hash(entries[i].key);
+		const int h     = hash(entries[i].key);
 		entries[i].next = hashTab[h];
 		hashTab[h]      = &entries[i];
 	}
@@ -96,9 +91,8 @@ void Dict::expand()
 inline DictEntry* Dict::find(const char* key)
 {
 	DictEntry* e;
-	int        h;
 
-	h = hash(key);
+	const int h = hash(key);
 	for (e = hashTab[h]; e; e = e->next)
 		if (!strcmp(key, e->key))
 			return e;
@@ -107,34 +101,27 @@ inline DictEntry* Dict::find(const char* key)
 
 int Dict::hash(const char* key)
 {
-	const char*  p;
-	unsigned int h;
-
-	h = 0;
-	for (p = key; *p; ++p)
+	unsigned int h = 0;
+	for (const char* p = key; *p; ++p)
 		h = 17 * h + (int)(*p & 0xff);
 	return (int)(h % (2 * size - 1));
 }
 
-GBool Dict::is(const char* type)
+bool Dict::is(const char* type)
 {
 	DictEntry* e;
-
 	return (e = find("Type")) && e->val.isName(type);
 }
 
 Object* Dict::lookup(const char* key, Object* obj, int recursion)
 {
 	DictEntry* e;
-
-	return (e = find(key)) ? e->val.fetch(xref, obj, recursion)
-	                       : obj->initNull();
+	return (e = find(key)) ? e->val.fetch(xref, obj, recursion) : obj->initNull();
 }
 
 Object* Dict::lookupNF(const char* key, Object* obj)
 {
 	DictEntry* e;
-
 	return (e = find(key)) ? e->val.copy(obj) : obj->initNull();
 }
 

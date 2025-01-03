@@ -6,12 +6,9 @@
 //
 //========================================================================
 
-#ifndef PSTOKENIZER_H
-#define PSTOKENIZER_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
 
 //------------------------------------------------------------------------
 
@@ -22,15 +19,13 @@ public:
 	~PSTokenizer();
 
 	// Get the next PostScript token.  Returns false at end-of-stream.
-	GBool getToken(char* buf, int size, int* length);
+	bool getToken(char* buf, int size, int* length);
 
 private:
 	int lookChar();
 	int getChar();
 
-	int (*getCharFunc)(void*);
-	void* data;
-	int   charBuf;
+	int (*getCharFunc)(void*); //
+	void* data;                //
+	int   charBuf;             //
 };
-
-#endif

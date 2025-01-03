@@ -7,12 +7,10 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stddef.h>
 #include <string.h>
 #include "gmem.h"
 #include "gmempp.h"
-#include "GString.h"
 #include "Error.h"
 #include "Object.h"
 #include "Array.h"
@@ -36,7 +34,7 @@ LinkAction* LinkAction::parseDest(Object* obj)
 	return action;
 }
 
-LinkAction* LinkAction::parseAction(Object* obj, GString* baseURI)
+LinkAction* LinkAction::parseAction(Object* obj, const std::string& baseURI)
 {
 	LinkAction* action;
 	Object      obj2, obj3, obj4, obj5;
@@ -152,17 +150,15 @@ LinkAction* LinkAction::parseAction(Object* obj, GString* baseURI)
 	return action;
 }
 
-GString* LinkAction::getFileSpecName(Object* fileSpecObj)
+std::string LinkAction::getFileSpecName(Object* fileSpecObj)
 {
-	GString* name;
-	Object   obj1;
-
-	name = nullptr;
+	std::string name;
+	Object      obj1;
 
 	// string
 	if (fileSpecObj->isString())
 	{
-		name = fileSpecObj->getString()->copy();
+		name = fileSpecObj->getString();
 
 		// dictionary
 	}
@@ -179,7 +175,7 @@ GString* LinkAction::getFileSpecName(Object* fileSpecObj)
 			fileSpecObj->dictLookup("F", &obj1);
 		}
 		if (obj1.isString())
-			name = obj1.getString()->copy();
+			name = obj1.getString();
 		else
 			error(errSyntaxWarning, -1, "Illegal file spec in link");
 		obj1.free();
@@ -192,7 +188,7 @@ GString* LinkAction::getFileSpecName(Object* fileSpecObj)
 	}
 
 	// system-dependent path manipulation
-	if (name)
+	if (name.size())
 	{
 #ifdef _WIN32
 		int i, j;
@@ -202,37 +198,37 @@ GString* LinkAction::getFileSpecName(Object* fileSpecObj)
 		// "/server/share/...." --> "\\server\share\...."
 		// convert escaped slashes to slashes and unescaped slashes to backslashes
 		i = 0;
-		if (name->getChar(0) == '/')
+		if (name.at(0) == '/')
 		{
-			if (name->getLength() >= 2 && name->getChar(1) == '/')
+			if (name.size() >= 2 && name.at(1) == '/')
 			{
-				name->del(0);
+				name.erase(0);
 				i = 0;
 			}
-			else if (name->getLength() >= 2 && ((name->getChar(1) >= 'a' && name->getChar(1) <= 'z') || (name->getChar(1) >= 'A' && name->getChar(1) <= 'Z')) && (name->getLength() == 2 || name->getChar(2) == '/'))
+			else if (name.size() >= 2 && ((name.at(1) >= 'a' && name.at(1) <= 'z') || (name.at(1) >= 'A' && name.at(1) <= 'Z')) && (name.size() == 2 || name.at(2) == '/'))
 			{
-				name->setChar(0, name->getChar(1));
-				name->setChar(1, ':');
-				i = 2;
+				name[0] = name.at(1);
+				name[1] = ':';
+				i       = 2;
 			}
 			else
 			{
-				for (j = 2; j < name->getLength(); ++j)
-					if (name->getChar(j - 1) != '\\' && name->getChar(j) == '/')
+				for (j = 2; j < name.size(); ++j)
+					if (name.at(j - 1) != '\\' && name.at(j) == '/')
 						break;
-				if (j < name->getLength())
+				if (j < name.size())
 				{
-					name->setChar(0, '\\');
-					name->insert(0, '\\');
+					name[0] = '\\';
+					name.insert(0, "\\");
 					i = 2;
 				}
 			}
 		}
-		for (; i < name->getLength(); ++i)
-			if (name->getChar(i) == '/')
-				name->setChar(i, '\\');
-			else if (name->getChar(i) == '\\' && i + 1 < name->getLength() && name->getChar(i + 1) == '/')
-				name->del(i);
+		for (; i < name.size(); ++i)
+			if (name.at(i) == '/')
+				name[i] = '\\';
+			else if (name.at(i) == '\\' && i + 1 < name.size() && name.at(i + 1) == '/')
+				name.erase(i);
 #else
 		// no manipulation needed for Unix
 #endif
@@ -250,8 +246,12 @@ LinkDest::LinkDest(Array* a)
 	Object obj1, obj2;
 
 	// initialize fields
-	left = bottom = right = top = zoom = 0;
-	ok                                 = gFalse;
+	left   = 0;
+	bottom = 0;
+	right  = 0;
+	top    = 0;
+	zoom   = 0;
+	ok     = false;
 
 	// get page
 	if (a->getLength() < 2)
@@ -263,13 +263,13 @@ LinkDest::LinkDest(Array* a)
 	if (obj1.isInt())
 	{
 		pageNum   = obj1.getInt() + 1;
-		pageIsRef = gFalse;
+		pageIsRef = false;
 	}
 	else if (obj1.isRef())
 	{
 		pageRef.num = obj1.getRefNum();
 		pageRef.gen = obj1.getRefGen();
-		pageIsRef   = gTrue;
+		pageIsRef   = true;
 	}
 	else
 	{
@@ -287,18 +287,18 @@ LinkDest::LinkDest(Array* a)
 		kind = destXYZ;
 		if (a->getLength() < 3)
 		{
-			changeLeft = gFalse;
+			changeLeft = false;
 		}
 		else
 		{
 			a->get(2, &obj2);
 			if (obj2.isNull())
 			{
-				changeLeft = gFalse;
+				changeLeft = false;
 			}
 			else if (obj2.isNum())
 			{
-				changeLeft = gTrue;
+				changeLeft = true;
 				left       = obj2.getNum();
 			}
 			else
@@ -310,18 +310,18 @@ LinkDest::LinkDest(Array* a)
 		}
 		if (a->getLength() < 4)
 		{
-			changeTop = gFalse;
+			changeTop = false;
 		}
 		else
 		{
 			a->get(3, &obj2);
 			if (obj2.isNull())
 			{
-				changeTop = gFalse;
+				changeTop = false;
 			}
 			else if (obj2.isNum())
 			{
-				changeTop = gTrue;
+				changeTop = true;
 				top       = obj2.getNum();
 			}
 			else
@@ -333,18 +333,18 @@ LinkDest::LinkDest(Array* a)
 		}
 		if (a->getLength() < 5)
 		{
-			changeZoom = gFalse;
+			changeZoom = false;
 		}
 		else
 		{
 			a->get(4, &obj2);
 			if (obj2.isNull())
 			{
-				changeZoom = gFalse;
+				changeZoom = false;
 			}
 			else if (obj2.isNum())
 			{
-				changeZoom = gTrue;
+				changeZoom = true;
 				zoom       = obj2.getNum();
 			}
 			else
@@ -379,11 +379,11 @@ LinkDest::LinkDest(Array* a)
 		if (a->get(2, &obj2)->isNum())
 		{
 			top       = obj2.getNum();
-			changeTop = gTrue;
+			changeTop = true;
 		}
 		else if (obj2.isNull())
 		{
-			changeTop = gFalse;
+			changeTop = false;
 		}
 		else
 		{
@@ -405,11 +405,11 @@ LinkDest::LinkDest(Array* a)
 		if (a->get(2, &obj2)->isNum())
 		{
 			left       = obj2.getNum();
-			changeLeft = gTrue;
+			changeLeft = true;
 		}
 		else if (obj2.isNull())
 		{
-			changeLeft = gFalse;
+			changeLeft = false;
 		}
 		else
 		{
@@ -484,11 +484,11 @@ LinkDest::LinkDest(Array* a)
 		if (a->get(2, &obj2)->isNum())
 		{
 			top       = obj2.getNum();
-			changeTop = gTrue;
+			changeTop = true;
 		}
 		else if (obj2.isNull())
 		{
-			changeTop = gFalse;
+			changeTop = false;
 		}
 		else
 		{
@@ -510,11 +510,11 @@ LinkDest::LinkDest(Array* a)
 		if (a->get(2, &obj2)->isNum())
 		{
 			left       = obj2.getNum();
-			changeLeft = gTrue;
+			changeLeft = true;
 		}
 		else if (obj2.isNull())
 		{
-			changeLeft = gFalse;
+			changeLeft = false;
 		}
 		else
 		{
@@ -532,7 +532,7 @@ LinkDest::LinkDest(Array* a)
 	}
 
 	obj1.free();
-	ok = gTrue;
+	ok = true;
 	return;
 
 err1:
@@ -557,7 +557,7 @@ LinkDest::LinkDest(LinkDest* dest)
 	changeLeft = dest->changeLeft;
 	changeTop  = dest->changeTop;
 	changeZoom = dest->changeZoom;
-	ok         = gTrue;
+	ok         = true;
 }
 
 //------------------------------------------------------------------------
@@ -566,17 +566,17 @@ LinkDest::LinkDest(LinkDest* dest)
 
 LinkGoTo::LinkGoTo(Object* destObj)
 {
-	dest      = nullptr;
-	namedDest = nullptr;
+	dest = nullptr;
+	namedDest.clear();
 
 	// named destination
 	if (destObj->isName())
 	{
-		namedDest = new GString(destObj->getName());
+		namedDest = destObj->getName();
 	}
 	else if (destObj->isString())
 	{
-		namedDest = destObj->getString()->copy();
+		namedDest = destObj->getString();
 
 		// destination dictionary
 	}
@@ -599,10 +599,7 @@ LinkGoTo::LinkGoTo(Object* destObj)
 
 LinkGoTo::~LinkGoTo()
 {
-	if (dest)
-		delete dest;
-	if (namedDest)
-		delete namedDest;
+	if (dest) delete dest;
 }
 
 //------------------------------------------------------------------------
@@ -611,8 +608,8 @@ LinkGoTo::~LinkGoTo()
 
 LinkGoToR::LinkGoToR(Object* fileSpecObj, Object* destObj)
 {
-	dest      = nullptr;
-	namedDest = nullptr;
+	dest = nullptr;
+	namedDest.clear();
 
 	// get file name
 	fileName = getFileSpecName(fileSpecObj);
@@ -620,11 +617,11 @@ LinkGoToR::LinkGoToR(Object* fileSpecObj, Object* destObj)
 	// named destination
 	if (destObj->isName())
 	{
-		namedDest = new GString(destObj->getName());
+		namedDest = destObj->getName();
 	}
 	else if (destObj->isString())
 	{
-		namedDest = destObj->getString()->copy();
+		namedDest = destObj->getString();
 
 		// destination dictionary
 	}
@@ -647,12 +644,7 @@ LinkGoToR::LinkGoToR(Object* fileSpecObj, Object* destObj)
 
 LinkGoToR::~LinkGoToR()
 {
-	if (fileName)
-		delete fileName;
-	if (dest)
-		delete dest;
-	if (namedDest)
-		delete namedDest;
+	if (dest) delete dest;
 }
 
 //------------------------------------------------------------------------
@@ -663,8 +655,7 @@ LinkLaunch::LinkLaunch(Object* actionObj)
 {
 	Object obj1, obj2;
 
-	fileName = nullptr;
-	params   = nullptr;
+	params = nullptr;
 
 	if (actionObj->isDict())
 	{
@@ -682,7 +673,7 @@ LinkLaunch::LinkLaunch(Object* actionObj)
 				fileName = getFileSpecName(&obj2);
 				obj2.free();
 				if (obj1.dictLookup("P", &obj2)->isString())
-					params = obj2.getString()->copy();
+					params = obj2.getString();
 				obj2.free();
 			}
 			else
@@ -698,7 +689,7 @@ LinkLaunch::LinkLaunch(Object* actionObj)
 				fileName = getFileSpecName(&obj2);
 				obj2.free();
 				if (obj1.dictLookup("P", &obj2)->isString())
-					params = obj2.getString()->copy();
+					params = obj2.getString();
 				obj2.free();
 			}
 			else
@@ -713,55 +704,51 @@ LinkLaunch::LinkLaunch(Object* actionObj)
 
 LinkLaunch::~LinkLaunch()
 {
-	if (fileName)
-		delete fileName;
-	if (params)
-		delete params;
 }
 
 //------------------------------------------------------------------------
 // LinkURI
 //------------------------------------------------------------------------
 
-LinkURI::LinkURI(Object* uriObj, GString* baseURI)
+LinkURI::LinkURI(Object* uriObj, const std::string& baseURI)
 {
-	GString* uri2;
-	int      n;
-	char     c;
+	std::string uri2;
+	int         n;
+	char        c;
 
 	uri = nullptr;
 	if (uriObj->isString())
 	{
 		uri2 = uriObj->getString();
-		n    = (int)strcspn(uri2->getCString(), "/:");
-		if (n < uri2->getLength() && uri2->getChar(n) == ':')
+		n    = (int)strcspn(uri2.c_str(), "/:");
+		if (n < uri2.size() && uri2.at(n) == ':')
 		{
 			// "http:..." etc.
-			uri = uri2->copy();
+			uri = uri2;
 		}
-		else if (!uri2->cmpN("www.", 4))
+		else if (uri.substr(0, 4) == "www.")
 		{
 			// "www.[...]" without the leading "http://"
-			uri = new GString("http://");
-			uri->append(uri2);
+			uri = "http://";
+			uri += uri2;
 		}
 		else
 		{
 			// relative URI
-			if (baseURI)
+			if (baseURI.size())
 			{
-				uri = baseURI->copy();
-				c   = uri->getChar(uri->getLength() - 1);
+				uri = baseURI;
+				c   = uri.at(uri.size() - 1);
 				if (c != '/' && c != '?')
-					uri->append('/');
-				if (uri2->getChar(0) == '/')
-					uri->append(uri2->getCString() + 1, uri2->getLength() - 1);
+					uri += '/';
+				if (uri2.at(0) == '/')
+					uri.append(uri2.c_str() + 1, uri2.size() - 1);
 				else
-					uri->append(uri2);
+					uri += uri2;
 			}
 			else
 			{
-				uri = uri2->copy();
+				uri = uri2;
 			}
 		}
 	}
@@ -773,8 +760,6 @@ LinkURI::LinkURI(Object* uriObj, GString* baseURI)
 
 LinkURI::~LinkURI()
 {
-	if (uri)
-		delete uri;
 }
 
 //------------------------------------------------------------------------
@@ -783,15 +768,13 @@ LinkURI::~LinkURI()
 
 LinkNamed::LinkNamed(Object* nameObj)
 {
-	name = nullptr;
+	name.clear();
 	if (nameObj->isName())
-		name = new GString(nameObj->getName());
+		name = nameObj->getName();
 }
 
 LinkNamed::~LinkNamed()
 {
-	if (name)
-		delete name;
 }
 
 //------------------------------------------------------------------------
@@ -801,19 +784,17 @@ LinkNamed::~LinkNamed()
 LinkMovie::LinkMovie(Object* annotObj, Object* titleObj)
 {
 	annotRef.num = -1;
-	title        = nullptr;
+	title.clear();
 	if (annotObj->isRef())
 		annotRef = annotObj->getRef();
 	else if (titleObj->isString())
-		title = titleObj->getString()->copy();
+		title = titleObj->getString();
 	else
 		error(errSyntaxError, -1, "Movie action is missing both the Annot and T keys");
 }
 
 LinkMovie::~LinkMovie()
 {
-	if (title)
-		delete title;
 }
 
 //------------------------------------------------------------------------
@@ -827,14 +808,14 @@ LinkJavaScript::LinkJavaScript(Object* jsObj)
 
 	if (jsObj->isString())
 	{
-		js = jsObj->getString()->copy();
+		js = jsObj->getString();
 	}
 	else if (jsObj->isStream())
 	{
-		js = new GString();
+		js.clear();
 		jsObj->streamReset();
 		while ((n = jsObj->getStream()->getBlock(buf, sizeof(buf))) > 0)
-			js->append(buf, n);
+			js.append(buf, n);
 		jsObj->streamClose();
 	}
 	else
@@ -846,8 +827,6 @@ LinkJavaScript::LinkJavaScript(Object* jsObj)
 
 LinkJavaScript::~LinkJavaScript()
 {
-	if (js)
-		delete js;
 }
 
 //------------------------------------------------------------------------
@@ -858,7 +837,7 @@ LinkSubmitForm::LinkSubmitForm(Object* urlObj, Object* fieldsObj, Object* flagsO
 {
 	if (urlObj->isString())
 	{
-		url = urlObj->getString()->copy();
+		url = urlObj->getString();
 	}
 	else
 	{
@@ -891,8 +870,6 @@ LinkSubmitForm::LinkSubmitForm(Object* urlObj, Object* fieldsObj, Object* flagsO
 
 LinkSubmitForm::~LinkSubmitForm()
 {
-	if (url)
-		delete url;
 	fields.free();
 }
 
@@ -919,7 +896,7 @@ LinkHide::LinkHide(Object* fieldsObj, Object* hideFlagObj)
 	else
 	{
 		error(errSyntaxError, -1, "Hide action H value is wrong type");
-		hideFlag = gFalse;
+		hideFlag = false;
 	}
 }
 
@@ -934,25 +911,24 @@ LinkHide::~LinkHide()
 
 LinkUnknown::LinkUnknown(char* actionA)
 {
-	action = new GString(actionA);
+	action = actionA;
 }
 
 LinkUnknown::~LinkUnknown()
 {
-	delete action;
 }
 
 //------------------------------------------------------------------------
 // Link
 //------------------------------------------------------------------------
 
-Link::Link(Dict* dict, GString* baseURI)
+Link::Link(Dict* dict, const std::string& baseURI)
 {
 	Object obj1, obj2;
 	double t;
 
 	action = nullptr;
-	ok     = gFalse;
+	ok     = false;
 
 	// get rectangle
 	if (!dict->lookup("Rect", &obj1)->isArray())
@@ -1019,7 +995,7 @@ Link::Link(Dict* dict, GString* baseURI)
 
 	// check for bad action
 	if (action)
-		ok = gTrue;
+		ok = true;
 
 	return;
 
@@ -1031,20 +1007,18 @@ err2:
 
 Link::~Link()
 {
-	if (action)
-		delete action;
+	if (action) delete action;
 }
 
 //------------------------------------------------------------------------
 // Links
 //------------------------------------------------------------------------
 
-Links::Links(Object* annots, GString* baseURI)
+Links::Links(Object* annots, const std::string& baseURI)
 {
 	Link*  link;
 	Object obj1, obj2, obj3;
 	int    size;
-	int    i;
 
 	links    = nullptr;
 	size     = 0;
@@ -1052,7 +1026,7 @@ Links::Links(Object* annots, GString* baseURI)
 
 	if (annots->isArray())
 	{
-		for (i = 0; i < annots->arrayGetLength(); ++i)
+		for (int i = 0; i < annots->arrayGetLength(); ++i)
 		{
 			if (annots->arrayGet(i, &obj1)->isDict())
 			{
@@ -1085,29 +1059,23 @@ Links::Links(Object* annots, GString* baseURI)
 
 Links::~Links()
 {
-	int i;
-
-	for (i = 0; i < numLinks; ++i)
+	for (int i = 0; i < numLinks; ++i)
 		delete links[i];
 	gfree(links);
 }
 
 LinkAction* Links::find(double x, double y)
 {
-	int i;
-
-	for (i = numLinks - 1; i >= 0; --i)
+	for (int i = numLinks - 1; i >= 0; --i)
 		if (links[i]->inRect(x, y))
 			return links[i]->getAction();
 	return nullptr;
 }
 
-GBool Links::onLink(double x, double y)
+bool Links::onLink(double x, double y)
 {
-	int i;
-
-	for (i = 0; i < numLinks; ++i)
+	for (int i = 0; i < numLinks; ++i)
 		if (links[i]->inRect(x, y))
-			return gTrue;
-	return gFalse;
+			return true;
+	return false;
 }

@@ -6,15 +6,12 @@
 //
 //========================================================================
 
-#ifndef OUTLINE_H
-#define OUTLINE_H
+#pragma once
 
 #include <aconf.h>
-
 #include "Object.h"
 #include "CharTypes.h"
 
-class GString;
 class GList;
 class XRef;
 class LinkAction;
@@ -31,8 +28,7 @@ public:
 	GList* getItems() { return items; }
 
 private:
-	GList* items; // nullptr if document has no outline
-	              //   [OutlineItem]
+	GList* items; // nullptr if document has no outline [OutlineItem]
 };
 
 //------------------------------------------------------------------------
@@ -55,9 +51,9 @@ public:
 
 	LinkAction* getAction() { return action; }
 
-	GBool isOpen() { return startsOpen; }
+	bool isOpen() { return startsOpen; }
 
-	GBool hasKids() { return firstRef.isRef(); }
+	bool hasKids() { return firstRef.isRef(); }
 
 	GList* getKids() { return kids; }
 
@@ -66,18 +62,15 @@ public:
 private:
 	friend class PDFDoc;
 
-	XRef*        xref;
-	TextString*  title; // may be nullptr
-	LinkAction*  action;
-	Object       itemRef;
-	Object       firstRef;
-	Object       lastRef;
-	Object       nextRef;
-	GBool        startsOpen;
-	int          pageNum; // page number (used by
-	                      //   PDFDoc::getOutlineTargetPage)
-	GList*       kids;    // nullptr unless this item is open [OutlineItem]
-	OutlineItem* parent;
+	XRef*        xref;       //
+	TextString*  title;      // may be nullptr
+	LinkAction*  action;     //
+	Object       itemRef;    //
+	Object       firstRef;   //
+	Object       lastRef;    //
+	Object       nextRef;    //
+	bool         startsOpen; //
+	int          pageNum;    // page number (used by PDFDoc::getOutlineTargetPage)
+	GList*       kids;       // nullptr unless this item is open [OutlineItem]
+	OutlineItem* parent;     //
 };
-
-#endif

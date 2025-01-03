@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include "gmem.h"
 #include "Object.h"
 #include "XpdfApp.h"
@@ -20,7 +19,7 @@ int main(int argc, char* argv[])
 	{
 		// this is inside a block so that the XpdfApp object gets freed
 		XpdfApp app(argc, argv);
-		if (app.getNumViewers() > 0)
+		if (app.getNumViewers())
 			exitCode = app.exec();
 		else
 			exitCode = 1;
@@ -36,21 +35,21 @@ int main(int argc, char* argv[])
 int CALLBACK WinMain(HINSTANCE hIstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	wchar_t** args;
-	int       argc, i, n, ret;
+	int       argc, ret;
 
 	if (!(args = CommandLineToArgvW(GetCommandLineW(), &argc)) || argc < 0)
 		return -1;
 	char** argv = (char**)gmallocn(argc + 1, sizeof(char*));
-	for (i = 0; i < argc; ++i)
+	for (int i = 0; i < argc; ++i)
 	{
-		n       = WideCharToMultiByte(CP_UTF8, 0, args[i], -1, NULL, 0, NULL, NULL);
-		argv[i] = (char*)gmalloc(n);
-		WideCharToMultiByte(CP_UTF8, 0, args[i], -1, argv[i], n, NULL, NULL);
+		const int n = WideCharToMultiByte(CP_UTF8, 0, args[i], -1, nullptr, 0, nullptr, nullptr);
+		argv[i]     = (char*)gmalloc(n);
+		WideCharToMultiByte(CP_UTF8, 0, args[i], -1, argv[i], n, nullptr, nullptr);
 	}
-	argv[argc] = NULL;
+	argv[argc] = nullptr;
 	LocalFree(args);
 	ret = main(argc, argv);
-	for (i = 0; i < argc; ++i)
+	for (int i = 0; i < argc; ++i)
 		gfree(argv[i]);
 	gfree(argv);
 	return ret;

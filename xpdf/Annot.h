@@ -6,10 +6,10 @@
 //
 //========================================================================
 
-#ifndef ANNOT_H
-#define ANNOT_H
+#pragma once
 
 #include <aconf.h>
+#include "Object.h" // Ref
 
 class XRef;
 class Catalog;
@@ -86,11 +86,11 @@ public:
 	Annot(PDFDoc* docA, Dict* dict, Ref* refA);
 	~Annot();
 
-	GBool isOk() { return ok; }
+	bool isOk() { return ok; }
 
-	void draw(Gfx* gfx, GBool printing);
+	void draw(Gfx* gfx, bool printing);
 
-	GString* getType() { return type; }
+	std::string getType() { return type; }
 
 	double getXMin() { return xMin; }
 
@@ -103,7 +103,7 @@ public:
 	Object* getObject(Object* obj);
 
 	// Check if point is inside the annotation rectangle.
-	GBool inRect(double x, double y)
+	bool inRect(double x, double y)
 	{
 		return xMin <= x && x <= xMax && yMin <= y && y <= yMax;
 	}
@@ -113,7 +113,7 @@ public:
 
 	AnnotBorderStyle* getBorderStyle() { return borderStyle; }
 
-	GBool match(Ref* refA)
+	bool match(Ref* refA)
 	{
 		return ref.num == refA->num && ref.gen == refA->gen;
 	}
@@ -127,29 +127,30 @@ private:
 	void             generateFreeTextAppearance(Object* annotObj);
 	void             setLineStyle(AnnotBorderStyle* bs, double* lineWidth);
 	void             setStrokeColor(double* color, int nComps);
-	GBool            setFillColor(Object* colorObj);
+	bool             setFillColor(Object* colorObj);
 	AnnotLineEndType parseLineEndType(Object* obj);
 	void             adjustLineEndpoint(AnnotLineEndType lineEnd, double x, double y, double dx, double dy, double w, double* tx, double* ty);
-	void             drawLineArrow(AnnotLineEndType lineEnd, double x, double y, double dx, double dy, double w, GBool fill);
+	void             drawLineArrow(AnnotLineEndType lineEnd, double x, double y, double dx, double dy, double w, bool fill);
 	void             drawCircle(double cx, double cy, double r, const char* cmd);
 	void             drawCircleTopLeft(double cx, double cy, double r);
 	void             drawCircleBottomRight(double cx, double cy, double r);
-	void             drawText(GString* text, GString* da, int quadding, double margin, int rot);
+	void             drawText(const std::string& text, const std::string& da, int quadding, double margin, int rot);
 
-	PDFDoc*  doc;
-	XRef*    xref;            // the xref table for this PDF file
-	Ref      ref;             // object ref identifying this annotation
-	GString* type;            // annotation type
-	GString* appearanceState; // appearance state name
-	Object   appearance;      // a reference to the Form XObject stream
-	                          //   for the normal appearance
-	GString* appearBuf;
-	double   xMin, yMin, // annotation rectangle
-	    xMax, yMax;
-	Guint             flags;
-	AnnotBorderStyle* borderStyle;
-	Object            ocObj; // optional content entry
-	GBool             ok;
+	PDFDoc*           doc;             //
+	XRef*             xref;            // the xref table for this PDF file
+	Ref               ref;             // object ref identifying this annotation
+	std::string       type;            // annotation type
+	std::string       appearanceState; // appearance state name
+	Object            appearance;      // a reference to the Form XObject stream for the normal appearance
+	std::string       appearBuf;       //
+	double            xMin;            //
+	double            yMin;            // annotation rectangle
+	double            xMax;            //
+	double            yMax;            //
+	uint32_t          flags;           //
+	AnnotBorderStyle* borderStyle;     //
+	Object            ocObj;           // optional content entry
+	bool              ok;              //
 };
 
 //------------------------------------------------------------------------
@@ -183,10 +184,8 @@ private:
 	void loadAnnots(int page);
 	void loadFormFieldRefs();
 
-	PDFDoc*      doc;
+	PDFDoc*      doc;               //
 	PageAnnots** pageAnnots;        // list of annots for each page
 	int          formFieldRefsSize; // number of entries in formFieldRefs[]
 	char*        formFieldRefs;     // set of AcroForm field refs
 };
-
-#endif

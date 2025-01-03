@@ -7,13 +7,11 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdio.h>
 #ifndef _WIN32
 #	include <unistd.h>
 #endif
 #include "gmempp.h"
-#include "GString.h"
 #include "SplashFontFile.h"
 #include "SplashFontFileID.h"
 
@@ -27,20 +25,14 @@ extern "C" int unlink(char* filename);
 // SplashFontFile
 //------------------------------------------------------------------------
 
-SplashFontFile::SplashFontFile(SplashFontFileID* idA, SplashFontType fontTypeA,
-#if LOAD_FONTS_FROM_MEM
-                               GString* fontBufA
-#else
-                               char* fileNameA, GBool deleteFileA
-#endif
-)
+SplashFontFile::SplashFontFile(SplashFontFileID* idA, SplashFontType fontTypeA, LOAD_FONT_ARGS_DEFS(A))
 {
 	id       = idA;
 	fontType = fontTypeA;
 #if LOAD_FONTS_FROM_MEM
 	fontBuf = fontBufA;
 #else
-	fileName   = new GString(fileNameA);
+	fileName   = fileNameA;
 	deleteFile = deleteFileA;
 #endif
 	refCnt = 0;
@@ -49,11 +41,10 @@ SplashFontFile::SplashFontFile(SplashFontFileID* idA, SplashFontType fontTypeA,
 SplashFontFile::~SplashFontFile()
 {
 #if LOAD_FONTS_FROM_MEM
-	delete fontBuf;
+	;
 #else
 	if (deleteFile)
-		unlink(fileName->getCString());
-	delete fileName;
+		unlink(fileName.c_str());
 #endif
 	delete id;
 }
@@ -69,7 +60,7 @@ void SplashFontFile::incRefCnt()
 
 void SplashFontFile::decRefCnt()
 {
-	GBool done;
+	bool done;
 
 #if MULTITHREADED
 	done = gAtomicDecrement(&refCnt) == 0;

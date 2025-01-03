@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <math.h>
 #include <string.h>
 #include <QApplication>
@@ -27,7 +26,6 @@
 #include "gmem.h"
 #include "gmempp.h"
 #include "gfile.h"
-#include "GString.h"
 #include "GList.h"
 #include "Error.h"
 #include "GlobalParams.h"
@@ -46,7 +44,7 @@
 // QtPDFCore
 //------------------------------------------------------------------------
 
-QtPDFCore::QtPDFCore(QWidget* viewportA, QScrollBar* hScrollBarA, QScrollBar* vScrollBarA, SplashColorPtr paperColor, SplashColorPtr matteColor, GBool reverseVideo)
+QtPDFCore::QtPDFCore(QWidget* viewportA, QScrollBar* hScrollBarA, QScrollBar* vScrollBarA, SplashColorPtr paperColor, SplashColorPtr matteColor, bool reverseVideo)
     : PDFCore(splashModeRGB8, 4, reverseVideo, paperColor)
 {
 	viewport   = viewportA;
@@ -60,32 +58,27 @@ QtPDFCore::QtPDFCore(QWidget* viewportA, QScrollBar* hScrollBarA, QScrollBar* vS
 
 	state->setMatteColor(matteColor);
 
-	oldFirstPage = -1;
-	oldMidPage   = -1;
-
-	linkAction     = NULL;
-	lastLinkAction = NULL;
-
-	dragging = gFalse;
-
-	panning = gFalse;
-
-	inUpdateScrollbars = gFalse;
-
-	updateCbk         = NULL;
-	midPageChangedCbk = NULL;
-	preLoadCbk        = NULL;
-	postLoadCbk       = NULL;
-	actionCbk         = NULL;
-	linkCbk           = NULL;
-	selectDoneCbk     = NULL;
+	oldFirstPage       = -1;
+	oldMidPage         = -1;
+	linkAction         = nullptr;
+	lastLinkAction     = nullptr;
+	dragging           = false;
+	panning            = false;
+	inUpdateScrollbars = false;
+	updateCbk          = nullptr;
+	midPageChangedCbk  = nullptr;
+	preLoadCbk         = nullptr;
+	postLoadCbk        = nullptr;
+	actionCbk          = nullptr;
+	linkCbk            = nullptr;
+	selectDoneCbk      = nullptr;
 
 	// optional features default to on
-	hyperlinksEnabled         = gTrue;
-	externalHyperlinksEnabled = gTrue;
-	selectEnabled             = gTrue;
-	panEnabled                = gTrue;
-	showPasswordDialog        = gTrue;
+	hyperlinksEnabled         = true;
+	externalHyperlinksEnabled = true;
+	selectEnabled             = true;
+	panEnabled                = true;
+	showPasswordDialog        = true;
 
 	scaleFactor = computeScaleFactor();
 	displayDpi  = computeDisplayDpi();
@@ -118,7 +111,7 @@ int QtPDFCore::computeDisplayDpi()
 // loadFile / displayPage / displayDest
 //------------------------------------------------------------------------
 
-int QtPDFCore::loadFile(GString* fileName, GString* ownerPassword, GString* userPassword)
+int QtPDFCore::loadFile(const std::string& fileName, const std::string& ownerPassword, const std::string& userPassword)
 {
 	int err;
 
@@ -126,18 +119,18 @@ int QtPDFCore::loadFile(GString* fileName, GString* ownerPassword, GString* user
 	if (err == errNone)
 	{
 		// save the modification time
-		modTime = QFileInfo(doc->getFileName()->getCString()).lastModified();
+		modTime = QFileInfo(doc->getFileName().c_str()).lastModified();
 
 		// update the parent window
 		if (updateCbk)
-			(*updateCbk)(updateCbkData, doc->getFileName(), -1, doc->getNumPages(), NULL);
+			(*updateCbk)(updateCbkData, doc->getFileName(), -1, doc->getNumPages(), nullptr);
 		oldFirstPage = oldMidPage = -1;
 	}
 	return err;
 }
 
 #ifdef _WIN32
-int QtPDFCore::loadFile(wchar_t* fileName, int fileNameLen, GString* ownerPassword, GString* userPassword)
+int QtPDFCore::loadFile(wchar_t* fileName, int fileNameLen, const std::string& ownerPassword, const std::string& userPassword)
 {
 	int err;
 
@@ -145,18 +138,18 @@ int QtPDFCore::loadFile(wchar_t* fileName, int fileNameLen, GString* ownerPasswo
 	if (err == errNone)
 	{
 		// save the modification time
-		modTime = QFileInfo(doc->getFileName()->getCString()).lastModified();
+		modTime = QFileInfo(doc->getFileName().c_str()).lastModified();
 
 		// update the parent window
 		if (updateCbk)
-			(*updateCbk)(updateCbkData, doc->getFileName(), -1, doc->getNumPages(), NULL);
+			(*updateCbk)(updateCbkData, doc->getFileName(), -1, doc->getNumPages(), nullptr);
 		oldFirstPage = oldMidPage = -1;
 	}
 	return err;
 }
 #endif
 
-int QtPDFCore::loadFile(BaseStream* stream, GString* ownerPassword, GString* userPassword)
+int QtPDFCore::loadFile(BaseStream* stream, const std::string& ownerPassword, const std::string& userPassword)
 {
 	int err;
 
@@ -168,7 +161,7 @@ int QtPDFCore::loadFile(BaseStream* stream, GString* ownerPassword, GString* use
 
 		// update the parent window
 		if (updateCbk)
-			(*updateCbk)(updateCbkData, doc->getFileName(), -1, doc->getNumPages(), NULL);
+			(*updateCbk)(updateCbkData, doc->getFileName(), -1, doc->getNumPages(), nullptr);
 		oldFirstPage = oldMidPage = -1;
 	}
 	return err;
@@ -179,14 +172,14 @@ void QtPDFCore::loadDoc(PDFDoc* docA)
 	PDFCore::loadDoc(docA);
 
 	// save the modification time
-	if (doc->getFileName())
-		modTime = QFileInfo(doc->getFileName()->getCString()).lastModified();
+	if (doc->getFileName().size())
+		modTime = QFileInfo(doc->getFileName().c_str()).lastModified();
 	else
 		modTime = QDateTime();
 
 	// update the parent window
 	if (updateCbk)
-		(*updateCbk)(updateCbkData, doc->getFileName(), -1, doc->getNumPages(), NULL);
+		(*updateCbk)(updateCbkData, doc->getFileName(), -1, doc->getNumPages(), nullptr);
 	oldFirstPage = oldMidPage = -1;
 }
 
@@ -198,32 +191,32 @@ int QtPDFCore::reload()
 	if (err == errNone)
 	{
 		// save the modification time
-		modTime = QFileInfo(doc->getFileName()->getCString()).lastModified();
+		modTime = QFileInfo(doc->getFileName().c_str()).lastModified();
 
 		// update the parent window
 		if (updateCbk)
-			(*updateCbk)(updateCbkData, doc->getFileName(), -1, doc->getNumPages(), NULL);
+			(*updateCbk)(updateCbkData, doc->getFileName(), -1, doc->getNumPages(), nullptr);
 		oldFirstPage = oldMidPage = -1;
 	}
 	return err;
 }
 
-void QtPDFCore::finishUpdate(GBool addToHist, GBool checkForChangedFile)
+void QtPDFCore::finishUpdate(bool addToHist, bool checkForChangedFile)
 {
 	int firstPage, midPage;
 
 	PDFCore::finishUpdate(addToHist, checkForChangedFile);
 	firstPage = getPageNum();
 	if (doc && firstPage != oldFirstPage && updateCbk)
-		(*updateCbk)(updateCbkData, NULL, firstPage, -1, "");
+		(*updateCbk)(updateCbkData, nullptr, firstPage, -1, "");
 	oldFirstPage = firstPage;
 	midPage      = getMidPageNum();
 	if (doc && midPage != oldMidPage && midPageChangedCbk)
 		(*midPageChangedCbk)(midPageChangedCbkData, midPage);
 	oldMidPage = midPage;
 
-	linkAction     = NULL;
-	lastLinkAction = NULL;
+	linkAction     = nullptr;
+	lastLinkAction = nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -234,17 +227,17 @@ void QtPDFCore::startPan(int wx, int wy)
 {
 	if (!panEnabled)
 		return;
-	panning = gTrue;
+	panning = true;
 	panMX   = wx;
 	panMY   = wy;
 }
 
 void QtPDFCore::endPan(int wx, int wy)
 {
-	panning = gFalse;
+	panning = false;
 }
 
-void QtPDFCore::startSelection(int wx, int wy, GBool extend)
+void QtPDFCore::startSelection(int wx, int wy, bool extend)
 {
 	int pg, x, y;
 
@@ -259,7 +252,7 @@ void QtPDFCore::startSelection(int wx, int wy, GBool extend)
 		startSelectionDrag(pg, x, y);
 	if (getSelectMode() == selectModeBlock)
 		doSetCursor(Qt::CrossCursor);
-	dragging = gTrue;
+	dragging = true;
 }
 
 void QtPDFCore::endSelection(int wx, int wy)
@@ -267,14 +260,14 @@ void QtPDFCore::endSelection(int wx, int wy)
 	LinkAction* action;
 	int         pg, x, y;
 	double      xu, yu;
-	GBool       ok;
+	bool        ok;
 
 	if (!doc || doc->getNumPages() == 0)
 		return;
 	ok = cvtWindowToDev(wx, wy, &pg, &x, &y);
 	if (dragging)
 	{
-		dragging = gFalse;
+		dragging = false;
 		doUnsetCursor();
 		if (ok)
 			moveSelectionDrag(pg, x, y);
@@ -283,14 +276,14 @@ void QtPDFCore::endSelection(int wx, int wy)
 			(*selectDoneCbk)(selectDoneCbkData);
 #ifndef NO_TEXT_SELECT
 		if (hasSelection())
-			copySelection(gFalse);
+			copySelection(false);
 #endif
 	}
 	if (ok)
 	{
 		if (hasSelection())
 		{
-			action = NULL;
+			action = nullptr;
 		}
 		else
 		{
@@ -310,7 +303,7 @@ void QtPDFCore::mouseMove(int wx, int wy)
 	int         pg, x, y;
 	double      xu, yu;
 	const char* s;
-	GBool       ok, mouseOverText;
+	bool        ok, mouseOverText;
 
 	if (!doc || doc->getNumPages() == 0)
 		return;
@@ -325,12 +318,12 @@ void QtPDFCore::mouseMove(int wx, int wy)
 		cvtDevToUser(pg, x, y, &xu, &yu);
 
 		// check for a link
-		action = NULL;
+		action = nullptr;
 		if (hyperlinksEnabled && ok)
 			action = findLink(pg, xu, yu);
 
 		// check for text
-		mouseOverText = gFalse;
+		mouseOverText = false;
 		if (!action && getSelectMode() == selectModeLinear && ok)
 			mouseOverText = overText(pg, x, y);
 
@@ -353,7 +346,7 @@ void QtPDFCore::mouseMove(int wx, int wy)
 					s = getLinkInfo(linkAction).toLocal8Bit().constData();
 				else
 					s = "";
-				(*updateCbk)(updateCbkData, NULL, -1, -1, s);
+				(*updateCbk)(updateCbkData, nullptr, -1, -1, s);
 			}
 		}
 	}
@@ -380,7 +373,7 @@ void QtPDFCore::selectWord(int wx, int wy)
 	PDFCore::selectWord(pg, x, y);
 #ifndef NO_TEXT_SELECT
 	if (hasSelection())
-		copySelection(gFalse);
+		copySelection(false);
 #endif
 }
 
@@ -398,18 +391,18 @@ void QtPDFCore::selectLine(int wx, int wy)
 	PDFCore::selectLine(pg, x, y);
 #ifndef NO_TEXT_SELECT
 	if (hasSelection())
-		copySelection(gFalse);
+		copySelection(false);
 #endif
 }
 
 void QtPDFCore::doLinkCbk(LinkAction* action)
 {
-	LinkDest* dest;
-	GString*  namedDest;
-	Ref       pageRef;
-	int       pg;
-	GString * cmd, *params;
-	char*     s;
+	LinkDest*   dest;
+	std::string namedDest;
+	Ref         pageRef;
+	int         pg;
+	std::string cmd, params;
+	const char* s;
 
 	if (!linkCbk)
 		return;
@@ -417,10 +410,10 @@ void QtPDFCore::doLinkCbk(LinkAction* action)
 	switch (action->getKind())
 	{
 	case actionGoTo:
-		dest = NULL;
+		dest = nullptr;
 		if ((dest = ((LinkGoTo*)action)->getDest()))
 			dest = dest->copy();
-		else if ((namedDest = ((LinkGoTo*)action)->getNamedDest()))
+		else if ((namedDest = ((LinkGoTo*)action)->getNamedDest()).size())
 			dest = doc->findDest(namedDest);
 		pg = 0;
 		if (dest)
@@ -436,28 +429,30 @@ void QtPDFCore::doLinkCbk(LinkAction* action)
 			}
 			delete dest;
 		}
-		(*linkCbk)(linkCbkData, "goto", NULL, pg);
+		(*linkCbk)(linkCbkData, "goto", nullptr, pg);
 		break;
 
 	case actionGoToR:
-		(*linkCbk)(linkCbkData, "pdf", ((LinkGoToR*)action)->getFileName()->getCString(), 0);
+		(*linkCbk)(linkCbkData, "pdf", ((LinkGoToR*)action)->getFileName().c_str(), 0);
 		break;
 
 	case actionLaunch:
-		cmd = ((LinkLaunch*)action)->getFileName()->copy();
-		s   = cmd->getCString();
-		if (strcmp(s + cmd->getLength() - 4, ".pdf") && strcmp(s + cmd->getLength() - 4, ".PDF") && (params = ((LinkLaunch*)action)->getParams()))
-			cmd->append(' ')->append(params);
-		(*linkCbk)(linkCbkData, "launch", cmd->getCString(), 0);
-		delete cmd;
+		cmd = ((LinkLaunch*)action)->getFileName();
+		s   = cmd.c_str();
+		if (strcmp(s + cmd.size() - 4, ".pdf") && strcmp(s + cmd.size() - 4, ".PDF") && (params = ((LinkLaunch*)action)->getParams()).size())
+		{
+			cmd += ' ';
+			cmd += params;
+		}
+		(*linkCbk)(linkCbkData, "launch", cmd.c_str(), 0);
 		break;
 
 	case actionURI:
-		(*linkCbk)(linkCbkData, "url", ((LinkURI*)action)->getURI()->getCString(), 0);
+		(*linkCbk)(linkCbkData, "url", ((LinkURI*)action)->getURI().c_str(), 0);
 		break;
 
 	case actionNamed:
-		(*linkCbk)(linkCbkData, "named", ((LinkNamed*)action)->getName()->getCString(), 0);
+		(*linkCbk)(linkCbkData, "named", ((LinkNamed*)action)->getName().c_str(), 0);
 		break;
 
 	case actionMovie:
@@ -465,35 +460,34 @@ void QtPDFCore::doLinkCbk(LinkAction* action)
 	case actionSubmitForm:
 	case actionHide:
 	case actionUnknown:
-		(*linkCbk)(linkCbkData, "unknown", NULL, 0);
+		(*linkCbk)(linkCbkData, "unknown", nullptr, 0);
 		break;
 	}
 }
 
 QString QtPDFCore::getSelectedTextQString()
 {
-	GString *s, *enc;
-	QString  qs;
-	int      i;
+	std::string s;
+	QString     qs;
 
 	if (!doc->okToCopy())
 		return "";
-	if (!(s = getSelectedText()))
+	if ((s = getSelectedText()).empty())
 		return "";
-	enc = globalParams->getTextEncodingName();
-	if (!enc->cmp("UTF-8"))
-		qs = QString::fromUtf8(s->getCString());
-	else if (!enc->cmp("UCS-2"))
-		for (i = 0; i + 1 < s->getLength(); i += 2)
-			qs.append((QChar)(((s->getChar(i) & 0xff) << 8) + (s->getChar(i + 1) & 0xff)));
+
+	const auto enc = globalParams->getTextEncodingName();
+	if (enc == "UTF-8")
+		qs = QString::fromUtf8(s.c_str());
+	else if (enc == "UCS-2")
+		for (int i = 0; i + 1 < s.size(); i += 2)
+			qs.append((QChar)(((s.at(i) & 0xff) << 8) + (s.at(i + 1) & 0xff)));
 	else
-		qs = QString(s->getCString());
-	delete s;
-	delete enc;
+		qs = QString(s.c_str());
+
 	return qs;
 }
 
-void QtPDFCore::copySelection(GBool toClipboard)
+void QtPDFCore::copySelection(bool toClipboard)
 {
 	QString qs;
 
@@ -510,18 +504,16 @@ void QtPDFCore::copySelection(GBool toClipboard)
 // hyperlinks
 //------------------------------------------------------------------------
 
-GBool QtPDFCore::doAction(LinkAction* action)
+bool QtPDFCore::doAction(LinkAction* action)
 {
 	LinkActionKind kind;
 	LinkDest*      dest;
-	GString*       namedDest;
-	char*          s;
-	GString *      fileName, *fileName2, *params;
-	GString*       cmd;
-	GString*       actionName;
+	std::string    namedDest;
+	std::string    fileName, fileName2, params;
+	std::string    cmd;
+	std::string    actionName;
 	Object         movieAnnot, obj1, obj2;
-	GString*       msg;
-	int            i;
+	std::string    msg;
 
 	switch (kind = action->getKind())
 	{
@@ -530,44 +522,33 @@ GBool QtPDFCore::doAction(LinkAction* action)
 	case actionGoToR:
 		if (kind == actionGoTo)
 		{
-			dest      = NULL;
-			namedDest = NULL;
+			dest = nullptr;
 			if ((dest = ((LinkGoTo*)action)->getDest()))
 				dest = dest->copy();
-			else if ((namedDest = ((LinkGoTo*)action)->getNamedDest()))
-				namedDest = namedDest->copy();
+			else if ((namedDest = ((LinkGoTo*)action)->getNamedDest()).size())
+				namedDest = namedDest;
 		}
 		else
 		{
-			if (!externalHyperlinksEnabled)
-				return gFalse;
-			dest      = NULL;
-			namedDest = NULL;
+			if (!externalHyperlinksEnabled) return false;
+			dest = nullptr;
 			if ((dest = ((LinkGoToR*)action)->getDest()))
 				dest = dest->copy();
-			else if ((namedDest = ((LinkGoToR*)action)->getNamedDest()))
-				namedDest = namedDest->copy();
-			s = ((LinkGoToR*)action)->getFileName()->getCString();
+			else if ((namedDest = ((LinkGoToR*)action)->getNamedDest()).size())
+				namedDest = namedDest;
+			const char* s = ((LinkGoToR*)action)->getFileName().c_str();
 			if (isAbsolutePath(s))
-				fileName = new GString(s);
+				fileName = s;
 			else
-				fileName = appendToPath(grabPath(doc->getFileName()->getCString()), s);
+				fileName = appendToPath(grabPath(doc->getFileName().c_str()), s);
 			if (loadFile(fileName) != errNone)
 			{
-				if (dest)
-					delete dest;
-				if (namedDest)
-					delete namedDest;
-				delete fileName;
-				return gFalse;
+				if (dest) delete dest;
+				return false;
 			}
-			delete fileName;
 		}
-		if (namedDest)
-		{
+		if (namedDest.size())
 			dest = doc->findDest(namedDest);
-			delete namedDest;
-		}
 		if (dest)
 		{
 			displayDest(dest);
@@ -576,61 +557,40 @@ GBool QtPDFCore::doAction(LinkAction* action)
 		else
 		{
 			if (kind == actionGoToR)
-				displayPage(1, gFalse, gFalse, gTrue);
+				displayPage(1, false, false, true);
 		}
 		break;
 
 	// Launch action
 	case actionLaunch:
-		if (!externalHyperlinksEnabled)
-			return gFalse;
+		if (!externalHyperlinksEnabled) return false;
 		fileName = ((LinkLaunch*)action)->getFileName();
-		s        = fileName->getCString();
-		if (fileName->getLength() >= 4 && (!strcmp(s + fileName->getLength() - 4, ".pdf") || !strcmp(s + fileName->getLength() - 4, ".PDF")))
 		{
-			if (isAbsolutePath(s))
-				fileName = fileName->copy();
-			else
-				fileName = appendToPath(grabPath(doc->getFileName()->getCString()), s);
-			if (loadFile(fileName) != errNone)
+			const char* s = fileName.c_str();
+			if (fileName.size() >= 4 && (!strcmp(s + fileName.size() - 4, ".pdf") || !strcmp(s + fileName.size() - 4, ".PDF")))
 			{
-				delete fileName;
-				return gFalse;
+				if (isAbsolutePath(s))
+					;
+				else
+					fileName = appendToPath(grabPath(doc->getFileName().c_str()), s);
+				if (loadFile(fileName) != errNone)
+					return false;
+				displayPage(1, false, false, true);
 			}
-			delete fileName;
-			displayPage(1, gFalse, gFalse, gTrue);
-		}
-		else
-		{
-			cmd = fileName->copy();
-			if ((params = ((LinkLaunch*)action)->getParams()))
-				cmd->append(' ')->append(params);
-			if (globalParams->getLaunchCommand())
+			else
 			{
-				cmd->insert(0, ' ');
-				cmd->insert(0, globalParams->getLaunchCommand());
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-				QString     cmdStr(cmd->getCString());
-				QStringList tokens = QProcess::splitCommand(cmdStr);
-				if (!tokens.isEmpty())
+				cmd = fileName;
+				if ((params = ((LinkLaunch*)action)->getParams()).size())
 				{
-					QString program = tokens[0];
-					tokens.removeFirst();
-					QProcess::startDetached(program, tokens);
+					cmd += ' ';
+					cmd += params;
 				}
-#else
-				QProcess::startDetached(cmd->getCString());
-#endif
-			}
-			else
-			{
-				msg = new GString("About to execute the command:\n");
-				msg->append(cmd);
-				if (QMessageBox::question(viewport, "PDF Launch Link", msg->getCString(), QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Ok)
-				    == QMessageBox::Ok)
+				if (globalParams->getLaunchCommand().size())
 				{
+					cmd.insert(0, " ");
+					cmd.insert(0, globalParams->getLaunchCommand());
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-					QString     cmdStr(cmd->getCString());
+					QString     cmdStr(cmd.c_str());
 					QStringList tokens = QProcess::splitCommand(cmdStr);
 					if (!tokens.isEmpty())
 					{
@@ -639,69 +599,86 @@ GBool QtPDFCore::doAction(LinkAction* action)
 						QProcess::startDetached(program, tokens);
 					}
 #else
-					QProcess::startDetached(cmd->getCString());
+					QProcess::startDetached(cmd.c_str());
 #endif
 				}
-				delete msg;
+				else
+				{
+					msg = "About to execute the command:\n";
+					msg += cmd;
+					if (QMessageBox::question(viewport, "PDF Launch Link", msg.c_str(), QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Ok) == QMessageBox::Ok)
+					{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+						QString     cmdStr(cmd.c_str());
+						QStringList tokens = QProcess::splitCommand(cmdStr);
+						if (!tokens.isEmpty())
+						{
+							QString program = tokens[0];
+							tokens.removeFirst();
+							QProcess::startDetached(program, tokens);
+						}
+#else
+						QProcess::startDetached(cmd.c_str());
+#endif
+					}
+				}
 			}
-			delete cmd;
 		}
 		break;
 
 	// URI action
 	case actionURI:
-		if (!externalHyperlinksEnabled)
-			return gFalse;
-		QDesktopServices::openUrl(QUrl(((LinkURI*)action)->getURI()->getCString(), QUrl::TolerantMode));
+		if (!externalHyperlinksEnabled) return false;
+		QDesktopServices::openUrl(QUrl(((LinkURI*)action)->getURI().c_str(), QUrl::TolerantMode));
 		break;
 
 	// Named action
 	case actionNamed:
 		actionName = ((LinkNamed*)action)->getName();
-		if (!actionName->cmp("NextPage"))
+		if (actionName == "NextPage")
 		{
-			gotoNextPage(1, gTrue);
+			gotoNextPage(1, true);
 		}
-		else if (!actionName->cmp("PrevPage"))
+		else if (actionName == "PrevPage")
 		{
-			gotoPrevPage(1, gTrue, gFalse);
+			gotoPrevPage(1, true, false);
 		}
-		else if (!actionName->cmp("FirstPage"))
+		else if (actionName == "FirstPage")
 		{
-			displayPage(1, gTrue, gFalse, gTrue);
+			displayPage(1, true, false, true);
 		}
-		else if (!actionName->cmp("LastPage"))
+		else if (actionName == "LastPage")
 		{
-			displayPage(doc->getNumPages(), gTrue, gFalse, gTrue);
+			displayPage(doc->getNumPages(), true, false, true);
 		}
-		else if (!actionName->cmp("GoBack"))
+		else if (actionName == "GoBack")
 		{
 			goBackward();
 		}
-		else if (!actionName->cmp("GoForward"))
+		else if (actionName == "GoForward")
 		{
 			goForward();
 		}
-		else if (!actionName->cmp("Quit"))
+		else if (actionName == "Quit")
 		{
 			if (actionCbk)
-				(*actionCbk)(actionCbkData, actionName->getCString());
+				(*actionCbk)(actionCbkData, actionName.c_str());
 		}
 		else
 		{
-			error(errSyntaxError, -1, "Unknown named action: '{0:t}'", actionName);
-			return gFalse;
+			error(errSyntaxError, -1, "Unknown named action: '{}'", actionName);
+			return false;
 		}
 		break;
 
 	// Movie action
 	case actionMovie:
 		if (!externalHyperlinksEnabled)
-			return gFalse;
-		if (!(cmd = globalParams->getMovieCommand()))
+			return false;
+		if ((cmd = globalParams->getMovieCommand()).empty())
 		{
 			error(errConfig, -1, "No movieCommand defined in config file");
-			return gFalse;
+			return false;
 		}
 		if (((LinkMovie*)action)->hasAnnotRef())
 		{
@@ -713,7 +690,7 @@ GBool QtPDFCore::doAction(LinkAction* action)
 			doc->getCatalog()->getPage(tileMap->getFirstPage())->getAnnots(&obj1);
 			if (obj1.isArray())
 			{
-				for (i = 0; i < obj1.arrayGetLength(); ++i)
+				for (int i = 0; i < obj1.arrayGetLength(); ++i)
 				{
 					if (obj1.arrayGet(i, &movieAnnot)->isDict())
 					{
@@ -735,18 +712,14 @@ GBool QtPDFCore::doAction(LinkAction* action)
 			{
 				if (obj1.dictLookup("F", &obj2))
 				{
-					if ((fileName = LinkAction::getFileSpecName(&obj2)))
+					if ((fileName = LinkAction::getFileSpecName(&obj2)).size())
 					{
-						if (!isAbsolutePath(fileName->getCString()))
+						if (!isAbsolutePath(fileName.c_str()))
 						{
-							fileName2 = appendToPath(
-							    grabPath(doc->getFileName()->getCString()),
-							    fileName->getCString());
-							delete fileName;
-							fileName = fileName2;
+							fileName2 = appendToPath(grabPath(doc->getFileName().c_str()), fileName.c_str());
+							fileName  = fileName2;
 						}
 						runCommand(cmd, fileName);
-						delete fileName;
 					}
 					obj2.free();
 				}
@@ -760,24 +733,24 @@ GBool QtPDFCore::doAction(LinkAction* action)
 	case actionJavaScript:
 	case actionSubmitForm:
 	case actionHide:
-		return gFalse;
+		return false;
 
 	// unknown action type
 	case actionUnknown:
-		error(errSyntaxError, -1, "Unknown link action type: '{0:t}'", ((LinkUnknown*)action)->getAction());
-		return gFalse;
+		error(errSyntaxError, -1, "Unknown link action type: '{}'", ((LinkUnknown*)action)->getAction());
+		return false;
 	}
 
-	return gTrue;
+	return true;
 }
 
 QString QtPDFCore::getLinkInfo(LinkAction* action)
 {
-	LinkDest* dest;
-	GString*  namedDest;
-	Ref       pageRef;
-	int       pg;
-	QString   info;
+	LinkDest*   dest;
+	std::string namedDest;
+	Ref         pageRef;
+	int         pg;
+	QString     info;
 
 	if (action == lastLinkAction && !lastLinkActionInfo.isEmpty())
 		return lastLinkActionInfo;
@@ -785,10 +758,10 @@ QString QtPDFCore::getLinkInfo(LinkAction* action)
 	switch (action->getKind())
 	{
 	case actionGoTo:
-		dest = NULL;
+		dest = nullptr;
 		if ((dest = ((LinkGoTo*)action)->getDest()))
 			dest = dest->copy();
-		else if ((namedDest = ((LinkGoTo*)action)->getNamedDest()))
+		else if ((namedDest = ((LinkGoTo*)action)->getNamedDest()).size())
 			dest = doc->findDest(namedDest);
 		pg = 0;
 		if (dest)
@@ -810,16 +783,16 @@ QString QtPDFCore::getLinkInfo(LinkAction* action)
 			info = "[internal]";
 		break;
 	case actionGoToR:
-		info = QString(((LinkGoToR*)action)->getFileName()->getCString());
+		info = QString(((LinkGoToR*)action)->getFileName().c_str());
 		break;
 	case actionLaunch:
-		info = QString(((LinkLaunch*)action)->getFileName()->getCString());
+		info = QString(((LinkLaunch*)action)->getFileName().c_str());
 		break;
 	case actionURI:
-		info = QString(((LinkURI*)action)->getURI()->getCString());
+		info = QString(((LinkURI*)action)->getURI().c_str());
 		break;
 	case actionNamed:
-		info = QString(((LinkNamed*)action)->getName()->getCString());
+		info = QString(((LinkNamed*)action)->getName().c_str());
 		break;
 	case actionMovie:
 		info = "[movie]";
@@ -841,23 +814,23 @@ QString QtPDFCore::getLinkInfo(LinkAction* action)
 
 // Run a command, given a <cmdFmt> string with one '%s' in it, and an
 // <arg> string to insert in place of the '%s'.
-void QtPDFCore::runCommand(GString* cmdFmt, GString* arg)
+void QtPDFCore::runCommand(const std::string& cmdFmt, const std::string& arg)
 {
-	GString* cmd;
-	char*    s;
+	std::string cmd;
+	const char* s;
 
-	if ((s = strstr(cmdFmt->getCString(), "%s")))
+	if ((s = strstr(cmdFmt.c_str(), "%s")))
 	{
 		cmd = mungeURL(arg);
-		cmd->insert(0, cmdFmt->getCString(), (int)(s - cmdFmt->getCString()));
-		cmd->append(s + 2);
+		cmd.insert(0, cmdFmt.c_str(), (int)(s - cmdFmt.c_str()));
+		cmd.append(s + 2);
 	}
 	else
 	{
-		cmd = cmdFmt->copy();
+		cmd = cmdFmt;
 	}
 #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-	QString     cmdStr(cmd->getCString());
+	QString     cmdStr(cmd.c_str());
 	QStringList tokens = QProcess::splitCommand(cmdStr);
 	if (!tokens.isEmpty())
 	{
@@ -866,32 +839,27 @@ void QtPDFCore::runCommand(GString* cmdFmt, GString* arg)
 		QProcess::startDetached(program, tokens);
 	}
 #else
-	QProcess::startDetached(cmd->getCString());
+	QProcess::startDetached(cmd.c_str());
 #endif
-	delete cmd;
 }
 
-// Escape any characters in a URL which might cause problems when
-// calling system().
-GString* QtPDFCore::mungeURL(GString* url)
+// Escape any characters in a URL which might cause problems when calling system().
+std::string QtPDFCore::mungeURL(const std::string& url)
 {
 	static const char* allowed =
 	    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	    "abcdefghijklmnopqrstuvwxyz"
 	    "0123456789"
 	    "-_.~/?:@&=+,#%";
-	GString* newURL;
-	char     c;
-	int      i;
 
-	newURL = new GString();
-	for (i = 0; i < url->getLength(); ++i)
+	std::string newURL;
+	for (int i = 0; i < url.size(); ++i)
 	{
-		c = url->getChar(i);
+		const char c = url.at(i);
 		if (strchr(allowed, c))
-			newURL->append(c);
+			newURL += c;
 		else
-			newURL->appendf("%{0:02x}", c & 0xff);
+			newURL += fmt::format("%{:02x}", c & 0xff);
 	}
 	return newURL;
 }
@@ -900,31 +868,31 @@ GString* QtPDFCore::mungeURL(GString* url)
 // find
 //------------------------------------------------------------------------
 
-GBool QtPDFCore::find(char* s, GBool caseSensitive, GBool next, GBool backward, GBool wholeWord, GBool onePageOnly)
+bool QtPDFCore::find(char* s, bool caseSensitive, bool next, bool backward, bool wholeWord, bool onePageOnly)
 {
 	if (!PDFCore::find(s, caseSensitive, next, backward, wholeWord, onePageOnly))
-		return gFalse;
+		return false;
 #ifndef NO_TEXT_SELECT
-	copySelection(gFalse);
+	copySelection(false);
 #endif
-	return gTrue;
+	return true;
 }
 
-GBool QtPDFCore::findU(Unicode* u, int len, GBool caseSensitive, GBool next, GBool backward, GBool wholeWord, GBool onePageOnly)
+bool QtPDFCore::findU(Unicode* u, int len, bool caseSensitive, bool next, bool backward, bool wholeWord, bool onePageOnly)
 {
 	if (!PDFCore::findU(u, len, caseSensitive, next, backward, wholeWord, onePageOnly))
-		return gFalse;
+		return false;
 #ifndef NO_TEXT_SELECT
-	copySelection(gFalse);
+	copySelection(false);
 #endif
-	return gTrue;
+	return true;
 }
 
 //------------------------------------------------------------------------
 // misc access
 //------------------------------------------------------------------------
 
-void QtPDFCore::setBusyCursor(GBool busy)
+void QtPDFCore::setBusyCursor(bool busy)
 {
 	if (busy)
 		doSetCursor(Qt::WaitCursor);
@@ -993,9 +961,7 @@ QSize QtPDFCore::getBestSize()
 	}
 	else if (mode == displaySideBySideContinuous)
 	{
-		w = w * 2
-		    + tileMap->getHorizContinuousPageSpacing()
-		    + QApplication::style()->pixelMetric(QStyle::PM_ScrollBarExtent);
+		w = w * 2 + tileMap->getHorizContinuousPageSpacing() + QApplication::style()->pixelMetric(QStyle::PM_ScrollBarExtent);
 		h += tileMap->getContinuousPageSpacing();
 	}
 	else if (mode == displayHorizontalContinuous)
@@ -1031,7 +997,7 @@ void QtPDFCore::resizeEvent()
 void QtPDFCore::paintEvent(int x, int y, int w, int h)
 {
 	SplashBitmap* bitmap;
-	GBool         wholeWindow;
+	bool          wholeWindow;
 
 	QPainter painter(viewport);
 	wholeWindow = x == 0 && y == 0 && w == viewport->width() && h == viewport->height();
@@ -1082,7 +1048,7 @@ void QtPDFCore::updateScrollbars()
 	int  winW, winH, horizLimit, vertLimit, horizMax, vertMax;
 	bool vScrollBarVisible, hScrollBarVisible;
 
-	inUpdateScrollbars = gTrue;
+	inUpdateScrollbars = true;
 
 	winW = state->getWinW();
 	winH = state->getWinH();
@@ -1106,10 +1072,8 @@ void QtPDFCore::updateScrollbars()
 	// NB: {h,v}ScrollBar->isVisible() are unreliable at startup, so
 	//     we compare the viewport size to the ScrollArea size (with
 	//     some slack for margins)
-	vScrollBarVisible =
-	    viewport->parentWidget()->width() - viewport->width() > 8;
-	hScrollBarVisible =
-	    viewport->parentWidget()->height() - viewport->height() > 8;
+	vScrollBarVisible = viewport->parentWidget()->width() - viewport->width() > 8;
+	hScrollBarVisible = viewport->parentWidget()->height() - viewport->height() > 8;
 	if (state->getZoom() >= 0 && vScrollBarVisible && hScrollBarVisible && horizMax <= vScrollBar->width() && vertMax <= hScrollBar->height())
 	{
 		horizMax = 0;
@@ -1146,23 +1110,23 @@ void QtPDFCore::updateScrollbars()
 	vScrollBar->setPageStep(winH);
 	vScrollBar->setValue(state->getScrollY());
 
-	inUpdateScrollbars = gFalse;
+	inUpdateScrollbars = false;
 }
 
-GBool QtPDFCore::checkForNewFile()
+bool QtPDFCore::checkForNewFile()
 {
 	QDateTime newModTime;
 
-	if (doc->getFileName())
+	if (doc->getFileName().size())
 	{
-		newModTime = QFileInfo(doc->getFileName()->getCString()).lastModified();
+		newModTime = QFileInfo(doc->getFileName().c_str()).lastModified();
 		if (newModTime != modTime)
 		{
 			modTime = newModTime;
-			return gTrue;
+			return true;
 		}
 	}
-	return gFalse;
+	return false;
 }
 
 void QtPDFCore::preLoad()
@@ -1181,16 +1145,13 @@ void QtPDFCore::postLoad()
 // password dialog
 //------------------------------------------------------------------------
 
-GString* QtPDFCore::getPassword()
+std::string QtPDFCore::getPassword()
 {
-	QString s;
-	bool    ok;
-
-	if (!showPasswordDialog)
-		return NULL;
-	s = QInputDialog::getText(viewport, "PDF Password", "This document requires a password", QLineEdit::Password, "", &ok, Qt::Dialog);
+	bool ok;
+	if (!showPasswordDialog) return "";
+	const auto s = QInputDialog::getText(viewport, "PDF Password", "This document requires a password", QLineEdit::Password, "", &ok, Qt::Dialog);
 	if (ok)
-		return new GString(s.toLocal8Bit().constData());
+		return s.toStdString();
 	else
-		return NULL;
+		return "";
 }

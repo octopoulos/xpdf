@@ -8,143 +8,136 @@
 //
 //========================================================================
 
-#ifndef GFILE_H
-#define GFILE_H
+#pragma once
 
 #include <aconf.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #if defined(_WIN32)
-#  include <sys/stat.h>
-#  ifdef FPTEX
-#    include <win32lib.h>
-#  else
-#    include <windows.h>
-#  endif
+#	include <sys/stat.h>
+#	ifdef FPTEX
+#		include <win32lib.h>
+#	else
+#		include <windows.h>
+#	endif
 #elif defined(ACORN)
 #elif defined(ANDROID)
 #else
-#  include <unistd.h>
-#  include <sys/types.h>
+#	include <unistd.h>
+#	include <sys/types.h>
 #endif
-#include "gtypes.h"
 
-// Windows 10 supports long paths - with a registry setting, and only
-// with Unicode (...W) functions.
+// Windows 10 supports long paths - with a registry setting, and only with Unicode (...W) functions.
 #ifdef _WIN32
-#  define winMaxLongPath 32767
+#	define winMaxLongPath 32767
 #endif
-
-class GString;
 
 //------------------------------------------------------------------------
 
 // Get home directory path.
-extern GString *getHomeDir();
+extern std::string getHomeDir();
 
 // Get current directory.
-extern GString *getCurrentDir();
+extern std::string getCurrentDir();
 
-// Append a file name to a path string.  <path> may be an empty
-// string, denoting the current directory).  Returns <path>.
-extern GString *appendToPath(GString *path, const char *fileName);
+// Append a file name to a path string.
+// <path> may be an empty string, denoting the current directory).
+// Returns <path>.
+extern std::string appendToPath(std::string path, const char* fileName);
 
-// Grab the path from the front of the file name.  If there is no
-// directory component in <fileName>, returns an empty string.
-extern GString *grabPath(char *fileName);
+// Grab the path from the front of the file name.
+// If there is no directory component in <fileName>, returns an empty string.
+extern std::string grabPath(const char* fileName);
 
 // Is this an absolute path or file name?
-extern GBool isAbsolutePath(char *path);
+extern bool isAbsolutePath(const char* path);
 
-// Make this path absolute by prepending current directory (if path is
-// relative) or prepending user's directory (if path starts with '~').
-extern GString *makePathAbsolute(GString *path);
+// Make this path absolute by prepending current directory (if path is  relative)
+// or prepending user's directory (if path starts with '~').
+extern std::string makePathAbsolute(std::string path);
 
 // Returns true if [path] exists and is a regular file.
-extern GBool pathIsFile(const char *path);
+extern bool pathIsFile(const char* path);
 
 // Returns true if [path] exists and is a directory.
-extern GBool pathIsDir(const char *path);
+extern bool pathIsDir(const char* path);
 
 // Get the modification time for <fileName>.  Returns 0 if there is an
 // error.
-extern time_t getModTime(char *fileName);
+extern time_t getModTime(char* fileName);
 
-// Create a temporary file and open it for writing.  If <ext> is not
-// NULL, it will be used as the file name extension.  Returns both the
-// name and the file pointer.  For security reasons, all writing
-// should be done to the returned file pointer; the file may be
-// reopened later for reading, but not for writing.  The <mode> string
-// should be "w" or "wb".  Returns true on success.
-extern GBool openTempFile(GString **name, FILE **f,
-			  const char *mode, const char *ext);
+// Create a temporary file and open it for writing.
+// If <ext> is not nullptr, it will be used as the file name extension.
+// Returns both the name and the file pointer.
+// For security reasons, all writing should be done to the returned file pointer;
+// the file may be reopened later for reading, but not for writing.
+// The <mode> string should be "w" or "wb".
+// Returns true on success.
+extern bool openTempFile(std::string& name, FILE** f, const char* mode, const char* ext);
 
 // Create a directory.  Returns true on success.
-extern GBool createDir(char *path, int mode);
+extern bool createDir(char* path, int mode);
 
 // Execute <command>.  Returns true on success.
-extern GBool executeCommand(char *cmd);
+extern bool executeCommand(char* cmd);
 
 #ifdef _WIN32
 // Convert a file name from Latin-1 to UTF-8.
-extern GString *fileNameToUTF8(char *path);
+extern std::string fileNameToUTF8(const char* path);
 
 // Convert a file name from UCS-2 to UTF-8.
-extern GString *fileNameToUTF8(wchar_t *path);
+extern std::string fileNameToUTF8(wchar_t* path);
 
 // Convert a file name from the OEM code page to UTF-8.
-extern GString *fileNameMultiByteToUTF8(char *path);
+extern std::string fileNameMultiByteToUTF8(const char* path);
 
-// Convert a file name from UTF-8 to UCS-2.  [out] has space for
-// [outSize] wchar_t elements (including the trailing zero).  Returns
-// [out].
-extern wchar_t *fileNameToUCS2(const char *path, wchar_t *out, size_t outSize);
+// Convert a file name from UTF-8 to UCS-2.
+// [out] has space for [outSize] wchar_t elements (including the trailing zero).
+// Returns [out].
+extern wchar_t* fileNameToUCS2(const char* path, wchar_t* out, size_t outSize);
 #endif
 
-// Open a file.  On Windows, this converts the path from UTF-8 to
-// UCS-2 and calls _wfopen().  On other OSes, this simply calls fopen().
-extern FILE *openFile(const char *path, const char *mode);
+// Open a file.
+// On Windows, this converts the path from UTF-8 to UCS-2 and calls _wfopen().
+// On other OSes, this simply calls fopen().
+extern FILE* openFile(const char* path, const char* mode);
 
 #ifdef _WIN32
-// If [wPath] is a Windows shortcut (.lnk file), read the target path
-// and store it back into [wPath].
-extern void readWindowsShortcut(wchar_t *wPath, size_t wPathSize);
+// If [wPath] is a Windows shortcut (.lnk file), read the target path and store it back into [wPath].
+extern void readWindowsShortcut(wchar_t* wPath, size_t wPathSize);
 #endif
 
-// Create a directory.  On Windows, this converts the path from UTF-8
-// to UCS-2 and calls _wmkdir(), ignoring the mode argument.  On other
-// OSes, this simply calls mkdir().
-extern int makeDir(const char *path, int mode);
+// Create a directory.
+// On Windows, this converts the path from UTF-8 to UCS-2 and calls _wmkdir(), ignoring the mode argument.
+// On other OSes, this simply calls mkdir().
+extern int makeDir(const char* path, int mode);
 
-// Just like fgets, but handles Unix, Mac, and/or DOS end-of-line
-// conventions.
-extern char *getLine(char *buf, int size, FILE *f);
+// Just like fgets, but handles Unix, Mac, and/or DOS end-of-line conventions.
+extern char* getLine(char* buf, int size, FILE* f);
 
-// Type used by gfseek/gftell for file offsets.  This will be 64 bits
-// on systems that support it.
+// Type used by gfseek/gftell for file offsets.
+// This will be 64 bits on systems that support it.
 #if HAVE_FSEEKO
 typedef off_t GFileOffset;
-#define GFILEOFFSET_MAX 0x7fffffffffffffffLL
+#	define GFILEOFFSET_MAX 0x7fffffffffffffffLL
 #elif HAVE_FSEEK64
 typedef long long GFileOffset;
-#define GFILEOFFSET_MAX 0x7fffffffffffffffLL
+#	define GFILEOFFSET_MAX 0x7fffffffffffffffLL
 #elif HAVE_FSEEKI64
 typedef __int64 GFileOffset;
-#define GFILEOFFSET_MAX 0x7fffffffffffffffLL
+#	define GFILEOFFSET_MAX 0x7fffffffffffffffLL
 #else
 typedef long GFileOffset;
-#define GFILEOFFSET_MAX LONG_MAX
+#	define GFILEOFFSET_MAX LONG_MAX
 #endif
 
 // Like fseek, but uses a 64-bit file offset if available.
-extern int gfseek(FILE *f, GFileOffset offset, int whence);
+extern int gfseek(FILE* f, GFileOffset offset, int whence);
 
 // Like ftell, but returns a 64-bit file offset if available.
-extern GFileOffset gftell(FILE *f);
+extern GFileOffset gftell(FILE* f);
 
-// On Windows, this gets the Unicode command line and converts it to
-// UTF-8.  On other systems, this is a nop.
-extern void fixCommandLine(int *argc, char **argv[]);
-
-#endif
+// On Windows, this gets the Unicode command line and converts it to UTF-8.
+// On other systems, this is a nop.
+extern void fixCommandLine(int* argc, char** argv[]);

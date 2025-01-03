@@ -6,19 +6,25 @@
 //
 //========================================================================
 
-#ifndef ACROFORM_H
-#define ACROFORM_H
+#pragma once
 
 #include <aconf.h>
+#include "CharTypes.h" // Unicode
+#include "Object.h"    // Ref
 
-class TextString;
+class AcroFormField;
+class Catalog;
+class Dict;
 class Gfx;
 class GfxFont;
 class GfxFontDict;
-class AcroFormField;
-class XFAScanner;
+class GList;
+class Object;
+class PDFDoc;
+class TextString;
 class XFAField;
 class XFAFieldBarcodeInfo;
+class XFAScanner;
 
 //------------------------------------------------------------------------
 
@@ -31,7 +37,7 @@ public:
 
 	const char* getType();
 
-	void draw(int pageNum, Gfx* gfx, GBool printing);
+	void draw(int pageNum, Gfx* gfx, bool printing);
 
 	int            getNumFields();
 	AcroFormField* getField(int idx);
@@ -46,11 +52,11 @@ private:
 
 	PDFDoc*     doc;
 	Object      acroFormObj;
-	GBool       needAppearances;
+	bool        needAppearances;
 	GList*      annotPages; // [AcroFormAnnotPage]
 	GList*      fields;     // [AcroFormField]
 	XFAScanner* xfaScanner;
-	GBool       isStaticXFA;
+	bool        isStaticXFA;
 
 	friend class AcroFormField;
 };
@@ -95,49 +101,47 @@ public:
 	Object* getValueObj(Object* val);
 	Object* getParentRef(Object* parent);
 
-	GBool getTypeFromParent() { return typeFromParent; }
+	bool getTypeFromParent() { return typeFromParent; }
 
 private:
-	AcroFormField(AcroForm* acroFormA, Object* fieldRefA, Object* fieldObjA, AcroFormFieldType typeA, TextString* nameA, Guint flagsA, GBool typeFromParentA, XFAField* xfaFieldA);
-	Ref      findFontName(char* fontTag);
-	void     draw(int pageNum, Gfx* gfx, GBool printing);
-	void     drawAnnot(int pageNum, Gfx* gfx, GBool printing, Object* annotRef, Object* annotObj);
-	void     drawExistingAppearance(Gfx* gfx, Dict* annot, double xMin, double yMin, double xMax, double yMax);
-	void     drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double yMin, double xMax, double yMax);
-	void     setColor(Array* a, GBool fill, int adjust, GString* appearBuf);
-	void     drawText(GString* text, GString* da, GfxFontDict* fontDict, GBool multiline, int comb, int quadding, int vAlign, GBool txField, GBool forceZapfDingbats, int rot, double x, double y, double width, double height, double border, GBool whiteBackground, GString* appearBuf);
-	void     drawListBox(GString** text, GBool* selection, int nOptions, int topIdx, GString* da, GfxFontDict* fontDict, GBool quadding, double xMin, double yMin, double xMax, double yMax, double border, GString* appearBuf);
-	void     getNextLine(GString* text, int start, GfxFont* font, double fontSize, double wMax, int* end, double* width, int* next);
-	void     drawCircle(double cx, double cy, double r, const char* cmd, GString* appearBuf);
-	void     drawCircleTopLeft(double cx, double cy, double r, GString* appearBuf);
-	void     drawCircleBottomRight(double cx, double cy, double r, GString* appearBuf);
-	void     drawBarcode(GString* value, GString* da, GfxFontDict* fontDict, int rot, double xMin, double yMin, double xMax, double yMax, XFAFieldBarcodeInfo* barcodeInfo, GString* appearBuf);
-	GList*   tokenize(GString* s);
-	Object*  getAnnotObj(Object* annotObj);
-	Object*  getAnnotResources(Dict* annot, Object* res);
-	void     buildDefaultResourceDict(Object* dr);
-	Object*  fieldLookup(const char* key, Object* obj);
-	Object*  fieldLookup(Dict* dict, const char* key, Object* obj);
-	Unicode* utf8ToUnicode(GString* s, int* unicodeLength);
-	GString* unicodeToLatin1(Unicode* u, int unicodeLength);
-	GBool    unicodeStringEqual(Unicode* u, int unicodeLength, GString* s);
-	GBool    unicodeStringEqual(Unicode* u, int unicodeLength, const char* s);
-	GString* pictureFormatDateTime(GString* value, GString* picture);
-	GString* pictureFormatNumber(GString* value, GString* picture);
-	GString* pictureFormatText(GString* value, GString* picture);
-	GBool    isValidInt(GString* s, int start, int len);
-	int      convertInt(GString* s, int start, int len);
+	AcroFormField(AcroForm* acroFormA, Object* fieldRefA, Object* fieldObjA, AcroFormFieldType typeA, TextString* nameA, uint32_t flagsA, bool typeFromParentA, XFAField* xfaFieldA);
+	Ref         findFontName(const char* fontTag);
+	void        draw(int pageNum, Gfx* gfx, bool printing);
+	void        drawAnnot(int pageNum, Gfx* gfx, bool printing, Object* annotRef, Object* annotObj);
+	void        drawExistingAppearance(Gfx* gfx, Dict* annot, double xMin, double yMin, double xMax, double yMax);
+	void        drawNewAppearance(Gfx* gfx, Dict* annot, double xMin, double yMin, double xMax, double yMax);
+	void        setColor(Array* a, bool fill, int adjust, std::string& appearBuf);
+	void        drawText(const std::string& text, const std::string& da, GfxFontDict* fontDict, bool multiline, int comb, int quadding, int vAlign, bool txField, bool forceZapfDingbats, int rot, double x, double y, double width, double height, double border, bool whiteBackground, std::string& appearBuf);
+	void        drawListBox(const VEC_STR& texts, bool* selection, int nOptions, int topIdx, const std::string& da, GfxFontDict* fontDict, int quadding, double xMin, double yMin, double xMax, double yMax, double border, std::string& appearBuf);
+	void        getNextLine(const std::string& text, int start, GfxFont* font, double fontSize, double wMax, int* end, double* width, int* next);
+	void        drawCircle(double cx, double cy, double r, const char* cmd, std::string& appearBuf);
+	void        drawCircleTopLeft(double cx, double cy, double r, std::string& appearBuf);
+	void        drawCircleBottomRight(double cx, double cy, double r, std::string& appearBuf);
+	void        drawBarcode(const std::string& value, const std::string& da, GfxFontDict* fontDict, int rot, double xMin, double yMin, double xMax, double yMax, XFAFieldBarcodeInfo* barcodeInfo, std::string& appearBuf);
+	VEC_STR     tokenize(const std::string& s);
+	Object*     getAnnotObj(Object* annotObj);
+	Object*     getAnnotResources(Dict* annot, Object* res);
+	void        buildDefaultResourceDict(Object* dr);
+	Object*     fieldLookup(const char* key, Object* obj);
+	Object*     fieldLookup(Dict* dict, const char* key, Object* obj);
+	Unicode*    utf8ToUnicode(const std::string& s, int* unicodeLength);
+	std::string unicodeToLatin1(Unicode* u, int unicodeLength);
+	bool        unicodeStringEqual(Unicode* u, int unicodeLength, const std::string& s);
+	bool        unicodeStringEqual(Unicode* u, int unicodeLength, const char* s);
+	std::string pictureFormatDateTime(const std::string& value, const std::string& picture);
+	std::string pictureFormatNumber(const std::string& value, const std::string& picture);
+	std::string pictureFormatText(const std::string& value, const std::string& picture);
+	bool        isValidInt(const std::string& s, int start, int len);
+	int         convertInt(const std::string& s, int start, int len);
 
-	AcroForm*         acroForm;
-	Object            fieldRef;
-	Object            fieldObj;
-	AcroFormFieldType type;
-	TextString*       name;
-	Guint             flags;
-	GBool             typeFromParent;
-	XFAField*         xfaField;
+	AcroForm*         acroForm;       //
+	Object            fieldRef;       //
+	Object            fieldObj;       //
+	AcroFormFieldType type;           //
+	TextString*       name;           //
+	uint32_t          flags;          //
+	bool              typeFromParent; //
+	XFAField*         xfaField;       //
 
 	friend class AcroForm;
 };
-
-#endif

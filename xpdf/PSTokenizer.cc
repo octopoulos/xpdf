@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "gmempp.h"
@@ -49,30 +48,30 @@ PSTokenizer::~PSTokenizer()
 {
 }
 
-GBool PSTokenizer::getToken(char* buf, int size, int* length)
+bool PSTokenizer::getToken(char* buf, int size, int* length)
 {
-	GBool comment, backslash;
-	int   c;
-	int   i;
+	bool comment, backslash;
+	int  c;
+	int  i;
 
 	// skip whitespace and comments
-	comment = gFalse;
+	comment = false;
 	while (1)
 	{
 		if ((c = getChar()) == EOF)
 		{
 			buf[0]  = '\0';
 			*length = 0;
-			return gFalse;
+			return false;
 		}
 		if (comment)
 		{
 			if (c == '\x0a' || c == '\x0d')
-				comment = gFalse;
+				comment = false;
 		}
 		else if (c == '%')
 		{
-			comment = gTrue;
+			comment = true;
 		}
 		else if (specialChars[c] != 1)
 		{
@@ -85,18 +84,18 @@ GBool PSTokenizer::getToken(char* buf, int size, int* length)
 	buf[i++] = (char)c;
 	if (c == '(')
 	{
-		backslash = gFalse;
+		backslash = false;
 		while ((c = lookChar()) != EOF)
 		{
 			if (i < size - 1)
 				buf[i++] = (char)c;
 			getChar();
 			if (c == '\\')
-				backslash = gTrue;
+				backslash = true;
 			else if (!backslash && c == ')')
 				break;
 			else
-				backslash = gFalse;
+				backslash = false;
 		}
 	}
 	else if (c == '<')
@@ -122,23 +121,19 @@ GBool PSTokenizer::getToken(char* buf, int size, int* length)
 	buf[i]  = '\0';
 	*length = i;
 
-	return gTrue;
+	return true;
 }
 
 int PSTokenizer::lookChar()
 {
-	if (charBuf < 0)
-		charBuf = (*getCharFunc)(data);
+	if (charBuf < 0) charBuf = (*getCharFunc)(data);
 	return charBuf;
 }
 
 int PSTokenizer::getChar()
 {
-	int c;
-
-	if (charBuf < 0)
-		charBuf = (*getCharFunc)(data);
-	c       = charBuf;
-	charBuf = -1;
+	if (charBuf < 0) charBuf = (*getCharFunc)(data);
+	const int c = charBuf;
+	charBuf     = -1;
 	return c;
 }

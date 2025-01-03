@@ -4,16 +4,9 @@
 //
 //========================================================================
 
-#ifndef ZOOX_H
-#define ZOOX_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
-
-class GString;
-class GList;
-class GHash;
 
 class ZxAttr;
 class ZxDocTypeDecl;
@@ -22,7 +15,7 @@ class ZxXMLDecl;
 
 //------------------------------------------------------------------------
 
-typedef bool (*ZxWriteFunc)(void* stream, const char* data, int length);
+typedef bool (*ZxWriteFunc)(void* stream, const char* data, size_t length);
 
 //------------------------------------------------------------------------
 
@@ -54,24 +47,24 @@ public:
 
 	ZxNode* getParent() { return parent; }
 
-	ZxNode*      deleteChild(ZxNode* child);
-	void         appendChild(ZxNode* child);
-	void         insertChildAfter(ZxNode* child, ZxNode* prev);
-	ZxElement*   findFirstElement(const char* type);
-	ZxElement*   findFirstChildElement(const char* type);
-	GList*       findAllElements(const char* type);
-	GList*       findAllChildElements(const char* type);
-	virtual void addChild(ZxNode* child);
+	ZxNode*              deleteChild(ZxNode* child);
+	void                 appendChild(ZxNode* child);
+	void                 insertChildAfter(ZxNode* child, ZxNode* prev);
+	ZxElement*           findFirstElement(const char* type);
+	ZxElement*           findFirstChildElement(const char* type);
+	std::vector<ZxNode*> findAllElements(const char* type);
+	std::vector<ZxNode*> findAllChildElements(const char* type);
+	virtual void         addChild(ZxNode* child);
 
 	virtual bool write(ZxWriteFunc writeFunc, void* stream) = 0;
 
 protected:
-	void findAllElements(const char* type, GList* results);
+	void findAllElements(const char* type, std::vector<ZxNode*> results);
 
 	ZxNode* next;
 	ZxNode* parent;
-	ZxNode *firstChild,
-	    *lastChild;
+	ZxNode* firstChild;
+	ZxNode* lastChild;
 };
 
 //------------------------------------------------------------------------
@@ -82,7 +75,7 @@ public:
 	ZxDoc();
 
 	// Parse from memory.  Returns nullptr on error.
-	static ZxDoc* loadMem(const char* data, Guint dataLen);
+	static ZxDoc* loadMem(const char* data, size_t dataLen);
 
 	// Parse from disk.  Returns nullptr on error.
 	static ZxDoc* loadFile(const char* fileName);
@@ -105,23 +98,23 @@ public:
 	virtual bool write(ZxWriteFunc writeFunc, void* stream);
 
 private:
-	bool     parse(const char* data, Guint dataLen);
-	void     parseXMLDecl(ZxNode* par);
-	void     parseDocTypeDecl(ZxNode* par);
-	void     parseElement(ZxNode* par);
-	ZxAttr*  parseAttr();
-	void     parseContent(ZxElement* par);
-	void     parseCharData(ZxElement* par);
-	void     appendUTF8(GString* s, unsigned int c);
-	void     parseCDSect(ZxNode* par);
-	void     parseMisc(ZxNode* par);
-	void     parseComment(ZxNode* par);
-	void     parsePI(ZxNode* par);
-	GString* parseName();
-	GString* parseQuotedString();
-	void     parseBOM();
-	void     parseSpace();
-	bool     match(const char* s);
+	bool        parse(const char* data, size_t dataLen);
+	void        parseXMLDecl(ZxNode* par);
+	void        parseDocTypeDecl(ZxNode* par);
+	void        parseElement(ZxNode* par);
+	ZxAttr*     parseAttr();
+	void        parseContent(ZxElement* par);
+	void        parseCharData(ZxElement* par);
+	void        appendUTF8(std::string& s, unsigned int c);
+	void        parseCDSect(ZxNode* par);
+	void        parseMisc(ZxNode* par);
+	void        parseComment(ZxNode* par);
+	void        parsePI(ZxNode* par);
+	std::string parseName();
+	std::string parseQuotedString();
+	void        parseBOM();
+	void        parseSpace();
+	bool        match(const char* s);
 
 	ZxXMLDecl*     xmlDecl;     // may be nullptr
 	ZxDocTypeDecl* docTypeDecl; // may be nullptr
@@ -136,23 +129,23 @@ private:
 class ZxXMLDecl : public ZxNode
 {
 public:
-	ZxXMLDecl(GString* versionA, GString* encodingA, bool standaloneA);
+	ZxXMLDecl(const std::string& versionA, const std::string& encodingA, bool standaloneA);
 	virtual ~ZxXMLDecl();
 
 	virtual bool isXMLDecl() { return true; }
 
-	GString* getVersion() { return version; }
+	std::string getVersion() { return version; }
 
-	GString* getEncoding() { return encoding; }
+	std::string getEncoding() { return encoding; }
 
 	bool getStandalone() { return standalone; }
 
 	virtual bool write(ZxWriteFunc writeFunc, void* stream);
 
 private:
-	GString* version;
-	GString* encoding; // may be nullptr
-	bool     standalone;
+	std::string version;
+	std::string encoding; // may be nullptr
+	bool        standalone;
 };
 
 //------------------------------------------------------------------------
@@ -160,17 +153,17 @@ private:
 class ZxDocTypeDecl : public ZxNode
 {
 public:
-	ZxDocTypeDecl(GString* nameA);
+	ZxDocTypeDecl(const std::string& nameA);
 	virtual ~ZxDocTypeDecl();
 
 	virtual bool isDocTypeDecl() { return true; }
 
-	GString* getName() { return name; }
+	std::string getName() { return name; }
 
 	virtual bool write(ZxWriteFunc writeFunc, void* stream);
 
 private:
-	GString* name;
+	std::string name;
 };
 
 //------------------------------------------------------------------------
@@ -178,17 +171,17 @@ private:
 class ZxComment : public ZxNode
 {
 public:
-	ZxComment(GString* textA);
+	ZxComment(const std::string& textA);
 	virtual ~ZxComment();
 
 	virtual bool isComment() { return true; }
 
-	GString* getText() { return text; }
+	std::string getText() { return text; }
 
 	virtual bool write(ZxWriteFunc writeFunc, void* stream);
 
 private:
-	GString* text;
+	std::string text;
 };
 
 //------------------------------------------------------------------------
@@ -196,20 +189,20 @@ private:
 class ZxPI : public ZxNode
 {
 public:
-	ZxPI(GString* targetA, GString* textA);
+	ZxPI(const std::string& targetA, const std::string& textA);
 	virtual ~ZxPI();
 
 	virtual bool isPI() { return true; }
 
-	GString* getTarget() { return target; }
+	std::string getTarget() { return target; }
 
-	GString* getText() { return text; }
+	std::string getText() { return text; }
 
 	virtual bool write(ZxWriteFunc writeFunc, void* stream);
 
 private:
-	GString* target;
-	GString* text;
+	std::string target;
+	std::string text;
 };
 
 //------------------------------------------------------------------------
@@ -217,14 +210,14 @@ private:
 class ZxElement : public ZxNode
 {
 public:
-	ZxElement(GString* typeA);
+	ZxElement(const std::string& typeA);
 	virtual ~ZxElement();
 
 	virtual bool isElement() { return true; }
 
 	virtual bool isElement(const char* typeA);
 
-	GString* getType() { return type; }
+	std::string getType() { return type; }
 
 	ZxAttr* findAttr(const char* attrName);
 
@@ -235,11 +228,12 @@ public:
 	virtual bool write(ZxWriteFunc writeFunc, void* stream);
 
 private:
-	void appendEscapedAttrValue(GString* out, GString* s);
+	void appendEscapedAttrValue(std::string& out, const std::string& s);
 
-	GString* type;
-	GHash*   attrs; // [ZxAttr]
-	ZxAttr * firstAttr, *lastAttr;
+	std::string                type;
+	UMAP<std::string, ZxAttr*> attrs; // [ZxAttr]
+	ZxAttr*                    firstAttr;
+	ZxAttr*                    lastAttr;
 };
 
 //------------------------------------------------------------------------
@@ -247,22 +241,22 @@ private:
 class ZxAttr
 {
 public:
-	ZxAttr(GString* nameA, GString* valueA);
+	ZxAttr(const std::string& nameA, const std::string& valueA);
 	~ZxAttr();
 
-	GString* getName() { return name; }
+	std::string getName() { return name; }
 
-	GString* getValue() { return value; }
+	std::string getValue() { return value; }
 
 	ZxAttr* getNextAttr() { return next; }
 
 	ZxNode* getParent() { return parent; }
 
 private:
-	GString*   name;
-	GString*   value;
-	ZxElement* parent;
-	ZxAttr*    next;
+	std::string name;
+	std::string value;
+	ZxElement*  parent;
+	ZxAttr*     next;
 
 	friend class ZxElement;
 };
@@ -272,20 +266,18 @@ private:
 class ZxCharData : public ZxNode
 {
 public:
-	ZxCharData(GString* dataA, bool parsedA);
+	ZxCharData(const std::string& dataA, bool parsedA);
 	virtual ~ZxCharData();
 
 	virtual bool isCharData() { return true; }
 
-	GString* getData() { return data; }
+	std::string getData() { return data; }
 
 	bool isParsed() { return parsed; }
 
 	virtual bool write(ZxWriteFunc writeFunc, void* stream);
 
 private:
-	GString* data; // in UTF-8 format
-	bool     parsed;
+	std::string data; // in UTF-8 format
+	bool        parsed;
 };
-
-#endif

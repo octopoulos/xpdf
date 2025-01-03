@@ -8,16 +8,13 @@
 //
 //========================================================================
 
-#ifndef FIXEDPOINT_H
-#define FIXEDPOINT_H
+#pragma once
 
 #include <aconf.h>
 
 #if USE_FIXEDPOINT
-
 #	include <stdio.h>
 #	include <stdlib.h>
-#	include "gtypes.h"
 
 #	define fixptShift 16
 #	define fixptMaskL ((1 << fixptShift) - 1)
@@ -36,7 +33,7 @@ public:
 
 	FixedPoint(int x) { val = x << fixptShift; }
 
-	FixedPoint(Guint x) { val = x << fixptShift; }
+	FixedPoint(uint32_t x) { val = x << fixptShift; }
 
 	FixedPoint(long x) { val = (int)x << fixptShift; }
 
@@ -69,7 +66,7 @@ public:
 
 	bool operator==(int x) const { return *this == (FixedPoint)x; }
 
-	bool operator==(Guint x) const { return *this == (FixedPoint)x; }
+	bool operator==(uint32_t x) const { return *this == (FixedPoint)x; }
 
 	bool operator==(long x) const { return *this == (FixedPoint)x; }
 
@@ -79,7 +76,7 @@ public:
 
 	bool operator!=(int x) const { return *this != (FixedPoint)x; }
 
-	bool operator!=(Guint x) const { return *this != (FixedPoint)x; }
+	bool operator!=(uint32_t x) const { return *this != (FixedPoint)x; }
 
 	bool operator!=(long x) const { return *this != (FixedPoint)x; }
 
@@ -89,7 +86,7 @@ public:
 
 	bool operator<(int x) const { return *this < (FixedPoint)x; }
 
-	bool operator<(Guint x) const { return *this < (FixedPoint)x; }
+	bool operator<(uint32_t x) const { return *this < (FixedPoint)x; }
 
 	bool operator<(long x) const { return *this < (FixedPoint)x; }
 
@@ -99,7 +96,7 @@ public:
 
 	bool operator<=(int x) const { return *this <= (FixedPoint)x; }
 
-	bool operator<=(Guint x) const { return *this <= (FixedPoint)x; }
+	bool operator<=(uint32_t x) const { return *this <= (FixedPoint)x; }
 
 	bool operator<=(long x) const { return *this <= (FixedPoint)x; }
 
@@ -109,7 +106,7 @@ public:
 
 	bool operator>(int x) const { return *this > (FixedPoint)x; }
 
-	bool operator>(Guint x) const { return *this > (FixedPoint)x; }
+	bool operator>(uint32_t x) const { return *this > (FixedPoint)x; }
 
 	bool operator>(long x) const { return *this > (FixedPoint)x; }
 
@@ -119,7 +116,7 @@ public:
 
 	bool operator>=(int x) const { return *this >= (FixedPoint)x; }
 
-	bool operator>=(Guint x) const { return *this >= (FixedPoint)x; }
+	bool operator>=(uint32_t x) const { return *this >= (FixedPoint)x; }
 
 	bool operator>=(long x) const { return *this >= (FixedPoint)x; }
 
@@ -131,7 +128,7 @@ public:
 
 	FixedPoint operator+(int x) { return *this + (FixedPoint)x; }
 
-	FixedPoint operator+(Guint x) { return *this + (FixedPoint)x; }
+	FixedPoint operator+(uint32_t x) { return *this + (FixedPoint)x; }
 
 	FixedPoint operator+(long x) { return *this + (FixedPoint)x; }
 
@@ -145,7 +142,7 @@ public:
 
 	FixedPoint operator+=(int x) { return *this += (FixedPoint)x; }
 
-	FixedPoint operator+=(Guint x) { return *this += (FixedPoint)x; }
+	FixedPoint operator+=(uint32_t x) { return *this += (FixedPoint)x; }
 
 	FixedPoint operator+=(long x) { return *this += (FixedPoint)x; }
 
@@ -155,7 +152,7 @@ public:
 
 	FixedPoint operator-(int x) { return *this - (FixedPoint)x; }
 
-	FixedPoint operator-(Guint x) { return *this - (FixedPoint)x; }
+	FixedPoint operator-(uint32_t x) { return *this - (FixedPoint)x; }
 
 	FixedPoint operator-(long x) { return *this - (FixedPoint)x; }
 
@@ -169,7 +166,7 @@ public:
 
 	FixedPoint operator-=(int x) { return *this -= (FixedPoint)x; }
 
-	FixedPoint operator-=(Guint x) { return *this -= (FixedPoint)x; }
+	FixedPoint operator-=(uint32_t x) { return *this -= (FixedPoint)x; }
 
 	FixedPoint operator-=(long x) { return *this -= (FixedPoint)x; }
 
@@ -179,7 +176,7 @@ public:
 
 	FixedPoint operator*(int x) { return *this * (FixedPoint)x; }
 
-	FixedPoint operator*(Guint x) { return *this * (FixedPoint)x; }
+	FixedPoint operator*(uint32_t x) { return *this * (FixedPoint)x; }
 
 	FixedPoint operator*(long x) { return *this * (FixedPoint)x; }
 
@@ -193,7 +190,7 @@ public:
 
 	FixedPoint operator*=(int x) { return *this *= (FixedPoint)x; }
 
-	FixedPoint operator*=(Guint x) { return *this *= (FixedPoint)x; }
+	FixedPoint operator*=(uint32_t x) { return *this *= (FixedPoint)x; }
 
 	FixedPoint operator*=(long x) { return *this *= (FixedPoint)x; }
 
@@ -203,7 +200,7 @@ public:
 
 	FixedPoint operator/(int x) { return *this / (FixedPoint)x; }
 
-	FixedPoint operator/(Guint x) { return *this / (FixedPoint)x; }
+	FixedPoint operator/(uint32_t x) { return *this / (FixedPoint)x; }
 
 	FixedPoint operator/(long x) { return *this / (FixedPoint)x; }
 
@@ -217,7 +214,7 @@ public:
 
 	FixedPoint operator/=(int x) { return *this /= (FixedPoint)x; }
 
-	FixedPoint operator/=(Guint x) { return *this /= (FixedPoint)x; }
+	FixedPoint operator/=(uint32_t x) { return *this /= (FixedPoint)x; }
 
 	FixedPoint operator/=(long x) { return *this /= (FixedPoint)x; }
 
@@ -248,11 +245,11 @@ public:
 
 	// Compute *result = x/y; return false if there is an underflow or
 	// overflow.
-	static GBool divCheck(FixedPoint x, FixedPoint y, FixedPoint* result);
+	static bool divCheck(FixedPoint x, FixedPoint y, FixedPoint* result);
 
 	// Compute abs(m11*m22 - m12*m21) >= epsilon, handling the case
 	// where the multiplications overflow.
-	static GBool checkDet(FixedPoint m11, FixedPoint m12, FixedPoint m21, FixedPoint m22, FixedPoint epsilon);
+	static bool checkDet(FixedPoint m11, FixedPoint m12, FixedPoint m21, FixedPoint m22, FixedPoint epsilon);
 
 private:
 	static FixedPoint make(int valA)
@@ -269,5 +266,3 @@ private:
 };
 
 #endif // USE_FIXEDPOINT
-
-#endif

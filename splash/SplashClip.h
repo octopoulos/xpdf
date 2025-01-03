@@ -6,11 +6,9 @@
 //
 //========================================================================
 
-#ifndef SPLASHCLIP_H
-#define SPLASHCLIP_H
+#pragma once
 
 #include <aconf.h>
-
 #include "SplashTypes.h"
 #include "SplashMath.h"
 
@@ -50,27 +48,20 @@ public:
 	SplashError clipToRect(SplashCoord x0, SplashCoord y0, SplashCoord x1, SplashCoord y1);
 
 	// Interesect the clip with <path>.
-	SplashError clipToPath(SplashPath* path, SplashCoord* matrix, SplashCoord flatness, GBool eoA, GBool enablePathSimplification, SplashStrokeAdjustMode strokeAdjust);
+	SplashError clipToPath(SplashPath* path, SplashCoord* matrix, SplashCoord flatness, bool eoA, bool enablePathSimplification, SplashStrokeAdjustMode strokeAdjust);
 
 	// Tests a rectangle against the clipping region.  Returns one of:
-	//   - splashClipAllInside if the entire rectangle is inside the
-	//     clipping region, i.e., all pixels in the rectangle are
-	//     visible
-	//   - splashClipAllOutside if the entire rectangle is outside the
-	//     clipping region, i.e., all the pixels in the rectangle are
-	//     clipped
-	//   - splashClipPartial if the rectangle is part inside and part
-	//     outside the clipping region
+	//   - splashClipAllInside if the entire rectangle is inside the clipping region, i.e., all pixels in the rectangle are visible
+	//   - splashClipAllOutside if the entire rectangle is outside the clipping region, i.e., all the pixels in the rectangle are clipped
+	//   - splashClipPartial if the rectangle is part inside and part outside the clipping region
 	SplashClipResult testRect(int rectXMin, int rectYMin, int rectXMax, int rectYMax, SplashStrokeAdjustMode strokeAdjust);
 
-	// Clip a scan line.  Modifies line[] by multiplying with clipping
-	// shape values for one scan line: ([x0, x1], y).
-	void clipSpan(Guchar* line, int y, int x0, int x1, SplashStrokeAdjustMode strokeAdjust);
+	// Clip a scan line.  Modifies line[] by multiplying with clipping shape values for one scan line: ([x0, x1], y).
+	void clipSpan(uint8_t* line, int y, int x0, int x1, SplashStrokeAdjustMode strokeAdjust);
 
 	// Like clipSpan(), but uses the values 0 and 255 only.
-	// Returns true if there are any non-zero values in the result
-	// (i.e., returns false if the entire line is clipped out).
-	GBool clipSpanBinary(Guchar* line, int y, int x0, int x1, SplashStrokeAdjustMode strokeAdjust);
+	// Returns true if there are any non-zero values in the result (i.e., returns false if the entire line is clipped out).
+	bool clipSpanBinary(uint8_t* line, int y, int x0, int x1, SplashStrokeAdjustMode strokeAdjust);
 
 	// Get the rectangle part of the clip region.
 	SplashCoord getXMin() { return xMin; }
@@ -91,31 +82,33 @@ public:
 	int getNumPaths();
 
 	// Return true if the clip path is a simple rectangle.
-	GBool getIsSimple() { return isSimple; }
+	bool getIsSimple() { return isSimple; }
 
 private:
 	SplashClip(SplashClip* clip);
 	void grow(int nPaths);
 	void updateIntBounds(SplashStrokeAdjustMode strokeAdjust);
 
-	int hardXMin, hardYMin, // coordinates cannot fall outside of
-	    hardXMax, hardYMax; // [hardXMin, hardXMax), [hardYMin, hardYMax)
-
-	SplashCoord xMin, yMin, // current clip bounding rectangle
-	    xMax, yMax;
-
-	int xMinI, yMinI,            // integer clip bounding rectangle
-	    xMaxI, yMaxI;            // (these coordinates are adjusted if stroke adjustment is enabled)
-	GBool intBoundsValid;        // true if xMinI, etc. are valid
-	GBool intBoundsStrokeAdjust; // value of strokeAdjust used to compute xMinI, etc.
-
-	SplashXPath**        paths;
-	Guchar*              eo;
-	SplashXPathScanner** scanners;
-	int                  length, size;
-	GBool                isSimple;
-	SplashClip*          prev;
-	Guchar*              buf;
+	int                    hardXMin;              //
+	int                    hardYMin;              // coordinates cannot fall outside of
+	int                    hardXMax;              //
+	int                    hardYMax;              // [hardXMin, hardXMax), [hardYMin, hardYMax)
+	SplashCoord            xMin;                  //
+	SplashCoord            yMin;                  // current clip bounding rectangle
+	SplashCoord            xMax;                  //
+	SplashCoord            yMax;                  //
+	int                    xMinI;                 //
+	int                    yMinI;                 // integer clip bounding rectangle (these coordinates are adjusted if stroke adjustment is enabled)
+	int                    xMaxI;                 //
+	int                    yMaxI;                 //
+	bool                   intBoundsValid;        // true if xMinI, etc. are valid
+	SplashStrokeAdjustMode intBoundsStrokeAdjust; // value of strokeAdjust used to compute xMinI, etc.
+	SplashXPath**          paths;                 //
+	uint8_t*               eo;                    //
+	SplashXPathScanner**   scanners;              //
+	int                    length;                //
+	int                    size;                  //
+	bool                   isSimple;              //
+	SplashClip*            prev;                  //
+	uint8_t*               buf;                   //
 };
-
-#endif

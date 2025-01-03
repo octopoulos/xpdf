@@ -8,13 +8,19 @@
 #
 # ========================================================================
 
+cmake_minimum_required(VERSION 3.17)
+
+set(CMAKE_CXX_STANDARD 20)
+
 include_directories("${PROJECT_SOURCE_DIR}")
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}/goo")
 include_directories("${PROJECT_SOURCE_DIR}/fofi")
 include_directories("${PROJECT_SOURCE_DIR}/splash")
 
+find_package(CLI11 CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
+
 find_path(UWEBSOCKETS_INCLUDE_DIRS "uwebsockets/App.h")
 include_directories("${UWEBSOCKETS_INCLUDE_DIRS}")
 
@@ -123,6 +129,7 @@ if(HAVE_SPLASH)
 		${MANIFEST}
 	)
 	target_link_libraries(pdftops goo fofi splash
+		CLI11::CLI11
 		fmt::fmt-header-only
 		${PAPER_LIBRARY}
 		${FREETYPE_LIBRARY} ${FREETYPE_OTHER_LIBS}
@@ -139,6 +146,7 @@ else()
 		${MANIFEST}
 	)
 	target_link_libraries(pdftops goo fofi
+		CLI11::CLI11
 		fmt::fmt-header-only
 		${PAPER_LIBRARY}
 		${LCMS_LIBRARY}
@@ -157,6 +165,7 @@ add_executable(pdftotext
 	${MANIFEST}
 )
 target_link_libraries(pdftotext goo fofi
+	CLI11::CLI11
 	fmt::fmt-header-only
 	${PAPER_LIBRARY}
 	${LCMS_LIBRARY}
@@ -178,6 +187,7 @@ if(HAVE_SPLASH AND PNG_FOUND)
 		${MANIFEST}
 	)
 	target_link_libraries(pdftohtml goo fofi splash
+		CLI11::CLI11
 		fmt::fmt-header-only
 		${PAPER_LIBRARY}
 		${FREETYPE_LIBRARY} ${FREETYPE_OTHER_LIBS}
@@ -197,6 +207,7 @@ add_executable(pdfinfo
 	${MANIFEST}
 )
 target_link_libraries(pdfinfo goo fofi
+	CLI11::CLI11
 	fmt::fmt-header-only
 	${PAPER_LIBRARY}
 	${LCMS_LIBRARY}
@@ -212,6 +223,7 @@ add_executable(pdffonts
 	${MANIFEST}
 )
 target_link_libraries(pdffonts goo fofi
+	CLI11::CLI11
 	fmt::fmt-header-only
 	${PAPER_LIBRARY}
 	${LCMS_LIBRARY}
@@ -227,6 +239,7 @@ add_executable(pdfdetach
 	${MANIFEST}
 )
 target_link_libraries(pdfdetach goo fofi
+	CLI11::CLI11
 	fmt::fmt-header-only
 	${PAPER_LIBRARY}
 	${LCMS_LIBRARY}
@@ -245,6 +258,7 @@ if(HAVE_SPLASH)
 		${MANIFEST}
 	)
 	target_link_libraries(pdftoppm goo fofi splash
+		CLI11::CLI11
 		fmt::fmt-header-only
 		${PAPER_LIBRARY}
 		${FREETYPE_LIBRARY} ${FREETYPE_OTHER_LIBS}
@@ -266,6 +280,7 @@ if(HAVE_SPLASH AND PNG_FOUND)
 		${MANIFEST}
 	)
 	target_link_libraries(pdftopng goo fofi splash
+		CLI11::CLI11
 		fmt::fmt-header-only
 		${PAPER_LIBRARY}
 		${FREETYPE_LIBRARY} ${FREETYPE_OTHER_LIBS}
@@ -286,6 +301,7 @@ add_executable(pdfimages
 	${MANIFEST}
 )
 target_link_libraries(pdfimages goo fofi
+	CLI11::CLI11
 	fmt::fmt-header-only
 	${PAPER_LIBRARY}
 	${LCMS_LIBRARY}

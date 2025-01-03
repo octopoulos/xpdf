@@ -6,8 +6,7 @@
 //
 //========================================================================
 
-#ifndef ARRAY_H
-#define ARRAY_H
+#pragma once
 
 #include <aconf.h>
 
@@ -43,7 +42,7 @@ public:
 #endif
 
 	// Get number of elements.
-	int getLength() { return length; }
+	int getLength() { return TO_INT(elems.size()); }
 
 	// Add an element.
 	void add(Object* elem);
@@ -53,15 +52,11 @@ public:
 	Object* getNF(int i, Object* obj);
 
 private:
-	XRef*   xref;   // the xref table for this PDF file
-	Object* elems;  // array of elements
-	int     size;   // size of <elems> array
-	int     length; // number of elements in array
+	XRef*               xref;   // the xref table for this PDF file
+	std::vector<Object> elems;  // array of elements
 #if MULTITHREADED
 	GAtomicCounter ref; // reference count
 #else
 	long ref; // reference count
 #endif
 };
-
-#endif

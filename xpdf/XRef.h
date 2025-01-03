@@ -6,12 +6,9 @@
 //
 //========================================================================
 
-#ifndef XREF_H
-#define XREF_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
 #include "gfile.h"
 #include "Object.h"
 #if MULTITHREADED
@@ -37,16 +34,16 @@ enum XRefEntryType
 
 struct XRefEntry
 {
-	GFileOffset   offset;
-	int           gen;
-	XRefEntryType type;
+	GFileOffset   offset; //
+	int           gen;    //
+	XRefEntryType type;   //
 };
 
 struct XRefCacheEntry
 {
-	int    num;
-	int    gen;
-	Object obj;
+	int    num; //
+	int    gen; //
+	Object obj; //
 };
 
 #define xrefCacheSize 16
@@ -58,33 +55,33 @@ class XRef
 {
 public:
 	// Constructor.  Read xref table from stream.
-	XRef(BaseStream* strA, GBool repair);
+	XRef(BaseStream* strA, bool repair);
 
 	// Destructor.
 	~XRef();
 
 	// Is xref table valid?
-	GBool isOk() { return ok; }
+	bool isOk() { return ok; }
 
 	// Get the error code (if isOk() returns false).
 	int getErrorCode() { return errCode; }
 
 	// Was the xref constructed by the repair code?
-	GBool isRepaired() { return repaired; }
+	bool isRepaired() { return repaired; }
 
 	// Set the encryption parameters.
-	void setEncryption(int permFlagsA, GBool ownerPasswordOkA, Guchar* fileKeyA, int keyLengthA, int encVersionA, CryptAlgorithm encAlgorithmA);
+	void setEncryption(int permFlagsA, bool ownerPasswordOkA, uint8_t* fileKeyA, int keyLengthA, int encVersionA, CryptAlgorithm encAlgorithmA);
 
 	// Is the file encrypted?
-	GBool isEncrypted() { return encrypted; }
+	bool isEncrypted() { return encrypted; }
 
-	GBool getEncryption(int* permFlagsA, GBool* ownerPasswordOkA, int* keyLengthA, int* encVersionA, CryptAlgorithm* encAlgorithmA);
+	bool getEncryption(int* permFlagsA, bool* ownerPasswordOkA, int* keyLengthA, int* encVersionA, CryptAlgorithm* encAlgorithmA);
 
 	// Check various permissions.
-	GBool okToPrint(GBool ignoreOwnerPW = gFalse);
-	GBool okToChange(GBool ignoreOwnerPW = gFalse);
-	GBool okToCopy(GBool ignoreOwnerPW = gFalse);
-	GBool okToAddNotes(GBool ignoreOwnerPW = gFalse);
+	bool okToPrint(bool ignoreOwnerPW = false);
+	bool okToChange(bool ignoreOwnerPW = false);
+	bool okToCopy(bool ignoreOwnerPW = false);
+	bool okToAddNotes(bool ignoreOwnerPW = false);
 
 	int getPermFlags() { return permFlags; }
 
@@ -119,7 +116,7 @@ public:
 
 	// Get end position for a stream in a damaged file.
 	// Returns false if unknown or file is not damaged.
-	GBool getStreamEnd(GFileOffset streamStart, GFileOffset* streamEnd);
+	bool getStreamEnd(GFileOffset streamStart, GFileOffset* streamEnd);
 
 	// Direct access.
 	int getSize() { return size; }
@@ -129,63 +126,55 @@ public:
 	Object* getTrailerDict() { return &trailerDict; }
 
 private:
-	BaseStream*  str;              // input stream
-	GFileOffset  start;            // offset in file (to allow for garbage
-	                               //   at beginning of file)
-	XRefEntry*   entries;          // xref entries
-	int          size;             // size of <entries> array
-	int          last;             // last used index in <entries>
-	int          rootNum, rootGen; // catalog dict
-	GBool        ok;               // true if xref table is valid
-	int          errCode;          // error code (if <ok> is false)
-	GBool        repaired;         // set if the xref table was constructed by
-	                               //   the repair code
-	Object       trailerDict;      // trailer dictionary
-	GFileOffset  lastXRefPos;      // offset of last xref table
-	GFileOffset  lastStartxrefPos; // offset of 'startxref' at end of file
-	GFileOffset* xrefTablePos;     // positions of all xref tables
-	int          xrefTablePosLen;  // number of xref table positions
-	GFileOffset* streamEnds;       // 'endstream' positions - only used in
-	                               //   damaged files
-	int          streamEndsLen;    // number of valid entries in streamEnds
-	ObjectStream*                  // cached object streams
-	    objStrs[objStrCacheSize];
-	int objStrCacheLength; // number of valid entries in objStrs[]
-	Guint                  // time of last use for each obj stream
-	      objStrLastUse[objStrCacheSize];
-	Guint objStrTime; // current time for the obj stream cache
+	BaseStream*    str;                            // input stream
+	GFileOffset    start;                          // offset in file (to allow for garbage at beginning of file)
+	XRefEntry*     entries;                        // xref entries
+	int            size;                           // size of <entries> array
+	int            last;                           // last used index in <entries>
+	int            rootNum;                        //
+	int            rootGen;                        // catalog dict
+	bool           ok;                             // true if xref table is valid
+	int            errCode;                        // error code (if <ok> is false)
+	bool           repaired;                       // set if the xref table was constructed by the repair code
+	Object         trailerDict;                    // trailer dictionary
+	GFileOffset    lastXRefPos;                    // offset of last xref table
+	GFileOffset    lastStartxrefPos;               // offset of 'startxref' at end of file
+	GFileOffset*   xrefTablePos;                   // positions of all xref tables
+	int            xrefTablePosLen;                // number of xref table positions
+	GFileOffset*   streamEnds;                     // 'endstream' positions - only used in damaged files
+	int            streamEndsLen;                  // number of valid entries in streamEnds
+	ObjectStream*  objStrs[objStrCacheSize];       // cached object streams
+	int            objStrCacheLength;              // number of valid entries in objStrs[]
+	uint32_t       objStrLastUse[objStrCacheSize]; // time of last use for each obj stream
+	uint32_t       objStrTime;                     // current time for the obj stream cache
+	bool           encrypted;                      // true if file is encrypted
+	int            permFlags;                      // permission bits
+	bool           ownerPasswordOk;                // true if owner password is correct
+	uint8_t        fileKey[32];                    // file decryption key
+	int            keyLength;                      // length of key, in bytes
+	int            encVersion;                     // encryption version
+	CryptAlgorithm encAlgorithm;                   // encryption algorithm
+	XRefCacheEntry cache[xrefCacheSize];           // cache of recently accessed objects
+
 #if MULTITHREADED
 	GMutex objStrsMutex;
-#endif
-	GBool          encrypted;       // true if file is encrypted
-	int            permFlags;       // permission bits
-	GBool          ownerPasswordOk; // true if owner password is correct
-	Guchar         fileKey[32];     // file decryption key
-	int            keyLength;       // length of key, in bytes
-	int            encVersion;      // encryption version
-	CryptAlgorithm encAlgorithm;    // encryption algorithm
-	XRefCacheEntry                  // cache of recently accessed objects
-	    cache[xrefCacheSize];
-#if MULTITHREADED
 	GMutex cacheMutex;
 #endif
 
 	GFileOffset   getStartXref();
-	GBool         readXRef(GFileOffset* pos, XRefPosSet* posSet, GBool hybrid);
-	GBool         readXRefTable(GFileOffset* pos, int offset, XRefPosSet* posSet);
-	GBool         readXRefStream(Stream* xrefStr, GFileOffset* pos, GBool hybrid);
-	GBool         readXRefStreamSection(Stream* xrefStr, int* w, int first, int n);
-	GBool         constructXRef();
+	bool          readXRef(GFileOffset* pos, XRefPosSet* posSet, bool hybrid);
+	bool          readXRefTable(GFileOffset* pos, int offset, XRefPosSet* posSet);
+	bool          readXRefStream(Stream* xrefStr, GFileOffset* pos, bool hybrid);
+	bool          readXRefStreamSection(Stream* xrefStr, int* w, int first, int n);
+	bool          constructXRef();
 	void          constructTrailerDict(GFileOffset pos);
-	void          saveTrailerDict(Dict* dict, GBool isXRefStream);
+	void          saveTrailerDict(Dict* dict, bool isXRefStream);
 	char*         constructObjectEntry(char* p, GFileOffset pos, int* objNum);
 	void          constructObjectStreamEntries(Object* objStr, int objStrObjNum);
-	GBool         constructXRefEntry(int num, int gen, GFileOffset pos, XRefEntryType type);
-	GBool         getObjectStreamObject(int objStrNum, int objIdx, int objNum, Object* obj, int recursion);
+	bool          constructXRefEntry(int num, int gen, GFileOffset pos, XRefEntryType type);
+	bool          getObjectStreamObject(int objStrNum, int objIdx, int objNum, Object* obj, int recursion);
 	ObjectStream* getObjectStreamFromCache(int objStrNum);
 	void          addObjectStreamToCache(ObjectStream* objStr);
 	void          cleanObjectStreamCache();
 	GFileOffset   strToFileOffset(char* s);
 };
-
-#endif

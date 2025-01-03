@@ -6,12 +6,9 @@
 //
 //========================================================================
 
-#ifndef BUILTINFONT_H
-#define BUILTINFONT_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
 
 struct BuiltinFont;
 class BuiltinFontWidths;
@@ -34,7 +31,7 @@ struct BuiltinFont
 struct BuiltinFontWidth
 {
 	const char*       name;
-	Gushort           width;
+	uint16_t          width;
 	BuiltinFontWidth* next;
 };
 
@@ -43,7 +40,7 @@ class BuiltinFontWidths
 public:
 	BuiltinFontWidths(BuiltinFontWidth* widths, int sizeA);
 	~BuiltinFontWidths();
-	GBool getWidth(const char* name, Gushort* width);
+	bool getWidth(const char* name, uint16_t* width);
 
 private:
 	int hash(const char* name);
@@ -51,5 +48,3 @@ private:
 	BuiltinFontWidth** tab;
 	int                size;
 };
-
-#endif

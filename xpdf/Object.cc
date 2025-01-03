@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stddef.h>
 #include "gmempp.h"
 #include "Object.h"
@@ -81,7 +80,7 @@ Object* Object::copy(Object* obj)
 	switch (type)
 	{
 	case objString:
-		obj->string = string->copy();
+		obj->string = new std::string(*string);
 		break;
 	case objName:
 		obj->name = copyString(name);
@@ -121,7 +120,7 @@ void Object::free()
 	switch (type)
 	{
 	case objString:
-		delete string;
+		if (string) delete string;
 		break;
 	case objName:
 		gfree(name);
@@ -161,7 +160,6 @@ const char* Object::getTypeName()
 void Object::print(FILE* f)
 {
 	Object obj;
-	int    i;
 
 	switch (type)
 	{
@@ -176,7 +174,7 @@ void Object::print(FILE* f)
 		break;
 	case objString:
 		fprintf(f, "(");
-		fwrite(string->getCString(), 1, string->getLength(), f);
+		fwrite(string->c_str(), 1, string->size(), f);
 		fprintf(f, ")");
 		break;
 	case objName:
@@ -187,7 +185,7 @@ void Object::print(FILE* f)
 		break;
 	case objArray:
 		fprintf(f, "[");
-		for (i = 0; i < arrayGetLength(); ++i)
+		for (int i = 0; i < arrayGetLength(); ++i)
 		{
 			if (i > 0)
 				fprintf(f, " ");
@@ -199,7 +197,7 @@ void Object::print(FILE* f)
 		break;
 	case objDict:
 		fprintf(f, "<<");
-		for (i = 0; i < dictGetLength(); ++i)
+		for (int i = 0; i < dictGetLength(); ++i)
 		{
 			fprintf(f, " /%s ", dictGetKey(i));
 			dictGetValNF(i, &obj);
@@ -232,16 +230,13 @@ void Object::print(FILE* f)
 void Object::memCheck(FILE* f)
 {
 #ifdef DEBUG_OBJECT_MEM
-	int  i;
-	long t;
-
-	t = 0;
-	for (i = 0; i < numObjTypes; ++i)
+	long t = 0;
+	for (int i = 0; i < numObjTypes; ++i)
 		t += numAlloc[i];
 	if (t > 0)
 	{
 		fprintf(f, "Allocated objects:\n");
-		for (i = 0; i < numObjTypes; ++i)
+		for (int i = 0; i < numObjTypes; ++i)
 			if (numAlloc[i] > 0)
 				fprintf(f, "  %-20s: %6ld\n", objTypeNames[i], numAlloc[i]);
 	}

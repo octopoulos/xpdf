@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <math.h>
 #include "Trace.h"
 #include "GfxState.h"
@@ -24,7 +23,7 @@
 // fill.
 #define patchColorDelta (dblToCol(1 / 256.0))
 
-SplashBitmap* ShadingImage::generateBitmap(GfxState* state, GfxShading* shading, SplashColorMode mode, GBool reverseVideo, Splash* parentSplash, SplashBitmap* parentBitmap, int* xOut, int* yOut)
+SplashBitmap* ShadingImage::generateBitmap(GfxState* state, GfxShading* shading, SplashColorMode mode, bool reverseVideo, Splash* parentSplash, SplashBitmap* parentBitmap, int* xOut, int* yOut)
 {
 	switch (shading->getType())
 	{
@@ -59,7 +58,7 @@ static double max4(double x0, double x1, double x2, double x3)
 	return t;
 }
 
-SplashBitmap* ShadingImage::generateFunctionBitmap(GfxState* state, GfxFunctionShading* shading, SplashColorMode mode, GBool reverseVideo, Splash* parentSplash, SplashBitmap* parentBitmap, int* xOut, int* yOut)
+SplashBitmap* ShadingImage::generateFunctionBitmap(GfxState* state, GfxFunctionShading* shading, SplashColorMode mode, bool reverseVideo, Splash* parentSplash, SplashBitmap* parentBitmap, int* xOut, int* yOut)
 {
 	// get the shading parameters
 	double x0, y0, x1, y1;
@@ -69,8 +68,7 @@ SplashBitmap* ShadingImage::generateFunctionBitmap(GfxState* state, GfxFunctionS
 	// get the clip bbox
 	double fxMin, fyMin, fxMax, fyMax;
 	state->getClipBBox(&fxMin, &fyMin, &fxMax, &fyMax);
-	if (fxMin > fxMax || fyMin > fyMax)
-		return nullptr;
+	if (fxMin > fxMax || fyMin > fyMax) return nullptr;
 
 	// convert to integer coords
 	int xMin         = (int)floor(fxMin);
@@ -82,7 +80,7 @@ SplashBitmap* ShadingImage::generateFunctionBitmap(GfxState* state, GfxFunctionS
 
 	// allocate the bitmap
 	traceMessage("function shading fill bitmap");
-	SplashBitmap* bitmap = new SplashBitmap(bitmapWidth, bitmapHeight, 1, mode, gTrue, gTrue, parentBitmap);
+	SplashBitmap* bitmap = new SplashBitmap(bitmapWidth, bitmapHeight, 1, mode, true, true, parentBitmap);
 	int           nComps = splashColorModeNComps[mode];
 
 	// compute the domain -> device space transform = mat * CTM
@@ -97,8 +95,7 @@ SplashBitmap* ShadingImage::generateFunctionBitmap(GfxState* state, GfxFunctionS
 
 	// compute the device space -> domain transform
 	double det = mat[0] * mat[3] - mat[1] * mat[2];
-	if (fabs(det) < 0.000001)
-		return nullptr;
+	if (fabs(det) < 0.000001) return nullptr;
 	det = 1 / det;
 	double iMat[6];
 	iMat[0] = mat[3] * det;
@@ -110,7 +107,7 @@ SplashBitmap* ShadingImage::generateFunctionBitmap(GfxState* state, GfxFunctionS
 
 	// fill the bitmap
 	SplashColorPtr dataPtr  = bitmap->getDataPtr();
-	Guchar*        alphaPtr = bitmap->getAlphaPtr();
+	uint8_t*       alphaPtr = bitmap->getAlphaPtr();
 	for (int y = 0; y < bitmapHeight; ++y)
 	{
 		for (int x = 0; x < bitmapWidth; ++x)
@@ -145,29 +142,27 @@ SplashBitmap* ShadingImage::generateFunctionBitmap(GfxState* state, GfxFunctionS
 	return bitmap;
 }
 
-SplashBitmap* ShadingImage::generateAxialBitmap(GfxState* state, GfxAxialShading* shading, SplashColorMode mode, GBool reverseVideo, Splash* parentSplash, SplashBitmap* parentBitmap, int* xOut, int* yOut)
+SplashBitmap* ShadingImage::generateAxialBitmap(GfxState* state, GfxAxialShading* shading, SplashColorMode mode, bool reverseVideo, Splash* parentSplash, SplashBitmap* parentBitmap, int* xOut, int* yOut)
 {
 	// get the shading parameters
 	double x0, y0, x1, y1;
 	shading->getCoords(&x0, &y0, &x1, &y1);
 	double t0    = shading->getDomain0();
 	double t1    = shading->getDomain1();
-	GBool  ext0  = shading->getExtend0();
-	GBool  ext1  = shading->getExtend1();
+	bool   ext0  = shading->getExtend0();
+	bool   ext1  = shading->getExtend1();
 	double dx    = x1 - x0;
 	double dy    = y1 - y0;
 	double d     = dx * dx + dy * dy;
-	GBool  dZero = fabs(d) < 0.0001;
+	bool   dZero = fabs(d) < 0.0001;
 	if (!dZero)
 		d = 1 / d;
-	if (dZero && !ext0 && !ext1)
-		return nullptr;
+	if (dZero && !ext0 && !ext1) return nullptr;
 
 	// get the clip bbox
 	double fxMin, fyMin, fxMax, fyMax;
 	state->getClipBBox(&fxMin, &fyMin, &fxMax, &fyMax);
-	if (fxMin > fxMax || fyMin > fyMax)
-		return nullptr;
+	if (fxMin > fxMax || fyMin > fyMax) return nullptr;
 
 	// convert to integer coords
 	int xMin         = (int)floor(fxMin);
@@ -180,8 +175,7 @@ SplashBitmap* ShadingImage::generateAxialBitmap(GfxState* state, GfxAxialShading
 	// compute the inverse CTM
 	double* ctm = state->getCTM();
 	double  det = ctm[0] * ctm[3] - ctm[1] * ctm[2];
-	if (fabs(det) < 1e-10 * max4(fabs(ctm[0]), fabs(ctm[1]), fabs(ctm[2]), fabs(ctm[3])))
-		return nullptr;
+	if (fabs(det) < 1e-10 * max4(fabs(ctm[0]), fabs(ctm[1]), fabs(ctm[2]), fabs(ctm[3]))) return nullptr;
 	det = 1 / det;
 	double ictm[6];
 	ictm[0] = ctm[3] * det;
@@ -198,7 +192,7 @@ SplashBitmap* ShadingImage::generateAxialBitmap(GfxState* state, GfxAxialShading
 
 	// allocate the bitmap
 	traceMessage("axial shading fill bitmap");
-	SplashBitmap* bitmap = new SplashBitmap(bitmapWidth, bitmapHeight, 1, mode, gTrue, gTrue, parentBitmap);
+	SplashBitmap* bitmap = new SplashBitmap(bitmapWidth, bitmapHeight, 1, mode, true, true, parentBitmap);
 	int           nComps = splashColorModeNComps[mode];
 
 	// special case: zero-length axis
@@ -227,19 +221,19 @@ SplashBitmap* ShadingImage::generateAxialBitmap(GfxState* state, GfxAxialShading
 		for (int x = 0; x < bitmapWidth; ++x)
 		{
 			SplashColorPtr dataPtr  = bitmap->getDataPtr() + x * nComps;
-			Guchar*        alphaPtr = bitmap->getAlphaPtr() + x;
+			uint8_t*       alphaPtr = bitmap->getAlphaPtr() + x;
 			double         tx       = xMin + x + 0.5;
 			double         ty       = yMin + 0.5;
 			double         xx       = tx * ictm[0] + ty * ictm[2] + ictm[4];
 			double         yy       = tx * ictm[1] + ty * ictm[3] + ictm[5];
 			double         s        = ((xx - x0) * dx + (yy - y0) * dy) * d;
-			GBool          go       = gFalse;
+			bool           go       = false;
 			if (s < 0)
 				go = ext0;
 			else if (s > 1)
 				go = ext1;
 			else
-				go = gTrue;
+				go = true;
 			if (go)
 			{
 				GfxColor color;
@@ -284,19 +278,19 @@ SplashBitmap* ShadingImage::generateAxialBitmap(GfxState* state, GfxAxialShading
 		for (int y = 0; y < bitmapHeight; ++y)
 		{
 			SplashColorPtr dataPtr  = bitmap->getDataPtr() + y * bitmap->getRowSize();
-			Guchar*        alphaPtr = bitmap->getAlphaPtr() + y * bitmapWidth;
+			uint8_t*       alphaPtr = bitmap->getAlphaPtr() + y * bitmapWidth;
 			double         tx       = xMin + 0.5;
 			double         ty       = yMin + y + 0.5;
 			double         xx       = tx * ictm[0] + ty * ictm[2] + ictm[4];
 			double         yy       = tx * ictm[1] + ty * ictm[3] + ictm[5];
 			double         s        = ((xx - x0) * dx + (yy - y0) * dy) * d;
-			GBool          go       = gFalse;
+			bool           go       = false;
 			if (s < 0)
 				go = ext0;
 			else if (s > 1)
 				go = ext1;
 			else
-				go = gTrue;
+				go = true;
 			if (go)
 			{
 				GfxColor color;
@@ -352,7 +346,7 @@ SplashBitmap* ShadingImage::generateAxialBitmap(GfxState* state, GfxAxialShading
 		}
 
 		SplashColorPtr dataPtr  = bitmap->getDataPtr();
-		Guchar*        alphaPtr = bitmap->getAlphaPtr();
+		uint8_t*       alphaPtr = bitmap->getAlphaPtr();
 		for (int y = 0; y < bitmapHeight; ++y)
 		{
 			for (int x = 0; x < bitmapWidth; ++x)
@@ -365,13 +359,13 @@ SplashBitmap* ShadingImage::generateAxialBitmap(GfxState* state, GfxAxialShading
 
 				// compute the position along the axis
 				double s  = ((xx - x0) * dx + (yy - y0) * dy) * d;
-				GBool  go = gFalse;
+				bool   go = false;
 				if (s < 0)
 					go = ext0;
 				else if (s > 1)
 					go = ext1;
 				else
-					go = gTrue;
+					go = true;
 				if (go)
 				{
 					if (s <= 0)
@@ -406,23 +400,22 @@ SplashBitmap* ShadingImage::generateAxialBitmap(GfxState* state, GfxAxialShading
 	return bitmap;
 }
 
-SplashBitmap* ShadingImage::generateRadialBitmap(GfxState* state, GfxRadialShading* shading, SplashColorMode mode, GBool reverseVideo, Splash* parentSplash, SplashBitmap* parentBitmap, int* xOut, int* yOut)
+SplashBitmap* ShadingImage::generateRadialBitmap(GfxState* state, GfxRadialShading* shading, SplashColorMode mode, bool reverseVideo, Splash* parentSplash, SplashBitmap* parentBitmap, int* xOut, int* yOut)
 {
 	// get the shading parameters
 	double x0, y0, r0, x1, y1, r1;
 	shading->getCoords(&x0, &y0, &r0, &x1, &y1, &r1);
 	double t0       = shading->getDomain0();
 	double t1       = shading->getDomain1();
-	GBool  ext0     = shading->getExtend0();
-	GBool  ext1     = shading->getExtend1();
+	bool   ext0     = shading->getExtend0();
+	bool   ext1     = shading->getExtend1();
 	double h        = sqrt((x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0));
-	GBool  enclosed = fabs(r1 - r0) >= h;
+	bool   enclosed = fabs(r1 - r0) >= h;
 
 	// get the clip bbox
 	double fxMin, fyMin, fxMax, fyMax;
 	state->getClipBBox(&fxMin, &fyMin, &fxMax, &fyMax);
-	if (fxMin > fxMax || fyMin > fyMax)
-		return nullptr;
+	if (fxMin > fxMax || fyMin > fyMax) return nullptr;
 
 	// intersect with shading region (in user space): if the extend
 	// flags are false (or just the larger extend flag is false, in the
@@ -435,16 +428,11 @@ SplashBitmap* ShadingImage::generateRadialBitmap(GfxState* state, GfxRadialShadi
 		double uyMax = (y0 + r0) > (y1 + r1) ? (y0 + r0) : (y1 + r1);
 		double dxMin, dyMin, dxMax, dyMax;
 		transformBBox(state, uxMin, uyMin, uxMax, uyMax, &dxMin, &dyMin, &dxMax, &dyMax);
-		if (dxMin > fxMin)
-			fxMin = dxMin;
-		if (dxMax < dxMax)
-			fxMax = dxMax;
-		if (dyMin > fyMin)
-			fyMin = dyMin;
-		if (dyMax < fyMax)
-			fyMax = dyMax;
-		if (fxMin > fxMax || fyMin > fyMax)
-			return nullptr;
+		if (dxMin > fxMin) fxMin = dxMin;
+		if (dxMax < dxMax) fxMax = dxMax;
+		if (dyMin > fyMin) fyMin = dyMin;
+		if (dyMax < fyMax) fyMax = dyMax;
+		if (fxMin > fxMax || fyMin > fyMax) return nullptr;
 	}
 
 	// convert to integer coords
@@ -471,12 +459,11 @@ SplashBitmap* ShadingImage::generateRadialBitmap(GfxState* state, GfxRadialShadi
 
 	// allocate the bitmap
 	traceMessage("radial shading fill bitmap");
-	SplashBitmap* bitmap = new SplashBitmap(bitmapWidth, bitmapHeight, 1, mode, gTrue, gTrue, parentBitmap);
+	SplashBitmap* bitmap = new SplashBitmap(bitmapWidth, bitmapHeight, 1, mode, true, true, parentBitmap);
 	int           nComps = splashColorModeNComps[mode];
 
 	// pre-compute colors along the axis
-	int nColors = (int)sqrt((double)(bitmapWidth * bitmapWidth
-	                                 + bitmapHeight * bitmapHeight));
+	int nColors = (int)sqrt((double)(bitmapWidth * bitmapWidth + bitmapHeight * bitmapHeight));
 	if (nColors < 16)
 		nColors = 16;
 	else if (nColors > 1024)
@@ -535,7 +522,7 @@ SplashBitmap* ShadingImage::generateRadialBitmap(GfxState* state, GfxRadialShadi
 
 		// fill bitmap (except for the rectangle containing the larger circle)
 		SplashColorPtr dataPtr  = bitmap->getDataPtr();
-		Guchar*        alphaPtr = bitmap->getAlphaPtr();
+		uint8_t*       alphaPtr = bitmap->getAlphaPtr();
 		for (int y = 0; y < bitmapHeight; ++y)
 		{
 			for (int x = 0; x < bitmapWidth; ++x)
@@ -569,24 +556,22 @@ SplashBitmap* ShadingImage::generateRadialBitmap(GfxState* state, GfxRadialShadi
 	double r0dr = r0 * dr;
 	double r02  = r0 * r0;
 	double a    = dx * dx + dy * dy - dr * dr;
-	GBool  aIsZero;
+	bool   aIsZero;
 	double a2;
 	if (fabs(a) < 0.00001)
 	{
-		aIsZero = gTrue;
+		aIsZero = true;
 		a2      = 0;
 	}
 	else
 	{
-		aIsZero = gFalse;
+		aIsZero = false;
 		a2      = 1 / (2 * a);
 	}
 	for (int y = byMin; y < byMax; ++y)
 	{
-		SplashColorPtr dataPtr = bitmap->getDataPtr()
-		    + y * bitmap->getRowSize() + bxMin * nComps;
-		Guchar* alphaPtr = bitmap->getAlphaPtr()
-		    + y * bitmap->getAlphaRowSize() + bxMin;
+		SplashColorPtr dataPtr  = bitmap->getDataPtr() + y * bitmap->getRowSize() + bxMin * nComps;
+		uint8_t*       alphaPtr = bitmap->getAlphaPtr() + y * bitmap->getAlphaRowSize() + bxMin;
 		for (int x = bxMin; x < bxMax; ++x)
 		{
 			// convert coords to user space
@@ -599,7 +584,7 @@ SplashBitmap* ShadingImage::generateRadialBitmap(GfxState* state, GfxRadialShadi
 			double b  = 2 * ((xx - x0) * dx + (yy - y0) * dy + r0dr);
 			double c  = (xx - x0) * (xx - x0) + (yy - y0) * (yy - y0) - r02;
 			double s  = 0;
-			GBool  go = gFalse;
+			bool   go = false;
 			if (aIsZero)
 			{
 				if (fabs(b) < 0.000001)
@@ -609,13 +594,13 @@ SplashBitmap* ShadingImage::generateRadialBitmap(GfxState* state, GfxRadialShadi
 						if (ext0)
 						{
 							s  = 0;
-							go = gTrue;
+							go = true;
 						}
 					}
 					else if (ext1)
 					{
 						s  = 1;
-						go = gTrue;
+						go = true;
 					}
 				}
 				else
@@ -625,7 +610,7 @@ SplashBitmap* ShadingImage::generateRadialBitmap(GfxState* state, GfxRadialShadi
 					if ((s0 >= 0 || ext0) && (s0 <= 1 || ext1) && rs0 >= 0)
 					{
 						s  = s0;
-						go = gTrue;
+						go = true;
 					}
 				}
 			}
@@ -644,23 +629,23 @@ SplashBitmap* ShadingImage::generateRadialBitmap(GfxState* state, GfxRadialShadi
 						if ((s0 >= 0 || ext0) && (s0 <= 1 || ext1) && rs0 >= 0)
 						{
 							s  = s0;
-							go = gTrue;
+							go = true;
 						}
 						else if ((s1 >= 0 || ext0) && (s1 <= 1 || ext1) && rs1 >= 0)
 						{
 							s  = s1;
-							go = gTrue;
+							go = true;
 						}
 					}
 					else if ((s1 >= 0 || ext0) && (s1 <= 1 || ext1) && rs1 >= 0)
 					{
 						s  = s1;
-						go = gTrue;
+						go = true;
 					}
 					else if ((s0 >= 0 || ext0) && (s0 <= 1 || ext1) && rs0 >= 0)
 					{
 						s  = s0;
-						go = gTrue;
+						go = true;
 					}
 				}
 			}
@@ -700,7 +685,7 @@ SplashBitmap* ShadingImage::generateGouraudTriangleBitmap(
     GfxState*                  state,
     GfxGouraudTriangleShading* shading,
     SplashColorMode            mode,
-    GBool                      reverseVideo,
+    bool                       reverseVideo,
     Splash*                    parentSplash,
     SplashBitmap*              parentBitmap,
     int* xOut, int* yOut)
@@ -744,16 +729,11 @@ SplashBitmap* ShadingImage::generateGouraudTriangleBitmap(
 		tyMin = dy;
 	else if (dy > tyMax)
 		tyMax = dy;
-	if (txMin > fxMin)
-		fxMin = txMin;
-	if (txMax < fxMax)
-		fxMax = txMax;
-	if (tyMin > fyMin)
-		fyMin = tyMin;
-	if (tyMax < fyMax)
-		fyMax = tyMax;
-	if (fxMin > fxMax || fyMin > fyMax)
-		return nullptr;
+	if (txMin > fxMin) fxMin = txMin;
+	if (txMax < fxMax) fxMax = txMax;
+	if (tyMin > fyMin) fyMin = tyMin;
+	if (tyMax < fyMax) fyMax = tyMax;
+	if (fxMin > fxMax || fyMin > fyMax) return nullptr;
 
 	// convert to integer coords
 	int xMin         = (int)floor(fxMin);
@@ -765,7 +745,7 @@ SplashBitmap* ShadingImage::generateGouraudTriangleBitmap(
 
 	// allocate the bitmap
 	traceMessage("Gouraud triangle shading fill bitmap");
-	SplashBitmap* bitmap = new SplashBitmap(bitmapWidth, bitmapHeight, 1, mode, gTrue, gTrue, parentBitmap);
+	SplashBitmap* bitmap = new SplashBitmap(bitmapWidth, bitmapHeight, 1, mode, true, true, parentBitmap);
 
 	// clear the bitmap
 	memset(bitmap->getDataPtr(), 0, bitmap->getHeight() * bitmap->getRowSize());
@@ -787,7 +767,7 @@ SplashBitmap* ShadingImage::generateGouraudTriangleBitmap(
 	return bitmap;
 }
 
-void ShadingImage::gouraudFillTriangle(GfxState* state, SplashBitmap* bitmap, SplashColorMode mode, GBool reverseVideo, int xMin, int yMin, int xMax, int yMax, double x0, double y0, double* color0, double x1, double y1, double* color1, double x2, double y2, double* color2, GfxGouraudTriangleShading* shading)
+void ShadingImage::gouraudFillTriangle(GfxState* state, SplashBitmap* bitmap, SplashColorMode mode, bool reverseVideo, int xMin, int yMin, int xMax, int yMax, double x0, double y0, double* color0, double x1, double y1, double* color1, double x2, double y2, double* color2, GfxGouraudTriangleShading* shading)
 {
 	int nShadingComps = shading->getNComps();
 	int nBitmapComps  = splashColorModeNComps[mode];
@@ -899,14 +879,10 @@ void ShadingImage::gouraudFillTriangle(GfxState* state, SplashBitmap* bitmap, Sp
 		int sxMax = (int)floor(xx1) + 1;
 		if (sxMax > xMax)
 			sxMax = xMax;
-		SplashColorPtr dataPtr = bitmap->getDataPtr()
-		    + (sy - yMin) * bitmap->getRowSize()
-		    + (sxMin - xMin) * nBitmapComps;
+		SplashColorPtr dataPtr = bitmap->getDataPtr() + (sy - yMin) * bitmap->getRowSize() + (sxMin - xMin) * nBitmapComps;
 		if (sxMin < sxMax)
 		{
-			Guchar* alphaPtr = bitmap->getAlphaPtr()
-			    + (sy - yMin) * bitmap->getWidth()
-			    + (sxMin - xMin);
+			uint8_t* alphaPtr = bitmap->getAlphaPtr() + (sy - yMin) * bitmap->getWidth() + (sxMin - xMin);
 			memset(alphaPtr, 0xff, sxMax - sxMin);
 		}
 		for (int sx = sxMin; sx < sxMax; ++sx)
@@ -948,7 +924,7 @@ SplashBitmap* ShadingImage::generatePatchMeshBitmap(
     GfxState*            state,
     GfxPatchMeshShading* shading,
     SplashColorMode      mode,
-    GBool                reverseVideo,
+    bool                 reverseVideo,
     Splash*              parentSplash,
     SplashBitmap*        parentBitmap,
     int* xOut, int* yOut)
@@ -992,16 +968,11 @@ SplashBitmap* ShadingImage::generatePatchMeshBitmap(
 		tyMin = dy;
 	else if (dy > tyMax)
 		tyMax = dy;
-	if (txMin > fxMin)
-		fxMin = txMin;
-	if (txMax < fxMax)
-		fxMax = txMax;
-	if (tyMin > fyMin)
-		fyMin = tyMin;
-	if (tyMax < fyMax)
-		fyMax = tyMax;
-	if (fxMin > fxMax || fyMin > fyMax)
-		return nullptr;
+	if (txMin > fxMin) fxMin = txMin;
+	if (txMax < fxMax) fxMax = txMax;
+	if (tyMin > fyMin) fyMin = tyMin;
+	if (tyMax < fyMax) fyMax = tyMax;
+	if (fxMin > fxMax || fyMin > fyMax) return nullptr;
 
 	// convert to integer coords
 	int xMin         = (int)floor(fxMin);
@@ -1013,11 +984,11 @@ SplashBitmap* ShadingImage::generatePatchMeshBitmap(
 
 	// allocate the bitmap
 	traceMessage("Gouraud triangle shading fill bitmap");
-	SplashBitmap* bitmap = new SplashBitmap(bitmapWidth, bitmapHeight, 1, mode, gTrue, gTrue, parentBitmap);
+	SplashBitmap* bitmap = new SplashBitmap(bitmapWidth, bitmapHeight, 1, mode, true, true, parentBitmap);
 
 	// allocate a Splash object
 	// vector antialiasing is disabled to avoid artifacts along triangle edges
-	Splash*     splash = new Splash(bitmap, gFalse, parentSplash->getImageCache(), parentSplash->getScreen());
+	Splash*     splash = new Splash(bitmap, false, parentSplash->getImageCache(), parentSplash->getScreen());
 	SplashColor zero;
 	for (int i = 0; i < splashColorModeNComps[mode]; ++i)
 		zero[i] = 0;
@@ -1043,15 +1014,15 @@ SplashBitmap* ShadingImage::generatePatchMeshBitmap(
 	return bitmap;
 }
 
-void ShadingImage::fillPatch(GfxState* state, Splash* splash, SplashColorMode mode, GBool reverseVideo, int xMin, int yMin, GfxPatch* patch, GfxPatchMeshShading* shading, int depth)
+void ShadingImage::fillPatch(GfxState* state, Splash* splash, SplashColorMode mode, bool reverseVideo, int xMin, int yMin, GfxPatch* patch, GfxPatchMeshShading* shading, int depth)
 {
 	GfxColor c00;
 	shading->getColor(patch->color[0][0], &c00);
-	GBool stop = gFalse;
+	bool stop = false;
 
 	// stop subdivision at max depth
 	if (depth == patchMaxDepth)
-		stop = gTrue;
+		stop = true;
 
 	// stop subdivision if colors are close enough
 	if (!stop)
@@ -1066,7 +1037,7 @@ void ShadingImage::fillPatch(GfxState* state, Splash* splash, SplashColorMode mo
 			if (abs(c00.c[i] - c01.c[i]) > patchColorDelta || abs(c01.c[i] - c11.c[i]) > patchColorDelta || abs(c11.c[i] - c10.c[i]) > patchColorDelta || abs(c10.c[i] - c00.c[i]) > patchColorDelta)
 				break;
 		if (i == nComps)
-			stop = gTrue;
+			stop = true;
 	}
 
 	// stop subdivision if patch is small enough
@@ -1101,7 +1072,7 @@ void ShadingImage::fillPatch(GfxState* state, Splash* splash, SplashColorMode mo
 			}
 		}
 		if (xxMax - xxMin < 1 && yyMax - yyMin < 1)
-			stop = gTrue;
+			stop = true;
 	}
 
 	// draw the patch
@@ -1130,7 +1101,7 @@ void ShadingImage::fillPatch(GfxState* state, Splash* splash, SplashColorMode mo
 		state->transform(patch->x[1][0], patch->y[1][0], &xx2, &yy2);
 		path->curveTo(xx1 - xMin, yy1 - yMin, xx2 - xMin, yy2 - yMin, xx0 - xMin, yy0 - yMin);
 		path->close();
-		splash->fill(path, gFalse);
+		splash->fill(path, false);
 		delete path;
 
 		// subdivide the patch
@@ -1226,7 +1197,7 @@ void ShadingImage::fillPatch(GfxState* state, Splash* splash, SplashColorMode mo
 	}
 }
 
-void ShadingImage::computeShadingColor(GfxState* state, SplashColorMode mode, GBool reverseVideo, GfxColor* color, SplashColorPtr sColor)
+void ShadingImage::computeShadingColor(GfxState* state, SplashColorMode mode, bool reverseVideo, GfxColor* color, SplashColorPtr sColor)
 {
 	GfxGray gray;
 	GfxRGB  rgb;

@@ -8,6 +8,10 @@
 #
 #========================================================================
 
+cmake_minimum_required(VERSION 3.17)
+
+set(CMAKE_CXX_STANDARD 20)
+
 include_directories("${PROJECT_SOURCE_DIR}")
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}/goo")
@@ -31,6 +35,6 @@ add_library(fofi
 	$<TARGET_OBJECTS:fofi_objs>
 )
 
-target_link_libraries(fofi PRIVATE
-	fmt::fmt
+target_link_libraries(fofi_objs PRIVATE
+	fmt::fmt-header-only
 )

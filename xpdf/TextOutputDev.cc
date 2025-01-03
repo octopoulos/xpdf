@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -20,7 +19,6 @@
 #endif
 #include "gmem.h"
 #include "gmempp.h"
-#include "GString.h"
 #include "GList.h"
 #include "gfile.h"
 #include "config.h"
@@ -208,7 +206,7 @@ static inline double dmax(double x, double y)
 class TextChar
 {
 public:
-	TextChar(Unicode cA, int charPosA, int charLenA, double xMinA, double yMinA, double xMaxA, double yMaxA, int rotA, GBool rotatedA, GBool clippedA, GBool invisibleA, TextFontInfo* fontA, double fontSizeA, double colorRA, double colorGA, double colorBA);
+	TextChar(Unicode cA, int charPosA, int charLenA, double xMinA, double yMinA, double xMaxA, double yMaxA, int rotA, bool rotatedA, bool clippedA, bool invisibleA, TextFontInfo* fontA, double fontSizeA, double colorRA, double colorGA, double colorBA);
 
 	static int cmpX(const void* p1, const void* p2);
 	static int cmpY(const void* p1, const void* p2);
@@ -227,15 +225,15 @@ public:
 	    colorB;
 
 	// group the byte-size fields to minimize object size
-	Guchar rot;
-	char   rotated;
-	char   clipped;
-	char   invisible;
-	char   spaceAfter;
-	char   overlap;
+	uint8_t rot;
+	char    rotated;
+	char    clipped;
+	char    invisible;
+	char    spaceAfter;
+	char    overlap;
 };
 
-TextChar::TextChar(Unicode cA, int charPosA, int charLenA, double xMinA, double yMinA, double xMaxA, double yMaxA, int rotA, GBool rotatedA, GBool clippedA, GBool invisibleA, TextFontInfo* fontA, double fontSizeA, double colorRA, double colorGA, double colorBA)
+TextChar::TextChar(Unicode cA, int charPosA, int charLenA, double xMinA, double yMinA, double xMaxA, double yMaxA, int rotA, bool rotatedA, bool clippedA, bool invisibleA, TextFontInfo* fontA, double fontSizeA, double colorRA, double colorGA, double colorBA)
 {
 	double t;
 
@@ -292,17 +290,17 @@ TextChar::TextChar(Unicode cA, int charPosA, int charLenA, double xMinA, double 
 		xMax = xMin + 1e-6;
 	if (yMax - yMin < 1e-6)
 		yMax = yMin + 1e-6;
-	rot        = (Guchar)rotA;
+	rot        = (uint8_t)rotA;
 	rotated    = (char)rotatedA;
 	clipped    = (char)clippedA;
 	invisible  = (char)invisibleA;
-	spaceAfter = (char)gFalse;
+	spaceAfter = (char)false;
 	font       = fontA;
 	fontSize   = fontSizeA;
 	colorR     = colorRA;
 	colorG     = colorGA;
 	colorB     = colorBA;
-	overlap    = gFalse;
+	overlap    = false;
 }
 
 int TextChar::cmpX(const void* p1, const void* p2)
@@ -376,7 +374,7 @@ public:
 	TextBlock(TextBlockType typeA, int rotA);
 	~TextBlock();
 	void addChild(TextBlock* child);
-	void addChild(TextChar* child, GBool updateBox);
+	void addChild(TextChar* child, bool updateBox);
 	void prependChild(TextChar* child);
 	void updateBounds(int childIdx);
 
@@ -384,7 +382,7 @@ public:
 	TextBlockTag  tag;
 	int           rot;
 	double        xMin, yMin, xMax, yMax;
-	GBool         smallSplit; // true for blkVertSplit/blkHorizSplit
+	bool          smallSplit; // true for blkVertSplit/blkHorizSplit
 	                          //   where the gap size is small
 	GList*        children;   // for blkLeaf, children are TextWord;
 	                          //   for others, children are TextBlock
@@ -396,7 +394,7 @@ TextBlock::TextBlock(TextBlockType typeA, int rotA)
 	tag  = blkTagMulticolumn;
 	rot  = rotA;
 	xMin = yMin = xMax = yMax = 0;
-	smallSplit                = gFalse;
+	smallSplit                = false;
 	children                  = new GList();
 }
 
@@ -431,7 +429,7 @@ void TextBlock::addChild(TextBlock* child)
 	children->append(child);
 }
 
-void TextBlock::addChild(TextChar* child, GBool updateBox)
+void TextBlock::addChild(TextChar* child, bool updateBox)
 {
 	if (updateBox)
 	{
@@ -632,19 +630,14 @@ public:
 
 TextSuperLine::TextSuperLine(GList* linesA)
 {
-	TextLine* line;
-	int       i;
-
 	lines = linesA;
 	yMin = yMax = 0;
 	fontSize    = ((TextLine*)lines->get(0))->fontSize;
-	for (i = 0; i < lines->getLength(); ++i)
+	for (int i = 0; i < lines->getLength(); ++i)
 	{
-		line = (TextLine*)lines->get(i);
-		if (i == 0 || line->yMin < yMin)
-			yMin = line->yMin;
-		if (i == 0 || line->yMax > yMax)
-			yMax = line->yMax;
+		TextLine* line = (TextLine*)lines->get(i);
+		if (i == 0 || line->yMin < yMin) yMin = line->yMin;
+		if (i == 0 || line->yMax > yMax) yMax = line->yMax;
 	}
 }
 
@@ -672,7 +665,7 @@ public:
 	~TextUnderline() {}
 
 	double x0, y0, x1, y1;
-	GBool  horiz;
+	bool   horiz;
 };
 
 //------------------------------------------------------------------------
@@ -682,7 +675,7 @@ public:
 class TextLink
 {
 public:
-	TextLink(double xMinA, double yMinA, double xMaxA, double yMaxA, GString* uriA)
+	TextLink(double xMinA, double yMinA, double xMaxA, double yMaxA, const std::string& uriA)
 	{
 		xMin = xMinA;
 		yMin = yMinA;
@@ -693,14 +686,12 @@ public:
 
 	~TextLink();
 
-	double   xMin, yMin, xMax, yMax;
-	GString* uri;
+	double      xMin, yMin, xMax, yMax;
+	std::string uri;
 };
 
 TextLink::~TextLink()
 {
-	if (uri)
-		delete uri;
 }
 
 //------------------------------------------------------------------------
@@ -712,16 +703,16 @@ TextOutputControl::TextOutputControl()
 	mode                 = textOutReadingOrder;
 	fixedPitch           = 0;
 	fixedLineSpacing     = 0;
-	html                 = gFalse;
-	clipText             = gFalse;
-	discardDiagonalText  = gFalse;
-	discardRotatedText   = gFalse;
-	discardInvisibleText = gFalse;
-	discardClippedText   = gFalse;
-	splitRotatedWords    = gFalse;
+	html                 = false;
+	clipText             = false;
+	discardDiagonalText  = false;
+	discardRotatedText   = false;
+	discardInvisibleText = false;
+	discardClippedText   = false;
+	splitRotatedWords    = false;
 	overlapHandling      = textOutIgnoreOverlaps;
-	separateLargeChars   = gTrue;
-	insertBOM            = gFalse;
+	separateLargeChars   = true;
+	insertBOM            = false;
 	marginLeft           = 0;
 	marginRight          = 0;
 	marginTop            = 0;
@@ -759,8 +750,7 @@ TextFontInfo::TextFontInfo(GfxState* state)
 		ascent     = 0.75;
 		descent    = -0.25;
 	}
-	fontName = (gfxFont && gfxFont->getName()) ? gfxFont->getName()->copy()
-	                                           : (GString*)nullptr;
+	fontName = (gfxFont && gfxFont->getName().size()) ? gfxFont->getName() : "";
 	flags    = gfxFont ? gfxFont->getFlags() : 0;
 	mWidth   = 0;
 	if (gfxFont && !gfxFont->isCIDFont())
@@ -771,7 +761,7 @@ TextFontInfo::TextFontInfo(GfxState* state)
 		{
 			if ((name = ((Gfx8BitFont*)gfxFont)->getCharName(code)) && name[0] == 'm' && name[1] == '\0')
 			{
-				mWidth = ((Gfx8BitFont*)gfxFont)->getWidth((Guchar)code);
+				mWidth = ((Gfx8BitFont*)gfxFont)->getWidth((uint8_t)code);
 				break;
 			}
 		}
@@ -782,23 +772,15 @@ TextFontInfo::TextFontInfo()
 {
 	fontID.num = -1;
 	fontID.gen = -1;
-	fontName   = nullptr;
-	flags      = 0;
-	mWidth     = 0;
-	ascent     = 0;
-	descent    = 0;
 }
 
 TextFontInfo::~TextFontInfo()
 {
-	if (fontName)
-		delete fontName;
 }
 
-GBool TextFontInfo::matches(GfxState* state)
+bool TextFontInfo::matches(GfxState* state)
 {
 	Ref id;
-
 	if (state->getFont())
 	{
 		id = *state->getFont()->getID();
@@ -817,10 +799,9 @@ GBool TextFontInfo::matches(GfxState* state)
 
 // Build a TextWord object, using chars[start .. start+len-1].
 // (If rot >= 2, the chars list is in reverse order.)
-TextWord::TextWord(GList* chars, int start, int lenA, int rotA, GBool rotatedA, int dirA, GBool spaceAfterA)
+TextWord::TextWord(GList* chars, int start, int lenA, int rotA, char rotatedA, int dirA, bool spaceAfterA)
 {
 	TextChar* ch;
-	int       i;
 
 	rot     = (char)rotA;
 	rotated = (char)rotatedA;
@@ -846,7 +827,7 @@ TextWord::TextWord(GList* chars, int start, int lenA, int rotA, GBool rotatedA, 
 		ch   = (TextChar*)chars->get(start + len - 1);
 		xMax = ch->xMax;
 	}
-	for (i = 0; i < len; ++i)
+	for (int i = 0; i < len; ++i)
 	{
 		ch         = (TextChar*)chars->get(rot >= 2 ? start + len - 1 - i : start + i);
 		text[i]    = ch->c;
@@ -883,7 +864,7 @@ TextWord::TextWord(GList* chars, int start, int lenA, int rotA, GBool rotatedA, 
 	fontSize   = ch->fontSize;
 	dir        = (char)dirA;
 	spaceAfter = (char)spaceAfterA;
-	underlined = gFalse;
+	underlined = false;
 	link       = nullptr;
 	colorR     = ch->colorR;
 	colorG     = ch->colorG;
@@ -929,20 +910,19 @@ int TextWord::cmpCharPos(const void* p1, const void* p2)
 	return word1->charPos[0] - word2->charPos[0];
 }
 
-GString* TextWord::getText()
+std::string TextWord::getText()
 {
-	GString*    s;
 	UnicodeMap* uMap;
 	char        buf[8];
 	int         n, i;
 
-	s = new GString();
+	std::string s;
 	if (!(uMap = globalParams->getTextEncoding()))
 		return s;
 	for (i = 0; i < len; ++i)
 	{
 		n = uMap->mapUnicode(text[i], buf, sizeof(buf));
-		s->append(buf, n);
+		s.append(buf, n);
 	}
 	uMap->decRefCnt();
 	return s;
@@ -997,9 +977,9 @@ double TextWord::getBaseline()
 	}
 }
 
-GString* TextWord::getLinkURI()
+std::string TextWord::getLinkURI()
 {
-	return link ? link->uri : (GString*)nullptr;
+	return link ? link->uri : "";
 }
 
 //------------------------------------------------------------------------
@@ -1099,25 +1079,18 @@ int TextLine::cmpX(const void* p1, const void* p2)
 // TextParagraph
 //------------------------------------------------------------------------
 
-TextParagraph::TextParagraph(GList* linesA, GBool dropCapA)
+TextParagraph::TextParagraph(GList* linesA, bool dropCapA)
 {
-	TextLine* line;
-	int       i;
-
 	lines   = linesA;
 	dropCap = dropCapA;
 	xMin = yMin = xMax = yMax = 0;
-	for (i = 0; i < lines->getLength(); ++i)
+	for (int i = 0; i < lines->getLength(); ++i)
 	{
-		line = (TextLine*)lines->get(i);
-		if (i == 0 || line->xMin < xMin)
-			xMin = line->xMin;
-		if (i == 0 || line->yMin < yMin)
-			yMin = line->yMin;
-		if (i == 0 || line->xMax > xMax)
-			xMax = line->xMax;
-		if (i == 0 || line->yMax > yMax)
-			yMax = line->yMax;
+		TextLine* line = (TextLine*)lines->get(i);
+		if (i == 0 || line->xMin < xMin) xMin = line->xMin;
+		if (i == 0 || line->yMin < yMin) yMin = line->yMin;
+		if (i == 0 || line->xMax > xMax) xMax = line->xMax;
+		if (i == 0 || line->yMax > yMax) yMax = line->yMax;
 	}
 }
 
@@ -1199,7 +1172,7 @@ int TextColumn::cmpPX(const void* p1, const void* p2)
 // TextWordList
 //------------------------------------------------------------------------
 
-TextWordList::TextWordList(GList* wordsA, GBool primaryLRA)
+TextWordList::TextWordList(GList* wordsA, bool primaryLRA)
 {
 	words     = wordsA;
 	primaryLR = primaryLRA;
@@ -1217,8 +1190,7 @@ int TextWordList::getLength()
 
 TextWord* TextWordList::get(int idx)
 {
-	if (idx < 0 || idx >= words->getLength())
-		return nullptr;
+	if (idx < 0 || idx >= words->getLength()) return nullptr;
 	return (TextWord*)words->get(idx);
 }
 
@@ -1252,49 +1224,44 @@ int TextPosition::operator>(TextPosition pos)
 
 TextPage::TextPage(TextOutputControl* controlA)
 {
-	control   = *controlA;
-	remapping = globalParams->getUnicodeRemapping();
-	uBufSize  = 16;
-	uBuf      = (Unicode*)gmallocn(uBufSize, sizeof(Unicode));
-	pageWidth = pageHeight = 0;
-	charPos                = 0;
-	curFont                = nullptr;
-	curFontSize            = 0;
-	curRot                 = 0;
-	diagonal               = gFalse;
-	rotated                = gFalse;
-	nTinyChars             = 0;
-	actualText             = nullptr;
-	actualTextLen          = 0;
-	actualTextX0           = 0;
-	actualTextY0           = 0;
-	actualTextX1           = 0;
-	actualTextY1           = 0;
-	actualTextNBytes       = 0;
-
-	chars      = new GList();
-	fonts      = new GList();
-	primaryRot = 0;
-
-	underlines = new GList();
-	links      = new GList();
-
-	findCols     = nullptr;
-	lastFindXMin = lastFindYMin = 0;
-	haveLastFind                = gFalse;
-
-	problematic = gFalse;
+	control          = *controlA;
+	remapping        = globalParams->getUnicodeRemapping();
+	uBufSize         = 16;
+	uBuf             = (Unicode*)gmallocn(uBufSize, sizeof(Unicode));
+	pageWidth        = 0;
+	pageHeight       = 0;
+	charPos          = 0;
+	curFont          = nullptr;
+	curFontSize      = 0;
+	curRot           = 0;
+	diagonal         = false;
+	rotated          = false;
+	nTinyChars       = 0;
+	actualText       = nullptr;
+	actualTextLen    = 0;
+	actualTextX0     = 0;
+	actualTextY0     = 0;
+	actualTextX1     = 0;
+	actualTextY1     = 0;
+	actualTextNBytes = 0;
+	chars            = new GList();
+	primaryRot       = 0;
+	underlines       = new GList();
+	links            = new GList();
+	findCols         = nullptr;
+	lastFindXMin     = 0;
+	lastFindYMin     = 0;
+	haveLastFind     = false;
+	problematic      = false;
 }
 
 TextPage::~TextPage()
 {
 	clear();
 	deleteGList(chars, TextChar);
-	deleteGList(fonts, TextFontInfo);
 	deleteGList(underlines, TextUnderline);
 	deleteGList(links, TextLink);
-	if (findCols)
-		deleteGList(findCols, TextColumn);
+	if (findCols) deleteGList(findCols, TextColumn);
 	gfree(uBuf);
 }
 
@@ -1308,10 +1275,8 @@ void TextPage::startPage(GfxState* state)
 		// When rotating characters, the coordinates are flipped using the
 		// page size.  See the comment in TextChar::TextChar() about
 		// integer coordinates.
-		if (pageWidth > 1e8)
-			pageWidth = 1e8;
-		if (pageHeight > 1e8)
-			pageHeight = 1e8;
+		if (pageWidth > 1e8) pageWidth = 1e8;
+		if (pageHeight > 1e8) pageHeight = 1e8;
 	}
 	else
 	{
@@ -1321,22 +1286,21 @@ void TextPage::startPage(GfxState* state)
 
 void TextPage::clear()
 {
-	pageWidth = pageHeight = 0;
-	charPos                = 0;
-	curFont                = nullptr;
-	curFontSize            = 0;
-	curRot                 = 0;
-	diagonal               = gFalse;
-	rotated                = gFalse;
-	nTinyChars             = 0;
+	pageWidth   = 0;
+	pageHeight  = 0;
+	charPos     = 0;
+	curFont     = nullptr;
+	curFontSize = 0;
+	curRot      = 0;
+	diagonal    = false;
+	rotated     = false;
+	nTinyChars  = 0;
 	gfree(actualText);
 	actualText       = nullptr;
 	actualTextLen    = 0;
 	actualTextNBytes = 0;
 	deleteGList(chars, TextChar);
 	chars = new GList();
-	deleteGList(fonts, TextFontInfo);
-	fonts = new GList();
 	deleteGList(underlines, TextUnderline);
 	underlines = new GList();
 	deleteGList(links, TextLink);
@@ -1351,41 +1315,38 @@ void TextPage::clear()
 		findCols = nullptr;
 	}
 	lastFindXMin = lastFindYMin = 0;
-	haveLastFind                = gFalse;
+	haveLastFind                = false;
 
-	problematic = gFalse;
+	problematic = false;
 }
 
 void TextPage::updateFont(GfxState* state)
 {
-	GfxFont* gfxFont;
-	double*  fm;
-	char*    name;
-	int      code, mCode, letterCode, anyCode;
-	double   w;
-	double   m[4], m2[4];
-	int      i;
+	double* fm;
+	char*   name;
+	int     code, mCode, letterCode, anyCode;
+	double  w;
+	double  m[4], m2[4];
 
 	// get the font info object
 	curFont = nullptr;
-	for (i = 0; i < fonts->getLength(); ++i)
+	for (auto& font : fonts)
 	{
-		curFont = (TextFontInfo*)fonts->get(i);
-		if (curFont->matches(state))
-			break;
+		curFont = &font;
+		if (curFont->matches(state)) break;
 		curFont = nullptr;
 	}
 	if (!curFont)
 	{
-		curFont = new TextFontInfo(state);
-		fonts->append(curFont);
+		fonts.push_back(TextFontInfo(state));
+		curFont = &fonts.back();
 		if (state->getFont() && state->getFont()->problematicForUnicode())
-			problematic = gTrue;
+			problematic = true;
 	}
 
 	// adjust the font size
-	gfxFont     = state->getFont();
-	curFontSize = state->getTransformedFontSize();
+	const auto gfxFont = state->getFont();
+	curFontSize        = state->getTransformedFontSize();
 	if (gfxFont && gfxFont->getType() == fontType3)
 	{
 		// This is a hack which makes it possible to deal with some Type 3
@@ -1402,20 +1363,20 @@ void TextPage::updateFont(GfxState* state)
 				mCode = code;
 			if (letterCode < 0 && name && ((name[0] >= 'A' && name[0] <= 'Z') || (name[0] >= 'a' && name[0] <= 'z')) && name[1] == '\0')
 				letterCode = code;
-			if (anyCode < 0 && name && ((Gfx8BitFont*)gfxFont)->getWidth((Guchar)code) > 0)
+			if (anyCode < 0 && name && ((Gfx8BitFont*)gfxFont)->getWidth((uint8_t)code) > 0)
 				anyCode = code;
 		}
-		if (mCode >= 0 && (w = ((Gfx8BitFont*)gfxFont)->getWidth((Guchar)mCode)) > 0)
+		if (mCode >= 0 && (w = ((Gfx8BitFont*)gfxFont)->getWidth((uint8_t)mCode)) > 0)
 		{
 			// 0.6 is a generic average 'm' width -- yes, this is a hack
 			curFontSize *= w / 0.6;
 		}
-		else if (letterCode >= 0 && (w = ((Gfx8BitFont*)gfxFont)->getWidth((Guchar)letterCode)) > 0)
+		else if (letterCode >= 0 && (w = ((Gfx8BitFont*)gfxFont)->getWidth((uint8_t)letterCode)) > 0)
 		{
 			// even more of a hack: 0.5 is a generic letter width
 			curFontSize *= w / 0.5;
 		}
-		else if (anyCode >= 0 && (w = ((Gfx8BitFont*)gfxFont)->getWidth((Guchar)anyCode)) > 0)
+		else if (anyCode >= 0 && (w = ((Gfx8BitFont*)gfxFont)->getWidth((uint8_t)anyCode)) > 0)
 		{
 			// better than nothing: 0.5 is a generic character width
 			curFontSize *= w / 0.5;
@@ -1444,7 +1405,7 @@ void TextPage::updateFont(GfxState* state)
 		// special case - if the font size is zero, just assume plain
 		// horizontal text
 		curRot   = 0;
-		diagonal = gFalse;
+		diagonal = false;
 	}
 	else if (fabs(m[0]) >= fabs(m[1]))
 	{
@@ -1473,7 +1434,7 @@ void TextPage::addChar(GfxState* state, double x, double y, double dx, double dy
 	double clipXMin, clipYMin, clipXMax, clipYMax;
 	GfxRGB rgb;
 	double alpha;
-	GBool  clipped, rtl;
+	bool   clipped, rtl;
 	int    uBufLen, i, j;
 
 	// if we're in an ActualText span, save the position info (the
@@ -1535,8 +1496,7 @@ void TextPage::addChar(GfxState* state, double x, double y, double dx, double dy
 	{
 		charPos += nBytes;
 		if (chars->getLength() > 0)
-			((TextChar*)chars->get(chars->getLength() - 1))->spaceAfter =
-			    (char)gTrue;
+			((TextChar*)chars->get(chars->getLength() - 1))->spaceAfter = (char)true;
 		return;
 	}
 
@@ -1560,19 +1520,19 @@ void TextPage::addChar(GfxState* state, double x, double y, double dx, double dy
 		// right-to-left order
 		if (uBufLen > 1)
 		{
-			rtl = gTrue;
+			rtl = true;
 			for (i = 0; i < uBufLen; ++i)
 			{
 				if (!unicodeTypeR(uBuf[i]))
 				{
-					rtl = gFalse;
+					rtl = false;
 					break;
 				}
 			}
 		}
 		else
 		{
-			rtl = gFalse;
+			rtl = false;
 		}
 
 		// compute the bounding box
@@ -1614,14 +1574,14 @@ void TextPage::addChar(GfxState* state, double x, double y, double dx, double dy
 			}
 
 			// check for clipping
-			clipped = gFalse;
+			clipped = false;
 			if (control.clipText || control.discardClippedText)
 			{
 				state->getClipBBox(&clipXMin, &clipYMin, &clipXMax, &clipYMax);
 				xMid = 0.5 * (xMin + xMax);
 				yMid = 0.5 * (yMin + yMax);
 				if (xMid < clipXMin || xMid > clipXMax || yMid < clipYMin || yMid > clipYMax)
-					clipped = gTrue;
+					clipped = true;
 			}
 
 			if ((state->getRender() & 3) == 1)
@@ -1638,7 +1598,7 @@ void TextPage::addChar(GfxState* state, double x, double y, double dx, double dy
 				j = uBufLen - 1 - i;
 			else
 				j = i;
-			GBool invisible = state->getRender() == 3 || alpha < 0.001;
+			bool invisible = state->getRender() == 3 || alpha < 0.001;
 			chars->append(new TextChar(uBuf[j], charPos, nBytes, xMin, yMin, xMax, yMax, curRot, rotated, clipped, invisible, curFont, curFontSize, colToDbl(rgb.r), colToDbl(rgb.g), colToDbl(rgb.b)));
 			if (invisible)
 				++nInvisibleChars;
@@ -1652,7 +1612,7 @@ void TextPage::addChar(GfxState* state, double x, double y, double dx, double dy
 
 void TextPage::addSpecialChar(double xMin, double yMin, double xMax, double yMax, int rot, TextFontInfo* font, double fontSize, Unicode u)
 {
-	chars->append(new TextChar(u, 0, 0, xMin, yMin, xMax, yMax, rot, gFalse, gFalse, gFalse, font, fontSize, 0, 0, 0));
+	chars->append(new TextChar(u, 0, 0, xMin, yMin, xMax, yMax, rot, false, false, false, font, fontSize, 0, 0, 0));
 }
 
 //~ this is inefficient -- consider using some sort of tree
@@ -1663,10 +1623,8 @@ void TextPage::removeChars(double xMin, double yMin, double xMax, double yMax, d
 	while (i < chars->getLength())
 	{
 		TextChar* ch       = (TextChar*)chars->get(i);
-		double    xOverlap = (ch->xMax < xMax ? ch->xMax : xMax)
-		    - (ch->xMin > xMin ? ch->xMin : xMin);
-		double yOverlap = (ch->yMax < yMax ? ch->yMax : yMax)
-		    - (ch->yMin > yMin ? ch->yMin : yMin);
+		double    xOverlap = (ch->xMax < xMax ? ch->xMax : xMax) - (ch->xMin > xMin ? ch->xMin : xMin);
+		double    yOverlap = (ch->yMax < yMax ? ch->yMax : yMax) - (ch->yMin > yMin ? ch->yMin : yMin);
 		if (xOverlap > xOverlapThresh * (ch->xMax - ch->xMin) && yOverlap > yOverlapThresh * (ch->yMax - ch->yMin))
 		{
 			chars->del(i);
@@ -1710,7 +1668,7 @@ void TextPage::endActualText(GfxState* state)
 	gfree(u);
 	actualText       = nullptr;
 	actualTextLen    = 0;
-	actualTextNBytes = gFalse;
+	actualTextNBytes = false;
 }
 
 void TextPage::addUnderline(double x0, double y0, double x1, double y1)
@@ -1720,11 +1678,10 @@ void TextPage::addUnderline(double x0, double y0, double x1, double y1)
 
 void TextPage::addLink(double xMin, double yMin, double xMax, double yMax, Link* link)
 {
-	GString* uri;
-
+	std::string uri;
 	if (link && link->getAction() && link->getAction()->getKind() == actionURI)
 	{
-		uri = ((LinkURI*)link->getAction())->getURI()->copy();
+		uri = ((LinkURI*)link->getAction())->getURI();
 		links->append(new TextLink(xMin, yMin, xMax, yMax, uri));
 	}
 }
@@ -1738,7 +1695,7 @@ void TextPage::write(void* outputStream, TextOutputFunc outputFunc)
 	UnicodeMap* uMap;
 	char        space[8], eol[16], eop[8];
 	int         spaceLen, eolLen, eopLen;
-	GBool       pageBreaks;
+	bool        pageBreaks;
 
 	// get the output encoding
 	if (!(uMap = globalParams->getTextEncoding()))
@@ -1799,9 +1756,8 @@ void TextPage::writeReadingOrder(void* outputStream, TextOutputFunc outputFunc, 
 	TextLine*      line;
 	GList*         overlappingChars;
 	GList*         columns;
-	GBool          primaryLR;
-	GString*       s;
-	int            colIdx, parIdx, lineIdx, n;
+	bool           primaryLR;
+	int            n;
 
 #if 0 //~debug
   dumpChars(chars);
@@ -1840,24 +1796,24 @@ void TextPage::writeReadingOrder(void* outputStream, TextOutputFunc outputFunc, 
   dumpColumns(columns);
 #endif
 
-	for (colIdx = 0; colIdx < columns->getLength(); ++colIdx)
+	for (int colIdx = 0; colIdx < columns->getLength(); ++colIdx)
 	{
 		col = (TextColumn*)columns->get(colIdx);
-		for (parIdx = 0; parIdx < col->paragraphs->getLength(); ++parIdx)
+		for (int parIdx = 0; parIdx < col->paragraphs->getLength(); ++parIdx)
 		{
 			par = (TextParagraph*)col->paragraphs->get(parIdx);
-			for (lineIdx = 0; lineIdx < par->lines->getLength(); ++lineIdx)
+			for (int lineIdx = 0; lineIdx < par->lines->getLength(); ++lineIdx)
 			{
 				line = (TextLine*)par->lines->get(lineIdx);
 				n    = line->len;
 				if (line->hyphenated && lineIdx + 1 < par->lines->getLength())
 					--n;
-				s = new GString();
+
+				std::string s;
 				encodeFragment(line->text, n, uMap, primaryLR, s);
 				if (lineIdx + 1 < par->lines->getLength() && !line->hyphenated)
-					s->append(space, spaceLen);
-				(*outputFunc)(outputStream, s->getCString(), s->getLength());
-				delete s;
+					s.append(space, spaceLen);
+				(*outputFunc)(outputStream, s.c_str(), s.size());
 			}
 			(*outputFunc)(outputStream, eol, eolLen);
 		}
@@ -1872,7 +1828,7 @@ GList* TextPage::makeColumns()
 	TextBlock* tree;
 	GList*     overlappingChars;
 	GList*     columns;
-	GBool      primaryLR;
+	bool       primaryLR;
 
 	if (control.mode == textOutSimple2Layout)
 	{
@@ -1919,21 +1875,19 @@ GList* TextPage::makeColumns()
 void TextPage::writePhysLayout(void* outputStream, TextOutputFunc outputFunc, UnicodeMap* uMap, char* space, int spaceLen, char* eol, int eolLen)
 {
 	TextBlock*     tree;
-	GString**      out;
-	int*           outLen;
 	TextColumn*    col;
 	TextParagraph* par;
 	TextLine*      line;
 	GList*         overlappingChars;
 	GList*         columns;
-	GBool          primaryLR;
-	int            ph, colIdx, parIdx, lineIdx, y, i;
+	bool           primaryLR;
+	int            ph, lineIdx, y;
 
 #if 0 //~debug
-  dumpChars(chars);
+	dumpChars(chars);
 #endif
 #if 0 //~debug
-  dumpUnderlines();
+	dumpUnderlines();
 #endif
 	if (control.overlapHandling != textOutIgnoreOverlaps)
 		overlappingChars = separateOverlappingText(chars);
@@ -1952,7 +1906,7 @@ void TextPage::writePhysLayout(void* outputStream, TextOutputFunc outputFunc, Un
 		return;
 	}
 	//~ this doesn't correctly handle the right-to-left case
-	columns = buildColumns(tree, gTrue);
+	columns = buildColumns(tree, true);
 	delete tree;
 	unrotateChars(chars, primaryRot);
 	if (control.html)
@@ -1965,38 +1919,29 @@ void TextPage::writePhysLayout(void* outputStream, TextOutputFunc outputFunc, Un
   dumpColumns(columns);
 #endif
 
-	out    = (GString**)gmallocn(ph, sizeof(GString*));
-	outLen = (int*)gmallocn(ph, sizeof(int));
-	for (i = 0; i < ph; ++i)
-	{
-		out[i]    = nullptr;
-		outLen[i] = 0;
-	}
+	VEC_STR          outs;
+	std::vector<int> outLens;
+	outs.resize(ph + 1);
+	outLens.resize(ph + 1);
 
 	columns->sort(&TextColumn::cmpPX);
-	for (colIdx = 0; colIdx < columns->getLength(); ++colIdx)
+	for (int colIdx = 0; colIdx < columns->getLength(); ++colIdx)
 	{
 		col = (TextColumn*)columns->get(colIdx);
 		y   = col->py;
-		for (parIdx = 0;
-		     parIdx < col->paragraphs->getLength() && y < ph;
-		     ++parIdx)
+		for (int parIdx = 0; parIdx < col->paragraphs->getLength() && y < ph; ++parIdx)
 		{
 			par = (TextParagraph*)col->paragraphs->get(parIdx);
-			for (lineIdx = 0;
-			     lineIdx < par->lines->getLength() && y < ph;
-			     ++lineIdx)
+			for (int lineIdx = 0; lineIdx < par->lines->getLength() && y < ph; ++lineIdx)
 			{
 				line = (TextLine*)par->lines->get(lineIdx);
-				if (!out[y])
-					out[y] = new GString();
-				while (outLen[y] < col->px + line->px)
+				while (outLens[y] < col->px + line->px)
 				{
-					out[y]->append(space, spaceLen);
-					++outLen[y];
+					outs[y].append(space, spaceLen);
+					++outLens[y];
 				}
-				encodeFragment(line->text, line->len, uMap, primaryLR, out[y]);
-				outLen[y] += line->pw;
+				encodeFragment(line->text, line->len, uMap, primaryLR, outs[y]);
+				outLens[y] += line->pw;
 				++y;
 			}
 			if (parIdx + 1 < col->paragraphs->getLength())
@@ -2004,18 +1949,11 @@ void TextPage::writePhysLayout(void* outputStream, TextOutputFunc outputFunc, Un
 		}
 	}
 
-	for (i = 0; i < ph; ++i)
+	for (int i = 0; i < ph; ++i)
 	{
-		if (out[i])
-		{
-			(*outputFunc)(outputStream, out[i]->getCString(), out[i]->getLength());
-			delete out[i];
-		}
+		if (outs[i].size()) (*outputFunc)(outputStream, outs[i].c_str(), outs[i].size());
 		(*outputFunc)(outputStream, eol, eolLen);
 	}
-
-	gfree(out);
-	gfree(outLen);
 
 	deleteGList(columns, TextColumn);
 
@@ -2025,17 +1963,16 @@ void TextPage::writePhysLayout(void* outputStream, TextOutputFunc outputFunc, Un
 		{
 			col = buildOverlappingTextColumn(overlappingChars);
 			(*outputFunc)(outputStream, eol, eolLen);
-			for (parIdx = 0; parIdx < col->paragraphs->getLength(); ++parIdx)
+			for (int parIdx = 0; parIdx < col->paragraphs->getLength(); ++parIdx)
 			{
 				par = (TextParagraph*)col->paragraphs->get(parIdx);
 				for (lineIdx = 0; lineIdx < par->lines->getLength(); ++lineIdx)
 				{
-					line       = (TextLine*)par->lines->get(lineIdx);
-					GString* s = new GString();
+					line = (TextLine*)par->lines->get(lineIdx);
+					std::string s;
 					encodeFragment(line->text, line->len, uMap, primaryLR, s);
-					s->append(eol, eolLen);
-					(*outputFunc)(outputStream, s->getCString(), s->getLength());
-					delete s;
+					s.append(eol, eolLen);
+					(*outputFunc)(outputStream, s.c_str(), s.size());
 				}
 				if (parIdx < col->paragraphs->getLength() - 1)
 					(*outputFunc)(outputStream, eol, eolLen);
@@ -2052,8 +1989,7 @@ void TextPage::writeSimpleLayout(void* outputStream, TextOutputFunc outputFunc, 
 	TextSuperLine *superLine0, *superLine1;
 	TextLine*      line;
 	GList*         superLines;
-	GString*       out;
-	GBool          primaryLR;
+	bool           primaryLR;
 	int            x, i, j;
 
 #if 0 //~debug
@@ -2080,21 +2016,20 @@ void TextPage::writeSimpleLayout(void* outputStream, TextOutputFunc outputFunc, 
 	for (i = 0; i < superLines->getLength(); ++i)
 	{
 		superLine0 = (TextSuperLine*)superLines->get(i);
-		out        = new GString();
-		x          = 0;
+		std::string out;
+		x = 0;
 		for (j = 0; j < superLine0->lines->getLength(); ++j)
 		{
 			line = (TextLine*)superLine0->lines->get(j);
 			while (x < line->px)
 			{
-				out->append(space, spaceLen);
+				out.append(space, spaceLen);
 				++x;
 			}
 			encodeFragment(line->text, line->len, uMap, primaryLR, out);
 			x += line->pw;
 		}
-		(*outputFunc)(outputStream, out->getCString(), out->getLength());
-		delete out;
+		(*outputFunc)(outputStream, out.c_str(), out.size());
 		(*outputFunc)(outputStream, eol, eolLen);
 		if (i + 1 < superLines->getLength())
 		{
@@ -2113,8 +2048,7 @@ void TextPage::writeSimple2Layout(void* outputStream, TextOutputFunc outputFunc,
 	TextColumn*    col;
 	TextParagraph* par;
 	TextLine*      line;
-	GString*       out;
-	GBool          primaryLR;
+	bool           primaryLR;
 	int            colIdx, parIdx, lineIdx;
 
 	primaryLR  = checkPrimaryLR(chars);
@@ -2136,10 +2070,9 @@ void TextPage::writeSimple2Layout(void* outputStream, TextOutputFunc outputFunc,
 			for (lineIdx = 0; lineIdx < par->lines->getLength(); ++lineIdx)
 			{
 				line = (TextLine*)par->lines->get(lineIdx);
-				out  = new GString();
+				std::string out;
 				encodeFragment(line->text, line->len, uMap, primaryLR, out);
-				(*outputFunc)(outputStream, out->getCString(), out->getLength());
-				delete out;
+				(*outputFunc)(outputStream, out.c_str(), out.size());
 				(*outputFunc)(outputStream, eol, eolLen);
 			}
 		}
@@ -2152,7 +2085,6 @@ void TextPage::writeLinePrinter(void* outputStream, TextOutputFunc outputFunc, U
 {
 	TextChar *ch, *ch2;
 	GList*    line;
-	GString*  s;
 	char      buf[8];
 	double    pitch, lineSpacing, delta;
 	double    yMin0, yShift, xMin0, xShift;
@@ -2223,8 +2155,7 @@ void TextPage::writeLinePrinter(void* outputStream, TextOutputFunc outputFunc, U
 	if (chars->getLength())
 	{
 		yMin0  = ((TextChar*)chars->get(0))->yMin;
-		yShift = yMin0 - (int)(yMin0 / lineSpacing + 0.5) * lineSpacing
-		    - 0.5 * lineSpacing;
+		yShift = yMin0 - (int)(yMin0 / lineSpacing + 0.5) * lineSpacing - 0.5 * lineSpacing;
 	}
 	else
 	{
@@ -2256,7 +2187,7 @@ void TextPage::writeLinePrinter(void* outputStream, TextOutputFunc outputFunc, U
 		}
 
 		// write the line
-		s = new GString();
+		std::string s;
 		x = xShift;
 		k = 0;
 		while (k < line->getLength())
@@ -2265,19 +2196,18 @@ void TextPage::writeLinePrinter(void* outputStream, TextOutputFunc outputFunc, U
 			if (ch->xMin < x + pitch)
 			{
 				n = uMap->mapUnicode(ch->c, buf, sizeof(buf));
-				s->append(buf, n);
+				s.append(buf, n);
 				++k;
 			}
 			else
 			{
-				s->append(space, spaceLen);
+				s.append(space, spaceLen);
 				n = spaceLen;
 			}
 			x += (uMap->isUnicode() ? 1 : n) * pitch;
 		}
-		s->append(eol, eolLen);
-		(*outputFunc)(outputStream, s->getCString(), s->getLength());
-		delete s;
+		s.append(eol, eolLen);
+		(*outputFunc)(outputStream, s.c_str(), s.size());
 		delete line;
 	}
 
@@ -2287,18 +2217,16 @@ void TextPage::writeLinePrinter(void* outputStream, TextOutputFunc outputFunc, U
 void TextPage::writeRaw(void* outputStream, TextOutputFunc outputFunc, UnicodeMap* uMap, char* space, int spaceLen, char* eol, int eolLen)
 {
 	TextChar *ch, *ch2;
-	GString*  s;
 	char      buf[8];
-	int       n, i;
 
-	s = new GString();
+	std::string s;
 
-	for (i = 0; i < chars->getLength(); ++i)
+	for (int i = 0; i < chars->getLength(); ++i)
 	{
 		// process one char
-		ch = (TextChar*)chars->get(i);
-		n  = uMap->mapUnicode(ch->c, buf, sizeof(buf));
-		s->append(buf, n);
+		ch          = (TextChar*)chars->get(i);
+		const int n = uMap->mapUnicode(ch->c, buf, sizeof(buf));
+		s.append(buf, n);
 
 		// check for space or eol
 		if (i + 1 < chars->getLength())
@@ -2306,7 +2234,7 @@ void TextPage::writeRaw(void* outputStream, TextOutputFunc outputFunc, UnicodeMa
 			ch2 = (TextChar*)chars->get(i + 1);
 			if (ch2->rot != ch->rot)
 			{
-				s->append(eol, eolLen);
+				s.append(eol, eolLen);
 			}
 			else
 			{
@@ -2315,52 +2243,51 @@ void TextPage::writeRaw(void* outputStream, TextOutputFunc outputFunc, UnicodeMa
 				case 0:
 				default:
 					if (fabs(ch2->yMin - ch->yMin) > rawModeLineDelta * ch->fontSize || ch2->xMin - ch->xMax < -rawModeCharOverlap * ch->fontSize)
-						s->append(eol, eolLen);
+						s.append(eol, eolLen);
 					else if (ch->spaceAfter || ch2->xMin - ch->xMax > rawModeWordSpacing * ch->fontSize)
-						s->append(space, spaceLen);
+						s.append(space, spaceLen);
 					break;
 				case 1:
 					if (fabs(ch->xMax - ch2->xMax) > rawModeLineDelta * ch->fontSize || ch2->yMin - ch->yMax < -rawModeCharOverlap * ch->fontSize)
-						s->append(eol, eolLen);
+						s.append(eol, eolLen);
 					else if (ch->spaceAfter || ch2->yMin - ch->yMax > rawModeWordSpacing * ch->fontSize)
-						s->append(space, spaceLen);
+						s.append(space, spaceLen);
 					break;
 				case 2:
 					if (fabs(ch->yMax - ch2->yMax) > rawModeLineDelta * ch->fontSize || ch->xMin - ch2->xMax < -rawModeCharOverlap * ch->fontSize)
-						s->append(eol, eolLen);
+						s.append(eol, eolLen);
 					else if (ch->spaceAfter || ch->xMin - ch2->xMax > rawModeWordSpacing * ch->fontSize)
-						s->append(space, spaceLen);
+						s.append(space, spaceLen);
 					break;
 				case 3:
 					if (fabs(ch2->xMin - ch->xMin) > rawModeLineDelta * ch->fontSize || ch->yMin - ch2->yMax < -rawModeCharOverlap * ch->fontSize)
-						s->append(eol, eolLen);
+						s.append(eol, eolLen);
 					else if (ch->spaceAfter || ch->yMin - ch2->yMax > rawModeWordSpacing * ch->fontSize)
-						s->append(space, spaceLen);
+						s.append(space, spaceLen);
 					break;
 				}
 			}
 		}
 		else
 		{
-			s->append(eol, eolLen);
+			s.append(eol, eolLen);
 		}
 
-		if (s->getLength() > 1000)
+		if (s.size() > 1000)
 		{
-			(*outputFunc)(outputStream, s->getCString(), s->getLength());
-			s->clear();
+			(*outputFunc)(outputStream, s.c_str(), s.size());
+			s.clear();
 		}
 	}
 
-	if (s->getLength() > 0)
-		(*outputFunc)(outputStream, s->getCString(), s->getLength());
-	delete s;
+	if (s.size() > 0)
+		(*outputFunc)(outputStream, s.c_str(), s.size());
 }
 
-void TextPage::encodeFragment(Unicode* text, int len, UnicodeMap* uMap, GBool primaryLR, GString* s)
+void TextPage::encodeFragment(Unicode* text, int len, UnicodeMap* uMap, bool primaryLR, std::string& s)
 {
 	char    lre[8], rle[8], popdf[8], buf[8];
-	GBool   open;
+	bool    open;
 	Unicode opposite;
 	int     lreLen, rleLen, popdfLen, n;
 	int     i, j, k;
@@ -2377,33 +2304,29 @@ void TextPage::encodeFragment(Unicode* text, int len, UnicodeMap* uMap, GBool pr
 			while (i < len)
 			{
 				// output a left-to-right section
-				for (j = i;
-				     j < len && !unicodeEffectiveTypeR(text[j], j > 0 ? text[j - 1] : 0, j < len - 1 ? text[j + 1] : 0);
-				     ++j)
+				for (j = i; j < len && !unicodeEffectiveTypeR(text[j], j > 0 ? text[j - 1] : 0, j < len - 1 ? text[j + 1] : 0); ++j)
 					;
 				for (k = i; k < j; ++k)
 				{
 					n = uMap->mapUnicode(text[k], buf, sizeof(buf));
-					s->append(buf, n);
+					s.append(buf, n);
 				}
 				i = j;
 				// output a right-to-left section
-				for (j = i;
-				     j < len && !unicodeEffectiveTypeLOrNum(text[j], j > 0 ? text[j - 1] : 0, j < len - 1 ? text[j + 1] : 0);
-				     ++j)
+				for (j = i; j < len && !unicodeEffectiveTypeLOrNum(text[j], j > 0 ? text[j - 1] : 0, j < len - 1 ? text[j + 1] : 0); ++j)
 					;
 				if (j > i)
 				{
-					s->append(rle, rleLen);
+					s.append(rle, rleLen);
 					for (k = j - 1; k >= i; --k)
 					{
 						if (unicodeBracketInfo(text[k], &open, &opposite))
 							n = uMap->mapUnicode(opposite, buf, sizeof(buf));
 						else
 							n = uMap->mapUnicode(text[k], buf, sizeof(buf));
-						s->append(buf, n);
+						s.append(buf, n);
 					}
-					s->append(popdf, popdfLen);
+					s.append(popdf, popdfLen);
 					i = j;
 				}
 			}
@@ -2411,14 +2334,12 @@ void TextPage::encodeFragment(Unicode* text, int len, UnicodeMap* uMap, GBool pr
 		else
 		{ // !primaryLR
 
-			s->append(rle, rleLen);
+			s.append(rle, rleLen);
 			i = len - 1;
 			while (i >= 0)
 			{
 				// output a right-to-left section
-				for (j = i;
-				     j >= 0 && !unicodeEffectiveTypeLOrNum(text[j], j > 0 ? text[j - 1] : 0, j < len - 1 ? text[j + 1] : 0);
-				     --j)
+				for (j = i; j >= 0 && !unicodeEffectiveTypeLOrNum(text[j], j > 0 ? text[j - 1] : 0, j < len - 1 ? text[j + 1] : 0); --j)
 					;
 				for (k = i; k > j; --k)
 				{
@@ -2426,27 +2347,25 @@ void TextPage::encodeFragment(Unicode* text, int len, UnicodeMap* uMap, GBool pr
 						n = uMap->mapUnicode(opposite, buf, sizeof(buf));
 					else
 						n = uMap->mapUnicode(text[k], buf, sizeof(buf));
-					s->append(buf, n);
+					s.append(buf, n);
 				}
 				i = j;
 				// output a left-to-right section
-				for (j = i;
-				     j >= 0 && !unicodeEffectiveTypeR(text[j], j > 0 ? text[j - 1] : 0, j < len - 1 ? text[j + 1] : 0);
-				     --j)
+				for (j = i; j >= 0 && !unicodeEffectiveTypeR(text[j], j > 0 ? text[j - 1] : 0, j < len - 1 ? text[j + 1] : 0); --j)
 					;
 				if (j < i)
 				{
-					s->append(lre, lreLen);
+					s.append(lre, lreLen);
 					for (k = j + 1; k <= i; ++k)
 					{
 						n = uMap->mapUnicode(text[k], buf, sizeof(buf));
-						s->append(buf, n);
+						s.append(buf, n);
 					}
-					s->append(popdf, popdfLen);
+					s.append(popdf, popdfLen);
 					i = j;
 				}
 			}
-			s->append(popdf, popdfLen);
+			s.append(popdf, popdfLen);
 		}
 	}
 	else
@@ -2454,16 +2373,16 @@ void TextPage::encodeFragment(Unicode* text, int len, UnicodeMap* uMap, GBool pr
 		for (i = 0; i < len; ++i)
 		{
 			n = uMap->mapUnicode(text[i], buf, sizeof(buf));
-			s->append(buf, n);
+			s.append(buf, n);
 		}
 	}
 }
 
 // Returns true if [u] is LTR, in the context of [left]-[u]-[right].
 // NB: returns false if [u] is neutral.
-GBool TextPage::unicodeEffectiveTypeLOrNum(Unicode u, Unicode left, Unicode right)
+bool TextPage::unicodeEffectiveTypeLOrNum(Unicode u, Unicode left, Unicode right)
 {
-	GBool   open;
+	bool    open;
 	Unicode opposite;
 	if (unicodeBracketInfo(u, &open, &opposite))
 	{
@@ -2487,9 +2406,9 @@ GBool TextPage::unicodeEffectiveTypeLOrNum(Unicode u, Unicode left, Unicode righ
 
 // Returns true if [u] is RTL, in the context of [left]-[u]-[right].
 // NB: returns false if [u] is neutral.
-GBool TextPage::unicodeEffectiveTypeR(Unicode u, Unicode left, Unicode right)
+bool TextPage::unicodeEffectiveTypeR(Unicode u, Unicode left, Unicode right)
 {
-	GBool   open;
+	bool    open;
 	Unicode opposite;
 	if (unicodeBracketInfo(u, &open, &opposite))
 	{
@@ -2600,9 +2519,8 @@ void TextPage::rotateCharsToZero(GList* charsA)
 {
 	TextChar* ch;
 	double    xMin, yMin, xMax, yMax;
-	int       i;
 
-	for (i = 0; i < charsA->getLength(); ++i)
+	for (int i = 0; i < charsA->getLength(); ++i)
 	{
 		ch = (TextChar*)charsA->get(i);
 		switch (ch->rot)
@@ -2653,7 +2571,6 @@ void TextPage::rotateUnderlinesAndLinks(int rot)
 	TextUnderline* underline;
 	TextLink*      link;
 	double         xMin, yMin, xMax, yMax;
-	int            i;
 
 	switch (rot)
 	{
@@ -2661,7 +2578,7 @@ void TextPage::rotateUnderlinesAndLinks(int rot)
 	default:
 		break;
 	case 1:
-		for (i = 0; i < underlines->getLength(); ++i)
+		for (int i = 0; i < underlines->getLength(); ++i)
 		{
 			underline        = (TextUnderline*)underlines->get(i);
 			xMin             = underline->y0;
@@ -2674,7 +2591,7 @@ void TextPage::rotateUnderlinesAndLinks(int rot)
 			underline->y1    = yMax;
 			underline->horiz = !underline->horiz;
 		}
-		for (i = 0; i < links->getLength(); ++i)
+		for (int i = 0; i < links->getLength(); ++i)
 		{
 			link       = (TextLink*)links->get(i);
 			xMin       = link->yMin;
@@ -2688,7 +2605,7 @@ void TextPage::rotateUnderlinesAndLinks(int rot)
 		}
 		break;
 	case 2:
-		for (i = 0; i < underlines->getLength(); ++i)
+		for (int i = 0; i < underlines->getLength(); ++i)
 		{
 			underline     = (TextUnderline*)underlines->get(i);
 			xMin          = pageWidth - underline->x1;
@@ -2700,7 +2617,7 @@ void TextPage::rotateUnderlinesAndLinks(int rot)
 			underline->y0 = yMin;
 			underline->y1 = yMax;
 		}
-		for (i = 0; i < links->getLength(); ++i)
+		for (int i = 0; i < links->getLength(); ++i)
 		{
 			link       = (TextLink*)links->get(i);
 			xMin       = pageWidth - link->xMax;
@@ -2714,7 +2631,7 @@ void TextPage::rotateUnderlinesAndLinks(int rot)
 		}
 		break;
 	case 3:
-		for (i = 0; i < underlines->getLength(); ++i)
+		for (int i = 0; i < underlines->getLength(); ++i)
 		{
 			underline        = (TextUnderline*)underlines->get(i);
 			xMin             = pageHeight - underline->y1;
@@ -2727,7 +2644,7 @@ void TextPage::rotateUnderlinesAndLinks(int rot)
 			underline->y1    = yMax;
 			underline->horiz = !underline->horiz;
 		}
-		for (i = 0; i < links->getLength(); ++i)
+		for (int i = 0; i < links->getLength(); ++i)
 		{
 			link       = (TextLink*)links->get(i);
 			xMin       = pageHeight - link->yMax;
@@ -2748,7 +2665,6 @@ void TextPage::unrotateChars(GList* charsA, int rot)
 {
 	TextChar* ch;
 	double    xMin, yMin, xMax, yMax, t;
-	int       i;
 
 	switch (rot)
 	{
@@ -2760,7 +2676,7 @@ void TextPage::unrotateChars(GList* charsA, int rot)
 		t          = pageWidth;
 		pageWidth  = pageHeight;
 		pageHeight = t;
-		for (i = 0; i < charsA->getLength(); ++i)
+		for (int i = 0; i < charsA->getLength(); ++i)
 		{
 			ch       = (TextChar*)charsA->get(i);
 			xMin     = pageWidth - ch->yMax;
@@ -2776,7 +2692,7 @@ void TextPage::unrotateChars(GList* charsA, int rot)
 		}
 		break;
 	case 2:
-		for (i = 0; i < charsA->getLength(); ++i)
+		for (int i = 0; i < charsA->getLength(); ++i)
 		{
 			ch       = (TextChar*)charsA->get(i);
 			xMin     = pageWidth - ch->xMax;
@@ -2795,7 +2711,7 @@ void TextPage::unrotateChars(GList* charsA, int rot)
 		t          = pageWidth;
 		pageWidth  = pageHeight;
 		pageHeight = t;
-		for (i = 0; i < charsA->getLength(); ++i)
+		for (int i = 0; i < charsA->getLength(); ++i)
 		{
 			ch       = (TextChar*)charsA->get(i);
 			xMin     = ch->yMin;
@@ -2817,9 +2733,8 @@ void TextPage::unrotateCharsFromZero(GList* charsA)
 {
 	TextChar* ch;
 	double    xMin, yMin, xMax, yMax;
-	int       i;
 
-	for (i = 0; i < charsA->getLength(); ++i)
+	for (int i = 0; i < charsA->getLength(); ++i)
 	{
 		ch = (TextChar*)charsA->get(i);
 		switch (ch->rot)
@@ -2888,9 +2803,7 @@ void TextPage::unrotateColumnsFromZero(GList* columns)
 			col->xMax = xMax;
 			col->yMin = yMin;
 			col->yMax = yMax;
-			for (parIdx = 0;
-			     parIdx < col->paragraphs->getLength();
-			     ++parIdx)
+			for (parIdx = 0; parIdx < col->paragraphs->getLength(); ++parIdx)
 			{
 				par       = (TextParagraph*)col->paragraphs->get(parIdx);
 				xMin      = pageWidth - par->yMax;
@@ -2901,9 +2814,7 @@ void TextPage::unrotateColumnsFromZero(GList* columns)
 				par->xMax = xMax;
 				par->yMin = yMin;
 				par->yMax = yMax;
-				for (lineIdx = 0;
-				     lineIdx < par->lines->getLength();
-				     ++lineIdx)
+				for (lineIdx = 0; lineIdx < par->lines->getLength(); ++lineIdx)
 				{
 					line       = (TextLine*)par->lines->get(lineIdx);
 					xMin       = pageWidth - line->yMax;
@@ -2938,9 +2849,7 @@ void TextPage::unrotateColumnsFromZero(GList* columns)
 			col->xMax = xMax;
 			col->yMin = yMin;
 			col->yMax = yMax;
-			for (parIdx = 0;
-			     parIdx < col->paragraphs->getLength();
-			     ++parIdx)
+			for (parIdx = 0; parIdx < col->paragraphs->getLength(); ++parIdx)
 			{
 				par       = (TextParagraph*)col->paragraphs->get(parIdx);
 				xMin      = pageWidth - par->xMax;
@@ -2951,9 +2860,7 @@ void TextPage::unrotateColumnsFromZero(GList* columns)
 				par->xMax = xMax;
 				par->yMin = yMin;
 				par->yMax = yMax;
-				for (lineIdx = 0;
-				     lineIdx < par->lines->getLength();
-				     ++lineIdx)
+				for (lineIdx = 0; lineIdx < par->lines->getLength(); ++lineIdx)
 				{
 					line       = (TextLine*)par->lines->get(lineIdx);
 					xMin       = pageWidth - line->xMax;
@@ -2992,9 +2899,7 @@ void TextPage::unrotateColumnsFromZero(GList* columns)
 			col->xMax = xMax;
 			col->yMin = yMin;
 			col->yMax = yMax;
-			for (parIdx = 0;
-			     parIdx < col->paragraphs->getLength();
-			     ++parIdx)
+			for (parIdx = 0; parIdx < col->paragraphs->getLength(); ++parIdx)
 			{
 				par       = (TextParagraph*)col->paragraphs->get(parIdx);
 				xMin      = par->yMin;
@@ -3005,9 +2910,7 @@ void TextPage::unrotateColumnsFromZero(GList* columns)
 				par->xMax = xMax;
 				par->yMin = yMin;
 				par->yMax = yMax;
-				for (lineIdx = 0;
-				     lineIdx < par->lines->getLength();
-				     ++lineIdx)
+				for (lineIdx = 0; lineIdx < par->lines->getLength(); ++lineIdx)
 				{
 					line       = (TextLine*)par->lines->get(lineIdx);
 					xMin       = line->yMin;
@@ -3071,9 +2974,7 @@ void TextPage::unrotateColumns(GList* columns, int rot)
 			col->xMax = xMax;
 			col->yMin = yMin;
 			col->yMax = yMax;
-			for (parIdx = 0;
-			     parIdx < col->paragraphs->getLength();
-			     ++parIdx)
+			for (parIdx = 0; parIdx < col->paragraphs->getLength(); ++parIdx)
 			{
 				par       = (TextParagraph*)col->paragraphs->get(parIdx);
 				xMin      = pageWidth - par->yMax;
@@ -3084,9 +2985,7 @@ void TextPage::unrotateColumns(GList* columns, int rot)
 				par->xMax = xMax;
 				par->yMin = yMin;
 				par->yMax = yMax;
-				for (lineIdx = 0;
-				     lineIdx < par->lines->getLength();
-				     ++lineIdx)
+				for (lineIdx = 0; lineIdx < par->lines->getLength(); ++lineIdx)
 				{
 					line       = (TextLine*)par->lines->get(lineIdx);
 					xMin       = pageWidth - line->yMax;
@@ -3133,9 +3032,7 @@ void TextPage::unrotateColumns(GList* columns, int rot)
 			col->xMax = xMax;
 			col->yMin = yMin;
 			col->yMax = yMax;
-			for (parIdx = 0;
-			     parIdx < col->paragraphs->getLength();
-			     ++parIdx)
+			for (parIdx = 0; parIdx < col->paragraphs->getLength(); ++parIdx)
 			{
 				par       = (TextParagraph*)col->paragraphs->get(parIdx);
 				xMin      = pageWidth - par->xMax;
@@ -3146,9 +3043,7 @@ void TextPage::unrotateColumns(GList* columns, int rot)
 				par->xMax = xMax;
 				par->yMin = yMin;
 				par->yMax = yMax;
-				for (lineIdx = 0;
-				     lineIdx < par->lines->getLength();
-				     ++lineIdx)
+				for (lineIdx = 0; lineIdx < par->lines->getLength(); ++lineIdx)
 				{
 					line       = (TextLine*)par->lines->get(lineIdx);
 					xMin       = pageWidth - line->xMax;
@@ -3203,9 +3098,7 @@ void TextPage::unrotateColumns(GList* columns, int rot)
 			col->xMax = xMax;
 			col->yMin = yMin;
 			col->yMax = yMax;
-			for (parIdx = 0;
-			     parIdx < col->paragraphs->getLength();
-			     ++parIdx)
+			for (parIdx = 0; parIdx < col->paragraphs->getLength(); ++parIdx)
 			{
 				par       = (TextParagraph*)col->paragraphs->get(parIdx);
 				xMin      = par->yMin;
@@ -3216,9 +3109,7 @@ void TextPage::unrotateColumns(GList* columns, int rot)
 				par->xMax = xMax;
 				par->yMin = yMin;
 				par->yMax = yMax;
-				for (lineIdx = 0;
-				     lineIdx < par->lines->getLength();
-				     ++lineIdx)
+				for (lineIdx = 0; lineIdx < par->lines->getLength(); ++lineIdx)
 				{
 					line       = (TextLine*)par->lines->get(lineIdx);
 					xMin       = line->yMin;
@@ -3330,7 +3221,7 @@ void TextPage::unrotateWords(GList* words, int rot)
 
 // Determine the primary text direction (LR vs RL).  Returns true for
 // LR, false for RL.
-GBool TextPage::checkPrimaryLR(GList* charsA)
+bool TextPage::checkPrimaryLR(GList* charsA)
 {
 	TextChar* ch;
 	int       i, lrCount;
@@ -3382,7 +3273,7 @@ void TextPage::removeDuplicates(GList* charsA, int rot)
 						break;
 					}
 					if (ch2->spaceAfter)
-						ch->spaceAfter = (char)gTrue;
+						ch->spaceAfter = (char)true;
 					charsA->del(j);
 					++nRemovedDupChars;
 				}
@@ -3421,7 +3312,7 @@ void TextPage::removeDuplicates(GList* charsA, int rot)
 						break;
 					}
 					if (ch2->spaceAfter)
-						ch->spaceAfter = (char)gTrue;
+						ch->spaceAfter = (char)true;
 					charsA->del(j);
 					++nRemovedDupChars;
 				}
@@ -3478,7 +3369,7 @@ GList* TextPage::separateOverlappingText(GList* charsA)
 	}
 
 	// look for overlaps in each cell
-	GBool foundOverlaps = gFalse;
+	bool foundOverlaps = false;
 	for (int y = 0; y < overlapGridHeight; ++y)
 	{
 		for (int x = 0; x < overlapGridWidth; ++x)
@@ -3489,23 +3380,16 @@ GList* TextPage::separateOverlappingText(GList* charsA)
 				{
 					if (p0->ch->colorR != p1->ch->colorR || p0->ch->colorG != p1->ch->colorG || p0->ch->colorB != p1->ch->colorB)
 					{
-						double ovx = (dmin(p0->ch->xMax, p1->ch->xMax)
-						              - dmax(p0->ch->xMin, p1->ch->xMin))
-						    / dmin(p0->ch->xMax - p0->ch->xMin,
-						           p1->ch->xMax - p1->ch->xMin);
-						double ovy = (dmin(p0->ch->yMax, p1->ch->yMax)
-						              - dmax(p0->ch->yMin, p1->ch->yMin))
-						    / dmin(p0->ch->yMax - p0->ch->yMin,
-						           p1->ch->yMax - p1->ch->yMin);
+						double ovx = (dmin(p0->ch->xMax, p1->ch->xMax) - dmax(p0->ch->xMin, p1->ch->xMin)) / dmin(p0->ch->xMax - p0->ch->xMin, p1->ch->xMax - p1->ch->xMin);
+						double ovy = (dmin(p0->ch->yMax, p1->ch->yMax) - dmax(p0->ch->yMin, p1->ch->yMin)) / dmin(p0->ch->yMax - p0->ch->yMin, p1->ch->yMax - p1->ch->yMin);
 						if (ovx > minCharOverlap && ovy > minCharOverlap)
 						{
 							// assume the lighter colored text is extraneous
-							if (p0->ch->colorR + p0->ch->colorG + p0->ch->colorB
-							    < p1->ch->colorR + p1->ch->colorG + p1->ch->colorB)
-								p1->ch->overlap = gTrue;
+							if (p0->ch->colorR + p0->ch->colorG + p0->ch->colorB < p1->ch->colorR + p1->ch->colorG + p1->ch->colorB)
+								p1->ch->overlap = true;
 							else
-								p0->ch->overlap = gTrue;
-							foundOverlaps = gTrue;
+								p0->ch->overlap = true;
+							foundOverlaps = true;
 						}
 					}
 				}
@@ -3576,8 +3460,7 @@ GList* TextPage::separateOverlappingText(GList* charsA)
 	return overlapChars;
 }
 
-// Construct a TextColumn from the list of separated overlapping
-// chars.
+// Construct a TextColumn from the list of separated overlapping chars.
 TextColumn* TextPage::buildOverlappingTextColumn(GList* overlappingChars)
 {
 	GList* pars      = new GList();
@@ -3618,9 +3501,9 @@ TextColumn* TextPage::buildOverlappingTextColumn(GList* overlappingChars)
 			}
 		}
 		// the +1 here allows for a space character after ch
-		GBool parBreak  = !chNext || chNext->rot != ch->rot || chNext->charPos > ch->charPos + ch->charLen + 1;
-		GBool lineBreak = parBreak || sp < -rawModeCharOverlap * ch->fontSize || fabs(dy) > rawModeLineDelta * ch->fontSize;
-		GBool wordBreak = lineBreak || ch->spaceAfter || sp > rawModeWordSpacing * ch->fontSize;
+		bool parBreak  = !chNext || chNext->rot != ch->rot || chNext->charPos > ch->charPos + ch->charLen + 1;
+		bool lineBreak = parBreak || sp < -rawModeCharOverlap * ch->fontSize || fabs(dy) > rawModeLineDelta * ch->fontSize;
+		bool wordBreak = lineBreak || ch->spaceAfter || sp > rawModeWordSpacing * ch->fontSize;
 		if (!wordBreak)
 			continue;
 		TextWord* word = new TextWord(overlappingChars, wordStart, i - wordStart + 1, ch->rot, ch->rotated, getCharDirection(ch), !lineBreak);
@@ -3646,7 +3529,7 @@ TextColumn* TextPage::buildOverlappingTextColumn(GList* overlappingChars)
 		words = new GList();
 		if (!parBreak)
 			continue;
-		TextParagraph* par = new TextParagraph(lines, gFalse);
+		TextParagraph* par = new TextParagraph(lines, false);
 		pars->append(par);
 		if (pars->getLength() == 0)
 		{
@@ -3743,7 +3626,7 @@ TextBlock* TextPage::splitChars(GList* charsA)
 	}
 
 	// merge non-primary-rotation text into the primary-rotation tree
-	GBool doReorder = control.mode == textOutReadingOrder && globalParams->getSeparateRotatedText();
+	bool doReorder = control.mode == textOutReadingOrder && globalParams->getSeparateRotatedText();
 	for (rot = 1; rot < 4; ++rot)
 	{
 		if (tree[rot])
@@ -3779,8 +3662,8 @@ TextBlock* TextPage::split(GList* charsA, int rot)
 	double     x0, x1, y0, y1;
 	int        nHorizGaps, nVertGaps, nLargeChars;
 	int        i;
-	GBool      singleLine;
-	GBool      doHorizSplit, doVertSplit, doLineSplit, doLargeCharSplit, smallSplit;
+	bool       singleLine;
+	bool       doHorizSplit, doVertSplit, doLineSplit, doLargeCharSplit, smallSplit;
 
 	//----- find all horizontal and vertical gaps
 
@@ -3862,11 +3745,9 @@ TextBlock* TextPage::split(GList* charsA, int rot)
 	if (control.mode == textOutTableLayout)
 	{
 		if (rot & 1)
-			gapThreshold = (minTableGapArea * avgFontSize * avgFontSize)
-			    / (xMax - xMin);
+			gapThreshold = (minTableGapArea * avgFontSize * avgFontSize) / (xMax - xMin);
 		else
-			gapThreshold = (minTableGapArea * avgFontSize * avgFontSize)
-			    / (yMax - yMin);
+			gapThreshold = (minTableGapArea * avgFontSize * avgFontSize) / (yMax - yMin);
 		if (minGapSize * avgFontSize > gapThreshold)
 			gapThreshold = minGapSize * avgFontSize;
 		smallSplitThreshold = tableModeMaxWordGapSize * avgFontSize;
@@ -3915,76 +3796,76 @@ TextBlock* TextPage::split(GList* charsA, int rot)
 	}
 
 	// figure out which type of split to do
-	doHorizSplit = doVertSplit = doLineSplit = doLargeCharSplit = gFalse;
-	smallSplit                                                  = gFalse;
+	doHorizSplit = doVertSplit = doLineSplit = doLargeCharSplit = false;
+	smallSplit                                                  = false;
 	if (rot & 1)
 	{
 		if (control.mode == textOutSimpleLayout)
 		{
 			if (nVertGaps > 0)
 			{
-				doVertSplit = gTrue;
+				doVertSplit = true;
 			}
 			else if (nHorizGaps > 0 && horizGapSize > minGapSize * minFontSize)
 			{
-				doHorizSplit = gTrue;
+				doHorizSplit = true;
 				smallSplit   = horizGapSize < smallSplitThreshold;
 			}
 			else if (splitLines->getLength() > 1)
 			{
-				doLineSplit = gTrue;
+				doLineSplit = true;
 			}
 		}
 		else if (nHorizGaps > 0 && ((horizGapSize > minGapSize * minFontSize && nVertGaps == 0 && splitLines->getLength() <= 1) || (horizGapSize > gapThreshold && minHorizChunkWidth > minChunk)))
 		{
-			doHorizSplit = gTrue;
+			doHorizSplit = true;
 			smallSplit   = horizGapSize < smallSplitThreshold;
 		}
 		else if (nVertGaps > 0)
 		{
-			doVertSplit = gTrue;
+			doVertSplit = true;
 		}
 		else if (nLargeChars > 0 && ((nLargeChars < largeCharRatio * charsA->getLength()) || splitLines->getLength() <= 1))
 		{
-			doLargeCharSplit = gTrue;
+			doLargeCharSplit = true;
 		}
 		else if (splitLines->getLength() > 1)
 		{
-			doLineSplit = gTrue;
+			doLineSplit = true;
 		}
 	}
 	else if (control.mode == textOutSimpleLayout)
 	{
 		if (nHorizGaps > 0)
 		{
-			doHorizSplit = gTrue;
+			doHorizSplit = true;
 		}
 		else if (nVertGaps > 0 && vertGapSize > minGapSize * minFontSize)
 		{
-			doVertSplit = gTrue;
+			doVertSplit = true;
 			smallSplit  = vertGapSize < smallSplitThreshold;
 		}
 		else if (splitLines->getLength() > 1)
 		{
-			doLineSplit = gTrue;
+			doLineSplit = true;
 		}
 	}
 	else if (nVertGaps > 0 && ((vertGapSize > minGapSize * minFontSize && nHorizGaps == 0 && splitLines->getLength() <= 1) || (vertGapSize > gapThreshold && minVertChunkWidth > minChunk)))
 	{
-		doVertSplit = gTrue;
+		doVertSplit = true;
 		smallSplit  = vertGapSize < smallSplitThreshold;
 	}
 	else if (nHorizGaps > 0)
 	{
-		doHorizSplit = gTrue;
+		doHorizSplit = true;
 	}
 	else if (nLargeChars > 0 && ((nLargeChars < largeCharRatio * charsA->getLength()) || splitLines->getLength() <= 1))
 	{
-		doLargeCharSplit = gTrue;
+		doLargeCharSplit = true;
 	}
 	else if (splitLines->getLength() > 1)
 	{
-		doLineSplit = gTrue;
+		doLineSplit = true;
 	}
 
 	//----- split the block
@@ -4098,7 +3979,7 @@ TextBlock* TextPage::split(GList* charsA, int rot)
 			blk                  = new TextBlock(blkLeaf, rot);
 			SplitLine* splitLine = (SplitLine*)splitLines->get(0);
 			for (i = 0; i < splitLine->chars->getLength(); ++i)
-				blk->addChild((TextChar*)splitLine->chars->get(i), gTrue);
+				blk->addChild((TextChar*)splitLine->chars->get(i), true);
 #if 0 //~debug
       printf("line-leaf xMin=%g yMin=%g xMax=%g yMax=%g\n",
 	     xMin, pageHeight - yMax, xMax, pageHeight - yMin);
@@ -4112,7 +3993,7 @@ TextBlock* TextPage::split(GList* charsA, int rot)
 		else
 		{
 			blk             = new TextBlock((rot & 1) ? blkVertSplit : blkHorizSplit, rot);
-			blk->smallSplit = gFalse;
+			blk->smallSplit = false;
 			for (i = 0; i < splitLines->getLength(); ++i)
 			{
 				SplitLine* splitLine = (SplitLine*)splitLines->get(i);
@@ -4136,7 +4017,7 @@ TextBlock* TextPage::split(GList* charsA, int rot)
 		blk = new TextBlock(blkLeaf, rot);
 		charsA->sort((rot & 1) ? &TextChar::cmpY : &TextChar::cmpX);
 		for (i = 0; i < charsA->getLength(); ++i)
-			blk->addChild((TextChar*)charsA->get(i), gTrue);
+			blk->addChild((TextChar*)charsA->get(i), true);
 	}
 
 	deleteGList(splitLines, SplitLine);
@@ -4154,10 +4035,9 @@ GList* TextPage::getChars(GList* charsA, double xMin, double yMin, double xMax, 
 	GList*    ret;
 	TextChar* ch;
 	double    x, y;
-	int       i;
 
 	ret = new GList();
-	for (i = 0; i < charsA->getLength(); ++i)
+	for (int i = 0; i < charsA->getLength(); ++i)
 	{
 		ch = (TextChar*)charsA->get(i);
 		// compute the center of the adjusted bbox, and check to see if
@@ -4423,21 +4303,19 @@ void TextPage::mergeSplitLines(GList* charsA, int rot, GList* splitLines)
 			SplitLine* nextLine  = nullptr;
 
 			// check for overlapping lines
-			GBool maybeSub = gFalse;
+			bool maybeSub = false;
 			if (i > 0)
 			{
 				prevLine          = (SplitLine*)splitLines->get(i - 1);
-				double minOverlap = minSubSuperscriptVertOverlap
-				    * (prevLine->yMax - prevLine->yMin);
-				maybeSub = prevLine->yMax - splitLine->yMin > minOverlap;
+				double minOverlap = minSubSuperscriptVertOverlap * (prevLine->yMax - prevLine->yMin);
+				maybeSub          = prevLine->yMax - splitLine->yMin > minOverlap;
 			}
-			GBool maybeSuper = gFalse;
+			bool maybeSuper = false;
 			if (i < splitLines->getLength() - 1)
 			{
 				nextLine          = (SplitLine*)splitLines->get(i + 1);
-				double minOverlap = minSubSuperscriptVertOverlap
-				    * (nextLine->yMax - nextLine->yMin);
-				maybeSuper = splitLine->yMax - nextLine->yMin > minOverlap;
+				double minOverlap = minSubSuperscriptVertOverlap * (nextLine->yMax - nextLine->yMin);
+				maybeSuper        = splitLine->yMax - nextLine->yMin > minOverlap;
 			}
 			if (!maybeSub && !maybeSuper)
 				continue;
@@ -4449,22 +4327,21 @@ void TextPage::mergeSplitLines(GList* charsA, int rot, GList* splitLines)
 			// subscript (superscript), or above the subscript (below the
 			// superscript) to account for cases with both a subscript and
 			// superscript
-			int   idxAbove    = 0;
-			int   idxBelow    = 0;
-			GBool allSubSuper = gTrue;
+			int  idxAbove    = 0;
+			int  idxBelow    = 0;
+			bool allSubSuper = true;
 			for (int idx = 0; idx < splitLine->chars->getLength(); ++idx)
 			{
 				TextChar* ch         = (TextChar*)splitLine->chars->get(idx);
-				double    maxOverlap = maxSubSuperscriptHorizOverlap
-				    * (ch->xMax - ch->xMin);
-				GBool isSub = gFalse;
+				double    maxOverlap = maxSubSuperscriptHorizOverlap * (ch->xMax - ch->xMin);
+				bool      isSub      = false;
 				if (maybeSub)
 				{
 					while (idxAbove < prevLine->chars->getLength() && ((TextChar*)prevLine->chars->get(idxAbove))->yMin < ch->yMin)
 						++idxAbove;
 					isSub = ch->xMin < prevLine->yMax && (idxAbove == 0 || ch->yMin > ((TextChar*)prevLine->chars->get(idxAbove - 1))->yMax - maxOverlap || ch->xMin > ((TextChar*)prevLine->chars->get(idxAbove - 1))->xMax) && (idxAbove == prevLine->chars->getLength() || ch->yMax < ((TextChar*)prevLine->chars->get(idxAbove))->yMin + maxOverlap || ch->xMin > ((TextChar*)prevLine->chars->get(idxAbove))->xMax);
 				}
-				GBool isSuper = gFalse;
+				bool isSuper = false;
 				if (maybeSuper)
 				{
 					while (idxBelow < nextLine->chars->getLength() && ((TextChar*)nextLine->chars->get(idxBelow))->yMin < ch->yMin)
@@ -4473,7 +4350,7 @@ void TextPage::mergeSplitLines(GList* charsA, int rot, GList* splitLines)
 				}
 				if (!isSub && !isSuper)
 				{
-					allSubSuper = gFalse;
+					allSubSuper = false;
 					break;
 				}
 			}
@@ -4542,21 +4419,19 @@ void TextPage::mergeSplitLines(GList* charsA, int rot, GList* splitLines)
 			SplitLine* nextLine  = nullptr;
 
 			// check for overlapping lines
-			GBool maybeSub = gFalse;
+			bool maybeSub = false;
 			if (i > 0)
 			{
 				prevLine          = (SplitLine*)splitLines->get(i - 1);
-				double minOverlap = minSubSuperscriptVertOverlap
-				    * (prevLine->yMax - prevLine->yMin);
-				maybeSub = prevLine->yMax - splitLine->yMin > minOverlap;
+				double minOverlap = minSubSuperscriptVertOverlap * (prevLine->yMax - prevLine->yMin);
+				maybeSub          = prevLine->yMax - splitLine->yMin > minOverlap;
 			}
-			GBool maybeSuper = gFalse;
+			bool maybeSuper = false;
 			if (i < splitLines->getLength() - 1)
 			{
 				nextLine          = (SplitLine*)splitLines->get(i + 1);
-				double minOverlap = minSubSuperscriptVertOverlap
-				    * (nextLine->yMax - nextLine->yMin);
-				maybeSuper = splitLine->yMax - nextLine->yMin > minOverlap;
+				double minOverlap = minSubSuperscriptVertOverlap * (nextLine->yMax - nextLine->yMin);
+				maybeSuper        = splitLine->yMax - nextLine->yMin > minOverlap;
 			}
 			if (!maybeSub && !maybeSuper)
 				continue;
@@ -4568,22 +4443,21 @@ void TextPage::mergeSplitLines(GList* charsA, int rot, GList* splitLines)
 			// subscript (superscript), or above the subscript (below the
 			// superscript) to account for cases with both a subscript and
 			// superscript
-			int   idxAbove    = 0;
-			int   idxBelow    = 0;
-			GBool allSubSuper = gTrue;
+			int  idxAbove    = 0;
+			int  idxBelow    = 0;
+			bool allSubSuper = true;
 			for (int idx = 0; idx < splitLine->chars->getLength(); ++idx)
 			{
 				TextChar* ch         = (TextChar*)splitLine->chars->get(idx);
-				double    maxOverlap = maxSubSuperscriptHorizOverlap
-				    * (ch->yMax - ch->yMin);
-				GBool isSub = gFalse;
+				double    maxOverlap = maxSubSuperscriptHorizOverlap * (ch->yMax - ch->yMin);
+				bool      isSub      = false;
 				if (maybeSub)
 				{
 					while (idxAbove < prevLine->chars->getLength() && ((TextChar*)prevLine->chars->get(idxAbove))->xMin < ch->xMin)
 						++idxAbove;
 					isSub = ch->yMin < prevLine->yMax && (idxAbove == 0 || ch->xMin > ((TextChar*)prevLine->chars->get(idxAbove - 1))->xMax - maxOverlap || ch->yMin > ((TextChar*)prevLine->chars->get(idxAbove - 1))->yMax) && (idxAbove == prevLine->chars->getLength() || ch->xMax < ((TextChar*)prevLine->chars->get(idxAbove))->xMin + maxOverlap || ch->yMin > ((TextChar*)prevLine->chars->get(idxAbove))->yMax);
 				}
-				GBool isSuper = gFalse;
+				bool isSuper = false;
 				if (maybeSuper)
 				{
 					while (idxBelow < nextLine->chars->getLength() && ((TextChar*)nextLine->chars->get(idxBelow))->xMin < ch->xMin)
@@ -4592,7 +4466,7 @@ void TextPage::mergeSplitLines(GList* charsA, int rot, GList* splitLines)
 				}
 				if (!isSub && !isSuper)
 				{
-					allSubSuper = gFalse;
+					allSubSuper = false;
 					break;
 				}
 			}
@@ -4662,7 +4536,6 @@ void TextPage::mergeSplitLines(GList* charsA, int rot, GList* splitLines)
 void TextPage::tagBlock(TextBlock* blk)
 {
 	TextBlock* child;
-	int        i;
 
 	if (control.mode == textOutTableLayout)
 	{
@@ -4673,7 +4546,7 @@ void TextPage::tagBlock(TextBlock* blk)
 		else if (blk->type == ((blk->rot & 1) ? blkHorizSplit : blkVertSplit) && blk->smallSplit)
 		{
 			blk->tag = blkTagLine;
-			for (i = 0; i < blk->children->getLength(); ++i)
+			for (int i = 0; i < blk->children->getLength(); ++i)
 			{
 				child = (TextBlock*)blk->children->get(i);
 				if (child->tag != blkTagLine)
@@ -4708,7 +4581,7 @@ void TextPage::tagBlock(TextBlock* blk)
 	else if (blk->type == ((blk->rot & 1) ? blkVertSplit : blkHorizSplit))
 	{
 		blk->tag = blkTagColumn;
-		for (i = 0; i < blk->children->getLength(); ++i)
+		for (int i = 0; i < blk->children->getLength(); ++i)
 		{
 			child = (TextBlock*)blk->children->get(i);
 			if (child->tag != blkTagColumn && child->tag != blkTagLine)
@@ -4721,7 +4594,7 @@ void TextPage::tagBlock(TextBlock* blk)
 	else if (blk->smallSplit)
 	{
 		blk->tag = blkTagLine;
-		for (i = 0; i < blk->children->getLength(); ++i)
+		for (int i = 0; i < blk->children->getLength(); ++i)
 		{
 			child = (TextBlock*)blk->children->get(i);
 			if (child->tag != blkTagLine)
@@ -4741,22 +4614,21 @@ void TextPage::tagBlock(TextBlock* blk)
 void TextPage::insertLargeChars(GList* largeChars, TextBlock* blk)
 {
 	TextChar *ch, *ch2;
-	GBool     singleLine;
+	bool      singleLine;
 	double    minOverlap;
-	int       i;
 
 	//~ this currently works only for characters in the primary rotation
 
 	// check to see if the large chars are a single line
-	singleLine = gTrue;
-	for (i = 1; i < largeChars->getLength(); ++i)
+	singleLine = true;
+	for (int i = 1; i < largeChars->getLength(); ++i)
 	{
 		ch         = (TextChar*)largeChars->get(i - 1);
 		ch2        = (TextChar*)largeChars->get(i);
 		minOverlap = 0.5 * (ch->fontSize < ch2->fontSize ? ch->fontSize : ch2->fontSize);
 		if (ch->yMax - ch2->yMin < minOverlap || ch2->yMax - ch->yMin < minOverlap)
 		{
-			singleLine = gFalse;
+			singleLine = false;
 			break;
 		}
 	}
@@ -4772,7 +4644,7 @@ void TextPage::insertLargeChars(GList* largeChars, TextBlock* blk)
 		// if the large chars are not a single line, prepend each one to
 		// the appropriate leaf node -- this handles cases like bullets
 		// drawn in a large font, on the left edge of a column
-		for (i = largeChars->getLength() - 1; i >= 0; --i)
+		for (int i = largeChars->getLength() - 1; i >= 0; --i)
 		{
 			ch = (TextChar*)largeChars->get(i);
 			insertLargeCharInLeaf(ch, blk);
@@ -4785,11 +4657,10 @@ void TextPage::insertLargeChars(GList* largeChars, TextBlock* blk)
 void TextPage::insertLargeCharsInFirstLeaf(GList* largeChars, TextBlock* blk)
 {
 	TextChar* ch;
-	int       i;
 
 	if (blk->type == blkLeaf)
 	{
-		for (i = largeChars->getLength() - 1; i >= 0; --i)
+		for (int i = largeChars->getLength() - 1; i >= 0; --i)
 		{
 			ch = (TextChar*)largeChars->get(i);
 			blk->prependChild(ch);
@@ -4808,7 +4679,6 @@ void TextPage::insertLargeCharInLeaf(TextChar* ch, TextBlock* blk)
 {
 	TextBlock* child;
 	double     y;
-	int        i;
 
 	//~ this currently works only for characters in the primary rotation
 
@@ -4824,7 +4694,7 @@ void TextPage::insertLargeCharInLeaf(TextChar* ch, TextBlock* blk)
 	}
 	else if (blk->type == blkHorizSplit)
 	{
-		for (i = 0; i < blk->children->getLength(); ++i)
+		for (int i = 0; i < blk->children->getLength(); ++i)
 		{
 			child = (TextBlock*)blk->children->get(i);
 			if (y < child->yMax || i == blk->children->getLength() - 1)
@@ -4843,7 +4713,7 @@ void TextPage::insertLargeCharInLeaf(TextChar* ch, TextBlock* blk)
 }
 
 // Merge blk (rot != 0) into primaryTree (rot == 0).
-void TextPage::insertIntoTree(TextBlock* blk, TextBlock* primaryTree, GBool doReorder)
+void TextPage::insertIntoTree(TextBlock* blk, TextBlock* primaryTree, bool doReorder)
 {
 	// if we're separating each rotation (only supported in reading
 	// order mode), reorder the block's children as appropriate and then
@@ -4894,8 +4764,8 @@ void TextPage::reorderBlocks(TextBlock* blk)
 void TextPage::insertColumnIntoTree(TextBlock* column, TextBlock* tree)
 {
 	TextBlock* child;
-	int        i;
 
+	int i = 0;
 	for (i = 0; i < tree->children->getLength(); ++i)
 	{
 		child = (TextBlock*)tree->children->get(i);
@@ -4964,7 +4834,6 @@ void TextPage::insertClippedChars(GList* clippedChars, TextBlock* tree)
 	TextChar * ch, *ch2;
 	TextBlock* leaf;
 	double     y;
-	int        i;
 
 	//~ this currently works only for characters in the primary rotation
 
@@ -4976,8 +4845,8 @@ void TextPage::insertClippedChars(GList* clippedChars, TextBlock* tree)
 			continue;
 		if (!(leaf = findClippedCharLeaf(ch, tree)))
 			continue;
-		leaf->addChild(ch, gFalse);
-		i = 0;
+		leaf->addChild(ch, false);
+		int i = 0;
 		while (i < clippedChars->getLength())
 		{
 			ch2 = (TextChar*)clippedChars->get(i);
@@ -4987,7 +4856,7 @@ void TextPage::insertClippedChars(GList* clippedChars, TextBlock* tree)
 			if (y > leaf->yMin && y < leaf->yMax)
 			{
 				ch2 = (TextChar*)clippedChars->del(i);
-				leaf->addChild(ch2, gFalse);
+				leaf->addChild(ch2, false);
 				ch = ch2;
 			}
 			else
@@ -5004,7 +4873,6 @@ TextBlock* TextPage::findClippedCharLeaf(TextChar* ch, TextBlock* tree)
 {
 	TextBlock *ret, *child;
 	double     y;
-	int        i;
 
 	//~ this currently works only for characters in the primary rotation
 
@@ -5019,7 +4887,7 @@ TextBlock* TextPage::findClippedCharLeaf(TextChar* ch, TextBlock* tree)
 	}
 	else
 	{
-		for (i = 0; i < tree->children->getLength(); ++i)
+		for (int i = 0; i < tree->children->getLength(); ++i)
 		{
 			child = (TextBlock*)tree->children->get(i);
 			if ((ret = findClippedCharLeaf(ch, child)))
@@ -5030,7 +4898,7 @@ TextBlock* TextPage::findClippedCharLeaf(TextChar* ch, TextBlock* tree)
 }
 
 // Convert the tree of TextBlocks into a list of TextColumns.
-GList* TextPage::buildColumns(TextBlock* tree, GBool primaryLR)
+GList* TextPage::buildColumns(TextBlock* tree, bool primaryLR)
 {
 	GList* columns;
 
@@ -5039,10 +4907,9 @@ GList* TextPage::buildColumns(TextBlock* tree, GBool primaryLR)
 	return columns;
 }
 
-void TextPage::buildColumns2(TextBlock* blk, GList* columns, GBool primaryLR)
+void TextPage::buildColumns2(TextBlock* blk, GList* columns, bool primaryLR)
 {
 	TextColumn* col;
-	int         i;
 
 	switch (blk->tag)
 	{
@@ -5060,7 +4927,7 @@ void TextPage::buildColumns2(TextBlock* blk, GList* columns, GBool primaryLR)
       }
     } else {
 #endif
-		for (i = 0; i < blk->children->getLength(); ++i)
+		for (int i = 0; i < blk->children->getLength(); ++i)
 			buildColumns2((TextBlock*)blk->children->get(i), columns, primaryLR);
 #if 0 //~tmp
     }
@@ -5074,12 +4941,11 @@ TextColumn* TextPage::buildColumn(TextBlock* blk)
 	GList *   lines, *parLines;
 	GList*    paragraphs;
 	TextLine *line0, *line1;
-	GBool     dropCap;
+	bool      dropCap;
 	double    spaceThresh, indent0, indent1, fontSize0, fontSize1;
-	int       i;
 
 	lines = new GList();
-	buildLines(blk, lines, gFalse);
+	buildLines(blk, lines, false);
 
 	spaceThresh = paragraphSpacingThreshold * getAverageLineSpacing(lines);
 
@@ -5091,12 +4957,12 @@ TextColumn* TextPage::buildColumn(TextBlock* blk)
 
 	// build the paragraphs
 	paragraphs = new GList();
-	i          = 0;
+	int i      = 0;
 	while (i < lines->getLength())
 	{
 		// get the first line of the paragraph
 		parLines = new GList();
-		dropCap  = gFalse;
+		dropCap  = false;
 		line0    = (TextLine*)lines->get(i);
 		parLines->append(line0);
 		++i;
@@ -5123,8 +4989,7 @@ TextColumn* TextPage::buildColumn(TextBlock* blk)
 						break;
 					if (fabs(fontSize0 - fontSize1) > paragraphFontSizeDelta)
 						break;
-					if (getLineSpacing((TextLine*)lines->get(i - 1), line1)
-					    > spaceThresh)
+					if (getLineSpacing((TextLine*)lines->get(i - 1), line1) > spaceThresh)
 						break;
 					parLines->append(line1);
 				}
@@ -5133,7 +4998,7 @@ TextColumn* TextPage::buildColumn(TextBlock* blk)
 			}
 			else if (fontSize0 > largeCharThreshold * fontSize1 && indent1 - indent0 > minParagraphIndent * fontSize1 && getLineSpacing(line0, line1) < 0)
 			{
-				dropCap = gTrue;
+				dropCap = true;
 				parLines->append(line1);
 				fontSize0 = fontSize1;
 				for (++i; i < lines->getLength(); ++i)
@@ -5142,8 +5007,7 @@ TextColumn* TextPage::buildColumn(TextBlock* blk)
 					indent1 = getLineIndent(line1, blk);
 					if (indent1 - indent0 <= minParagraphIndent * fontSize0)
 						break;
-					if (getLineSpacing((TextLine*)lines->get(i - 1), line1)
-					    > spaceThresh)
+					if (getLineSpacing((TextLine*)lines->get(i - 1), line1) > spaceThresh)
 						break;
 					parLines->append(line1);
 				}
@@ -5156,8 +5020,7 @@ TextColumn* TextPage::buildColumn(TextBlock* blk)
 						break;
 					if (fabs(fontSize0 - fontSize1) > paragraphFontSizeDelta)
 						break;
-					if (getLineSpacing((TextLine*)lines->get(i - 1), line1)
-					    > spaceThresh)
+					if (getLineSpacing((TextLine*)lines->get(i - 1), line1) > spaceThresh)
 						break;
 					parLines->append(line1);
 				}
@@ -5177,8 +5040,7 @@ TextColumn* TextPage::buildColumn(TextBlock* blk)
 						break;
 					if (fabs(fontSize0 - fontSize1) > paragraphFontSizeDelta)
 						break;
-					if (getLineSpacing((TextLine*)lines->get(i - 1), line1)
-					    > spaceThresh)
+					if (getLineSpacing((TextLine*)lines->get(i - 1), line1) > spaceThresh)
 						break;
 					parLines->append(line1);
 				}
@@ -5246,10 +5108,9 @@ double TextPage::getLineSpacing(TextLine* line0, TextLine* line1)
 	return sp;
 }
 
-void TextPage::buildLines(TextBlock* blk, GList* lines, GBool splitSuperLines)
+void TextPage::buildLines(TextBlock* blk, GList* lines, bool splitSuperLines)
 {
 	TextLine* line;
-	int       i;
 
 	if (blk->tag == blkTagLine || (blk->tag == blkTagSuperLine && !splitSuperLines))
 	{
@@ -5261,7 +5122,7 @@ void TextPage::buildLines(TextBlock* blk, GList* lines, GBool splitSuperLines)
 	}
 	else
 	{
-		for (i = 0; i < blk->children->getLength(); ++i)
+		for (int i = 0; i < blk->children->getLength(); ++i)
 			buildLines((TextBlock*)blk->children->get(i), lines, splitSuperLines);
 	}
 }
@@ -5282,7 +5143,7 @@ GList* TextPage::buildSimple2Columns(GList* charsA)
 			delete lines;
 			continue;
 		}
-		paragraph  = new TextParagraph(lines, gFalse);
+		paragraph  = new TextParagraph(lines, false);
 		paragraphs = new GList();
 		paragraphs->append(paragraph);
 		columns->append(new TextColumn(paragraphs, paragraph->xMin, paragraph->yMin, paragraph->xMax, paragraph->yMax));
@@ -5332,9 +5193,7 @@ GList* TextPage::buildSimple2Lines(GList* charsA, int rot)
 			charLine = (TextCharLine*)openCharLines->get(k);
 			if (charLine->yMin >= ch->yMax)
 				break;
-			overlap = ((ch->yMax < charLine->yMax ? ch->yMax : charLine->yMax)
-			           - (ch->yMin > charLine->yMin ? ch->yMin : charLine->yMin))
-			    / (ch->yMax - ch->yMin);
+			overlap = ((ch->yMax < charLine->yMax ? ch->yMax : charLine->yMax) - (ch->yMin > charLine->yMin ? ch->yMin : charLine->yMin)) / (ch->yMax - ch->yMin);
 			if (overlap > bestOverlap)
 			{
 				bestLine    = k;
@@ -5474,63 +5333,48 @@ TextLine* TextPage::buildLine(TextBlock* blk)
 
 TextLine* TextPage::buildLine(GList* charsA, int rot, double xMin, double yMin, double xMax, double yMax)
 {
-	GList*    words;
-	TextChar *ch, *ch2;
-	TextWord* word;
-	double    wordSp, lineFontSize, sp;
-	int       dir, dir2;
-	GBool     rotated2, spaceAfter, spaceBefore;
-	int       i, j;
-
-	wordSp = computeWordSpacingThreshold(charsA, rot);
+	const double wordSp = computeWordSpacingThreshold(charsA, rot);
 
 	adjustCombiningChars(charsA, rot);
 
-	words        = new GList();
-	lineFontSize = 0;
-	spaceBefore  = gFalse;
-	i            = 0;
+	GList* words        = new GList();
+	double lineFontSize = 0;
+	bool   spaceBefore  = false;
+	int    i            = 0;
 	while (i < charsA->getLength())
 	{
-		sp         = wordSp - 1;
-		spaceAfter = gFalse;
-		dir        = getCharDirection(
-            (TextChar*)charsA->get(i),
-            (i > 0 && !spaceAfter) ? (TextChar*)charsA->get(i - 1)
-		                                  : (TextChar*)nullptr,
-            (i < charsA->getLength() - 1) ? (TextChar*)charsA->get(i + 1)
-		                                         : (TextChar*)nullptr);
-		rotated2 = ((TextChar*)charsA->get(i))->rotated;
+		double     sp         = wordSp - 1;
+		bool       spaceAfter = false;
+		int        dir        = getCharDirection((TextChar*)charsA->get(i), (i > 0 && !spaceAfter) ? (TextChar*)charsA->get(i - 1) : (TextChar*)nullptr, (i < charsA->getLength() - 1) ? (TextChar*)charsA->get(i + 1) : (TextChar*)nullptr);
+		const char rotated2   = ((TextChar*)charsA->get(i))->rotated;
+		int        j;
 		for (j = i + 1; j < charsA->getLength(); ++j)
 		{
-			ch  = (TextChar*)charsA->get(j - 1);
-			ch2 = (TextChar*)charsA->get(j);
-			sp  = (rot & 1) ? (ch2->yMin - ch->yMax) : (ch2->xMin - ch->xMax);
+			TextChar* ch  = (TextChar*)charsA->get(j - 1);
+			TextChar* ch2 = (TextChar*)charsA->get(j);
+			sp            = (rot & 1) ? (ch2->yMin - ch->yMax) : (ch2->xMin - ch->xMax);
 			if (sp > wordSp)
 			{
-				spaceAfter = gTrue;
+				spaceAfter = true;
 				break;
 			}
 			// look for significant overlaps, which can happen with clipped
 			// characters (among other things)
 			if (sp < -ch->fontSize)
 			{
-				spaceAfter = gTrue;
+				spaceAfter = true;
 				break;
 			}
-			dir2 = getCharDirection(
-			    ch2, ch,
-			    (j < charsA->getLength() - 1) ? (TextChar*)charsA->get(j + 1)
-			                                  : (TextChar*)nullptr);
+			const int dir2 = getCharDirection(ch2, ch, (j < charsA->getLength() - 1) ? (TextChar*)charsA->get(j + 1) : (TextChar*)nullptr);
 			if (ch->font != ch2->font || fabs(ch->fontSize - ch2->fontSize) > 0.01 || (control.splitRotatedWords && ch2->rotated != rotated2) || (dir && dir2 && dir2 != dir) || (control.mode == textOutRawOrder && ch2->charPos != ch->charPos + ch->charLen))
 				break;
 			if (!dir && dir2)
 				dir = dir2;
 			sp = wordSp - 1;
 		}
-		word        = new TextWord(charsA, i, j - i, rot, rotated2, dir, (rot >= 2) ? spaceBefore : spaceAfter);
-		spaceBefore = spaceAfter;
-		i           = j;
+		TextWord* word = new TextWord(charsA, i, j - i, rot, rotated2, dir, (rot >= 2) ? spaceBefore : spaceAfter);
+		spaceBefore    = spaceAfter;
+		i              = j;
 		if (rot >= 2)
 			words->insert(0, word);
 		else
@@ -5544,12 +5388,10 @@ TextLine* TextPage::buildLine(GList* charsA, int rot, double xMin, double yMin, 
 
 void TextPage::getLineChars(TextBlock* blk, GList* charsA)
 {
-	int i;
-
 	if (blk->type == blkLeaf)
 		charsA->append(blk->children);
 	else
-		for (i = 0; i < blk->children->getLength(); ++i)
+		for (int i = 0; i < blk->children->getLength(); ++i)
 			getLineChars((TextBlock*)blk->children->get(i), charsA);
 }
 
@@ -5562,7 +5404,6 @@ double TextPage::computeWordSpacingThreshold(GList* charsA, int rot)
 	double    uniformSp, wordSp;
 	double    avgFontSize;
 	double    minAdjGap, maxAdjGap, minSpGap, maxSpGap, minGap, maxGap, gap, gap2;
-	int       i;
 
 	if (control.mode == textOutTableLayout)
 	{
@@ -5579,7 +5420,7 @@ double TextPage::computeWordSpacingThreshold(GList* charsA, int rot)
 	minGap = maxGap = 0;
 	minAdjGap = minSpGap = 1;
 	maxAdjGap = maxSpGap = 0;
-	for (i = 0; i < charsA->getLength(); ++i)
+	for (int i = 0; i < charsA->getLength(); ++i)
 	{
 		ch = (TextChar*)charsA->get(i);
 		avgFontSize += ch->fontSize;
@@ -5612,8 +5453,7 @@ double TextPage::computeWordSpacingThreshold(GList* charsA, int rot)
 		}
 	}
 	avgFontSize /= charsA->getLength();
-	if (minGap < 0)
-		minGap = 0;
+	if (minGap < 0) minGap = 0;
 
 	// if spacing is nearly uniform (minGap is close to maxGap), there
 	// are three cases:
@@ -5672,9 +5512,8 @@ void TextPage::adjustCombiningChars(GList* charsA, int rot)
 		TextChar* ch = (TextChar*)charsA->get(i);
 
 		// look for a zero-width combining char
-		if (!(unicodeTypeCombiningMark(ch->c) && fabs((rot & 1) ? ch->yMax - ch->yMin // width ~= zero
-		                                                        : ch->xMax - ch->xMin)
-		          < 0.01))
+		// width ~= zero
+		if (!(unicodeTypeCombiningMark(ch->c) && fabs((rot & 1) ? ch->yMax - ch->yMin : ch->xMax - ch->xMin) < 0.01))
 		{
 			++i;
 			continue;
@@ -5688,9 +5527,8 @@ void TextPage::adjustCombiningChars(GList* charsA, int rot)
 		for (j = i + 1; j < charsA->getLength(); ++j)
 		{
 			TextChar* ch2 = (TextChar*)charsA->get(j);
-			if (!(unicodeTypeCombiningMark(ch2->c) && fabs((rot & 1) ? ch2->yMin - ch->yMax : ch2->xMin - ch->xMax) < 0.01 * ch->fontSize && fabs((rot & 1) ? ch->yMax - ch->yMin // width ~= zero
-			                                                                                                                                                : ch->xMax - ch->xMin)
-			          < 0.01))
+			// width ~= zero
+			if (!(unicodeTypeCombiningMark(ch2->c) && fabs((rot & 1) ? ch2->yMin - ch->yMax : ch2->xMin - ch->xMax) < 0.01 * ch->fontSize && fabs((rot & 1) ? ch->yMax - ch->yMin : ch->xMax - ch->xMin) < 0.01))
 				break;
 		}
 
@@ -5761,7 +5599,7 @@ int TextPage::getCharDirection(TextChar* ch)
 // Returns 1 for L or Num; -1 for R; 0 for others.
 int TextPage::getCharDirection(TextChar* ch, TextChar* left, TextChar* right)
 {
-	GBool   open;
+	bool    open;
 	Unicode opposite;
 	if (unicodeBracketInfo(ch->c, &open, &opposite))
 	{
@@ -5956,17 +5794,16 @@ int TextPage::assignColumnPhysPositions(GList* columns)
 void TextPage::buildSuperLines(TextBlock* blk, GList* superLines)
 {
 	GList* lines;
-	int    i;
 
 	if (blk->tag == blkTagLine || blk->tag == blkTagSuperLine)
 	{
 		lines = new GList();
-		buildLines(blk, lines, gTrue);
+		buildLines(blk, lines, true);
 		superLines->append(new TextSuperLine(lines));
 	}
 	else
 	{
-		for (i = 0; i < blk->children->getLength(); ++i)
+		for (int i = 0; i < blk->children->getLength(); ++i)
 			buildSuperLines((TextBlock*)blk->children->get(i), superLines);
 	}
 }
@@ -6050,13 +5887,13 @@ void TextPage::generateUnderlinesAndLinks(GList* columns)
 							if (word->rot == 0 || word->rot == 2)
 							{
 								if (fabs(underline->y0 - base) < ubSlack && underline->x0 < word->xMin + uSlack && word->xMax - uSlack < underline->x1)
-									word->underlined = gTrue;
+									word->underlined = true;
 							}
 						}
 						else if (word->rot == 1 || word->rot == 3)
 						{
 							if (fabs(underline->x0 - base) < ubSlack && underline->y0 < word->yMin + uSlack && word->yMax - uSlack < underline->y1)
-								word->underlined = gTrue;
+								word->underlined = true;
 						}
 					}
 
@@ -6077,7 +5914,7 @@ void TextPage::generateUnderlinesAndLinks(GList* columns)
 // TextPage: access
 //------------------------------------------------------------------------
 
-GBool TextPage::findText(Unicode* s, int len, GBool startAtTop, GBool stopAtBottom, GBool startAtLast, GBool stopAtLast, GBool caseSensitive, GBool backward, GBool wholeWord, double* xMin, double* yMin, double* xMax, double* yMax)
+bool TextPage::findText(Unicode* s, int len, bool startAtTop, bool stopAtBottom, bool startAtLast, bool stopAtLast, bool caseSensitive, bool backward, bool wholeWord, double* xMin, double* yMin, double* xMax, double* yMax)
 {
 	TextColumn*    column;
 	TextParagraph* par;
@@ -6087,7 +5924,7 @@ GBool TextPage::findText(Unicode* s, int len, GBool startAtTop, GBool stopAtBott
 	double         xStart, yStart, xStop, yStop;
 	double         xMin0, yMin0, xMax0, yMax0;
 	double         xMin1, yMin1, xMax1, yMax1;
-	GBool          found;
+	bool           found;
 	int            txtSize, m, colIdx, parIdx, lineIdx, i, j, k;
 
 	//~ need to handle right-to-left text
@@ -6132,13 +5969,11 @@ GBool TextPage::findText(Unicode* s, int len, GBool startAtTop, GBool stopAtBott
 		yStop = *yMax;
 	}
 
-	found = gFalse;
+	found = false;
 	xMin0 = xMax0 = yMin0 = yMax0 = 0; // make gcc happy
 	xMin1 = xMax1 = yMin1 = yMax1 = 0; // make gcc happy
 
-	for (colIdx = backward ? findCols->getLength() - 1 : 0;
-	     backward ? colIdx >= 0 : colIdx < findCols->getLength();
-	     colIdx += backward ? -1 : 1)
+	for (colIdx = backward ? findCols->getLength() - 1 : 0; backward ? colIdx >= 0 : colIdx < findCols->getLength(); colIdx += backward ? -1 : 1)
 	{
 		column = (TextColumn*)findCols->get(colIdx);
 
@@ -6150,9 +5985,7 @@ GBool TextPage::findText(Unicode* s, int len, GBool startAtTop, GBool stopAtBott
 		if (!stopAtBottom && (backward ? column->yMax < yStop : column->yMin > yStop))
 			continue;
 
-		for (parIdx = backward ? column->paragraphs->getLength() - 1 : 0;
-		     backward ? parIdx >= 0 : parIdx < column->paragraphs->getLength();
-		     parIdx += backward ? -1 : 1)
+		for (parIdx = backward ? column->paragraphs->getLength() - 1 : 0; backward ? parIdx >= 0 : parIdx < column->paragraphs->getLength(); parIdx += backward ? -1 : 1)
 		{
 			par = (TextParagraph*)column->paragraphs->get(parIdx);
 
@@ -6164,9 +5997,7 @@ GBool TextPage::findText(Unicode* s, int len, GBool startAtTop, GBool stopAtBott
 			if (!stopAtBottom && (backward ? par->yMax < yStop : par->yMin > yStop))
 				continue;
 
-			for (lineIdx = backward ? par->lines->getLength() - 1 : 0;
-			     backward ? lineIdx >= 0 : lineIdx < par->lines->getLength();
-			     lineIdx += backward ? -1 : 1)
+			for (lineIdx = backward ? par->lines->getLength() - 1 : 0; backward ? lineIdx >= 0 : lineIdx < par->lines->getLength(); lineIdx += backward ? -1 : 1)
 			{
 				line = (TextLine*)par->lines->get(lineIdx);
 
@@ -6247,7 +6078,7 @@ GBool TextPage::findText(Unicode* s, int len, GBool startAtTop, GBool stopAtBott
 										xMax0 = xMax1;
 										yMin0 = yMin1;
 										yMax0 = yMax1;
-										found = gTrue;
+										found = true;
 									}
 								}
 							}
@@ -6259,7 +6090,7 @@ GBool TextPage::findText(Unicode* s, int len, GBool startAtTop, GBool stopAtBott
 									xMax0 = xMax1;
 									yMin0 = yMin1;
 									yMax0 = yMax1;
-									found = gTrue;
+									found = true;
 								}
 							}
 						}
@@ -6293,35 +6124,29 @@ GBool TextPage::findText(Unicode* s, int len, GBool startAtTop, GBool stopAtBott
 		*yMax        = yMax0;
 		lastFindXMin = xMin0;
 		lastFindYMin = yMin0;
-		haveLastFind = gTrue;
-		return gTrue;
+		haveLastFind = true;
+		return true;
 	}
 
-	return gFalse;
+	return false;
 }
 
-GString* TextPage::getText(double xMin, double yMin, double xMax, double yMax, GBool forceEOL)
+std::string TextPage::getText(double xMin, double yMin, double xMax, double yMax, bool forceEOL)
 {
 	UnicodeMap*    uMap;
 	char           space[8], eol[16];
 	int            spaceLen, eolLen;
 	GList*         chars2;
-	GString**      out;
-	int*           outLen;
 	TextColumn*    col;
 	TextParagraph* par;
 	TextLine*      line;
-	TextChar*      ch;
-	GBool          primaryLR;
+	bool           primaryLR;
 	TextBlock*     tree;
 	GList*         columns;
-	GString*       ret;
-	double         xx, yy;
-	int            rot, colIdx, parIdx, lineIdx, ph, y, i;
+	int            rot, ph, y;
 
 	// get the output encoding
-	if (!(uMap = globalParams->getTextEncoding()))
-		return nullptr;
+	if (!(uMap = globalParams->getTextEncoding())) return "";
 	spaceLen = uMap->mapUnicode(0x20, space, sizeof(space));
 	eolLen   = 0; // make gcc happy
 	switch (globalParams->getTextEOL())
@@ -6341,11 +6166,11 @@ GString* TextPage::getText(double xMin, double yMin, double xMax, double yMax, G
 	// get all chars in the rectangle
 	// (i.e., all chars whose center lies inside the rectangle)
 	chars2 = new GList();
-	for (i = 0; i < chars->getLength(); ++i)
+	for (int i = 0; i < chars->getLength(); ++i)
 	{
-		ch = (TextChar*)chars->get(i);
-		xx = 0.5 * (ch->xMin + ch->xMax);
-		yy = 0.5 * (ch->yMin + ch->yMax);
+		const auto   ch = (TextChar*)chars->get(i);
+		const double xx = 0.5 * (ch->xMin + ch->xMax);
+		const double yy = 0.5 * (ch->yMin + ch->yMax);
 		if (xx > xMin && xx < xMax && yy > yMin && yy < yMax)
 			chars2->append(ch);
 	}
@@ -6360,7 +6185,7 @@ GString* TextPage::getText(double xMin, double yMin, double xMax, double yMax, G
 	{
 		unrotateChars(chars2, rot);
 		delete chars2;
-		return new GString();
+		return "";
 	}
 #if 0 //~debug
   dumpTree(tree);
@@ -6374,38 +6199,29 @@ GString* TextPage::getText(double xMin, double yMin, double xMax, double yMax, G
 	unrotateChars(chars2, rot);
 	delete chars2;
 
-	out    = (GString**)gmallocn(ph, sizeof(GString*));
-	outLen = (int*)gmallocn(ph, sizeof(int));
-	for (i = 0; i < ph; ++i)
-	{
-		out[i]    = nullptr;
-		outLen[i] = 0;
-	}
+	VEC_STR          outs;
+	std::vector<int> outLens;
+	outs.resize(ph + 1);
+	outLens.resize(ph + 1);
 
 	columns->sort(&TextColumn::cmpPX);
-	for (colIdx = 0; colIdx < columns->getLength(); ++colIdx)
+	for (int colIdx = 0; colIdx < columns->getLength(); ++colIdx)
 	{
 		col = (TextColumn*)columns->get(colIdx);
 		y   = col->py;
-		for (parIdx = 0;
-		     parIdx < col->paragraphs->getLength() && y < ph;
-		     ++parIdx)
+		for (int parIdx = 0; parIdx < col->paragraphs->getLength() && y < ph; ++parIdx)
 		{
 			par = (TextParagraph*)col->paragraphs->get(parIdx);
-			for (lineIdx = 0;
-			     lineIdx < par->lines->getLength() && y < ph;
-			     ++lineIdx)
+			for (int lineIdx = 0; lineIdx < par->lines->getLength() && y < ph; ++lineIdx)
 			{
 				line = (TextLine*)par->lines->get(lineIdx);
-				if (!out[y])
-					out[y] = new GString();
-				while (outLen[y] < col->px + line->px)
+				while (outLens[y] < col->px + line->px)
 				{
-					out[y]->append(space, spaceLen);
-					++outLen[y];
+					outs[y].append(space, spaceLen);
+					++outLens[y];
 				}
-				encodeFragment(line->text, line->len, uMap, primaryLR, out[y]);
-				outLen[y] += line->pw;
+				encodeFragment(line->text, line->len, uMap, primaryLR, outs[y]);
+				outLens[y] += line->pw;
 				++y;
 			}
 			if (parIdx + 1 < col->paragraphs->getLength())
@@ -6413,40 +6229,32 @@ GString* TextPage::getText(double xMin, double yMin, double xMax, double yMax, G
 		}
 	}
 
-	ret = new GString();
-	for (i = 0; i < ph; ++i)
+	std::string ret;
+	for (int i = 0; i < ph; ++i)
 	{
-		if (out[i])
-		{
-			ret->append(out[i]);
-			delete out[i];
-		}
-		if (ph > 1 || forceEOL)
-			ret->append(eol, eolLen);
+		if (outs[i].size()) ret += outs[i];
+		if (ph > 1 || forceEOL) ret.append(eol, eolLen);
 	}
 
-	gfree(out);
-	gfree(outLen);
 	deleteGList(columns, TextColumn);
 	uMap->decRefCnt();
 
 	return ret;
 }
 
-GBool TextPage::findCharRange(int pos, int length, double* xMin, double* yMin, double* xMax, double* yMax)
+bool TextPage::findCharRange(int pos, int length, double* xMin, double* yMin, double* xMax, double* yMax)
 {
 	TextChar* ch;
 	double    xMin2, yMin2, xMax2, yMax2;
-	GBool     first;
-	int       i;
+	bool      first;
 
 	//~ this doesn't correctly handle ranges split across multiple lines
 	//~ (the highlighted region is the bounding box of all the parts of
 	//~ the range)
 
 	xMin2 = yMin2 = xMax2 = yMax2 = 0;
-	first                         = gTrue;
-	for (i = 0; i < chars->getLength(); ++i)
+	first                         = true;
+	for (int i = 0; i < chars->getLength(); ++i)
 	{
 		ch = (TextChar*)chars->get(i);
 		if (ch->charPos >= pos && ch->charPos < pos + length)
@@ -6459,19 +6267,18 @@ GBool TextPage::findCharRange(int pos, int length, double* xMin, double* yMin, d
 				xMax2 = ch->xMax;
 			if (first || ch->yMax > yMax2)
 				yMax2 = ch->yMax;
-			first = gFalse;
+			first = false;
 		}
 	}
-	if (first)
-		return gFalse;
+	if (first) return false;
 	*xMin = xMin2;
 	*yMin = yMin2;
 	*xMax = xMax2;
 	*yMax = yMax2;
-	return gTrue;
+	return true;
 }
 
-GBool TextPage::checkPointInside(double x, double y)
+bool TextPage::checkPointInside(double x, double y)
 {
 	TextColumn* col;
 	int         colIdx;
@@ -6487,12 +6294,12 @@ GBool TextPage::checkPointInside(double x, double y)
 		if (col->getRotation() != 0)
 			continue;
 		if (x >= col->getXMin() && x <= col->getXMax() && y >= col->getYMin() && y <= col->getYMax())
-			return gTrue;
+			return true;
 	}
-	return gFalse;
+	return false;
 }
 
-GBool TextPage::findPointInside(double x, double y, TextPosition* pos)
+bool TextPage::findPointInside(double x, double y, TextPosition* pos)
 {
 	TextColumn* col;
 	int         colIdx;
@@ -6511,13 +6318,13 @@ GBool TextPage::findPointInside(double x, double y, TextPosition* pos)
 		{
 			pos->colIdx = colIdx;
 			findPointInColumn(col, x, y, pos);
-			return gTrue;
+			return true;
 		}
 	}
-	return gFalse;
+	return false;
 }
 
-GBool TextPage::findPointNear(double x, double y, TextPosition* pos)
+bool TextPage::findPointNear(double x, double y, TextPosition* pos)
 {
 	TextColumn* col;
 	double      nearestDist, dx, dy;
@@ -6554,14 +6361,14 @@ GBool TextPage::findPointNear(double x, double y, TextPosition* pos)
 		}
 	}
 	if (nearestColIdx < 0)
-		return gFalse;
+		return false;
 	pos->colIdx = nearestColIdx;
 	col         = (TextColumn*)findCols->get(nearestColIdx);
 	findPointInColumn(col, x, y, pos);
-	return gTrue;
+	return true;
 }
 
-GBool TextPage::findWordPoints(double x, double y, TextPosition* startPos, TextPosition* endPos)
+bool TextPage::findWordPoints(double x, double y, TextPosition* startPos, TextPosition* endPos)
 {
 	TextPosition   pos;
 	TextColumn*    col;
@@ -6570,29 +6377,25 @@ GBool TextPage::findWordPoints(double x, double y, TextPosition* startPos, TextP
 	int            startCharIdx, endCharIdx;
 
 	if (!findPointInside(x, y, &pos))
-		return gFalse;
+		return false;
 	col  = (TextColumn*)findCols->get(pos.colIdx);
 	par  = (TextParagraph*)col->getParagraphs()->get(pos.parIdx);
 	line = (TextLine*)par->getLines()->get(pos.lineIdx);
 
-	for (startCharIdx = pos.charIdx;
-	     startCharIdx > 0 && line->text[startCharIdx - 1] != 0x20;
-	     --startCharIdx)
+	for (startCharIdx = pos.charIdx; startCharIdx > 0 && line->text[startCharIdx - 1] != 0x20; --startCharIdx)
 		;
 	*startPos         = pos;
 	startPos->charIdx = startCharIdx;
 
-	for (endCharIdx = pos.charIdx;
-	     endCharIdx < line->len && line->text[endCharIdx] != 0x20;
-	     ++endCharIdx)
+	for (endCharIdx = pos.charIdx; endCharIdx < line->len && line->text[endCharIdx] != 0x20; ++endCharIdx)
 		;
 	*endPos         = pos;
 	endPos->charIdx = endCharIdx;
 
-	return gTrue;
+	return true;
 }
 
-GBool TextPage::findLinePoints(double x, double y, TextPosition* startPos, TextPosition* endPos)
+bool TextPage::findLinePoints(double x, double y, TextPosition* startPos, TextPosition* endPos)
 {
 	TextPosition   pos;
 	TextColumn*    col;
@@ -6600,7 +6403,7 @@ GBool TextPage::findLinePoints(double x, double y, TextPosition* startPos, TextP
 	TextLine*      line;
 
 	if (!findPointInside(x, y, &pos))
-		return gFalse;
+		return false;
 	col  = (TextColumn*)findCols->get(pos.colIdx);
 	par  = (TextParagraph*)col->getParagraphs()->get(pos.parIdx);
 	line = (TextLine*)par->getLines()->get(pos.lineIdx);
@@ -6611,7 +6414,7 @@ GBool TextPage::findLinePoints(double x, double y, TextPosition* startPos, TextP
 	*endPos         = pos;
 	endPos->charIdx = line->len;
 
-	return gTrue;
+	return true;
 }
 
 // Find the position in [col] corresponding to [x],[y].  The column,
@@ -6746,7 +6549,7 @@ void TextPage::buildFindCols()
 	rot = rotateChars(chars);
 	if ((tree = splitChars(chars)))
 	{
-		findCols = buildColumns(tree, gFalse);
+		findCols = buildColumns(tree, false);
 		delete tree;
 	}
 	else
@@ -6766,15 +6569,13 @@ TextWordList* TextPage::makeWordList()
 TextWordList* TextPage::makeWordListForRect(double xMin, double yMin, double xMax, double yMax)
 {
 	TextWordList* words;
-	GList*        chars2;
 	TextChar*     ch;
 	double        xx, yy;
-	int           i;
 
 	// get all chars in the rectangle
 	// (i.e., all chars whose center lies inside the rectangle)
-	chars2 = new GList();
-	for (i = 0; i < chars->getLength(); ++i)
+	GList* chars2 = new GList();
+	for (int i = 0; i < chars->getLength(); ++i)
 	{
 		ch = (TextChar*)chars->get(i);
 		xx = 0.5 * (ch->xMin + ch->xMax);
@@ -6784,7 +6585,6 @@ TextWordList* TextPage::makeWordListForRect(double xMin, double yMin, double xMa
 	}
 
 	words = makeWordListForChars(chars2);
-
 	delete chars2;
 
 	return words;
@@ -6800,7 +6600,7 @@ TextWordList* TextPage::makeWordListForChars(GList* charList)
 	TextWord*      word;
 	GList*         overlappingChars;
 	GList*         words;
-	GBool          primaryLR;
+	bool           primaryLR;
 	int            rot, colIdx, parIdx, lineIdx, wordIdx;
 
 #if 0 //~debug
@@ -6832,11 +6632,11 @@ TextWordList* TextPage::makeWordListForChars(GList* charList)
 		{
 			// no text
 			unrotateChars(charList, rot);
-			return new TextWordList(new GList(), gTrue);
+			return new TextWordList(new GList(), true);
 		}
 		columns = buildColumns(tree, primaryLR);
 #if 0 //~debug
-    dumpColumns(columns, gTrue);
+    dumpColumns(columns, true);
 #endif
 		delete tree;
 		unrotateChars(charList, rot);
@@ -6867,7 +6667,7 @@ TextWordList* TextPage::makeWordListForChars(GList* charList)
 				{
 					word = ((TextWord*)line->words->get(wordIdx))->copy();
 					if (wordIdx == line->words->getLength() - 1 && !line->getHyphenated())
-						word->spaceAfter = gTrue;
+						word->spaceAfter = true;
 					words->append(word);
 				}
 			}
@@ -6899,7 +6699,7 @@ TextWordList* TextPage::makeWordListForChars(GList* charList)
 	return new TextWordList(words, primaryLR);
 }
 
-GBool TextPage::primaryDirectionIsLR()
+bool TextPage::primaryDirectionIsLR()
 {
 	return checkPrimaryLR(chars);
 }
@@ -6910,99 +6710,95 @@ GBool TextPage::primaryDirectionIsLR()
 
 #if 0  //~debug
 
-void TextPage::dumpChars(GList *charsA) {
-  TextChar *ch;
-  int i;
+void TextPage::dumpChars(GList* charsA)
+{
+	TextChar* ch;
 
-  for (i = 0; i < charsA->getLength(); ++i) {
-    ch = (TextChar *)charsA->get(i);
-    printf("char: U+%04x '%c' xMin=%g yMin=%g xMax=%g yMax=%g fontSize=%g rot=%d charPos=%d charLen=%d spaceAfter=%d\n",
-	   ch->c, ch->c & 0xff, ch->xMin, ch->yMin, ch->xMax, ch->yMax,
-	   ch->fontSize, ch->rot, ch->charPos, ch->charLen, ch->spaceAfter);
-  }
-}
-
-void TextPage::dumpTree(TextBlock *tree, int indent) {
-  TextChar *ch;
-  int i;
-
-  printf("%*sblock: type=%s tag=%s small=%d rot=%d xMin=%g yMin=%g xMax=%g yMax=%g\n",
-	 indent, "",
-	 tree->type == blkLeaf ? "leaf" :
-	                 tree->type == blkHorizSplit ? "horiz" : "vert",
-	 tree->tag == blkTagMulticolumn ? "multicolumn" :
-	                tree->tag == blkTagColumn ? "column" :
-                        tree->tag == blkTagSuperLine ? "superline" : "line",
-	 tree->smallSplit,
-	 tree->rot, tree->xMin, tree->yMin, tree->xMax, tree->yMax);
-  if (tree->type == blkLeaf) {
-    for (i = 0; i < tree->children->getLength(); ++i) {
-      ch = (TextChar *)tree->children->get(i);
-      printf("%*schar: '%c' xMin=%g yMin=%g xMax=%g yMax=%g font=%d.%d\n",
-	     indent + 2, "", ch->c & 0xff,
-	     ch->xMin, ch->yMin, ch->xMax, ch->yMax,
-	     ch->font->fontID.num, ch->font->fontID.gen);
-    }
-  } else {
-    for (i = 0; i < tree->children->getLength(); ++i) {
-      dumpTree((TextBlock *)tree->children->get(i), indent + 2);
-    }
-  }
-}
-
-void TextPage::dumpColumns(GList *columns, GBool dumpWords) {
-  TextColumn *col;
-  TextParagraph *par;
-  TextLine *line;
-  TextWord *word;
-  int colIdx, parIdx, lineIdx, wordIdx, i;
-
-  for (colIdx = 0; colIdx < columns->getLength(); ++colIdx) {
-    col = (TextColumn *)columns->get(colIdx);
-    printf("column: xMin=%g yMin=%g xMax=%g yMax=%g px=%d py=%d pw=%d ph=%d\n",
-	   col->xMin, col->yMin, col->xMax, col->yMax,
-	   col->px, col->py, col->pw, col->ph);
-    for (parIdx = 0; parIdx < col->paragraphs->getLength(); ++parIdx) {
-      par = (TextParagraph *)col->paragraphs->get(parIdx);
-      printf("  paragraph:\n");
-      for (lineIdx = 0; lineIdx < par->lines->getLength(); ++lineIdx) {
-	line = (TextLine *)par->lines->get(lineIdx);
-	printf("    line: xMin=%g yMin=%g xMax=%g yMax=%g px=%d pw=%d rot=%d\n",
-	       line->xMin, line->yMin, line->xMax, line->yMax,
-	       line->px, line->pw, line->rot);
-	if (dumpWords) {
-	  for (wordIdx = 0; wordIdx < line->words->getLength(); ++wordIdx) {
-	    word = (TextWord *)line->words->get(wordIdx);
-	    printf("      word: xMin=%g yMin=%g xMax=%g yMax=%g\n",
-		   word->xMin, word->yMin, word->xMax, word->yMax);
-	    printf("            '");
-	    for (i = 0; i < word->len; ++i) {
-	      printf("%c", word->text[i] & 0xff);
-	    }
-	    printf("'\n");
-	  }
-	} else {
-	  printf("          '");
-	  for (i = 0; i < line->len; ++i) {
-	    printf("%c", line->text[i] & 0xff);
-	  }
-	  printf("'\n");
+	for (int i = 0; i < charsA->getLength(); ++i)
+	{
+		ch = (TextChar*)charsA->get(i);
+		printf("char: U+%04x '%c' xMin=%g yMin=%g xMax=%g yMax=%g fontSize=%g rot=%d charPos=%d charLen=%d spaceAfter=%d\n", ch->c, ch->c & 0xff, ch->xMin, ch->yMin, ch->xMax, ch->yMax, ch->fontSize, ch->rot, ch->charPos, ch->charLen, ch->spaceAfter);
 	}
-      }
-    }
-  }
 }
 
-void TextPage::dumpUnderlines() {
-  TextUnderline *u;
-  int i;
+void TextPage::dumpTree(TextBlock* tree, int indent)
+{
+	TextChar* ch;
 
-  printf("underlines:\n");
-  for (i = 0; i < underlines->getLength(); ++i) {
-    u = (TextUnderline *)underlines->get(i);
-    printf("    horiz=%d x0=%g y0=%g x1=%g y1=%g\n",
-	   u->horiz, u->x0, u->y0, u->x1, u->y1);
-  }
+	printf("%*sblock: type=%s tag=%s small=%d rot=%d xMin=%g yMin=%g xMax=%g yMax=%g\n", indent, "", tree->type == blkLeaf ? "leaf" : tree->type == blkHorizSplit ? "horiz"
+	                                                                                                                                                              : "vert",
+	       tree->tag == blkTagMulticolumn ? "multicolumn" : tree->tag == blkTagColumn ? "column"
+	           : tree->tag == blkTagSuperLine                                         ? "superline"
+	                                                                                  : "line",
+	       tree->smallSplit, tree->rot, tree->xMin, tree->yMin, tree->xMax, tree->yMax);
+	if (tree->type == blkLeaf)
+	{
+		for (int i = 0; i < tree->children->getLength(); ++i)
+		{
+			ch = (TextChar*)tree->children->get(i);
+			printf("%*schar: '%c' xMin=%g yMin=%g xMax=%g yMax=%g font=%d.%d\n", indent + 2, "", ch->c & 0xff, ch->xMin, ch->yMin, ch->xMax, ch->yMax, ch->font->fontID.num, ch->font->fontID.gen);
+		}
+	}
+	else
+	{
+		for (int i = 0; i < tree->children->getLength(); ++i)
+			dumpTree((TextBlock*)tree->children->get(i), indent + 2);
+	}
+}
+
+void TextPage::dumpColumns(GList* columns, bool dumpWords)
+{
+	TextColumn*    col;
+	TextParagraph* par;
+	TextLine*      line;
+	TextWord*      word;
+	int            colIdx, parIdx, lineIdx, wordIdx, i;
+
+	for (colIdx = 0; colIdx < columns->getLength(); ++colIdx)
+	{
+		col = (TextColumn*)columns->get(colIdx);
+		printf("column: xMin=%g yMin=%g xMax=%g yMax=%g px=%d py=%d pw=%d ph=%d\n", col->xMin, col->yMin, col->xMax, col->yMax, col->px, col->py, col->pw, col->ph);
+		for (parIdx = 0; parIdx < col->paragraphs->getLength(); ++parIdx)
+		{
+			par = (TextParagraph*)col->paragraphs->get(parIdx);
+			printf("  paragraph:\n");
+			for (lineIdx = 0; lineIdx < par->lines->getLength(); ++lineIdx)
+			{
+				line = (TextLine*)par->lines->get(lineIdx);
+				printf("    line: xMin=%g yMin=%g xMax=%g yMax=%g px=%d pw=%d rot=%d\n", line->xMin, line->yMin, line->xMax, line->yMax, line->px, line->pw, line->rot);
+				if (dumpWords)
+				{
+					for (wordIdx = 0; wordIdx < line->words->getLength(); ++wordIdx)
+					{
+						word = (TextWord*)line->words->get(wordIdx);
+						printf("      word: xMin=%g yMin=%g xMax=%g yMax=%g\n", word->xMin, word->yMin, word->xMax, word->yMax);
+						printf("            '");
+						for (i = 0; i < word->len; ++i)
+							printf("%c", word->text[i] & 0xff);
+						printf("'\n");
+					}
+				}
+				else
+				{
+					printf("          '");
+					for (i = 0; i < line->len; ++i)
+						printf("%c", line->text[i] & 0xff);
+					printf("'\n");
+				}
+			}
+		}
+	}
+}
+
+void TextPage::dumpUnderlines()
+{
+	TextUnderline* u;
+	printf("underlines:\n");
+	for (int i = 0; i < underlines->getLength(); ++i)
+	{
+		u = (TextUnderline*)underlines->get(i);
+		printf("    horiz=%d x0=%g y0=%g x1=%g y1=%g\n", u->horiz, u->x0, u->y0, u->x1, u->y1);
+	}
 }
 #endif //~debug
 
@@ -7010,19 +6806,19 @@ void TextPage::dumpUnderlines() {
 // TextOutputDev
 //------------------------------------------------------------------------
 
-static void outputToFile(void* stream, const char* text, int len)
+static void outputToFile(void* stream, const char* text, size_t len)
 {
 	fwrite(text, 1, len, (FILE*)stream);
 }
 
-TextOutputDev::TextOutputDev(char* fileName, TextOutputControl* controlA, GBool append, GBool fileNameIsUTF8)
+TextOutputDev::TextOutputDev(const char* fileName, TextOutputControl* controlA, bool append, bool fileNameIsUTF8)
 {
 	text    = nullptr;
 	control = *controlA;
-	ok      = gTrue;
+	ok      = true;
 
 	// open file
-	needClose = gFalse;
+	needClose = false;
 	if (fileName)
 	{
 		if (!strcmp(fileName, "-"))
@@ -7041,11 +6837,11 @@ TextOutputDev::TextOutputDev(char* fileName, TextOutputControl* controlA, GBool 
 				outputStream = fopen(fileName, append ? "ab" : "wb");
 			if (!outputStream)
 			{
-				error(errIO, -1, "Couldn't open text file '{0:s}'", fileName);
-				ok = gFalse;
+				error(errIO, -1, "Couldn't open text file '{}'", fileName);
+				ok = false;
 				return;
 			}
-			needClose = gTrue;
+			needClose = true;
 		}
 		outputFunc = &outputToFile;
 	}
@@ -7064,11 +6860,11 @@ TextOutputDev::TextOutputDev(TextOutputFunc func, void* stream, TextOutputContro
 {
 	outputFunc   = func;
 	outputStream = stream;
-	needClose    = gFalse;
+	needClose    = false;
 	control      = *controlA;
 	text         = new TextPage(&control);
 	generateBOM();
-	ok = gTrue;
+	ok = true;
 }
 
 TextOutputDev::~TextOutputDev()
@@ -7117,7 +6913,7 @@ void TextOutputDev::updateFont(GfxState* state)
 	text->updateFont(state);
 }
 
-void TextOutputDev::beginString(GfxState* state, GString* s)
+void TextOutputDev::beginString(GfxState* state, const std::string& s)
 {
 }
 
@@ -7125,7 +6921,7 @@ void TextOutputDev::endString(GfxState* state)
 {
 }
 
-void TextOutputDev::drawChar(GfxState* state, double x, double y, double dx, double dy, double originX, double originY, CharCode c, int nBytes, Unicode* u, int uLen, GBool fill, GBool stroke, GBool makePath)
+void TextOutputDev::drawChar(GfxState* state, double x, double y, double dx, double dy, double originX, double originY, CharCode c, int nBytes, Unicode* u, int uLen, bool fill, bool stroke, bool makePath)
 {
 	text->addChar(state, x, y, dx, dy, c, nBytes, u, uLen);
 }
@@ -7151,14 +6947,11 @@ void TextOutputDev::stroke(GfxState* state)
 	GfxSubpath* subpath;
 	double      x[2], y[2], t;
 
-	if (!control.html)
-		return;
+	if (!control.html) return;
 	path = state->getPath();
-	if (path->getNumSubpaths() != 1)
-		return;
+	if (path->getNumSubpaths() != 1) return;
 	subpath = path->getSubpath(0);
-	if (subpath->getNumPoints() != 2)
-		return;
+	if (subpath->getNumPoints() != 2) return;
 	state->transform(subpath->getX(0), subpath->getY(0), &x[0], &y[0]);
 	state->transform(subpath->getX(1), subpath->getY(1), &x[1], &y[1]);
 
@@ -7187,7 +6980,6 @@ void TextOutputDev::fill(GfxState* state)
 	GfxSubpath* subpath;
 	double      x[5], y[5];
 	double      rx0, ry0, rx1, ry1, t;
-	int         i;
 
 	if (!control.html)
 		return;
@@ -7197,10 +6989,9 @@ void TextOutputDev::fill(GfxState* state)
 	subpath = path->getSubpath(0);
 	if (subpath->getNumPoints() != 5)
 		return;
-	for (i = 0; i < 5; ++i)
+	for (int i = 0; i < 5; ++i)
 	{
-		if (subpath->getCurve(i))
-			return;
+		if (subpath->getCurve(i)) return;
 		state->transform(subpath->getX(i), subpath->getY(i), &x[i], &y[i]);
 	}
 
@@ -7256,8 +7047,7 @@ void TextOutputDev::fill(GfxState* state)
 
 void TextOutputDev::eoFill(GfxState* state)
 {
-	if (!control.html)
-		return;
+	if (!control.html) return;
 	fill(state);
 }
 
@@ -7302,17 +7092,17 @@ void TextOutputDev::processLink(Link* link)
 	text->addLink(xMin, yMin, xMax, yMax, link);
 }
 
-GBool TextOutputDev::findText(Unicode* s, int len, GBool startAtTop, GBool stopAtBottom, GBool startAtLast, GBool stopAtLast, GBool caseSensitive, GBool backward, GBool wholeWord, double* xMin, double* yMin, double* xMax, double* yMax)
+bool TextOutputDev::findText(Unicode* s, int len, bool startAtTop, bool stopAtBottom, bool startAtLast, bool stopAtLast, bool caseSensitive, bool backward, bool wholeWord, double* xMin, double* yMin, double* xMax, double* yMax)
 {
 	return text->findText(s, len, startAtTop, stopAtBottom, startAtLast, stopAtLast, caseSensitive, backward, wholeWord, xMin, yMin, xMax, yMax);
 }
 
-GString* TextOutputDev::getText(double xMin, double yMin, double xMax, double yMax)
+std::string TextOutputDev::getText(double xMin, double yMin, double xMax, double yMax)
 {
 	return text->getText(xMin, yMin, xMax, yMax);
 }
 
-GBool TextOutputDev::findCharRange(int pos, int length, double* xMin, double* yMin, double* xMax, double* yMax)
+bool TextOutputDev::findCharRange(int pos, int length, double* xMin, double* yMin, double* xMax, double* yMax)
 {
 	return text->findCharRange(pos, length, xMin, yMin, xMax, yMax);
 }
@@ -7329,9 +7119,7 @@ TextWordList* TextOutputDev::makeWordListForRect(double xMin, double yMin, doubl
 
 TextPage* TextOutputDev::takeText()
 {
-	TextPage* ret;
-
-	ret  = text;
-	text = new TextPage(&control);
+	TextPage* ret = text;
+	text          = new TextPage(&control);
 	return ret;
 }

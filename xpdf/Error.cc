@@ -7,12 +7,10 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdio.h>
 #include <stddef.h>
 #include <stdarg.h>
 #include "gmempp.h"
-#include "GString.h"
 #include "GlobalParams.h"
 #include "Error.h"
 
@@ -27,10 +25,10 @@ const char* errorCategoryNames[] = {
 	"Internal Error"
 };
 
-static void  (*errorCbk)(void* data, ErrorCategory category, int pos, char* msg) = nullptr;
-static void* errorCbkData                                                        = nullptr;
+static void  (*errorCbk)(void* data, ErrorCategory category, int pos, const char* msg) = nullptr;
+static void* errorCbkData                                                              = nullptr;
 
-void setErrorCallback(void (*cbk)(void* data, ErrorCategory category, int pos, char* msg), void* data)
+void setErrorCallback(void (*cbk)(void* data, ErrorCategory category, int pos, const char* msg), void* data)
 {
 	errorCbk     = cbk;
 	errorCbkData = data;
@@ -41,46 +39,43 @@ void* getErrorCallbackData()
 	return errorCbkData;
 }
 
-void CDECL error(ErrorCategory category, GFileOffset pos, const char* msg, ...)
+/**
+ * Make printable text for console output
+ */
+static std::string Printify(std::string_view text, size_t count = std::string_view::npos)
 {
-	va_list  args;
-	GString *s, *sanitized;
-	char     c;
-	int      i;
+	std::string clean;
+	for (size_t i = 0, size = std::min(text.size(), count); i < size; ++i)
+	{
+		if (static_cast<uint8_t>(text[i] - 32) >= 96)
+			clean += fmt::format("\\x{:02x}", static_cast<uint8_t>(text[i]));
+		else
+			clean += text[i];
+	}
 
+	return clean;
+}
+
+void errorText(ErrorCategory category, GFileOffset pos, std::string text)
+{
 	// NB: this can be called before the globalParams object is created
 	if (!errorCbk && globalParams && globalParams->getErrQuiet())
 		return;
-	va_start(args, msg);
-	s = GString::formatv(msg, args);
-	va_end(args);
 
 	// remove non-printable characters, just in case they might cause
 	// problems for the terminal program
-	sanitized = new GString();
-	for (i = 0; i < s->getLength(); ++i)
-	{
-		c = s->getChar(i);
-		if (c >= 0x20 && c <= 0x7e)
-			sanitized->append(c);
-		else
-			sanitized->appendf("<{0:02x}>", c & 0xff);
-	}
-
+	const auto sanitized = Printify(text);
 	if (errorCbk)
 	{
-		(*errorCbk)(errorCbkData, category, (int)pos, sanitized->getCString());
+		(*errorCbk)(errorCbkData, category, (int)pos, sanitized.c_str());
 	}
 	else
 	{
 		fflush(stdout);
 		if (pos >= 0)
-			fprintf(stderr, "%s (%d): %s\n", errorCategoryNames[category], (int)pos, sanitized->getCString());
+			fprintf(stderr, "%s (%d): %s\n", errorCategoryNames[category], (int)pos, sanitized.c_str());
 		else
-			fprintf(stderr, "%s: %s\n", errorCategoryNames[category], sanitized->getCString());
+			fprintf(stderr, "%s: %s\n", errorCategoryNames[category], sanitized.c_str());
 		fflush(stderr);
 	}
-
-	delete s;
-	delete sanitized;
 }

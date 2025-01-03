@@ -6,15 +6,11 @@
 //
 //========================================================================
 
-#ifndef DISPLAYSTATE_H
-#define DISPLAYSTATE_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
 #include "SplashTypes.h"
 
-class GString;
 class GList;
 class PDFDoc;
 class TileMap;
@@ -71,7 +67,7 @@ public:
 		return page != r.page || x0 != r.x0 || y0 != r.y0 || x1 != r.x1 || y1 != r.y1;
 	}
 
-	int    page;
+	int    page;           //
 	double x0, y0, x1, y1; // user coords
 };
 
@@ -103,7 +99,7 @@ public:
 	void setPaperColor(SplashColorPtr paperColorA);
 	void setMatteColor(SplashColorPtr matteColorA);
 	void setSelectColor(SplashColorPtr selectColorA);
-	void setReverseVideo(GBool reverseVideoA);
+	void setReverseVideo(bool reverseVideoA);
 	void setDoc(PDFDoc* docA);
 	void setWindowSize(int winWA, int winHA);
 	void setDisplayMode(DisplayMode displayModeA);
@@ -111,7 +107,7 @@ public:
 	void setRotate(int rotateA);
 	void setScrollPosition(int scrollPageA, int scrollXA, int scrollYA);
 	void setSelection(int selectPage, double selectX0, double selectY0, double selectX1, double selectY1);
-	void setSelection(GList* selectRectsA);
+	void setSelection(std::vector<SelectRect>& selectRectsA);
 	void clearSelection();
 	void forceRedraw();
 
@@ -133,7 +129,7 @@ public:
 
 	SplashColorPtr getSelectColor() { return selectColor; }
 
-	GBool getReverseVideo() { return reverseVideo; }
+	bool getReverseVideo() { return reverseVideo; }
 
 	PDFDoc* getDoc() { return doc; }
 
@@ -143,12 +139,12 @@ public:
 
 	DisplayMode getDisplayMode() { return displayMode; }
 
-	GBool displayModeIsContinuous()
+	bool displayModeIsContinuous()
 	{
 		return displayMode == displayContinuous || displayMode == displaySideBySideContinuous || displayMode == displayHorizontalContinuous;
 	}
 
-	GBool displayModeIsSideBySide()
+	bool displayModeIsSideBySide()
 	{
 		return displayMode == displaySideBySideSingle || displayMode == displaySideBySideContinuous;
 	}
@@ -163,41 +159,36 @@ public:
 
 	int getScrollY() { return scrollY; }
 
-	GBool hasSelection() { return selectRects != nullptr; }
+	bool hasSelection() { return selectRects.size() > 0; }
 
-	GList* getSelectRects() { return selectRects; }
+	std::vector<SelectRect> getSelectRects() { return selectRects; }
 
 	int         getNumSelectRects();
 	SelectRect* getSelectRect(int idx);
 	void        optionalContentChanged();
 
 private:
-	int maxTileWidth, maxTileHeight;
-	int tileCacheSize;
-	int nWorkerThreads;
-
-	SplashColorMode colorMode;
-	int             bitmapRowPad;
-
-	TileMap*        tileMap;
-	TileCache*      tileCache;
-	TileCompositor* tileCompositor;
-
-	SplashColor paperColor;
-	SplashColor matteColor;
-	SplashColor selectColor;
-	GBool       reverseVideo;
-
-	PDFDoc* doc;
-
-	int         winW, winH; // window (draw area) size
-	DisplayMode displayMode;
-	double      zoom;       // zoom level (see zoom* defines, above)
-	int         rotate;     // rotation (0, 90, 180, or 270)
-	int         scrollPage; // scroll page - only used in non-continuous modes
-	int         scrollX, scrollY;
-
-	GList* selectRects; // selection rectangles [SelectRect] (nullptr if there is no selection)
+	int                     maxTileWidth;   //
+	int                     maxTileHeight;  //
+	int                     tileCacheSize;  //
+	int                     nWorkerThreads; //
+	SplashColorMode         colorMode;      //
+	int                     bitmapRowPad;   //
+	TileMap*                tileMap;        //
+	TileCache*              tileCache;      //
+	TileCompositor*         tileCompositor; //
+	SplashColor             paperColor;     //
+	SplashColor             matteColor;     //
+	SplashColor             selectColor;    //
+	bool                    reverseVideo;   //
+	PDFDoc*                 doc;            //
+	int                     winW;           //
+	int                     winH;           // window (draw area) size
+	DisplayMode             displayMode;    //
+	double                  zoom;           // zoom level (see zoom* defines, above)
+	int                     rotate;         // rotation (0, 90, 180, or 270)
+	int                     scrollPage;     // scroll page - only used in non-continuous modes
+	int                     scrollX;        //
+	int                     scrollY;        //
+	std::vector<SelectRect> selectRects;    // selection rectangles [SelectRect] (nullptr if there is no selection)
 };
-
-#endif

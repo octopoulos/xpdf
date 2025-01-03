@@ -6,21 +6,17 @@
 //
 //========================================================================
 
-#ifndef XPDFVIEWER_H
-#define XPDFVIEWER_H
+#pragma once
 
 #include <aconf.h>
-
 #include <QDialog>
 #include <QIcon>
 #include <QLocalServer>
 #include <QMainWindow>
 #include <QToolButton>
-#include "gtypes.h"
 #include "Error.h"
 #include "XpdfWidget.h"
 
-class GString;
 class GList;
 class PropertyListAnimation;
 class QComboBox;
@@ -53,9 +49,9 @@ struct XpdfViewerCmd
 {
 	const char* name;
 	int         nArgs;
-	GBool       requiresDoc;
-	GBool       requiresEvent;
-	void (XpdfViewer::*func)(GString* args[], int nArgs, QInputEvent* event);
+	bool        requiresDoc;
+	bool        requiresEvent;
+	void (XpdfViewer::*func)(const VEC_STR& args, QInputEvent* event);
 };
 
 //------------------------------------------------------------------------
@@ -98,8 +94,8 @@ private slots:
 	void clearBtnPressed();
 
 private:
-	static void errorCbk(void* data, ErrorCategory category, int pos, char* msg);
-	static void dummyErrorCbk(void* data, ErrorCategory category, int pos, char* msg);
+	static void errorCbk(void* data, ErrorCategory category, int pos, const char* msg);
+	static void dummyErrorCbk(void* data, ErrorCategory category, int pos, const char* msg);
 
 	XpdfViewer*  viewer;
 	int          errorEventType;
@@ -116,9 +112,9 @@ class XpdfViewer : public QMainWindow
 	Q_OBJECT
 
 public:
-	XpdfViewer(XpdfApp* appA, GBool fullScreen);
+	XpdfViewer(XpdfApp* appA, bool fullScreen);
 
-	static XpdfViewer* create(XpdfApp* app, QString fileName, int page, QString destName, int rot, QString password, GBool fullScreen);
+	static XpdfViewer* create(XpdfApp* app, QString fileName, int page, QString destName, int rot, QString password, bool fullScreen);
 
 	virtual ~XpdfViewer();
 
@@ -128,15 +124,15 @@ public:
 
 	// Open a file in the current tab.  Returns a boolean indicating
 	// success.
-	GBool open(QString fileName, int page, QString destName, int rot, QString password);
+	bool open(QString fileName, int page, QString destName, int rot, QString password);
 
 	// Open a file in a new tab.  Returns a boolean indicating success.
-	GBool openInNewTab(QString fileName, int page, QString destName, int rot, QString password, GBool switchToTab);
+	bool openInNewTab(QString fileName, int page, QString destName, int rot, QString password, bool switchToTab);
 
 	// Check that [fileName] is open in the current tab -- if not, open
 	// it.  In either case, switch to [page] or [destName].  Returns a
 	// boolean indicating success.
-	GBool checkOpen(QString fileName, int page, QString destName, QString password);
+	bool checkOpen(QString fileName, int page, QString destName, QString password);
 
 	virtual QMenu* createPopupMenu();
 
@@ -154,7 +150,7 @@ public:
 	void loadSession(FILE* in, int format);
 
 	// Returns true if this viewer contains a single empty tab.
-	GBool isEmpty();
+	bool isEmpty();
 
 public slots:
 
@@ -251,138 +247,135 @@ private:
 	//--- commands
 	int  mouseX(QInputEvent* event);
 	int  mouseY(QInputEvent* event);
-	void cmdAbout(GString* args[], int nArgs, QInputEvent* event);
-	void cmdBlockSelectMode(GString* args[], int nArgs, QInputEvent* event);
-	void cmdCheckOpenFile(GString* args[], int nArgs, QInputEvent* event);
-	void cmdCheckOpenFileAtDest(GString* args[], int nArgs, QInputEvent* event);
-	void cmdCheckOpenFileAtPage(GString* args[], int nArgs, QInputEvent* event);
-	void cmdCloseTabOrQuit(GString* args[], int nArgs, QInputEvent* event);
-	void cmdCloseSidebar(GString* args[], int nArgs, QInputEvent* event);
-	void cmdCloseSidebarMoveResizeWin(GString* args[], int nArgs, QInputEvent* event);
-	void cmdCloseSidebarResizeWin(GString* args[], int nArgs, QInputEvent* event);
-	void cmdCloseWindowOrQuit(GString* args[], int nArgs, QInputEvent* event);
-	void cmdContinuousMode(GString* args[], int nArgs, QInputEvent* event);
-	void cmdCopy(GString* args[], int nArgs, QInputEvent* event);
-	void cmdCopyLinkTarget(GString* args[], int nArgs, QInputEvent* event);
-#if 0 // for debugging
-  void cmdDebug1(GString *args[], int nArgs, QInputEvent *event);
-#endif
-	void cmdEndPan(GString* args[], int nArgs, QInputEvent* event);
-	void cmdEndSelection(GString* args[], int nArgs, QInputEvent* event);
-	void cmdExpandSidebar(GString* args[], int nArgs, QInputEvent* event);
-	void cmdFind(GString* args[], int nArgs, QInputEvent* event);
-	void cmdFindFirst(GString* args[], int nArgs, QInputEvent* event);
-	void cmdFindNext(GString* args[], int nArgs, QInputEvent* event);
-	void cmdFindPrevious(GString* args[], int nArgs, QInputEvent* event);
-	void cmdFocusToDocWin(GString* args[], int nArgs, QInputEvent* event);
-	void cmdFocusToPageNum(GString* args[], int nArgs, QInputEvent* event);
-	void cmdFollowLink(GString* args[], int nArgs, QInputEvent* event);
-	void cmdFollowLinkInNewTab(GString* args[], int nArgs, QInputEvent* event);
-	void cmdFollowLinkInNewTabNoSel(GString* args[], int nArgs, QInputEvent* event);
-	void cmdFollowLinkInNewWin(GString* args[], int nArgs, QInputEvent* event);
-	void cmdFollowLinkInNewWinNoSel(GString* args[], int nArgs, QInputEvent* event);
-	void cmdFollowLinkNoSel(GString* args[], int nArgs, QInputEvent* event);
-	void cmdFullScreenMode(GString* args[], int nArgs, QInputEvent* event);
-	void cmdGoBackward(GString* args[], int nArgs, QInputEvent* event);
-	void cmdGoForward(GString* args[], int nArgs, QInputEvent* event);
-	void cmdGotoDest(GString* args[], int nArgs, QInputEvent* event);
-	void cmdGotoLastPage(GString* args[], int nArgs, QInputEvent* event);
-	void cmdGotoPage(GString* args[], int nArgs, QInputEvent* event);
-	void cmdHelp(GString* args[], int nArgs, QInputEvent* event);
-	void cmdHideMenuBar(GString* args[], int nArgs, QInputEvent* event);
-	void cmdHideToolbar(GString* args[], int nArgs, QInputEvent* event);
-	void cmdHorizontalContinuousMode(GString* args[], int nArgs, QInputEvent* event);
-	void cmdLinearSelectMode(GString* args[], int nArgs, QInputEvent* event);
-	void cmdLoadSession(GString* args[], int nArgs, QInputEvent* event);
-	void cmdLoadTabState(GString* args[], int nArgs, QInputEvent* event);
-	void cmdNewTab(GString* args[], int nArgs, QInputEvent* event);
-	void cmdNewWindow(GString* args[], int nArgs, QInputEvent* event);
-	void cmdNextPage(GString* args[], int nArgs, QInputEvent* event);
-	void cmdNextPageNoScroll(GString* args[], int nArgs, QInputEvent* event);
-	void cmdNextTab(GString* args[], int nArgs, QInputEvent* event);
-	void cmdOpen(GString* args[], int nArgs, QInputEvent* event);
-	void cmdOpenErrorWindow(GString* args[], int nArgs, QInputEvent* event);
-	void cmdOpenFile(GString* args[], int nArgs, QInputEvent* event);
-	void cmdOpenFile2(GString* args[], int nArgs, QInputEvent* event);
-	void cmdOpenFileAtDest(GString* args[], int nArgs, QInputEvent* event);
-	void cmdOpenFileAtDestIn(GString* args[], int nArgs, QInputEvent* event);
-	void cmdOpenFileAtPage(GString* args[], int nArgs, QInputEvent* event);
-	void cmdOpenFileAtPageIn(GString* args[], int nArgs, QInputEvent* event);
-	void cmdOpenFileIn(GString* args[], int nArgs, QInputEvent* event);
-	void cmdOpenIn(GString* args[], int nArgs, QInputEvent* event);
-	void cmdOpenSidebar(GString* args[], int nArgs, QInputEvent* event);
-	void cmdOpenSidebarMoveResizeWin(GString* args[], int nArgs, QInputEvent* event);
-	void cmdOpenSidebarResizeWin(GString* args[], int nArgs, QInputEvent* event);
-	void cmdPageDown(GString* args[], int nArgs, QInputEvent* event);
-	void cmdPageUp(GString* args[], int nArgs, QInputEvent* event);
-	void cmdPostPopupMenu(GString* args[], int nArgs, QInputEvent* event);
-	void cmdPrevPage(GString* args[], int nArgs, QInputEvent* event);
-	void cmdPrevPageNoScroll(GString* args[], int nArgs, QInputEvent* event);
-	void cmdPrevTab(GString* args[], int nArgs, QInputEvent* event);
+	void cmdAbout(const VEC_STR& args, QInputEvent* event);
+	void cmdBlockSelectMode(const VEC_STR& args, QInputEvent* event);
+	void cmdCheckOpenFile(const VEC_STR& args, QInputEvent* event);
+	void cmdCheckOpenFileAtDest(const VEC_STR& args, QInputEvent* event);
+	void cmdCheckOpenFileAtPage(const VEC_STR& args, QInputEvent* event);
+	void cmdCloseTabOrQuit(const VEC_STR& args, QInputEvent* event);
+	void cmdCloseSidebar(const VEC_STR& args, QInputEvent* event);
+	void cmdCloseSidebarMoveResizeWin(const VEC_STR& args, QInputEvent* event);
+	void cmdCloseSidebarResizeWin(const VEC_STR& args, QInputEvent* event);
+	void cmdCloseWindowOrQuit(const VEC_STR& args, QInputEvent* event);
+	void cmdContinuousMode(const VEC_STR& args, QInputEvent* event);
+	void cmdCopy(const VEC_STR& args, QInputEvent* event);
+	void cmdCopyLinkTarget(const VEC_STR& args, QInputEvent* event);
+	void cmdEndPan(const VEC_STR& args, QInputEvent* event);
+	void cmdEndSelection(const VEC_STR& args, QInputEvent* event);
+	void cmdExpandSidebar(const VEC_STR& args, QInputEvent* event);
+	void cmdFind(const VEC_STR& args, QInputEvent* event);
+	void cmdFindFirst(const VEC_STR& args, QInputEvent* event);
+	void cmdFindNext(const VEC_STR& args, QInputEvent* event);
+	void cmdFindPrevious(const VEC_STR& args, QInputEvent* event);
+	void cmdFocusToDocWin(const VEC_STR& args, QInputEvent* event);
+	void cmdFocusToPageNum(const VEC_STR& args, QInputEvent* event);
+	void cmdFollowLink(const VEC_STR& args, QInputEvent* event);
+	void cmdFollowLinkInNewTab(const VEC_STR& args, QInputEvent* event);
+	void cmdFollowLinkInNewTabNoSel(const VEC_STR& args, QInputEvent* event);
+	void cmdFollowLinkInNewWin(const VEC_STR& args, QInputEvent* event);
+	void cmdFollowLinkInNewWinNoSel(const VEC_STR& args, QInputEvent* event);
+	void cmdFollowLinkNoSel(const VEC_STR& args, QInputEvent* event);
+	void cmdFullScreenMode(const VEC_STR& args, QInputEvent* event);
+	void cmdGoBackward(const VEC_STR& args, QInputEvent* event);
+	void cmdGoForward(const VEC_STR& args, QInputEvent* event);
+	void cmdGotoDest(const VEC_STR& args, QInputEvent* event);
+	void cmdGotoLastPage(const VEC_STR& args, QInputEvent* event);
+	void cmdGotoPage(const VEC_STR& args, QInputEvent* event);
+	void cmdHelp(const VEC_STR& args, QInputEvent* event);
+	void cmdHideMenuBar(const VEC_STR& args, QInputEvent* event);
+	void cmdHideToolbar(const VEC_STR& args, QInputEvent* event);
+	void cmdHorizontalContinuousMode(const VEC_STR& args, QInputEvent* event);
+	void cmdLinearSelectMode(const VEC_STR& args, QInputEvent* event);
+	void cmdLoadSession(const VEC_STR& args, QInputEvent* event);
+	void cmdLoadTabState(const VEC_STR& args, QInputEvent* event);
+	void cmdNewTab(const VEC_STR& args, QInputEvent* event);
+	void cmdNewWindow(const VEC_STR& args, QInputEvent* event);
+	void cmdNextPage(const VEC_STR& args, QInputEvent* event);
+	void cmdNextPageNoScroll(const VEC_STR& args, QInputEvent* event);
+	void cmdNextTab(const VEC_STR& args, QInputEvent* event);
+	void cmdOpen(const VEC_STR& args, QInputEvent* event);
+	void cmdOpenErrorWindow(const VEC_STR& args, QInputEvent* event);
+	void cmdOpenFile(const VEC_STR& args, QInputEvent* event);
+	void cmdOpenFile2(const VEC_STR& args, QInputEvent* event);
+	void cmdOpenFileAtDest(const VEC_STR& args, QInputEvent* event);
+	void cmdOpenFileAtDestIn(const VEC_STR& args, QInputEvent* event);
+	void cmdOpenFileAtPage(const VEC_STR& args, QInputEvent* event);
+	void cmdOpenFileAtPageIn(const VEC_STR& args, QInputEvent* event);
+	void cmdOpenFileIn(const VEC_STR& args, QInputEvent* event);
+	void cmdOpenIn(const VEC_STR& args, QInputEvent* event);
+	void cmdOpenSidebar(const VEC_STR& args, QInputEvent* event);
+	void cmdOpenSidebarMoveResizeWin(const VEC_STR& args, QInputEvent* event);
+	void cmdOpenSidebarResizeWin(const VEC_STR& args, QInputEvent* event);
+	void cmdPageDown(const VEC_STR& args, QInputEvent* event);
+	void cmdPageUp(const VEC_STR& args, QInputEvent* event);
+	void cmdPostPopupMenu(const VEC_STR& args, QInputEvent* event);
+	void cmdPrevPage(const VEC_STR& args, QInputEvent* event);
+	void cmdPrevPageNoScroll(const VEC_STR& args, QInputEvent* event);
+	void cmdPrevTab(const VEC_STR& args, QInputEvent* event);
 #if XPDFWIDGET_PRINTING
-	void cmdPrint(GString* args[], int nArgs, QInputEvent* event);
+	void cmdPrint(const VEC_STR& args, QInputEvent* event);
 #endif
-	void cmdQuit(GString* args[], int nArgs, QInputEvent* event);
-	void cmdRaise(GString* args[], int nArgs, QInputEvent* event);
-	void cmdReload(GString* args[], int nArgs, QInputEvent* event);
-	void cmdRotateCW(GString* args[], int nArgs, QInputEvent* event);
-	void cmdRotateCCW(GString* args[], int nArgs, QInputEvent* event);
-	void cmdRun(GString* args[], int nArgs, QInputEvent* event);
-	void cmdSaveAs(GString* args[], int nArgs, QInputEvent* event);
-	void cmdSaveImage(GString* args[], int nArgs, QInputEvent* event);
-	void cmdSaveSession(GString* args[], int nArgs, QInputEvent* event);
-	void cmdSaveTabState(GString* args[], int nArgs, QInputEvent* event);
-	void cmdScrollDown(GString* args[], int nArgs, QInputEvent* event);
-	void cmdScrollDownNextPage(GString* args[], int nArgs, QInputEvent* event);
-	void cmdScrollLeft(GString* args[], int nArgs, QInputEvent* event);
-	void cmdScrollOutlineDown(GString* args[], int nArgs, QInputEvent* event);
-	void cmdScrollOutlineUp(GString* args[], int nArgs, QInputEvent* event);
-	void cmdScrollRight(GString* args[], int nArgs, QInputEvent* event);
-	void cmdScrollToBottomEdge(GString* args[], int nArgs, QInputEvent* event);
-	void cmdScrollToBottomRight(GString* args[], int nArgs, QInputEvent* event);
-	void cmdScrollToLeftEdge(GString* args[], int nArgs, QInputEvent* event);
-	void cmdScrollToRightEdge(GString* args[], int nArgs, QInputEvent* event);
-	void cmdScrollToTopEdge(GString* args[], int nArgs, QInputEvent* event);
-	void cmdScrollToTopLeft(GString* args[], int nArgs, QInputEvent* event);
-	void cmdScrollUp(GString* args[], int nArgs, QInputEvent* event);
-	void cmdScrollUpPrevPage(GString* args[], int nArgs, QInputEvent* event);
-	void cmdSelectLine(GString* args[], int nArgs, QInputEvent* event);
-	void cmdSelectWord(GString* args[], int nArgs, QInputEvent* event);
-	void cmdSetSelection(GString* args[], int nArgs, QInputEvent* event);
-	void cmdShowAttachmentsPane(GString* args[], int nArgs, QInputEvent* event);
-	void cmdShowDocumentInfo(GString* args[], int nArgs, QInputEvent* event);
-	void cmdShowKeyBindings(GString* args[], int nArgs, QInputEvent* event);
-	void cmdShowLayersPane(GString* args[], int nArgs, QInputEvent* event);
-	void cmdShowMenuBar(GString* args[], int nArgs, QInputEvent* event);
-	void cmdShowOutlinePane(GString* args[], int nArgs, QInputEvent* event);
-	void cmdShowToolbar(GString* args[], int nArgs, QInputEvent* event);
-	void cmdShrinkSidebar(GString* args[], int nArgs, QInputEvent* event);
-	void cmdSideBySideContinuousMode(GString* args[], int nArgs, QInputEvent* event);
-	void cmdSideBySideSingleMode(GString* args[], int nArgs, QInputEvent* event);
-	void cmdSinglePageMode(GString* args[], int nArgs, QInputEvent* event);
-	void cmdStartExtendedSelection(GString* args[], int nArgs, QInputEvent* event);
-	void cmdStartPan(GString* args[], int nArgs, QInputEvent* event);
-	void cmdStartSelection(GString* args[], int nArgs, QInputEvent* event);
-	void cmdToggleContinuousMode(GString* args[], int nArgs, QInputEvent* event);
-	void cmdToggleFullScreenMode(GString* args[], int nArgs, QInputEvent* event);
-	void cmdToggleMenuBar(GString* args[], int nArgs, QInputEvent* event);
-	void cmdToggleSelectMode(GString* args[], int nArgs, QInputEvent* event);
-	void cmdToggleSidebar(GString* args[], int nArgs, QInputEvent* event);
-	void cmdToggleSidebarMoveResizeWin(GString* args[], int nArgs, QInputEvent* event);
-	void cmdToggleSidebarResizeWin(GString* args[], int nArgs, QInputEvent* event);
-	void cmdToggleToolbar(GString* args[], int nArgs, QInputEvent* event);
-	void cmdViewPageLabels(GString* args[], int nArgs, QInputEvent* event);
-	void cmdViewPageNumbers(GString* args[], int nArgs, QInputEvent* event);
-	void cmdWindowMode(GString* args[], int nArgs, QInputEvent* event);
-	void cmdZoomFitPage(GString* args[], int nArgs, QInputEvent* event);
-	void cmdZoomFitWidth(GString* args[], int nArgs, QInputEvent* event);
-	void cmdZoomIn(GString* args[], int nArgs, QInputEvent* event);
-	void cmdZoomOut(GString* args[], int nArgs, QInputEvent* event);
-	void cmdZoomPercent(GString* args[], int nArgs, QInputEvent* event);
-	void cmdZoomToSelection(GString* args[], int nArgs, QInputEvent* event);
+	void cmdQuit(const VEC_STR& args, QInputEvent* event);
+	void cmdRaise(const VEC_STR& args, QInputEvent* event);
+	void cmdReload(const VEC_STR& args, QInputEvent* event);
+	void cmdRotateCW(const VEC_STR& args, QInputEvent* event);
+	void cmdRotateCCW(const VEC_STR& args, QInputEvent* event);
+	void cmdRun(const VEC_STR& args, QInputEvent* event);
+	void cmdSaveAs(const VEC_STR& args, QInputEvent* event);
+	void cmdSaveImage(const VEC_STR& args, QInputEvent* event);
+	void cmdSaveSession(const VEC_STR& args, QInputEvent* event);
+	void cmdSaveTabState(const VEC_STR& args, QInputEvent* event);
+	void cmdScrollDown(const VEC_STR& args, QInputEvent* event);
+	void cmdScrollDownNextPage(const VEC_STR& args, QInputEvent* event);
+	void cmdScrollLeft(const VEC_STR& args, QInputEvent* event);
+	void cmdScrollOutlineDown(const VEC_STR& args, QInputEvent* event);
+	void cmdScrollOutlineUp(const VEC_STR& args, QInputEvent* event);
+	void cmdScrollRight(const VEC_STR& args, QInputEvent* event);
+	void cmdScrollToBottomEdge(const VEC_STR& args, QInputEvent* event);
+	void cmdScrollToBottomRight(const VEC_STR& args, QInputEvent* event);
+	void cmdScrollToLeftEdge(const VEC_STR& args, QInputEvent* event);
+	void cmdScrollToRightEdge(const VEC_STR& args, QInputEvent* event);
+	void cmdScrollToTopEdge(const VEC_STR& args, QInputEvent* event);
+	void cmdScrollToTopLeft(const VEC_STR& args, QInputEvent* event);
+	void cmdScrollUp(const VEC_STR& args, QInputEvent* event);
+	void cmdScrollUpPrevPage(const VEC_STR& args, QInputEvent* event);
+	void cmdSelectLine(const VEC_STR& args, QInputEvent* event);
+	void cmdSelectWord(const VEC_STR& args, QInputEvent* event);
+	void cmdSetSelection(const VEC_STR& args, QInputEvent* event);
+	void cmdShowAttachmentsPane(const VEC_STR& args, QInputEvent* event);
+	void cmdShowDocumentInfo(const VEC_STR& args, QInputEvent* event);
+	void cmdShowKeyBindings(const VEC_STR& args, QInputEvent* event);
+	void cmdShowLayersPane(const VEC_STR& args, QInputEvent* event);
+	void cmdShowMenuBar(const VEC_STR& args, QInputEvent* event);
+	void cmdShowOutlinePane(const VEC_STR& args, QInputEvent* event);
+	void cmdShowToolbar(const VEC_STR& args, QInputEvent* event);
+	void cmdShrinkSidebar(const VEC_STR& args, QInputEvent* event);
+	void cmdSideBySideContinuousMode(const VEC_STR& args, QInputEvent* event);
+	void cmdSideBySideSingleMode(const VEC_STR& args, QInputEvent* event);
+	void cmdSinglePageMode(const VEC_STR& args, QInputEvent* event);
+	void cmdStartExtendedSelection(const VEC_STR& args, QInputEvent* event);
+	void cmdStartPan(const VEC_STR& args, QInputEvent* event);
+	void cmdStartSelection(const VEC_STR& args, QInputEvent* event);
+	void cmdToggleContinuousMode(const VEC_STR& args, QInputEvent* event);
+	void cmdToggleFullScreenMode(const VEC_STR& args, QInputEvent* event);
+	void cmdToggleMenuBar(const VEC_STR& args, QInputEvent* event);
+	void cmdToggleSelectMode(const VEC_STR& args, QInputEvent* event);
+	void cmdToggleSidebar(const VEC_STR& args, QInputEvent* event);
+	void cmdToggleSidebarMoveResizeWin(const VEC_STR& args, QInputEvent* event);
+	void cmdToggleSidebarResizeWin(const VEC_STR& args, QInputEvent* event);
+	void cmdToggleToolbar(const VEC_STR& args, QInputEvent* event);
+	void cmdViewPageLabels(const VEC_STR& args, QInputEvent* event);
+	void cmdViewPageNumbers(const VEC_STR& args, QInputEvent* event);
+	void cmdWindowMode(const VEC_STR& args, QInputEvent* event);
+	void cmdZoomFitPage(const VEC_STR& args, QInputEvent* event);
+	void cmdZoomFitWidth(const VEC_STR& args, QInputEvent* event);
+	void cmdZoomIn(const VEC_STR& args, QInputEvent* event);
+	void cmdZoomOut(const VEC_STR& args, QInputEvent* event);
+	void cmdZoomPercent(const VEC_STR& args, QInputEvent* event);
+	void cmdZoomToSelection(const VEC_STR& args, QInputEvent* event);
 	int  getFindCaseFlag();
 	int  scaleScroll(int delta);
-	void followLink(QInputEvent* event, GBool onlyIfNoSel, GBool newTab, GBool newWindow);
+	void followLink(QInputEvent* event, bool onlyIfNoSel, bool newTab, bool newWindow);
 
 	//--- GUI events
 	int          getModifiers(Qt::KeyboardModifiers qtMods);
@@ -491,8 +484,7 @@ private:
 	XpdfWidget::DisplayMode fullScreenPreviousDisplayMode;
 	double                  fullScreenPreviousZoom;
 
-	QTimer* findErrorTimer;
-
+	QTimer*          findErrorTimer;
 	XpdfErrorWindow* errorWindow;
 	QDialog*         documentInfoDialog;
 	QTextBrowser*    documentInfoMetadataTab;
@@ -503,9 +495,6 @@ private:
 	QProgressDialog* printStatusDialog;
 #endif
 
-	QString lastFileOpened;
-
+	QString       lastFileOpened;
 	QLocalServer* remoteServer;
 };
-
-#endif

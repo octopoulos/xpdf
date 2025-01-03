@@ -6,12 +6,9 @@
 //
 //========================================================================
 
-#ifndef SPLASHGLYPHBITMAP_H
-#define SPLASHGLYPHBITMAP_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
 
 //------------------------------------------------------------------------
 // SplashGlyphBitmap
@@ -19,10 +16,11 @@
 
 struct SplashGlyphBitmap
 {
-	int     x, y, w, h; // offset and size of glyph
-	GBool   aa;         // anti-aliased: true means 8-bit alpha bitmap; false means 1-bit
-	Guchar* data;       // bitmap data
-	GBool   freeData;   // true if data memory should be freed
+	int      x;        // offset and size of glyph
+	int      y;        //
+	int      w;        //
+	int      h;        //
+	bool     aa;       // anti-aliased: true means 8-bit alpha bitmap; false means 1-bit
+	uint8_t* data;     // bitmap data
+	bool     freeData; // true if data memory should be freed
 };
-
-#endif

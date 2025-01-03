@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include "gmem.h"
 #include "gmempp.h"
 #include "GList.h"
@@ -38,7 +37,7 @@ enum CachedTileState
 	cachedTileStarted,   // worker thread is rasterizing the tile
 	cachedTileFinished,  // rasterization is done
 	cachedTileCanceled   // worker thread should stop rasterizing
-	                   //   and remove this tile from the cache
+	                     //   and remove this tile from the cache
 };
 
 class CachedTileDesc : public TileDesc
@@ -47,18 +46,18 @@ public:
 	CachedTileDesc(TileDesc* tile)
 	    : TileDesc(tile->page, tile->rotate, tile->dpi, tile->tx, tile->ty, tile->tw, tile->th)
 	    , state(cachedTileUnstarted)
-	    , active(gTrue)
+	    , active(true)
 	    , bitmap(nullptr)
-	    , freeBitmap(gFalse)
+	    , freeBitmap(false)
 	{
 	}
 
 	~CachedTileDesc();
 
 	CachedTileState state;
-	GBool           active;
+	bool            active;
 	SplashBitmap*   bitmap;
-	GBool           freeBitmap;
+	bool            freeBitmap;
 };
 
 CachedTileDesc::~CachedTileDesc()
@@ -126,7 +125,7 @@ static void gWaitCondition(GCondition* c, GMutex* m)
 #else
 
 typedef pthread_t GThreadID;
-typedef void*     (*GThreadFunc)(void*);
+typedef void* (*GThreadFunc)(void*);
 #	define GThreadReturn void*
 
 static void gCreateThread(GThreadID* thr, GThreadFunc threadFunc, void* data)
@@ -198,7 +197,7 @@ private:
 	TileCache* tileCache;
 	int        nThreads;
 	GThreadID* threads;
-	GBool      quit;
+	bool       quit;
 	GMutex     mutex;
 	GCondition cond;       // signalled when a job is added to the
 	                       //   queue and when the quit flag is set
@@ -208,28 +207,24 @@ private:
 
 TileCacheThreadPool::TileCacheThreadPool(TileCache* tileCacheA, int nThreadsA)
 {
-	int i;
-
 	tileCache = tileCacheA;
 	nThreads  = nThreadsA;
-	quit      = gFalse;
+	quit      = false;
 	gInitMutex(&mutex);
 	gInitCondition(&cond);
 	gInitCondition(&finishCond);
 	threads = (GThreadID*)gmallocn(nThreads, sizeof(GThreadID));
-	for (i = 0; i < nThreads; ++i)
+	for (int i = 0; i < nThreads; ++i)
 		gCreateThread(&threads[i], &threadFunc, this);
 }
 
 TileCacheThreadPool::~TileCacheThreadPool()
 {
-	int i;
-
 	gLockMutex(&mutex);
 	quit = true;
 	gSignalCondition(&cond);
 	gUnlockMutex(&mutex);
-	for (i = 0; i < nThreads; ++i)
+	for (int i = 0; i < nThreads; ++i)
 		gJoinThread(threads[i]);
 	gDestroyCondition(&cond);
 	gDestroyCondition(&finishCond);
@@ -293,7 +288,7 @@ TileCache::TileCache(DisplayState* stateA)
 
 TileCache::~TileCache()
 {
-	flushCache(gFalse);
+	flushCache(false);
 	delete threadPool;
 	delete cache;
 }
@@ -303,7 +298,7 @@ void TileCache::setActiveTileList(GList* tiles)
 	TileDesc*       tile;
 	CachedTileDesc* ct;
 	int             tileIdx, cacheIdx;
-	GBool           newTiles;
+	bool            newTiles;
 
 	threadPool->lockMutex();
 
@@ -325,13 +320,13 @@ void TileCache::setActiveTileList(GList* tiles)
 		}
 		else
 		{
-			ct->active = gFalse;
+			ct->active = false;
 			++cacheIdx;
 		}
 	}
 
 	// mark cached tiles as active; add any new tiles to the cache
-	newTiles = gFalse;
+	newTiles = false;
 	for (tileIdx = 0; tileIdx < tiles->getLength(); ++tileIdx)
 	{
 		tile     = (TileDesc*)tiles->get(tileIdx);
@@ -343,9 +338,9 @@ void TileCache::setActiveTileList(GList* tiles)
 		else
 		{
 			ct       = new CachedTileDesc(tile);
-			newTiles = gTrue;
+			newTiles = true;
 		}
-		ct->active = gTrue;
+		ct->active = true;
 		cache->insert(0, ct);
 	}
 
@@ -357,7 +352,7 @@ void TileCache::setActiveTileList(GList* tiles)
 		threadPool->jobAdded();
 }
 
-SplashBitmap* TileCache::getTileBitmap(TileDesc* tile, GBool* finished)
+SplashBitmap* TileCache::getTileBitmap(TileDesc* tile, bool* finished)
 {
 	CachedTileDesc* ct;
 	SplashBitmap*   bitmap;
@@ -383,27 +378,27 @@ SplashBitmap* TileCache::getTileBitmap(TileDesc* tile, GBool* finished)
 
 void TileCache::paperColorChanged()
 {
-	flushCache(gFalse);
+	flushCache(false);
 }
 
 void TileCache::reverseVideoChanged()
 {
-	flushCache(gFalse);
+	flushCache(false);
 }
 
 void TileCache::optionalContentChanged()
 {
-	flushCache(gFalse);
+	flushCache(false);
 }
 
 void TileCache::docChanged()
 {
-	flushCache(gTrue);
+	flushCache(true);
 }
 
 void TileCache::forceRedraw()
 {
-	flushCache(gFalse);
+	flushCache(false);
 }
 
 // Search for <tile> on <tileList>, and return its index if found, or
@@ -412,9 +407,8 @@ void TileCache::forceRedraw()
 int TileCache::findTile(TileDesc* tile, GList* tileList)
 {
 	TileDesc* t;
-	int       i;
 
-	for (i = 0; i < tileList->getLength(); ++i)
+	for (int i = 0; i < tileList->getLength(); ++i)
 	{
 		t = (TileDesc*)tileList->get(i);
 		if (t->matches(tile))
@@ -429,11 +423,10 @@ int TileCache::findTile(TileDesc* tile, GList* tileList)
 void TileCache::cleanCache()
 {
 	CachedTileDesc* ct;
-	int             n, i;
 
 	// count the number of non-canceled tiles
-	n = 0;
-	for (i = 0; i < cache->getLength(); ++i)
+	int n = 0;
+	for (int i = 0; i < cache->getLength(); ++i)
 	{
 		ct = (CachedTileDesc*)cache->get(i);
 		if (ct->state != cachedTileCanceled)
@@ -441,7 +434,7 @@ void TileCache::cleanCache()
 	}
 
 	// if there are too many non-canceled tiles, remove tiles
-	i = cache->getLength() - 1;
+	int i = cache->getLength() - 1;
 	while (n > state->getTileCacheSize() && i >= 0)
 	{
 		ct = (CachedTileDesc*)cache->get(i);
@@ -466,7 +459,7 @@ void TileCache::cleanCache()
 // state to canceled.  If <wait> is true, this function won't return
 // until the cache is empty, i.e., until all possible users of the
 // PDFDoc are done.
-void TileCache::flushCache(GBool wait)
+void TileCache::flushCache(bool wait)
 {
 	CachedTileDesc* ct;
 	int             i;
@@ -502,9 +495,7 @@ void TileCache::flushCache(GBool wait)
 // with the TileCacheThreadPool mutex locked.
 void TileCache::removeTile(CachedTileDesc* ct)
 {
-	int i;
-
-	for (i = 0; i < cache->getLength(); ++i)
+	for (int i = 0; i < cache->getLength(); ++i)
 	{
 		if (cache->get(i) == ct)
 		{
@@ -516,18 +507,17 @@ void TileCache::removeTile(CachedTileDesc* ct)
 
 // Return true if there are one or more unstarted tiles.  This will be
 // called with the TileCacheThreadPool mutex locked.
-GBool TileCache::hasUnstartedTiles()
+bool TileCache::hasUnstartedTiles()
 {
 	CachedTileDesc* ct;
-	int             i;
 
-	for (i = 0; i < cache->getLength(); ++i)
+	for (int i = 0; i < cache->getLength(); ++i)
 	{
 		ct = (CachedTileDesc*)cache->get(i);
 		if (ct->state == cachedTileUnstarted)
-			return gTrue;
+			return true;
 	}
-	return gFalse;
+	return false;
 }
 
 // Return the next unstarted tile, changing its state to
@@ -536,9 +526,8 @@ GBool TileCache::hasUnstartedTiles()
 CachedTileDesc* TileCache::getUnstartedTile()
 {
 	CachedTileDesc* ct;
-	int             i;
 
-	for (i = 0; i < cache->getLength(); ++i)
+	for (int i = 0; i < cache->getLength(); ++i)
 	{
 		ct = (CachedTileDesc*)cache->get(i);
 		if (ct->state == cachedTileUnstarted)
@@ -563,7 +552,7 @@ void TileCache::startPageCbk(void* data)
 
 	info->tileCache->threadPool->lockMutex();
 	info->ct->bitmap     = info->out->getBitmap();
-	info->ct->freeBitmap = gFalse;
+	info->ct->freeBitmap = false;
 	info->tileCache->threadPool->unlockMutex();
 }
 
@@ -580,7 +569,7 @@ void TileCache::rasterizeTile(CachedTileDesc* ct)
 	info.out       = out;
 	out->setStartPageCallback(&TileCache::startPageCbk, &info);
 	out->startDoc(state->getDoc()->getXRef());
-	state->getDoc()->displayPageSlice(out, ct->page, ct->dpi, ct->dpi, ct->rotate, gFalse, gTrue, gFalse, ct->tx, ct->ty, ct->tw, ct->th, &abortCheckCbk, ct);
+	state->getDoc()->displayPageSlice(out, ct->page, ct->dpi, ct->dpi, ct->rotate, false, true, false, ct->tx, ct->ty, ct->tw, ct->th, &abortCheckCbk, ct);
 	if (ct->state == cachedTileCanceled)
 	{
 		threadPool->lockMutex();
@@ -591,7 +580,7 @@ void TileCache::rasterizeTile(CachedTileDesc* ct)
 	{
 		threadPool->lockMutex();
 		ct->bitmap     = out->takeBitmap();
-		ct->freeBitmap = gTrue;
+		ct->freeBitmap = true;
 		ct->state      = cachedTileFinished;
 		threadPool->unlockMutex();
 		if (tileDoneCbk)
@@ -600,7 +589,7 @@ void TileCache::rasterizeTile(CachedTileDesc* ct)
 	delete out;
 }
 
-GBool TileCache::abortCheckCbk(void* data)
+bool TileCache::abortCheckCbk(void* data)
 {
 	CachedTileDesc* ct = (CachedTileDesc*)data;
 	return ct->state == cachedTileCanceled;

@@ -6,10 +6,8 @@
  * Copyright 1996-2003 Glyph & Cog, LLC
  */
 
-#ifndef GMEM_H
-#define GMEM_H
+#pragma once
 
-#include <stdio.h>
 #include <aconf.h>
 
 #if USE_EXCEPTIONS
@@ -35,8 +33,7 @@ public:
 #endif // USE_EXCEPTIONS
 
 /*
- * Same as malloc, but prints error message and exits if malloc()
- * returns NULL.
+ * Same as malloc, but prints error message and exits if malloc() returns nullptr.
  */
 #ifdef DEBUG_MEM
 extern void* gmalloc(int size, int ignore = 0) GMEM_EXCEP;
@@ -46,7 +43,7 @@ extern void* gmalloc(int size) GMEM_EXCEP;
 
 /*
  * Same as realloc, but prints error message and exits if realloc()
- * returns NULL.  If <p> is NULL, calls malloc instead of realloc().
+ * returns nullptr.  If <p> is nullptr, calls malloc instead of realloc().
  */
 extern void* grealloc(void* p, int size) GMEM_EXCEP;
 
@@ -71,7 +68,7 @@ extern void* gmalloc64(size_t size) GMEM_EXCEP;
 extern void* gmallocn64(int nObjs, size_t objSize) GMEM_EXCEP;
 
 /*
- * Same as free, but checks for and ignores NULL pointers.
+ * Same as free, but checks for and ignores nullptr pointers.
  */
 extern void gfree(void* p);
 
@@ -93,5 +90,3 @@ extern void gMemReport(FILE* f);
  * Allocate memory and copy a string into it.
  */
 extern char* copyString(const char* s);
-
-#endif

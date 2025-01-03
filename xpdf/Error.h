@@ -6,11 +6,9 @@
 //
 //========================================================================
 
-#ifndef ERROR_H
-#define ERROR_H
+#pragma once
 
 #include <aconf.h>
-
 #include <stdio.h>
 #include "config.h"
 #include "gfile.h"
@@ -29,10 +27,16 @@ enum ErrorCategory
 
 extern const char* errorCategoryNames[];
 
-extern void setErrorCallback(void (*cbk)(void* data, ErrorCategory category, int pos, char* msg), void* data);
+extern void setErrorCallback(void (*cbk)(void* data, ErrorCategory category, int pos, const char* msg), void* data);
 
 extern void* getErrorCallbackData();
 
-extern void CDECL error(ErrorCategory category, GFileOffset pos, const char* msg, ...);
+void errorText(ErrorCategory category, GFileOffset pos, std::string text);
 
-#endif
+template <typename... T>
+extern void CDECL error(ErrorCategory category, GFileOffset pos, fmt::format_string<T...> fmt, T&&... args)
+{
+	const auto& vargs = fmt::make_format_args(args...);
+	auto        text  = fmt::vformat(fmt, vargs);
+	errorText(category, pos, std::move(text));
+}

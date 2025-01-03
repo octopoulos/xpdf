@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -16,7 +15,7 @@
 #	include <windows.h>
 #endif
 #include "gmempp.h"
-#include "GString.h"
+#include "GString.h" // LowerCase, UpperCase
 #include "gfile.h"
 #include "config.h"
 #include "GlobalParams.h"
@@ -57,69 +56,61 @@
 // PDFDoc
 //------------------------------------------------------------------------
 
-PDFDoc::PDFDoc(GString* fileNameA, GString* ownerPassword, GString* userPassword, PDFCore* coreA)
+PDFDoc::PDFDoc(const std::string& fileNameA, const std::string& ownerPassword, const std::string& userPassword, PDFCore* coreA)
 {
-	Object   obj;
-	GString *fileName1, *fileName2;
-#ifdef _WIN32
-	int n, i;
-#endif
+	Object      obj;
+	std::string fileName1, fileName2;
 
 	init(coreA);
 
 	fileName = fileNameA;
 #ifdef _WIN32
-	n         = fileName->getLength();
-	fileNameU = (wchar_t*)gmallocn(n + 1, sizeof(wchar_t));
-	for (i = 0; i < n; ++i)
-		fileNameU[i] = (wchar_t)(fileName->getChar(i) & 0xff);
+	const int n = TO_INT(fileName.size());
+	fileNameU   = (wchar_t*)gmallocn(n + 1, sizeof(wchar_t));
+	for (int i = 0; i < n; ++i)
+		fileNameU[i] = (wchar_t)(fileName.at(i) & 0xff);
 	fileNameU[n] = L'\0';
 #endif
 
 	fileName1 = fileName;
 
 	// try to open file
-	fileName2 = nullptr;
 #ifdef VMS
-	if (!(file = fopen(fileName1->getCString(), fopenReadMode, "ctx=stm")))
+	if (!(file = fopen(fileName1.c_str(), fopenReadMode, "ctx=stm")))
 	{
-		error(errIO, -1, "Couldn't open file '{0:t}'", fileName1);
+		error(errIO, -1, "Couldn't open file '{}'", fileName1);
 		errCode = errOpenFile;
 		return;
 	}
 #else
-	if (!(file = fopen(fileName1->getCString(), fopenReadMode)))
+	if (!(file = fopen(fileName1.c_str(), fopenReadMode)))
 	{
-		fileName2 = fileName->copy();
-		fileName2->lowerCase();
-		if (!(file = fopen(fileName2->getCString(), fopenReadMode)))
+		fileName2 = LowerCase(fileName);
+		if (!(file = fopen(fileName2.c_str(), fopenReadMode)))
 		{
-			fileName2->upperCase();
-			if (!(file = fopen(fileName2->getCString(), fopenReadMode)))
+			fileName2 = UpperCase(fileName);
+			if (!(file = fopen(fileName2.c_str(), fopenReadMode)))
 			{
-				error(errIO, -1, "Couldn't open file '{0:t}'", fileName);
-				delete fileName2;
+				error(errIO, -1, "Couldn't open file '{}'", fileName);
 				errCode = errOpenFile;
 				return;
 			}
 		}
-		delete fileName2;
 	}
 #endif
 
 	// create stream
 	obj.initNull();
-	str = new FileStream(file, 0, gFalse, 0, &obj);
+	str = new FileStream(file, 0, false, 0, &obj);
 
 	ok = setup(ownerPassword, userPassword);
 }
 
 #ifdef _WIN32
-PDFDoc::PDFDoc(wchar_t* fileNameA, int fileNameLen, GString* ownerPassword, GString* userPassword, PDFCore* coreA)
+PDFDoc::PDFDoc(wchar_t* fileNameA, int fileNameLen, const std::string& ownerPassword, const std::string& userPassword, PDFCore* coreA)
 {
 	OSVERSIONINFO version;
 	Object        obj;
-	int           i;
 
 	init(coreA);
 
@@ -132,11 +123,11 @@ PDFDoc::PDFDoc(wchar_t* fileNameA, int fileNameLen, GString* ownerPassword, GStr
 	int wPathLen = (int)wcslen(wPath);
 
 	// save both Unicode and 8-bit copies of the file name
-	fileName  = new GString();
+	fileName.clear();
 	fileNameU = (wchar_t*)gmallocn(wPathLen + 1, sizeof(wchar_t));
 	memcpy(fileNameU, wPath, (wPathLen + 1) * sizeof(wchar_t));
-	for (i = 0; i < wPathLen; ++i)
-		fileName->append((char)fileNameA[i]);
+	for (int i = 0; i < wPathLen; ++i)
+		fileName += (char)fileNameA[i];
 
 	// try to open file
 	// NB: _wfopen is only available in NT
@@ -145,23 +136,23 @@ PDFDoc::PDFDoc(wchar_t* fileNameA, int fileNameLen, GString* ownerPassword, GStr
 	if (version.dwPlatformId == VER_PLATFORM_WIN32_NT)
 		file = _wfopen(fileNameU, wfopenReadMode);
 	else
-		file = fopen(fileName->getCString(), fopenReadMode);
+		file = fopen(fileName.c_str(), fopenReadMode);
 	if (!file)
 	{
-		error(errIO, -1, "Couldn't open file '{0:t}'", fileName);
+		error(errIO, -1, "Couldn't open file '{}'", fileName);
 		errCode = errOpenFile;
 		return;
 	}
 
 	// create stream
 	obj.initNull();
-	str = new FileStream(file, 0, gFalse, 0, &obj);
+	str = new FileStream(file, 0, false, 0, &obj);
 
 	ok = setup(ownerPassword, userPassword);
 }
 #endif
 
-PDFDoc::PDFDoc(char* fileNameA, GString* ownerPassword, GString* userPassword, PDFCore* coreA)
+PDFDoc::PDFDoc(char* fileNameA, const std::string& ownerPassword, const std::string& userPassword, PDFCore* coreA)
 {
 #ifdef _WIN32
 	OSVERSIONINFO version;
@@ -169,19 +160,17 @@ PDFDoc::PDFDoc(char* fileNameA, GString* ownerPassword, GString* userPassword, P
 	Object obj;
 #ifdef _WIN32
 	Unicode u;
-	int     i, j;
 #endif
 
 	init(coreA);
 
-	fileName = new GString(fileNameA);
+	fileName = fileNameA;
 
 #if defined(_WIN32)
 	wchar_t wPath[winMaxLongPath + 1];
-	i = 0;
-	j = 0;
-	while (j < winMaxLongPath && getUTF8(fileName, &i, &u))
-		wPath[j++] = (wchar_t)u;
+	int     i = 0;
+	int     j = 0;
+	while (j < winMaxLongPath && getUTF8(fileName, &i, &u)) wPath[j++] = (wchar_t)u;
 	wPath[j] = L'\0';
 	readWindowsShortcut(wPath, winMaxLongPath + 1);
 	int wPathLen = (int)wcslen(wPath);
@@ -195,49 +184,45 @@ PDFDoc::PDFDoc(char* fileNameA, GString* ownerPassword, GString* userPassword, P
 	if (version.dwPlatformId == VER_PLATFORM_WIN32_NT)
 		file = _wfopen(fileNameU, wfopenReadMode);
 	else
-		file = fopen(fileName->getCString(), fopenReadMode);
+		file = fopen(fileName.c_str(), fopenReadMode);
 #elif defined(VMS)
-	file = fopen(fileName->getCString(), fopenReadMode, "ctx=stm");
+	file = fopen(fileName.c_str(), fopenReadMode, "ctx=stm");
 #else
-	file = fopen(fileName->getCString(), fopenReadMode);
+	file = fopen(fileName.c_str(), fopenReadMode);
 #endif
 
 	if (!file)
 	{
-		error(errIO, -1, "Couldn't open file '{0:t}'", fileName);
+		error(errIO, -1, "Couldn't open file '{}'", fileName);
 		errCode = errOpenFile;
 		return;
 	}
 
 	// create stream
 	obj.initNull();
-	str = new FileStream(file, 0, gFalse, 0, &obj);
+	str = new FileStream(file, 0, false, 0, &obj);
 
 	ok = setup(ownerPassword, userPassword);
 }
 
-PDFDoc::PDFDoc(BaseStream* strA, GString* ownerPassword, GString* userPassword, PDFCore* coreA)
+PDFDoc::PDFDoc(BaseStream* strA, const std::string& ownerPassword, const std::string& userPassword, PDFCore* coreA)
 {
-#ifdef _WIN32
-	int n, i;
-#endif
-
 	init(coreA);
 
-	if (strA->getFileName())
+	if (strA->getFileName().size())
 	{
-		fileName = strA->getFileName()->copy();
+		fileName = strA->getFileName();
 #ifdef _WIN32
-		n         = fileName->getLength();
-		fileNameU = (wchar_t*)gmallocn(n + 1, sizeof(wchar_t));
-		for (i = 0; i < n; ++i)
-			fileNameU[i] = (wchar_t)(fileName->getChar(i) & 0xff);
+		const int n = TO_INT(fileName.size());
+		fileNameU   = (wchar_t*)gmallocn(n + 1, sizeof(wchar_t));
+		for (int i = 0; i < n; ++i)
+			fileNameU[i] = (wchar_t)(fileName.at(i) & 0xff);
 		fileNameU[n] = L'\0';
 #endif
 	}
 	else
 	{
-		fileName = nullptr;
+		fileName.clear();
 #ifdef _WIN32
 		fileNameU = nullptr;
 #endif
@@ -248,7 +233,7 @@ PDFDoc::PDFDoc(BaseStream* strA, GString* ownerPassword, GString* userPassword, 
 
 void PDFDoc::init(PDFCore* coreA)
 {
-	ok      = gFalse;
+	ok      = false;
 	errCode = errNone;
 	core    = coreA;
 	file    = nullptr;
@@ -262,7 +247,7 @@ void PDFDoc::init(PDFCore* coreA)
 	optContent = nullptr;
 }
 
-GBool PDFDoc::setup(GString* ownerPassword, GString* userPassword)
+bool PDFDoc::setup(const std::string& ownerPassword, const std::string& userPassword)
 {
 	str->reset();
 
@@ -270,18 +255,18 @@ GBool PDFDoc::setup(GString* ownerPassword, GString* userPassword)
 	checkHeader();
 
 	// read the xref and catalog
-	if (!PDFDoc::setup2(ownerPassword, userPassword, gFalse))
+	if (!PDFDoc::setup2(ownerPassword, userPassword, false))
 	{
 		if (errCode == errDamaged || errCode == errBadCatalog)
 		{
 			// try repairing the xref table
 			error(errSyntaxWarning, -1, "PDF file is damaged - attempting to reconstruct xref table...");
-			if (!PDFDoc::setup2(ownerPassword, userPassword, gTrue))
-				return gFalse;
+			if (!PDFDoc::setup2(ownerPassword, userPassword, true))
+				return false;
 		}
 		else
 		{
-			return gFalse;
+			return false;
 		}
 	}
 
@@ -294,10 +279,10 @@ GBool PDFDoc::setup(GString* ownerPassword, GString* userPassword)
 	optContent = new OptionalContent(this);
 
 	// done
-	return gTrue;
+	return true;
 }
 
-GBool PDFDoc::setup2(GString* ownerPassword, GString* userPassword, GBool repairXRef)
+bool PDFDoc::setup2(const std::string& ownerPassword, const std::string& userPassword, bool repairXRef)
 {
 	// read xref table
 	xref = new XRef(str, repairXRef);
@@ -307,7 +292,7 @@ GBool PDFDoc::setup2(GString* ownerPassword, GString* userPassword, GBool repair
 		errCode = xref->getErrorCode();
 		delete xref;
 		xref = nullptr;
-		return gFalse;
+		return false;
 	}
 
 	// check for encryption
@@ -316,7 +301,7 @@ GBool PDFDoc::setup2(GString* ownerPassword, GString* userPassword, GBool repair
 		errCode = errEncrypted;
 		delete xref;
 		xref = nullptr;
-		return gFalse;
+		return false;
 	}
 
 	// read catalog
@@ -329,38 +314,28 @@ GBool PDFDoc::setup2(GString* ownerPassword, GString* userPassword, GBool repair
 		catalog = nullptr;
 		delete xref;
 		xref = nullptr;
-		return gFalse;
+		return false;
 	}
 
 	// initialize the Annots object
 	annots = new Annots(this);
 
-	return gTrue;
+	return true;
 }
 
 PDFDoc::~PDFDoc()
 {
-	if (optContent)
-		delete optContent;
+	if (optContent) delete optContent;
 #ifndef DISABLE_OUTLINE
-	if (outline)
-		delete outline;
+	if (outline) delete outline;
 #endif
-	if (annots)
-		delete annots;
-	if (catalog)
-		delete catalog;
-	if (xref)
-		delete xref;
-	if (str)
-		delete str;
-	if (file)
-		fclose(file);
-	if (fileName)
-		delete fileName;
+	if (annots) delete annots;
+	if (catalog) delete catalog;
+	if (xref) delete xref;
+	if (str) delete str;
+	if (file) fclose(file);
 #ifdef _WIN32
-	if (fileNameU)
-		gfree(fileNameU);
+	if (fileNameU) gfree(fileNameU);
 #endif
 }
 
@@ -391,15 +366,15 @@ void PDFDoc::checkHeader()
 	}
 	pdfVersion = atof(p);
 	if (!(hdrBuf[i + 5] >= '0' && hdrBuf[i + 5] <= '9') || pdfVersion > supportedPDFVersionNum + 0.0001)
-		error(errSyntaxWarning, -1, "PDF version {0:s} -- xpdf supports version {1:s} (continuing anyway)", p, supportedPDFVersionStr);
+		error(errSyntaxWarning, -1, "PDF version {} -- xpdf supports version {} (continuing anyway)", p, supportedPDFVersionStr);
 }
 
-GBool PDFDoc::checkEncryption(GString* ownerPassword, GString* userPassword)
+bool PDFDoc::checkEncryption(const std::string& ownerPassword, const std::string& userPassword)
 {
 	Object           encrypt;
-	GBool            encrypted;
+	bool             encrypted;
 	SecurityHandler* secHdlr;
-	GBool            ret;
+	bool             ret;
 
 	xref->getTrailerDict()->dictLookup("Encrypt", &encrypt);
 	if ((encrypted = encrypt.isDict()))
@@ -409,48 +384,46 @@ GBool PDFDoc::checkEncryption(GString* ownerPassword, GString* userPassword)
 			if (secHdlr->isUnencrypted())
 			{
 				// no encryption
-				ret = gTrue;
+				ret = true;
 			}
 			else if (secHdlr->checkEncryption(ownerPassword, userPassword))
 			{
 				// authorization succeeded
 				xref->setEncryption(secHdlr->getPermissionFlags(), secHdlr->getOwnerPasswordOk(), secHdlr->getFileKey(), secHdlr->getFileKeyLength(), secHdlr->getEncVersion(), secHdlr->getEncAlgorithm());
-				ret = gTrue;
+				ret = true;
 			}
 			else
 			{
 				// authorization failed
-				ret = gFalse;
+				ret = false;
 			}
 			delete secHdlr;
 		}
 		else
 		{
 			// couldn't find the matching security handler
-			ret = gFalse;
+			ret = false;
 		}
 	}
 	else
 	{
 		// document is not encrypted
-		ret = gTrue;
+		ret = true;
 	}
 	encrypt.free();
 	return ret;
 }
 
-void PDFDoc::displayPage(OutputDev* out, int page, double hDPI, double vDPI, int rotate, GBool useMediaBox, GBool crop, GBool printing, GBool (*abortCheckCbk)(void* data), void* abortCheckCbkData)
+void PDFDoc::displayPage(OutputDev* out, int page, double hDPI, double vDPI, int rotate, bool useMediaBox, bool crop, bool printing, bool (*abortCheckCbk)(void* data), void* abortCheckCbkData)
 {
 	if (globalParams->getPrintCommands())
 		printf("***** page %d *****\n", page);
 	catalog->getPage(page)->display(out, hDPI, vDPI, rotate, useMediaBox, crop, printing, abortCheckCbk, abortCheckCbkData);
 }
 
-void PDFDoc::displayPages(OutputDev* out, int firstPage, int lastPage, double hDPI, double vDPI, int rotate, GBool useMediaBox, GBool crop, GBool printing, GBool (*abortCheckCbk)(void* data), void* abortCheckCbkData)
+void PDFDoc::displayPages(OutputDev* out, int firstPage, int lastPage, double hDPI, double vDPI, int rotate, bool useMediaBox, bool crop, bool printing, bool (*abortCheckCbk)(void* data), void* abortCheckCbkData)
 {
-	int page;
-
-	for (page = firstPage; page <= lastPage; ++page)
+	for (int page = firstPage; page <= lastPage; ++page)
 	{
 		if (globalParams->getPrintStatusInfo())
 		{
@@ -463,7 +436,7 @@ void PDFDoc::displayPages(OutputDev* out, int firstPage, int lastPage, double hD
 	}
 }
 
-void PDFDoc::displayPageSlice(OutputDev* out, int page, double hDPI, double vDPI, int rotate, GBool useMediaBox, GBool crop, GBool printing, int sliceX, int sliceY, int sliceW, int sliceH, GBool (*abortCheckCbk)(void* data), void* abortCheckCbkData)
+void PDFDoc::displayPageSlice(OutputDev* out, int page, double hDPI, double vDPI, int rotate, bool useMediaBox, bool crop, bool printing, int sliceX, int sliceY, int sliceW, int sliceH, bool (*abortCheckCbk)(void* data), void* abortCheckCbkData)
 {
 	catalog->getPage(page)->displaySlice(out, hDPI, vDPI, rotate, useMediaBox, crop, sliceX, sliceY, sliceW, sliceH, printing, abortCheckCbk, abortCheckCbkData);
 }
@@ -484,7 +457,7 @@ int PDFDoc::getOutlineTargetPage(OutlineItem* outlineItem)
 	LinkAction*    action;
 	LinkActionKind kind;
 	LinkDest*      dest;
-	GString*       namedDest;
+	std::string    namedDest;
 	Ref            pageRef;
 	int            pg;
 
@@ -503,7 +476,7 @@ int PDFDoc::getOutlineTargetPage(OutlineItem* outlineItem)
 	}
 	if ((dest = ((LinkGoTo*)action)->getDest()))
 		dest = dest->copy();
-	else if ((namedDest = ((LinkGoTo*)action)->getNamedDest()))
+	else if ((namedDest = ((LinkGoTo*)action)->getNamedDest()).size())
 		dest = findDest(namedDest);
 	pg = 0;
 	if (dest)
@@ -524,15 +497,14 @@ int PDFDoc::getOutlineTargetPage(OutlineItem* outlineItem)
 }
 #endif
 
-GBool PDFDoc::isLinearized()
+bool PDFDoc::isLinearized()
 {
 	Parser* parser;
 	Object  obj1, obj2, obj3, obj4, obj5;
-	GBool   lin;
 
-	lin = gFalse;
+	bool lin = false;
 	obj1.initNull();
-	parser = new Parser(xref, new Lexer(xref, str->makeSubStream(str->getStart(), gFalse, 0, &obj1)), gTrue);
+	parser = new Parser(xref, new Lexer(xref, str->makeSubStream(str->getStart(), false, 0, &obj1)), true);
 	parser->getObj(&obj1);
 	parser->getObj(&obj2);
 	parser->getObj(&obj3);
@@ -541,7 +513,7 @@ GBool PDFDoc::isLinearized()
 	{
 		obj4.dictLookup("Linearized", &obj5);
 		if (obj5.isNum() && obj5.getNum() > 0)
-			lin = gTrue;
+			lin = true;
 		obj5.free();
 	}
 	obj4.free();
@@ -552,58 +524,55 @@ GBool PDFDoc::isLinearized()
 	return lin;
 }
 
-GBool PDFDoc::saveAs(GString* name)
+bool PDFDoc::saveAs(const std::string& name)
 {
 	FILE* f;
 	char  buf[4096];
 	int   n;
 
-	if (!(f = fopen(name->getCString(), "wb")))
+	if (!(f = fopen(name.c_str(), "wb")))
 	{
-		error(errIO, -1, "Couldn't open file '{0:t}'", name);
-		return gFalse;
+		error(errIO, -1, "Couldn't open file '{}'", name);
+		return false;
 	}
 	str->reset();
 	while ((n = str->getBlock(buf, sizeof(buf))) > 0)
 		fwrite(buf, 1, n, f);
 	str->close();
 	fclose(f);
-	return gTrue;
+	return true;
 }
 
-GBool PDFDoc::saveEmbeddedFile(int idx, const char* path)
+bool PDFDoc::saveEmbeddedFile(int idx, const char* path)
 {
 	FILE* f;
-	GBool ret;
+	bool  ret;
 
 	if (!(f = fopen(path, "wb")))
-		return gFalse;
+		return false;
 	ret = saveEmbeddedFile2(idx, f);
 	fclose(f);
 	return ret;
 }
 
-GBool PDFDoc::saveEmbeddedFileU(int idx, const char* path)
+bool PDFDoc::saveEmbeddedFileU(int idx, const char* path)
 {
 	FILE* f;
-	GBool ret;
-
-	if (!(f = openFile(path, "wb")))
-		return gFalse;
-	ret = saveEmbeddedFile2(idx, f);
+	if (!(f = openFile(path, "wb"))) return false;
+	bool ret = saveEmbeddedFile2(idx, f);
 	fclose(f);
 	return ret;
 }
 
 #ifdef _WIN32
-GBool PDFDoc::saveEmbeddedFile(int idx, const wchar_t* path, int pathLen)
+bool PDFDoc::saveEmbeddedFile(int idx, const wchar_t* path, int pathLen)
 {
 	FILE*         f;
 	OSVERSIONINFO version;
 	wchar_t       path2w[winMaxLongPath + 1];
 	char          path2c[MAX_PATH + 1];
 	int           i;
-	GBool         ret;
+	bool          ret;
 
 	// NB: _wfopen is only available in NT
 	version.dwOSVersionInfoSize = sizeof(version);
@@ -613,37 +582,37 @@ GBool PDFDoc::saveEmbeddedFile(int idx, const wchar_t* path, int pathLen)
 		for (i = 0; i < pathLen && i < winMaxLongPath; ++i)
 			path2w[i] = path[i];
 		path2w[i] = 0;
-		f         = _wfopen(path2w, L"wb");
+
+		f = _wfopen(path2w, L"wb");
 	}
 	else
 	{
 		for (i = 0; i < pathLen && i < MAX_PATH; ++i)
 			path2c[i] = (char)path[i];
 		path2c[i] = 0;
-		f         = fopen(path2c, "wb");
+
+		f = fopen(path2c, "wb");
 	}
-	if (!f)
-		return gFalse;
+	if (!f) return false;
 	ret = saveEmbeddedFile2(idx, f);
 	fclose(f);
 	return ret;
 }
 #endif
 
-GBool PDFDoc::saveEmbeddedFile2(int idx, FILE* f)
+bool PDFDoc::saveEmbeddedFile2(int idx, FILE* f)
 {
 	Object strObj;
 	char   buf[4096];
 	int    n;
 
-	if (!catalog->getEmbeddedFileStreamObj(idx, &strObj))
-		return gFalse;
+	if (!catalog->getEmbeddedFileStreamObj(idx, &strObj)) return false;
 	strObj.streamReset();
 	while ((n = strObj.streamGetBlock(buf, sizeof(buf))) > 0)
 		fwrite(buf, 1, n, f);
 	strObj.streamClose();
 	strObj.free();
-	return gTrue;
+	return true;
 }
 
 char* PDFDoc::getEmbeddedFileMem(int idx, int* size)
@@ -652,12 +621,12 @@ char* PDFDoc::getEmbeddedFileMem(int idx, int* size)
 	char*  buf;
 	int    bufSize, sizeInc, n;
 
-	if (!catalog->getEmbeddedFileStreamObj(idx, &strObj))
-		return nullptr;
+	if (!catalog->getEmbeddedFileStreamObj(idx, &strObj)) return nullptr;
 	strObj.streamReset();
 	bufSize = 0;
 	buf     = nullptr;
-	do {
+	do
+	{
 		sizeInc = bufSize ? bufSize : 1024;
 		if (bufSize > INT_MAX - sizeInc)
 		{

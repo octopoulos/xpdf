@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <string.h>
 #include "gmem.h"
 #include "gmempp.h"
@@ -31,12 +30,14 @@
 
 SplashPath::SplashPath()
 {
-	pts    = NULL;
-	flags  = NULL;
-	length = size = 0;
-	curSubpath    = 0;
-	hints         = NULL;
-	hintsLength = hintsSize = 0;
+	pts         = nullptr;
+	flags       = nullptr;
+	length      = 0;
+	size        = 0;
+	curSubpath  = 0;
+	hints       = nullptr;
+	hintsLength = 0;
+	hintsSize   = 0;
 }
 
 SplashPath::SplashPath(SplashPath* path)
@@ -44,9 +45,9 @@ SplashPath::SplashPath(SplashPath* path)
 	length = path->length;
 	size   = path->size;
 	pts    = (SplashPathPoint*)gmallocn(size, sizeof(SplashPathPoint));
-	flags  = (Guchar*)gmallocn(size, sizeof(Guchar));
+	flags  = (uint8_t*)gmallocn(size, sizeof(uint8_t));
 	memcpy(pts, path->pts, length * sizeof(SplashPathPoint));
-	memcpy(flags, path->flags, length * sizeof(Guchar));
+	memcpy(flags, path->flags, length * sizeof(uint8_t));
 	curSubpath = path->curSubpath;
 	if (path->hints)
 	{
@@ -56,7 +57,7 @@ SplashPath::SplashPath(SplashPath* path)
 	}
 	else
 	{
-		hints       = NULL;
+		hints       = nullptr;
 		hintsLength = hintsSize = 0;
 	}
 }
@@ -78,7 +79,7 @@ void SplashPath::grow(int nPts)
 		while (size < length + nPts)
 			size *= 2;
 		pts   = (SplashPathPoint*)greallocn(pts, size, sizeof(SplashPathPoint));
-		flags = (Guchar*)greallocn(flags, size, sizeof(Guchar));
+		flags = (uint8_t*)greallocn(flags, size, sizeof(uint8_t));
 	}
 }
 
@@ -98,8 +99,7 @@ void SplashPath::append(SplashPath* path)
 
 SplashError SplashPath::moveTo(SplashCoord x, SplashCoord y)
 {
-	if (onePointSubpath())
-		return splashErrBogusPath;
+	if (onePointSubpath()) return splashErrBogusPath;
 	grow(1);
 	pts[length].x = x;
 	pts[length].y = y;
@@ -110,9 +110,8 @@ SplashError SplashPath::moveTo(SplashCoord x, SplashCoord y)
 
 SplashError SplashPath::lineTo(SplashCoord x, SplashCoord y)
 {
-	if (noCurrentPoint())
-		return splashErrNoCurPt;
-	flags[length - 1] &= (Guchar)~splashPathLast;
+	if (noCurrentPoint()) return splashErrNoCurPt;
+	flags[length - 1] &= (uint8_t)~splashPathLast;
 	grow(1);
 	pts[length].x = x;
 	pts[length].y = y;
@@ -123,9 +122,8 @@ SplashError SplashPath::lineTo(SplashCoord x, SplashCoord y)
 
 SplashError SplashPath::curveTo(SplashCoord x1, SplashCoord y1, SplashCoord x2, SplashCoord y2, SplashCoord x3, SplashCoord y3)
 {
-	if (noCurrentPoint())
-		return splashErrNoCurPt;
-	flags[length - 1] &= (Guchar)~splashPathLast;
+	if (noCurrentPoint()) return splashErrNoCurPt;
+	flags[length - 1] &= (uint8_t)~splashPathLast;
 	grow(3);
 	pts[length].x = x1;
 	pts[length].y = y1;
@@ -142,10 +140,9 @@ SplashError SplashPath::curveTo(SplashCoord x1, SplashCoord y1, SplashCoord x2, 
 	return splashOk;
 }
 
-SplashError SplashPath::close(GBool force)
+SplashError SplashPath::close(bool force)
 {
-	if (noCurrentPoint())
-		return splashErrNoCurPt;
+	if (noCurrentPoint()) return splashErrNoCurPt;
 	if (force || curSubpath == length - 1 || pts[length - 1].x != pts[curSubpath].x || pts[length - 1].y != pts[curSubpath].y)
 		lineTo(pts[curSubpath].x, pts[curSubpath].y);
 	flags[curSubpath] |= splashPathClosed;
@@ -154,7 +151,7 @@ SplashError SplashPath::close(GBool force)
 	return splashOk;
 }
 
-void SplashPath::addStrokeAdjustHint(int ctrl0, int ctrl1, int firstPt, int lastPt, GBool projectingCap)
+void SplashPath::addStrokeAdjustHint(int ctrl0, int ctrl1, int firstPt, int lastPt, bool projectingCap)
 {
 	if (hintsLength == hintsSize)
 	{
@@ -171,46 +168,39 @@ void SplashPath::addStrokeAdjustHint(int ctrl0, int ctrl1, int firstPt, int last
 
 void SplashPath::offset(SplashCoord dx, SplashCoord dy)
 {
-	int i;
-
-	for (i = 0; i < length; ++i)
+	for (int i = 0; i < length; ++i)
 	{
 		pts[i].x += dx;
 		pts[i].y += dy;
 	}
 }
 
-GBool SplashPath::getCurPt(SplashCoord* x, SplashCoord* y)
+bool SplashPath::getCurPt(SplashCoord* x, SplashCoord* y)
 {
-	if (noCurrentPoint())
-		return gFalse;
+	if (noCurrentPoint()) return false;
 	*x = pts[length - 1].x;
 	*y = pts[length - 1].y;
-	return gTrue;
+	return true;
 }
 
-GBool SplashPath::containsZeroLengthSubpaths()
+bool SplashPath::containsZeroLengthSubpaths()
 {
-	GBool zeroLength;
-	int   i;
-
-	zeroLength = gTrue; // make gcc happy
-	for (i = 0; i < length; ++i)
+	bool zeroLength = true; // make gcc happy
+	for (int i = 0; i < length; ++i)
 	{
 		if (flags[i] & splashPathFirst)
 		{
-			zeroLength = gTrue;
+			zeroLength = true;
 		}
 		else
 		{
 			if (pts[i].x != pts[i - 1].x || pts[i].y != pts[i - 1].y)
-				zeroLength = gFalse;
+				zeroLength = false;
 			if (flags[i] & splashPathLast)
 			{
-				if (zeroLength)
-					return gTrue;
+				if (zeroLength) return true;
 			}
 		}
 	}
-	return gFalse;
+	return false;
 }

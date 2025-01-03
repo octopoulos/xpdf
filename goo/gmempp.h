@@ -23,26 +23,23 @@
 //
 //========================================================================
 
-#ifndef GMEMPP_H
-#define GMEMPP_H
+#pragma once
 
 #ifdef DEBUG_MEM
 
-#include <stdlib.h>
+#	include <stdlib.h>
 
-extern void *operator new(size_t size, int dummy);
-extern void *operator new[](size_t size, int dummy);
+extern void* operator new(size_t size, int dummy);
+extern void* operator new[](size_t size, int dummy);
 
 // These have to be defined (and declared) to avoid a compiler warning
 // with Visual Studio.
-extern void operator delete(void *p, int dummy);
-extern void operator delete[](void *p, int dummy);
+extern void operator delete(void* p, int dummy);
+extern void operator delete[](void* p, int dummy);
 
 // This transforms 'new Foo(...)' into 'new (1) Foo(...)', which
 // forces a call to the operator new variant with the 'int dummy' arg.
-#define debug_new new (1)
-#define new debug_new
+#	define debug_new new (1)
+#	define new       debug_new
 
 #endif // DEBUG_MEM
-
-#endif // GMEMPP_H

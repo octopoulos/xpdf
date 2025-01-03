@@ -6,11 +6,9 @@
 //
 //========================================================================
 
-#ifndef SPLASHXPATH_H
-#define SPLASHXPATH_H
+#pragma once
 
 #include <aconf.h>
-
 #include "SplashTypes.h"
 
 class SplashPath;
@@ -92,7 +90,7 @@ public:
 	// lines) <path>.  Transforms all points from user space to device
 	// space, via <matrix>.  If <closeSubpaths> is true, closes all open
 	// subpaths.
-	SplashXPath(SplashPath* path, SplashCoord* matrix, SplashCoord flatness, GBool closeSubpaths, GBool simplify, SplashStrokeAdjustMode strokeAdjMode, SplashClip* clip);
+	SplashXPath(SplashPath* path, SplashCoord* matrix, SplashCoord flatness, bool closeSubpaths, bool simplify, SplashStrokeAdjustMode strokeAdjMode, SplashClip* clip);
 
 	// Copy an expanded path.
 	SplashXPath* copy() { return new SplashXPath(this); }
@@ -108,27 +106,31 @@ public:
 	int getYMax() { return yMax; }
 
 private:
-	static void clampCoords(SplashCoord* x, SplashCoord* y);
 	SplashXPath(SplashXPath* xPath);
-	void  transform(SplashCoord* matrix, SplashCoord xi, SplashCoord yi, SplashCoord* xo, SplashCoord* yo);
-	GBool strokeAdjust(SplashXPathPoint* pts, SplashPathHint* hints, int nHints, SplashStrokeAdjustMode strokeAdjMode, SplashClip* clip);
-	void  grow(int nSegs);
-	void  addCurve(SplashCoord x0, SplashCoord y0, SplashCoord x1, SplashCoord y1, SplashCoord x2, SplashCoord y2, SplashCoord x3, SplashCoord y3, SplashCoord flatness, GBool first, GBool last, GBool end0, GBool end1);
-	void  mergeSegments(int first);
-	void  addSegment(SplashCoord x0, SplashCoord y0, SplashCoord x1, SplashCoord y1);
-	void  finishSegments();
 
-	SplashXPathSeg* segs;
-	int             length, size; // length and size of segs array
-	int             xMin, xMax;
-	int             yMin, yMax;
+	static void clampCoords(SplashCoord* x, SplashCoord* y);
+	void        transform(SplashCoord* matrix, SplashCoord xi, SplashCoord yi, SplashCoord* xo, SplashCoord* yo);
+	bool        strokeAdjust(SplashXPathPoint* pts, SplashPathHint* hints, int nHints, SplashStrokeAdjustMode strokeAdjMode, SplashClip* clip);
+	void        grow(int nSegs);
+	void        addCurve(SplashCoord x0, SplashCoord y0, SplashCoord x1, SplashCoord y1, SplashCoord x2, SplashCoord y2, SplashCoord x3, SplashCoord y3, SplashCoord flatness, bool first, bool last, bool end0, bool end1);
+	void        mergeSegments(int first);
+	void        addSegment(SplashCoord x0, SplashCoord y0, SplashCoord x1, SplashCoord y1);
+	void        finishSegments();
 
-	GBool       isRect;
-	SplashCoord rectX0, rectY0, rectX1, rectY1;
+	SplashXPathSeg* segs;   //
+	int             length; //
+	int             size;   // length and size of segs array
+	int             xMin;   //
+	int             xMax;   //
+	int             yMin;   //
+	int             yMax;   //
+	bool            isRect; //
+	SplashCoord     rectX0; //
+	SplashCoord     rectY0; //
+	SplashCoord     rectX1; //
+	SplashCoord     rectY1; //
 
 	friend class SplashXPathScanner;
 	friend class SplashClip;
 	friend class Splash;
 };
-
-#endif

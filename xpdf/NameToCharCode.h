@@ -6,11 +6,9 @@
 //
 //========================================================================
 
-#ifndef NAMETOCHARCODE_H
-#define NAMETOCHARCODE_H
+#pragma once
 
 #include <aconf.h>
-
 #include "CharTypes.h"
 
 struct NameToCharCodeEntry;
@@ -29,9 +27,7 @@ public:
 private:
 	int hash(const char* name);
 
-	NameToCharCodeEntry* tab;
-	int                  size;
-	int                  len;
+	NameToCharCodeEntry* tab;  //
+	int                  size; //
+	int                  len;  //
 };
-
-#endif

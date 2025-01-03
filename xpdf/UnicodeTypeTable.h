@@ -6,29 +6,24 @@
 //
 //========================================================================
 
-#ifndef UNICODETYPETABLE_H
-#define UNICODETYPETABLE_H
+#pragma once
 
-#include "gtypes.h"
+extern bool unicodeTypeL(Unicode c);
 
-extern GBool unicodeTypeL(Unicode c);
+extern bool unicodeTypeR(Unicode c);
 
-extern GBool unicodeTypeR(Unicode c);
+extern bool unicodeTypeCombiningMark(Unicode c);
 
-extern GBool unicodeTypeCombiningMark(Unicode c);
+extern bool unicodeTypeDigit(Unicode c);
 
-extern GBool unicodeTypeDigit(Unicode c);
+extern bool unicodeTypeNumSep(Unicode c);
 
-extern GBool unicodeTypeNumSep(Unicode c);
+extern bool unicodeTypeNum(Unicode c);
 
-extern GBool unicodeTypeNum(Unicode c);
+extern bool unicodeTypeAlphaNum(Unicode c);
 
-extern GBool unicodeTypeAlphaNum(Unicode c);
-
-extern GBool unicodeTypeWord(Unicode c);
+extern bool unicodeTypeWord(Unicode c);
 
 extern Unicode unicodeToLower(Unicode c);
 
-extern GBool unicodeBracketInfo(Unicode c, GBool *open, Unicode *opposite);
-
-#endif
+extern bool unicodeBracketInfo(Unicode c, bool* open, Unicode* opposite);

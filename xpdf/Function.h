@@ -6,12 +6,9 @@
 //
 //========================================================================
 
-#ifndef FUNCTION_H
-#define FUNCTION_H
+#pragma once
 
 #include <aconf.h>
-
-#include "gtypes.h"
 #include "Object.h"
 
 class GList;
@@ -40,7 +37,7 @@ public:
 	static Function* parse(Object* funcObj, int expectedInputs, int expectedOutputs, int recursion = 0);
 
 	// Initialize the entries common to all function types.
-	GBool init(Dict* dict);
+	bool init(Dict* dict);
 
 	virtual Function* copy() = 0;
 
@@ -65,18 +62,18 @@ public:
 
 	double getRangeMax(int i) { return range[i][1]; }
 
-	GBool getHasRange() { return hasRange; }
+	bool getHasRange() { return hasRange; }
 
 	// Transform an input tuple into an output tuple.
 	virtual void transform(double* in, double* out) = 0;
 
-	virtual GBool isOk() = 0;
+	virtual bool isOk() = 0;
 
 protected:
 	int    m, n;                     // size of input and output tuples
 	double domain[funcMaxInputs][2]; // min and max values for function domain
 	double range[funcMaxOutputs][2]; // min and max values for function range
-	GBool  hasRange;                 // set if range is defined
+	bool   hasRange;                 // set if range is defined
 };
 
 //------------------------------------------------------------------------
@@ -95,7 +92,7 @@ public:
 
 	virtual void transform(double* in, double* out);
 
-	virtual GBool isOk() { return gTrue; }
+	virtual bool isOk() { return true; }
 
 private:
 };
@@ -116,7 +113,7 @@ public:
 
 	virtual void transform(double* in, double* out);
 
-	virtual GBool isOk() { return ok; }
+	virtual bool isOk() { return ok; }
 
 	int getSampleSize(int i) { return sampleSize[i]; }
 
@@ -137,13 +134,13 @@ private:
 	double  encode[funcMaxInputs][2];  // min and max values for domain encoder
 	double  decode[funcMaxOutputs][2]; // min and max values for range decoder
 	double  inputMul[funcMaxInputs];   // input multipliers
-	int*    idxOffset;
-	double* samples;  // the samples
-	int     nSamples; // size of the samples array
-	double* sBuf;     // buffer for the transform function
-	double  cacheIn[funcMaxInputs];
-	double  cacheOut[funcMaxOutputs];
-	GBool   ok;
+	int*    idxOffset;                 //
+	double* samples;                   // the samples
+	int     nSamples;                  // size of the samples array
+	double* sBuf;                      // buffer for the transform function
+	double  cacheIn[funcMaxInputs];    //
+	double  cacheOut[funcMaxOutputs];  //
+	bool    ok;                        //
 };
 
 //------------------------------------------------------------------------
@@ -162,7 +159,7 @@ public:
 
 	virtual void transform(double* in, double* out);
 
-	virtual GBool isOk() { return ok; }
+	virtual bool isOk() { return ok; }
 
 	double* getC0() { return c0; }
 
@@ -173,10 +170,10 @@ public:
 private:
 	ExponentialFunction(ExponentialFunction* func);
 
-	double c0[funcMaxOutputs];
-	double c1[funcMaxOutputs];
-	double e;
-	GBool  ok;
+	double c0[funcMaxOutputs]; //
+	double c1[funcMaxOutputs]; //
+	double e;                  //
+	bool   ok;                 //
 };
 
 //------------------------------------------------------------------------
@@ -195,7 +192,7 @@ public:
 
 	virtual void transform(double* in, double* out);
 
-	virtual GBool isOk() { return ok; }
+	virtual bool isOk() { return ok; }
 
 	int getNumFuncs() { return k; }
 
@@ -210,12 +207,12 @@ public:
 private:
 	StitchingFunction(StitchingFunction* func);
 
-	int        k;
-	Function** funcs;
-	double*    bounds;
-	double*    encode;
-	double*    scale;
-	GBool      ok;
+	int        k;      //
+	Function** funcs;  //
+	double*    bounds; //
+	double*    encode; //
+	double*    scale;  //
+	bool       ok;     //
 };
 
 //------------------------------------------------------------------------
@@ -234,26 +231,24 @@ public:
 
 	virtual void transform(double* in, double* out);
 
-	virtual GBool isOk() { return ok; }
+	virtual bool isOk() { return ok; }
 
-	GString* getCodeString() { return codeString; }
+	std::string getCodeString() { return codeString; }
 
 private:
 	PostScriptFunction(PostScriptFunction* func);
-	GBool    parseCode(GList* tokens, int* tokPtr, int* codePtr);
-	void     addCode(int* codePtr, int op);
-	void     addCodeI(int* codePtr, int op, int x);
-	void     addCodeD(int* codePtr, int op, double x);
-	GString* getToken(Stream* str);
-	int      exec(double* stack, int sp0);
+	bool        parseCode(const VEC_STR& tokens, int* tokPtr, int* codePtr);
+	void        addCode(int* codePtr, int op);
+	void        addCodeI(int* codePtr, int op, int x);
+	void        addCodeD(int* codePtr, int op, double x);
+	std::string getToken(Stream* str);
+	int         exec(double* stack, int sp0);
 
-	GString* codeString;
-	PSCode*  code;
-	int      codeLen;
-	int      codeSize;
-	double   cacheIn[funcMaxInputs];
-	double   cacheOut[funcMaxOutputs];
-	GBool    ok;
+	std::string codeString;               //
+	PSCode*     code;                     //
+	int         codeLen;                  //
+	int         codeSize;                 //
+	double      cacheIn[funcMaxInputs];   //
+	double      cacheOut[funcMaxOutputs]; //
+	bool        ok;                       //
 };
-
-#endif

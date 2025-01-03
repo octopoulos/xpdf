@@ -4279,8 +4279,6 @@ void initBuiltinFontTables()
 
 void freeBuiltinFontTables()
 {
-	int i;
-
-	for (i = 0; i < 14; ++i)
+	for (int i = 0; i < 14; ++i)
 		delete builtinFonts[i].widths;
 }

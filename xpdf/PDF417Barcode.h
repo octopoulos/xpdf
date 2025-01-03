@@ -11,8 +11,6 @@
 
 #include <aconf.h>
 
-class GString;
-
 // Draw a PDF417 barcode:
 // fieldWidth, fieldHeight = field size (in points)
 // moduleWidth, moduleHeight = requested module size (in points)
@@ -20,9 +18,6 @@ class GString;
 // value = byte string
 // output is appended to appearBuf
 // Returns true on success, false on error.
-extern GBool drawPDF417Barcode(double fieldWidth, double fieldHeight,
-			       double moduleWidth, double moduleHeight,
-			       int errorCorrectionLevel, GString *value,
-			       GString *appearBuf);
+extern bool drawPDF417Barcode(double fieldWidth, double fieldHeight, double moduleWidth, double moduleHeight, int errorCorrectionLevel, const std::string& value, std::string& appearBuf);
 
 #endif

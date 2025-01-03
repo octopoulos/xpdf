@@ -7,10 +7,7 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include <math.h>
-#include "gtypes.h"
-#include "GString.h"
 #include "GList.h"
 #include "Error.h"
 #include "PDF417Barcode.h"
@@ -1292,30 +1289,30 @@ static char patterns[929][3][patternLength] = {
 
 //------------------------------------------------------------------------
 
-static int   makeDataCodewords(GString* value, int* codewords);
-static int   countNumeric(GString* value, int start);
-static int   countText(GString* value, int start);
-static int   countBinary(GString* value, int start);
-static GBool makeNumericCodewords(GString* value, int start, int n, int* codewords, int& codewordIdx);
-static int   divMod900(int* d, int n);
-static GBool makeByteCodewords(GString* value, int start, int n, int* codewords, int& codewordIdx);
-static GBool makeTextCodewords(GString* value, int start, int n, int* codewords, int& codewordIdx);
-static GBool appendTextHalfSymbol(int* codewords, int& codewordIdx, int halfSymbol, int& prevHalfSymbol);
-static GBool appendDataCodeword(int* codewords, int& codewordIdx, int codeword);
-static void  makeErrorCorrectionCodewords(int errorCorrectionLevel, int* codewords, int length);
-static void  drawBarcode(int* codewords, int totalLength, int nRows, int nCols, int errorCorrectionLevel, double moduleWidth, double moduleHeight, double fieldWidth, double fieldHeight, GString* appearBuf);
-static void  drawPattern(int& x, int y, char* pattern, int length, GString* appearBuf);
+static int  makeDataCodewords(const std::string& value, int* codewords);
+static int  countNumeric(const std::string& value, int start);
+static int  countText(const std::string& value, int start);
+static int  countBinary(const std::string& value, int start);
+static bool makeNumericCodewords(const std::string& value, int start, int n, int* codewords, int& codewordIdx);
+static int  divMod900(int* d, int n);
+static bool makeByteCodewords(const std::string& value, int start, int n, int* codewords, int& codewordIdx);
+static bool makeTextCodewords(const std::string& value, int start, int n, int* codewords, int& codewordIdx);
+static bool appendTextHalfSymbol(int* codewords, int& codewordIdx, int halfSymbol, int& prevHalfSymbol);
+static bool appendDataCodeword(int* codewords, int& codewordIdx, int codeword);
+static void makeErrorCorrectionCodewords(int errorCorrectionLevel, int* codewords, int length);
+static void drawBarcode(int* codewords, int totalLength, int nRows, int nCols, int errorCorrectionLevel, double moduleWidth, double moduleHeight, double fieldWidth, double fieldHeight, std::string& appearBuf);
+static void drawPattern(int& x, int y, char* pattern, int length, std::string& appearBuf);
 
 //------------------------------------------------------------------------
 
-GBool drawPDF417Barcode(double fieldWidth, double fieldHeight, double moduleWidth, double moduleHeight, int errorCorrectionLevel, GString* value, GString* appearBuf)
+bool drawPDF417Barcode(double fieldWidth, double fieldHeight, double moduleWidth, double moduleHeight, int errorCorrectionLevel, const std::string& value, std::string& appearBuf)
 {
 	int codewords[maxDataCodewords + maxErrorCorrectionCodewords];
 
 	if (moduleWidth <= 0 || moduleHeight <= 0)
 	{
 		error(errSyntaxError, -1, "Invalid module size in PDF417 barcode");
-		return gFalse;
+		return false;
 	}
 
 	// each row contains:
@@ -1331,7 +1328,7 @@ GBool drawPDF417Barcode(double fieldWidth, double fieldHeight, double moduleWidt
 	if (nCols < 1)
 	{
 		error(errSyntaxError, -1, "Invalid field size for PDF417 barcode");
-		return gFalse;
+		return false;
 	}
 	if (nCols > 30)
 		nCols = 30;
@@ -1340,29 +1337,27 @@ GBool drawPDF417Barcode(double fieldWidth, double fieldHeight, double moduleWidt
 	if (nDataCodewords == maxDataCodewords)
 	{
 		error(errSyntaxError, -1, "Too many codewords in PDF417 barcode");
-		return gFalse;
+		return false;
 	}
 
 	int nErrorCorrectionCodewords = 1 << (errorCorrectionLevel + 1);
 
 	// total codewords = 1 + nDataCodewords + nPadCodewords
 	//                   + nErrorCorrectionCodewords
-	int nRows = (1 + nDataCodewords + nErrorCorrectionCodewords + (nCols - 1))
-	    / nCols;
+	int nRows = (1 + nDataCodewords + nErrorCorrectionCodewords + (nCols - 1)) / nCols;
 	if (nRows < 3)
 		nRows = 3;
 	if (nRows > 90)
 	{
 		error(errSyntaxError, -1, "Too many rows in PDF417 barcode");
-		return gFalse;
+		return false;
 	}
-	int nPadCodewords = nRows * nCols
-	    - (1 + nDataCodewords + nErrorCorrectionCodewords);
-	int length = 1 + nDataCodewords + nPadCodewords;
+	int nPadCodewords = nRows * nCols - (1 + nDataCodewords + nErrorCorrectionCodewords);
+	int length        = 1 + nDataCodewords + nPadCodewords;
 	if (length > maxDataCodewords)
 	{
 		error(errSyntaxError, -1, "Too many codewords in PDF417 barcode");
-		return gFalse;
+		return false;
 	}
 	codewords[0] = length;
 	for (int i = 1 + nDataCodewords; i < length; ++i)
@@ -1375,7 +1370,7 @@ GBool drawPDF417Barcode(double fieldWidth, double fieldHeight, double moduleWidt
 	if (nRows * moduleHeight + 6 * moduleWidth > fieldHeight)
 	{
 		error(errSyntaxError, -1, "Too many rows in PDF417 barcode");
-		return gFalse;
+		return false;
 	}
 
 	// Adobe adjusts the module height to fill the available space
@@ -1383,18 +1378,18 @@ GBool drawPDF417Barcode(double fieldWidth, double fieldHeight, double moduleWidt
 
 	drawBarcode(codewords, length + nErrorCorrectionCodewords, nRows, nCols, errorCorrectionLevel, moduleWidth, moduleHeight2, fieldWidth, fieldHeight, appearBuf);
 
-	return gTrue;
+	return true;
 }
 
 // Generate up to maxDataCodewords-1 codewords in codewords[1 .. m],
 // leaving codewords[0] unused.  Returns the number of generated
 // codewords (m), or maxDataCodewords if there are too many to fit.
-static int makeDataCodewords(GString* value, int* codewords)
+static int makeDataCodewords(const std::string& value, int* codewords)
 {
-	GBool textMode    = gTrue;
-	int   codewordIdx = 1;
-	int   valueIdx    = 0;
-	while (valueIdx < value->getLength())
+	bool textMode    = true;
+	int  codewordIdx = 1;
+	int  valueIdx    = 0;
+	while (valueIdx < value.size())
 	{
 		int nNumeric = countNumeric(value, valueIdx);
 		if (nNumeric >= 13)
@@ -1402,7 +1397,7 @@ static int makeDataCodewords(GString* value, int* codewords)
 			if (!appendDataCodeword(codewords, codewordIdx, numericModeLatch) || !makeNumericCodewords(value, valueIdx, nNumeric, codewords, codewordIdx))
 				return maxDataCodewords;
 			valueIdx += nNumeric;
-			textMode = gFalse;
+			textMode = false;
 		}
 		else
 		{
@@ -1417,7 +1412,7 @@ static int makeDataCodewords(GString* value, int* codewords)
 				if (!makeTextCodewords(value, valueIdx, nText, codewords, codewordIdx))
 					return maxDataCodewords;
 				valueIdx += nText;
-				textMode = gTrue;
+				textMode = true;
 			}
 			else
 			{
@@ -1430,7 +1425,7 @@ static int makeDataCodewords(GString* value, int* codewords)
 				if (!appendDataCodeword(codewords, codewordIdx, code) || !makeByteCodewords(value, valueIdx, nBinary, codewords, codewordIdx))
 					return maxDataCodewords;
 				valueIdx += nBinary;
-				textMode = gFalse;
+				textMode = false;
 			}
 		}
 	}
@@ -1438,12 +1433,12 @@ static int makeDataCodewords(GString* value, int* codewords)
 	return codewordIdx - 1;
 }
 
-static int countNumeric(GString* value, int start)
+static int countNumeric(const std::string& value, int start)
 {
 	int n = 0;
-	for (int i = start; i < value->getLength(); ++i)
+	for (int i = start; i < value.size(); ++i)
 	{
-		char c = value->getChar(i);
+		char c = value.at(i);
 		if (!(c >= '0' && c <= '9'))
 			break;
 		++n;
@@ -1451,12 +1446,12 @@ static int countNumeric(GString* value, int start)
 	return n;
 }
 
-static int countText(GString* value, int start)
+static int countText(const std::string& value, int start)
 {
 	int n = 0;
-	for (int i = start; i < value->getLength(); ++i)
+	for (int i = start; i < value.size(); ++i)
 	{
-		char c = value->getChar(i);
+		char c = value.at(i);
 		if ((c & 0x80) || (textCompaction[(int)c][0] == 30 && textCompaction[(int)c][1] == 30 && textCompaction[(int)c][2] == 30 && textCompaction[(int)c][3] == 30) || countNumeric(value, i) >= 13)
 			break;
 		++n;
@@ -1464,10 +1459,10 @@ static int countText(GString* value, int start)
 	return n;
 }
 
-static int countBinary(GString* value, int start)
+static int countBinary(const std::string& value, int start)
 {
 	int n = 0;
-	for (int i = start; i < value->getLength(); ++i)
+	for (int i = start; i < value.size(); ++i)
 	{
 		if (countNumeric(value, i) >= 13 || countText(value, i) >= 5)
 			break;
@@ -1476,7 +1471,7 @@ static int countBinary(GString* value, int start)
 	return n;
 }
 
-static GBool makeNumericCodewords(GString* value, int start, int n, int* codewords, int& codewordIdx)
+static bool makeNumericCodewords(const std::string& value, int start, int n, int* codewords, int& codewordIdx)
 {
 	for (int i = 0; i < n; i += 44)
 	{
@@ -1486,16 +1481,16 @@ static GBool makeNumericCodewords(GString* value, int start, int n, int* codewor
 		int inDigits[45];
 		inDigits[0] = 1;
 		for (int j = 0; j < nInDigits; ++j)
-			inDigits[j + 1] = value->getChar(start + i + j) - '0';
+			inDigits[j + 1] = value.at(start + i + j) - '0';
 		int nOutDigits = 1 + nInDigits / 3;
 		int outDigits[15];
 		for (int j = 0; j < nOutDigits; ++j)
 			outDigits[nOutDigits - 1 - j] = divMod900(inDigits, nInDigits + 1);
 		for (int j = 0; j < nOutDigits; ++j)
 			if (!appendDataCodeword(codewords, codewordIdx, outDigits[j]))
-				return gFalse;
+				return false;
 	}
-	return gTrue;
+	return true;
 }
 
 // Given x = sum(i = 0..n-1, d[i] * 10^(n-1-i))
@@ -1512,14 +1507,14 @@ static int divMod900(int* d, int n)
 	return r;
 }
 
-static GBool makeByteCodewords(GString* value, int start, int n, int* codewords, int& codewordIdx)
+static bool makeByteCodewords(const std::string& value, int start, int n, int* codewords, int& codewordIdx)
 {
 	int i;
 	for (i = 0; i <= n - 6; i += 6)
 	{
 		long long in = 0;
 		for (int j = 0; j < 6; ++j)
-			in = (in << 8) | (value->getChar(start + i + j) & 0xff);
+			in = (in << 8) | (value.at(start + i + j) & 0xff);
 		int outCodes[5];
 		for (int j = 4; j >= 0; --j)
 		{
@@ -1528,15 +1523,15 @@ static GBool makeByteCodewords(GString* value, int start, int n, int* codewords,
 		}
 		for (int j = 0; j < 4; ++j)
 			if (!appendDataCodeword(codewords, codewordIdx, outCodes[j]))
-				return gFalse;
+				return false;
 	}
 	for (; i < n; ++i)
-		if (!appendDataCodeword(codewords, codewordIdx, value->getChar(start + i) & 0xff))
-			return gFalse;
-	return gTrue;
+		if (!appendDataCodeword(codewords, codewordIdx, value.at(start + i) & 0xff))
+			return false;
+	return true;
 }
 
-static GBool makeTextCodewords(GString* value, int start, int n, int* codewords, int& codewordIdx)
+static bool makeTextCodewords(const std::string& value, int start, int n, int* codewords, int& codewordIdx)
 {
 	int submode     = textSubmodeAlpha;
 	int prevSubmode = textSubmodeAlpha;
@@ -1545,7 +1540,7 @@ static GBool makeTextCodewords(GString* value, int start, int n, int* codewords,
 	int valueIdx       = start;
 	while (valueIdx < start + n)
 	{
-		int c       = value->getChar(valueIdx) & 0x7f;
+		int c       = value.at(valueIdx) & 0x7f;
 		nextSubmode = submode;
 		switch (submode)
 		{
@@ -1553,33 +1548,33 @@ static GBool makeTextCodewords(GString* value, int start, int n, int* codewords,
 			if (textCompaction[c][textSubmodeAlpha] < 30)
 			{
 				if (!appendTextHalfSymbol(codewords, codewordIdx, textCompaction[c][textSubmodeAlpha], prevHalfSymbol))
-					return gFalse;
+					return false;
 				++valueIdx;
 			}
 			else if (textCompaction[c][textSubmodeLower] < 30)
 			{
 				if (!appendTextHalfSymbol(codewords, codewordIdx, textAlphaLowerLatch, prevHalfSymbol))
-					return gFalse;
+					return false;
 				nextSubmode = textSubmodeLower;
 			}
 			else if (textCompaction[c][textSubmodeMixed] < 30)
 			{
 				if (!appendTextHalfSymbol(codewords, codewordIdx, textAlphaMixedLatch, prevHalfSymbol))
-					return gFalse;
+					return false;
 				nextSubmode = textSubmodeMixed;
 			}
 			else if (textCompaction[c][textSubmodePunc] < 30)
 			{
-				if (valueIdx < start + n - 2 && textCompaction[value->getChar(valueIdx + 1) & 0x7f][textSubmodePunc] < 30 && textCompaction[value->getChar(valueIdx + 2) & 0x7f][textSubmodePunc] < 30)
+				if (valueIdx < start + n - 2 && textCompaction[value.at(valueIdx + 1) & 0x7f][textSubmodePunc] < 30 && textCompaction[value.at(valueIdx + 2) & 0x7f][textSubmodePunc] < 30)
 				{
 					if (!appendTextHalfSymbol(codewords, codewordIdx, textAlphaMixedLatch, prevHalfSymbol) || !appendTextHalfSymbol(codewords, codewordIdx, textMixedPuncLatch, prevHalfSymbol))
-						return gFalse;
+						return false;
 					nextSubmode = textSubmodePunc;
 				}
 				else
 				{
 					if (!appendTextHalfSymbol(codewords, codewordIdx, textAlphaPuncShift, prevHalfSymbol))
-						return gFalse;
+						return false;
 					nextSubmode = textSubmodePuncShift;
 				}
 			}
@@ -1593,57 +1588,57 @@ static GBool makeTextCodewords(GString* value, int start, int n, int* codewords,
 			if (textCompaction[c][textSubmodeAlpha] < 30)
 			{
 				if (!appendTextHalfSymbol(codewords, codewordIdx, textCompaction[c][textSubmodeAlpha], prevHalfSymbol))
-					return gFalse;
+					return false;
 				++valueIdx;
 			}
 			else
 			{
 				// this shouldn't happen
 				if (!appendTextHalfSymbol(codewords, codewordIdx, 0, prevHalfSymbol))
-					return gFalse;
+					return false;
 			}
 			nextSubmode = prevSubmode;
 			break;
 		case textSubmodeLower:
 			if (textCompaction[c][textSubmodeAlpha] < 30)
 			{
-				if (valueIdx < start + n - 2 && textCompaction[value->getChar(valueIdx + 1) & 0x7f][textSubmodeAlpha] < 30 && textCompaction[value->getChar(valueIdx + 2) & 0x7f][textSubmodeAlpha] < 30)
+				if (valueIdx < start + n - 2 && textCompaction[value.at(valueIdx + 1) & 0x7f][textSubmodeAlpha] < 30 && textCompaction[value.at(valueIdx + 2) & 0x7f][textSubmodeAlpha] < 30)
 				{
 					if (!appendTextHalfSymbol(codewords, codewordIdx, textLowerMixedLatch, prevHalfSymbol) || !appendTextHalfSymbol(codewords, codewordIdx, textMixedAlphaLatch, prevHalfSymbol))
-						return gFalse;
+						return false;
 					nextSubmode = textSubmodeAlpha;
 				}
 				else
 				{
 					if (!appendTextHalfSymbol(codewords, codewordIdx, textLowerAlphaShift, prevHalfSymbol))
-						return gFalse;
+						return false;
 					nextSubmode = textSubmodeAlphaShift;
 				}
 			}
 			else if (textCompaction[c][textSubmodeLower] < 30)
 			{
 				if (!appendTextHalfSymbol(codewords, codewordIdx, textCompaction[c][textSubmodeLower], prevHalfSymbol))
-					return gFalse;
+					return false;
 				++valueIdx;
 			}
 			else if (textCompaction[c][textSubmodeMixed] < 30)
 			{
 				if (!appendTextHalfSymbol(codewords, codewordIdx, textLowerMixedLatch, prevHalfSymbol))
-					return gFalse;
+					return false;
 				nextSubmode = textSubmodeMixed;
 			}
 			else if (textCompaction[c][textSubmodePunc] < 30)
 			{
-				if (valueIdx < start + n - 2 && textCompaction[value->getChar(valueIdx + 1) & 0x7f][textSubmodePunc] < 30 && textCompaction[value->getChar(valueIdx + 2) & 0x7f][textSubmodePunc] < 30)
+				if (valueIdx < start + n - 2 && textCompaction[value.at(valueIdx + 1) & 0x7f][textSubmodePunc] < 30 && textCompaction[value.at(valueIdx + 2) & 0x7f][textSubmodePunc] < 30)
 				{
 					if (!appendTextHalfSymbol(codewords, codewordIdx, textLowerMixedLatch, prevHalfSymbol) || !appendTextHalfSymbol(codewords, codewordIdx, textMixedPuncLatch, prevHalfSymbol))
-						return gFalse;
+						return false;
 					nextSubmode = textSubmodePunc;
 				}
 				else
 				{
 					if (!appendTextHalfSymbol(codewords, codewordIdx, textLowerPuncShift, prevHalfSymbol))
-						return gFalse;
+						return false;
 					nextSubmode = textSubmodePuncShift;
 				}
 			}
@@ -1657,33 +1652,33 @@ static GBool makeTextCodewords(GString* value, int start, int n, int* codewords,
 			if (textCompaction[c][textSubmodeAlpha] < 30)
 			{
 				if (!appendTextHalfSymbol(codewords, codewordIdx, textMixedAlphaLatch, prevHalfSymbol))
-					return gFalse;
+					return false;
 				nextSubmode = textSubmodeAlpha;
 			}
 			else if (textCompaction[c][textSubmodeLower] < 30)
 			{
 				if (!appendTextHalfSymbol(codewords, codewordIdx, textMixedLowerLatch, prevHalfSymbol))
-					return gFalse;
+					return false;
 				nextSubmode = textSubmodeLower;
 			}
 			else if (textCompaction[c][textSubmodeMixed] < 30)
 			{
 				if (!appendTextHalfSymbol(codewords, codewordIdx, textCompaction[c][textSubmodeMixed], prevHalfSymbol))
-					return gFalse;
+					return false;
 				++valueIdx;
 			}
 			else if (textCompaction[c][textSubmodePunc] < 30)
 			{
-				if (valueIdx < start + n - 1 && textCompaction[value->getChar(valueIdx + 1) & 0x7f][textSubmodePunc] < 30)
+				if (valueIdx < start + n - 1 && textCompaction[value.at(valueIdx + 1) & 0x7f][textSubmodePunc] < 30)
 				{
 					if (!appendTextHalfSymbol(codewords, codewordIdx, textMixedPuncLatch, prevHalfSymbol))
-						return gFalse;
+						return false;
 					nextSubmode = textSubmodePunc;
 				}
 				else
 				{
 					if (!appendTextHalfSymbol(codewords, codewordIdx, textMixedPuncShift, prevHalfSymbol))
-						return gFalse;
+						return false;
 					nextSubmode = textSubmodePuncShift;
 				}
 			}
@@ -1697,25 +1692,25 @@ static GBool makeTextCodewords(GString* value, int start, int n, int* codewords,
 			if (textCompaction[c][textSubmodeAlpha] < 30)
 			{
 				if (!appendTextHalfSymbol(codewords, codewordIdx, textPuncAlphaLatch, prevHalfSymbol))
-					return gFalse;
+					return false;
 				nextSubmode = textSubmodeAlpha;
 			}
 			else if (textCompaction[c][textSubmodeLower] < 30)
 			{
 				if (!appendTextHalfSymbol(codewords, codewordIdx, textPuncAlphaLatch, prevHalfSymbol) || !appendTextHalfSymbol(codewords, codewordIdx, textAlphaLowerLatch, prevHalfSymbol))
-					return gFalse;
+					return false;
 				nextSubmode = textSubmodeLower;
 			}
 			else if (textCompaction[c][textSubmodeMixed] < 30)
 			{
 				if (!appendTextHalfSymbol(codewords, codewordIdx, textPuncAlphaLatch, prevHalfSymbol) || !appendTextHalfSymbol(codewords, codewordIdx, textAlphaMixedLatch, prevHalfSymbol))
-					return gFalse;
+					return false;
 				nextSubmode = textSubmodeMixed;
 			}
 			else if (textCompaction[c][textSubmodePunc] < 30)
 			{
 				if (!appendTextHalfSymbol(codewords, codewordIdx, textCompaction[c][textSubmodePunc], prevHalfSymbol))
-					return gFalse;
+					return false;
 				++valueIdx;
 			}
 			else
@@ -1728,14 +1723,14 @@ static GBool makeTextCodewords(GString* value, int start, int n, int* codewords,
 			if (textCompaction[c][textSubmodePunc] < 30)
 			{
 				if (!appendTextHalfSymbol(codewords, codewordIdx, textCompaction[c][textSubmodePunc], prevHalfSymbol))
-					return gFalse;
+					return false;
 				++valueIdx;
 			}
 			else
 			{
 				// this shouldn't happen
 				if (!appendTextHalfSymbol(codewords, codewordIdx, 0, prevHalfSymbol))
-					return gFalse;
+					return false;
 			}
 			nextSubmode = prevSubmode;
 			break;
@@ -1748,10 +1743,10 @@ static GBool makeTextCodewords(GString* value, int start, int n, int* codewords,
 	if (prevHalfSymbol < 30)
 		appendTextHalfSymbol(codewords, codewordIdx, 29, prevHalfSymbol);
 
-	return gTrue;
+	return true;
 }
 
-static GBool appendTextHalfSymbol(int* codewords, int& codewordIdx, int halfSymbol, int& prevHalfSymbol)
+static bool appendTextHalfSymbol(int* codewords, int& codewordIdx, int halfSymbol, int& prevHalfSymbol)
 {
 	if (prevHalfSymbol == 30)
 	{
@@ -1761,18 +1756,18 @@ static GBool appendTextHalfSymbol(int* codewords, int& codewordIdx, int halfSymb
 	{
 		int codeword = prevHalfSymbol * 30 + halfSymbol;
 		if (!appendDataCodeword(codewords, codewordIdx, codeword))
-			return gFalse;
+			return false;
 		prevHalfSymbol = 30;
 	}
-	return gTrue;
+	return true;
 }
 
-static GBool appendDataCodeword(int* codewords, int& codewordIdx, int codeword)
+static bool appendDataCodeword(int* codewords, int& codewordIdx, int codeword)
 {
 	if (codewordIdx >= maxDataCodewords)
-		return gFalse;
+		return false;
 	codewords[codewordIdx++] = codeword;
-	return gTrue;
+	return true;
 }
 
 // Compute the error correction codewords and add to codewords[].
@@ -1805,15 +1800,15 @@ static void makeErrorCorrectionCodewords(int errorCorrectionLevel, int* codeword
 }
 
 // Draw the barcode in the rectangle (0, 0, fieldWidth, fieldHeight).
-static void drawBarcode(int* codewords, int totalLength, int nRows, int nCols, int errorCorrectionLevel, double moduleWidth, double moduleHeight, double fieldWidth, double fieldHeight, GString* appearBuf)
+static void drawBarcode(int* codewords, int totalLength, int nRows, int nCols, int errorCorrectionLevel, double moduleWidth, double moduleHeight, double fieldWidth, double fieldHeight, std::string& appearBuf)
 {
 	double w  = (73 + nCols * 17) * moduleWidth;
 	double h  = nRows * moduleHeight;
 	double x0 = 0.5 * (fieldWidth - w);
 	double y0 = 0.5 * (fieldHeight - h);
 
-	appearBuf->append("0 g q\n");
-	appearBuf->appendf("{0:.4f} 0 0 {1:.4f} {2:.4f} {3:.4f} cm\n", moduleWidth, moduleHeight, x0, y0);
+	appearBuf += "0 g q\n";
+	appearBuf += fmt::format("{:.4f} 0 0 {:.4f} {:.4f} {:.4f} cm\n", moduleWidth, moduleHeight, x0, y0);
 
 	int i = 0;
 	for (int row = 0; row < nRows; ++row)
@@ -1849,15 +1844,15 @@ static void drawBarcode(int* codewords, int totalLength, int nRows, int nCols, i
 		drawPattern(x, y, stopPattern, stopPatternLength, appearBuf);
 	}
 
-	appearBuf->append("Q\n");
+	appearBuf += "Q\n";
 }
 
-static void drawPattern(int& x, int y, char* pattern, int length, GString* appearBuf)
+static void drawPattern(int& x, int y, char* pattern, int length, std::string& appearBuf)
 {
 	for (int i = 0; i < length; ++i)
 	{
 		if (!(i & 1))
-			appearBuf->appendf("{0:d} {1:d} {2:d} 1 re f\n", x, y, pattern[i]);
+			appearBuf += fmt::format("{} {} {} 1 re f\n", x, y, pattern[i]);
 		x += pattern[i];
 	}
 }

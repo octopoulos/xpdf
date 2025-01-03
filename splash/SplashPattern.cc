@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-
 #include "gmempp.h"
 #include "SplashMath.h"
 #include "SplashScreen.h"

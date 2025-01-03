@@ -6,21 +6,16 @@
 //
 //========================================================================
 
-#ifndef QTPDFCORE_H
-#define QTPDFCORE_H
+#pragma once
 
 #include <aconf.h>
-
 #include <QDateTime>
-#include "gtypes.h"
 #include "SplashTypes.h"
 #include "PDFCore.h"
 
-class GString;
 class BaseStream;
 class PDFDoc;
 class LinkAction;
-
 class QWidget;
 class QScrollBar;
 
@@ -28,13 +23,13 @@ class QScrollBar;
 // callbacks
 //------------------------------------------------------------------------
 
-typedef void (*QtPDFUpdateCbk)(void* data, GString* fileName, int pageNum, int numPages, const char* linkLabel);
+typedef void (*QtPDFUpdateCbk)(void* data, const std::string& fileName, int pageNum, int numPages, const char* linkLabel);
 
 typedef void (*QtPDFMidPageChangedCbk)(void* data, int pageNum);
 
 typedef void (*QtPDFLoadCbk)(void* data);
 
-typedef void (*QtPDFActionCbk)(void* data, char* action);
+typedef void (*QtPDFActionCbk)(void* data, const char* action);
 
 typedef void (*QtPDFLinkCbk)(void* data, const char* type, const char* dest, int page);
 
@@ -50,23 +45,23 @@ class QtPDFCore : public PDFCore
 {
 public:
 	// Create viewer core in <viewportA>.
-	QtPDFCore(QWidget* viewportA, QScrollBar* hScrollBarA, QScrollBar* vScrollBarA, SplashColorPtr paperColor, SplashColorPtr matteColor, GBool reverseVideo);
+	QtPDFCore(QWidget* viewportA, QScrollBar* hScrollBarA, QScrollBar* vScrollBarA, SplashColorPtr paperColor, SplashColorPtr matteColor, bool reverseVideo);
 
 	~QtPDFCore();
 
 	//----- loadFile / displayPage / displayDest
 
 	// Load a new file.  Returns pdfOk or error code.
-	virtual int loadFile(GString* fileName, GString* ownerPassword = NULL, GString* userPassword = NULL);
+	virtual int loadFile(const std::string& fileName, const std::string& ownerPassword = nullptr, const std::string& userPassword = nullptr);
 
 #ifdef _WIN32
 	// Load a new file.  Returns pdfOk or error code.
-	virtual int loadFile(wchar_t* fileName, int fileNameLen, GString* ownerPassword = NULL, GString* userPassword = NULL);
+	virtual int loadFile(wchar_t* fileName, int fileNameLen, const std::string& ownerPassword = nullptr, const std::string& userPassword = nullptr);
 #endif
 
 	// Load a new file, via a Stream instead of a file name.  Returns
 	// pdfOk or error code.
-	virtual int loadFile(BaseStream* stream, GString* ownerPassword = NULL, GString* userPassword = NULL);
+	virtual int loadFile(BaseStream* stream, const std::string& ownerPassword = nullptr, const std::string& userPassword = nullptr);
 
 	// Load an already-created PDFDoc object.
 	virtual void loadDoc(PDFDoc* docA);
@@ -76,41 +71,41 @@ public:
 	virtual int reload();
 
 	// Called after any update is complete.
-	virtual void finishUpdate(GBool addToHist, GBool checkForChangedFile);
+	virtual void finishUpdate(bool addToHist, bool checkForChangedFile);
 
 	//----- panning and selection
 
 	void    startPan(int wx, int wy);
 	void    endPan(int wx, int wy);
-	void    startSelection(int wx, int wy, GBool extend);
+	void    startSelection(int wx, int wy, bool extend);
 	void    endSelection(int wx, int wy);
 	void    mouseMove(int wx, int wy);
 	void    selectWord(int wx, int wy);
 	void    selectLine(int wx, int wy);
 	QString getSelectedTextQString();
-	void    copySelection(GBool toClipboard);
+	void    copySelection(bool toClipboard);
 
 	//----- hyperlinks
 
-	GBool doAction(LinkAction* action);
+	bool doAction(LinkAction* action);
 
 	LinkAction* getLinkAction() { return linkAction; }
 
-	QString  getLinkInfo(LinkAction* action);
-	GString* mungeURL(GString* url);
+	QString     getLinkInfo(LinkAction* action);
+	std::string mungeURL(const std::string& url);
 
 	//----- find
 
-	virtual GBool find(char* s, GBool caseSensitive, GBool next, GBool backward, GBool wholeWord, GBool onePageOnly);
-	virtual GBool findU(Unicode* u, int len, GBool caseSensitive, GBool next, GBool backward, GBool wholeWord, GBool onePageOnly);
+	virtual bool find(char* s, bool caseSensitive, bool next, bool backward, bool wholeWord, bool onePageOnly);
+	virtual bool findU(Unicode* u, int len, bool caseSensitive, bool next, bool backward, bool wholeWord, bool onePageOnly);
 
 	//----- password dialog
 
-	virtual GString* getPassword();
+	virtual std::string getPassword();
 
 	//----- misc access
 
-	virtual void setBusyCursor(GBool busy);
+	virtual void setBusyCursor(bool busy);
 	void         doSetCursor(const QCursor& cursor);
 	void         doUnsetCursor();
 	void         takeFocus();
@@ -120,19 +115,19 @@ public:
 
 	double getScaleFactor() { return scaleFactor; }
 
-	void enableHyperlinks(GBool on) { hyperlinksEnabled = on; }
+	void enableHyperlinks(bool on) { hyperlinksEnabled = on; }
 
-	GBool getHyperlinksEnabled() { return hyperlinksEnabled; }
+	bool getHyperlinksEnabled() { return hyperlinksEnabled; }
 
-	void enableExternalHyperlinks(GBool on) { externalHyperlinksEnabled = on; }
+	void enableExternalHyperlinks(bool on) { externalHyperlinksEnabled = on; }
 
-	GBool getExternalHyperlinksEnabled() { return externalHyperlinksEnabled; }
+	bool getExternalHyperlinksEnabled() { return externalHyperlinksEnabled; }
 
-	void enableSelect(GBool on) { selectEnabled = on; }
+	void enableSelect(bool on) { selectEnabled = on; }
 
-	void enablePan(GBool on) { panEnabled = on; }
+	void enablePan(bool on) { panEnabled = on; }
 
-	void setShowPasswordDialog(GBool show) { showPasswordDialog = show; }
+	void setShowPasswordDialog(bool show) { showPasswordDialog = show; }
 
 	void setUpdateCbk(QtPDFUpdateCbk cbk, void* data)
 	{
@@ -194,61 +189,54 @@ public:
 private:
 	//----- hyperlinks
 	void doLinkCbk(LinkAction* action);
-	void runCommand(GString* cmdFmt, GString* arg);
+	void runCommand(const std::string& cmdFmt, const std::string& arg);
 
 	//----- PDFCore callbacks
-	virtual void  invalidate(int x, int y, int w, int h);
-	virtual void  updateScrollbars();
-	virtual GBool checkForNewFile();
-	virtual void  preLoad();
-	virtual void  postLoad();
+	virtual void invalidate(int x, int y, int w, int h);
+	virtual void updateScrollbars();
+	virtual bool checkForNewFile();
+	virtual void preLoad();
+	virtual void postLoad();
 
-	QWidget*    viewport;
-	QScrollBar* hScrollBar;
-	QScrollBar* vScrollBar;
+	QWidget*    viewport;   //
+	QScrollBar* hScrollBar; //
+	QScrollBar* vScrollBar; //
 
-	int    displayDpi;
-	double scaleFactor;
+	int    displayDpi;         //
+	double scaleFactor;        //
+	bool   dragging;           //
+	bool   panning;            //
+	int    panMX;              //
+	int    panMY;              //
+	bool   inUpdateScrollbars; //
+	int    oldFirstPage;       //
+	int    oldMidPage;         //
 
-	GBool dragging;
+	LinkAction* linkAction;         // mouse cursor is over this link
+	LinkAction* lastLinkAction;     // getLinkInfo() caches an action
+	QString     lastLinkActionInfo; //
+	QDateTime   modTime;            // last modification time of PDF file
 
-	GBool panning;
-	int   panMX, panMY;
+	QtPDFUpdateCbk         updateCbk;             //
+	void*                  updateCbkData;         //
+	QtPDFMidPageChangedCbk midPageChangedCbk;     //
+	void*                  midPageChangedCbkData; //
+	QtPDFLoadCbk           preLoadCbk;            //
+	void*                  preLoadCbkData;        //
+	QtPDFLoadCbk           postLoadCbk;           //
+	void*                  postLoadCbkData;       //
+	QtPDFActionCbk         actionCbk;             //
+	void*                  actionCbkData;         //
+	QtPDFLinkCbk           linkCbk;               //
+	void*                  linkCbkData;           //
+	QtPDFSelectDoneCbk     selectDoneCbk;         //
+	void*                  selectDoneCbkData;     //
+	QtPDFPaintDoneCbk      paintDoneCbk;          //
+	void*                  paintDoneCbkData;      //
 
-	GBool inUpdateScrollbars;
-
-	int oldFirstPage;
-	int oldMidPage;
-
-	LinkAction* linkAction; // mouse cursor is over this link
-
-	LinkAction* lastLinkAction; // getLinkInfo() caches an action
-	QString     lastLinkActionInfo;
-
-	QDateTime modTime; // last modification time of PDF file
-
-	QtPDFUpdateCbk         updateCbk;
-	void*                  updateCbkData;
-	QtPDFMidPageChangedCbk midPageChangedCbk;
-	void*                  midPageChangedCbkData;
-	QtPDFLoadCbk           preLoadCbk;
-	void*                  preLoadCbkData;
-	QtPDFLoadCbk           postLoadCbk;
-	void*                  postLoadCbkData;
-	QtPDFActionCbk         actionCbk;
-	void*                  actionCbkData;
-	QtPDFLinkCbk           linkCbk;
-	void*                  linkCbkData;
-	QtPDFSelectDoneCbk     selectDoneCbk;
-	void*                  selectDoneCbkData;
-	QtPDFPaintDoneCbk      paintDoneCbk;
-	void*                  paintDoneCbkData;
-
-	GBool hyperlinksEnabled;
-	GBool externalHyperlinksEnabled;
-	GBool selectEnabled;
-	GBool panEnabled;
-	GBool showPasswordDialog;
+	bool hyperlinksEnabled;         //
+	bool externalHyperlinksEnabled; //
+	bool selectEnabled;             //
+	bool panEnabled;                //
+	bool showPasswordDialog;        //
 };
-
-#endif

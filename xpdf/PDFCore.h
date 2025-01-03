@@ -6,11 +6,9 @@
 //
 //========================================================================
 
-#ifndef PDFCORE_H
-#define PDFCORE_H
+#pragma once
 
 #include <aconf.h>
-
 #include <stdlib.h>
 #include <atomic>
 #include "SplashTypes.h"
@@ -18,7 +16,6 @@
 #include "DisplayState.h"
 #include "TextOutputDev.h"
 
-class GString;
 class GList;
 class SplashBitmap;
 class SplashPattern;
@@ -46,7 +43,7 @@ struct PDFHistory
 #ifdef _WIN32
 	wchar_t* fileName;
 #else
-	GString* fileName;
+	std::string fileName;
 #endif
 	int page;
 };
@@ -91,7 +88,7 @@ class AsyncFindAll
 public:
 	AsyncFindAll(PDFCore* coreA)
 	    : core(coreA)
-	    , canceled(gFalse)
+	    , canceled(false)
 	{
 	}
 
@@ -101,7 +98,7 @@ public:
 	// PDFCore::findAll().  This can be run on a separate thread.  If
 	// cancel() is called while the search is running, this function
 	// returns null.
-	GList* run(PDFDoc* doc, Unicode* u, int len, GBool caseSensitive, GBool wholeWord, int firstPage, int lastPage);
+	GList* run(PDFDoc* doc, Unicode* u, int len, bool caseSensitive, bool wholeWord, int firstPage, int lastPage);
 
 	// Cancel a running search, causing run() to return null.
 	void cancel() { canceled = true; }
@@ -118,22 +115,22 @@ private:
 class PDFCore
 {
 public:
-	PDFCore(SplashColorMode colorMode, int bitmapRowPad, GBool reverseVideo, SplashColorPtr paperColor);
+	PDFCore(SplashColorMode colorMode, int bitmapRowPad, bool reverseVideo, SplashColorPtr paperColor);
 	virtual ~PDFCore();
 
 	//----- loadFile / displayPage / displayDest
 
 	// Load a new file.  Returns pdfOk or error code.
-	virtual int loadFile(GString* fileName, GString* ownerPassword = nullptr, GString* userPassword = nullptr);
+	virtual int loadFile(const std::string& fileName, const std::string& ownerPassword = "", const std::string& userPassword = "");
 
 #ifdef _WIN32
 	// Load a new file.  Returns pdfOk or error code.
-	virtual int loadFile(wchar_t* fileName, int fileNameLen, GString* ownerPassword = nullptr, GString* userPassword = nullptr);
+	virtual int loadFile(wchar_t* fileName, int fileNameLen, const std::string& ownerPassword = "", const std::string& userPassword = "");
 #endif
 
 	// Load a new file, via a Stream instead of a file name.  Returns
 	// pdfOk or error code.
-	virtual int loadFile(BaseStream* stream, GString* ownerPassword = nullptr, GString* userPassword = nullptr);
+	virtual int loadFile(BaseStream* stream, const std::string& ownerPassword = "", const std::string& userPassword = "");
 
 	// Load an already-created PDFDoc object.
 	virtual void loadDoc(PDFDoc* docA);
@@ -147,14 +144,14 @@ public:
 
 	// Same as clear(), but returns the PDFDoc object instead of
 	// deleting it.
-	virtual PDFDoc* takeDoc(GBool redraw);
+	virtual PDFDoc* takeDoc(bool redraw);
 
 	// Display (or redisplay) the specified page.  If <scrollToTop> is
 	// set, the window is vertically scrolled to the top; if
 	// <scrollToBottom> is set, the window is vertically scrolled to the
 	// bottom; otherwise, no scrolling is done.  If <addToHist> is set,
 	// this page change is added to the history list.
-	virtual void displayPage(int page, GBool scrollToTop, GBool scrollToBottom, GBool addToHist = gTrue);
+	virtual void displayPage(int page, bool scrollToTop, bool scrollToBottom, bool addToHist = true);
 
 	// Display a link destination.
 	virtual void displayDest(LinkDest* dest);
@@ -164,39 +161,39 @@ public:
 
 	// Called after any update is complete.  Subclasses can check for
 	// changes in the display parameters here.
-	virtual void finishUpdate(GBool addToHist, GBool checkForChangedFile);
+	virtual void finishUpdate(bool addToHist, bool checkForChangedFile);
 
 	//----- page/position changes
 
-	virtual GBool gotoNextPage(int inc, GBool top);
-	virtual GBool gotoPrevPage(int dec, GBool top, GBool bottom);
-	virtual GBool gotoNamedDestination(GString* dest);
-	virtual GBool goForward();
-	virtual GBool goBackward();
-	virtual void  scrollLeft(int nCols = 16);
-	virtual void  scrollRight(int nCols = 16);
-	virtual void  scrollUp(int nLines = 16, GBool snapToPage = gFalse);
-	virtual void  scrollUpPrevPage(int nLines = 16);
-	virtual void  scrollDown(int nLines = 16, GBool snapToPage = gFalse);
-	virtual void  scrollDownNextPage(int nLines = 16);
-	virtual void  scrollPageUp();
-	virtual void  scrollPageDown();
-	virtual void  scrollTo(int x, int y, GBool snapToPage = gFalse);
-	virtual void  scrollToLeftEdge();
-	virtual void  scrollToRightEdge();
-	virtual void  scrollToTopEdge();
-	virtual void  scrollToBottomEdge();
-	virtual void  scrollToTopLeft();
-	virtual void  scrollToBottomRight();
+	virtual bool gotoNextPage(int inc, bool top);
+	virtual bool gotoPrevPage(int dec, bool top, bool bottom);
+	virtual bool gotoNamedDestination(const std::string& dest);
+	virtual bool goForward();
+	virtual bool goBackward();
+	virtual void scrollLeft(int nCols = 16);
+	virtual void scrollRight(int nCols = 16);
+	virtual void scrollUp(int nLines = 16, bool snapToPage = false);
+	virtual void scrollUpPrevPage(int nLines = 16);
+	virtual void scrollDown(int nLines = 16, bool snapToPage = false);
+	virtual void scrollDownNextPage(int nLines = 16);
+	virtual void scrollPageUp();
+	virtual void scrollPageDown();
+	virtual void scrollTo(int x, int y, bool snapToPage = false);
+	virtual void scrollToLeftEdge();
+	virtual void scrollToRightEdge();
+	virtual void scrollToTopEdge();
+	virtual void scrollToBottomEdge();
+	virtual void scrollToTopLeft();
+	virtual void scrollToBottomRight();
 	// Scroll so that (page, x, y) is centered in the window.
-	virtual void  scrollToCentered(int page, double x, double y);
-	virtual void  setZoom(double zoom);
-	virtual void  zoomToRect(int page, double ulx, double uly, double lrx, double lry);
-	virtual void  zoomCentered(double zoom);
-	virtual void  zoomToCurrentWidth();
-	virtual void  setRotate(int rotate);
-	virtual void  setDisplayMode(DisplayMode mode);
-	virtual void  setOCGState(OptionalContentGroup* ocg, GBool ocgState);
+	virtual void scrollToCentered(int page, double x, double y);
+	virtual void setZoom(double zoom);
+	virtual void zoomToRect(int page, double ulx, double uly, double lrx, double lry);
+	virtual void zoomCentered(double zoom);
+	virtual void zoomToCurrentWidth();
+	virtual void setRotate(int rotate);
+	virtual void setDisplayMode(DisplayMode mode);
+	virtual void setOCGState(OptionalContentGroup* ocg, bool ocgState);
 
 	//----- selection
 
@@ -221,21 +218,21 @@ public:
 
 	// Retrieve the current selection.  This function uses user
 	// coordinates.  Returns false if there is no selection.
-	GBool getSelection(int* pg, double* ulx, double* uly, double* lrx, double* lry);
-	GBool hasSelection();
+	bool getSelection(int* pg, double* ulx, double* uly, double* lrx, double* lry);
+	bool hasSelection();
 
 	// Text extraction.
-	void     setTextExtractionMode(TextOutputMode mode);
-	GBool    getDiscardDiagonalText();
-	void     setDiscardDiagonalText(GBool discard);
-	GString* extractText(int pg, double xMin, double yMin, double xMax, double yMax);
-	GString* getSelectedText();
+	void        setTextExtractionMode(TextOutputMode mode);
+	bool        getDiscardDiagonalText();
+	void        setDiscardDiagonalText(bool discard);
+	std::string extractText(int pg, double xMin, double yMin, double xMax, double yMax);
+	std::string getSelectedText();
 
 	//----- find
 
-	virtual GBool find(char* s, GBool caseSensitive, GBool next, GBool backward, GBool wholeWord, GBool onePageOnly);
-	virtual GBool findU(Unicode* u, int len, GBool caseSensitive, GBool next, GBool backward, GBool wholeWord, GBool onePageOnly);
-	GList*        findAll(Unicode* u, int len, GBool caseSensitive, GBool wholeWord, int firstPage, int lastPage);
+	virtual bool find(char* s, bool caseSensitive, bool next, bool backward, bool wholeWord, bool onePageOnly);
+	virtual bool findU(Unicode* u, int len, bool caseSensitive, bool next, bool backward, bool wholeWord, bool onePageOnly);
+	GList*       findAll(Unicode* u, int len, bool caseSensitive, bool wholeWord, int firstPage, int lastPage);
 
 	//----- coordinate conversion
 
@@ -243,17 +240,17 @@ public:
 	// device space: (0,0) is upper-left corner of a page; unit = pixel
 	// window space: (0,0) is upper-left corner of drawing area; unit = pixel
 
-	GBool cvtWindowToUser(int xw, int yw, int* pg, double* xu, double* yu);
-	GBool cvtWindowToDev(int xw, int yw, int* pg, int* xd, int* yd);
-	GBool cvtUserToWindow(int pg, double xy, double yu, int* xw, int* yw);
-	void  cvtUserToDev(int pg, double xu, double yu, int* xd, int* yd);
-	GBool cvtDevToWindow(int pg, int xd, int yd, int* xw, int* yw);
-	void  cvtDevToUser(int pg, int xd, int yd, double* xu, double* yu);
-	void  getWindowPageRange(int x, int y, int w, int h, int* firstPage, int* lastPage);
+	bool cvtWindowToUser(int xw, int yw, int* pg, double* xu, double* yu);
+	bool cvtWindowToDev(int xw, int yw, int* pg, int* xd, int* yd);
+	bool cvtUserToWindow(int pg, double xy, double yu, int* xw, int* yw);
+	void cvtUserToDev(int pg, double xu, double yu, int* xd, int* yd);
+	bool cvtDevToWindow(int pg, int xd, int yd, int* xw, int* yw);
+	void cvtDevToUser(int pg, int xd, int yd, double* xu, double* yu);
+	void getWindowPageRange(int x, int y, int w, int h, int* firstPage, int* lastPage);
 
 	//----- password dialog
 
-	virtual GString* getPassword() { return nullptr; }
+	virtual std::string getPassword() { return nullptr; }
 
 	//----- misc access
 
@@ -267,24 +264,24 @@ public:
 	DisplayMode  getDisplayMode();
 	virtual void setPaperColor(SplashColorPtr paperColor);
 	virtual void setMatteColor(SplashColorPtr matteColor);
-	virtual void setReverseVideo(GBool reverseVideo);
+	virtual void setReverseVideo(bool reverseVideo);
 
-	GBool canGoBack() { return historyBLen > 1; }
+	bool canGoBack() { return historyBLen > 1; }
 
-	GBool canGoForward() { return historyFLen > 0; }
+	bool canGoForward() { return historyFLen > 0; }
 
 	int            getScrollX();
 	int            getScrollY();
 	int            getWindowWidth();
 	int            getWindowHeight();
-	virtual void   setBusyCursor(GBool busy) = 0;
+	virtual void   setBusyCursor(bool busy) = 0;
 	LinkAction*    findLink(int pg, double x, double y);
 	Annot*         findAnnot(int pg, double x, double y);
 	int            findAnnotIdx(int pg, double x, double y);
 	AcroFormField* findFormField(int pg, double x, double y);
 	int            findFormFieldIdx(int pg, double x, double y);
 	AcroFormField* getFormField(int idx);
-	GBool          overText(int pg, double x, double y);
+	bool           overText(int pg, double x, double y);
 	void           forceRedraw();
 	void           setTileDoneCbk(void (*cbk)(void* data), void* data);
 
@@ -297,12 +294,12 @@ protected:
 	// Get the current window bitmap.  If <wholeWindow> is true, the
 	// full window is being redrawn -- this is used to end incremental
 	// updates when the rasterization is done.
-	SplashBitmap* getWindowBitmap(GBool wholeWindow);
+	SplashBitmap* getWindowBitmap(bool wholeWindow);
 
 	// Returns true if the last call to getWindowBitmap() returned a
 	// finished bitmap; or false if the bitmap was still being
 	// rasterized.
-	GBool isBitmapFinished() { return bitmapFinished; }
+	bool isBitmapFinished() { return bitmapFinished; }
 
 	// This should be called periodically (typically every ~0.1 seconds)
 	// to do incremental updates.  If an update is required, it will
@@ -314,7 +311,7 @@ protected:
 	// Subclasses can return true here to force PDFCore::finishUpdate()
 	// to always invalidate the window.  This is necessary to avoid
 	// flickering on some backends.
-	virtual GBool alwaysInvalidateOnUpdate() { return gFalse; }
+	virtual bool alwaysInvalidateOnUpdate() { return false; }
 
 	// Invalidate the specified rectangle (in window coordinates).
 	virtual void invalidate(int x, int y, int w, int h) = 0;
@@ -324,7 +321,7 @@ protected:
 
 	// This returns true if the PDF file has changed on disk (if it can
 	// be checked).
-	virtual GBool checkForNewFile() { return gFalse; }
+	virtual bool checkForNewFile() { return false; }
 
 	// This is called just before a PDF file is loaded.
 	virtual void preLoad() {}
@@ -345,43 +342,32 @@ protected:
 	void loadLinks(int pg);
 	void loadText(int pg);
 	void getSelectionBBox(int* wxMin, int* wyMin, int* wxMax, int* wyMax);
-	void getSelectRectListBBox(GList* rects, int* wxMin, int* wyMin, int* wxMax, int* wyMax);
+	void getSelectRectListBBox(const std::vector<SelectRect>& rects, int* wxMin, int* wyMin, int* wxMax, int* wyMax);
 	void checkInvalidate(int x, int y, int w, int h);
 	void invalidateWholeWindow();
 
 	friend class AsyncFindAll;
 
-	PDFDoc* doc;
-
-	int    linksPage; // cached links for one page
-	Links* links;
-
-	int               textPage; // cached extracted text for one page
-	double            textDPI;
-	int               textRotate;
-	TextOutputControl textOutCtrl;
-	TextPage*         text;
-
-	DisplayState*   state;
-	TileMap*        tileMap;
-	TileCache*      tileCache;
-	TileCompositor* tileCompositor;
-	GBool           bitmapFinished;
-
-	SelectMode selectMode;
-	int        selectPage;       // page of current selection
-	int        selectStartX,     // for block mode: start point of current
-	    selectStartY;            // selection, in device coords
-	TextPosition selectStartPos; // for linear mode: start position of
-	                             //   current selection
-
-	PDFHistory // page history queue
-	    history[pdfHistorySize];
-	int historyCur;  // currently displayed page
-	int historyBLen; // number of valid entries backward from
-	                 //   current entry
-	int historyFLen; // number of valid entries forward from
-	                 //   current entry
+	PDFDoc*           doc;                     //
+	int               linksPage;               // cached links for one page
+	Links*            links;                   //
+	int               textPage;                // cached extracted text for one page
+	double            textDPI;                 //
+	int               textRotate;              //
+	TextOutputControl textOutCtrl;             //
+	TextPage*         text;                    //
+	DisplayState*     state;                   //
+	TileMap*          tileMap;                 //
+	TileCache*        tileCache;               //
+	TileCompositor*   tileCompositor;          //
+	bool              bitmapFinished;          //
+	SelectMode        selectMode;              //
+	int               selectPage;              // page of current selection
+	int               selectStartX;            // for block mode: start point of current
+	int               selectStartY;            // selection, in device coords
+	TextPosition      selectStartPos;          // for linear mode: start position of current selection
+	PDFHistory        history[pdfHistorySize]; // page history queue
+	int               historyCur;              // currently displayed page
+	int               historyBLen;             // number of valid entries backward from current entry
+	int               historyFLen;             // number of valid entries forward from current entry
 };
-
-#endif
