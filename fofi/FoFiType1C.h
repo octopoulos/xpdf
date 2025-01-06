@@ -11,8 +11,6 @@
 #include <aconf.h>
 #include "FoFiBase.h"
 
-class GHash;
-
 //------------------------------------------------------------------------
 
 struct Type1CIndex
@@ -165,7 +163,7 @@ public:
 
 	// Return the encoding, as an array of 256 names (any of which may be nullptr).
 	// This is only useful with 8-bit fonts.
-	char** getEncoding();
+	const VEC_STR& getEncoding();
 
 	// Get the glyph names.
 	int getNumGlyphs() { return nGlyphs; }
@@ -174,7 +172,7 @@ public:
 
 	// Returns a hash mapping glyph names to GIDs.
 	// This is only useful with 8-bit fonts.
-	GHash* getNameToGIDMap();
+	UMAP_STR_INT getNameToGIDMap();
 
 	// Return the mapping from CIDs to GIDs, and return the number of
 	// CIDs in *<nCIDs>.  This is only useful for CID fonts.
@@ -187,7 +185,7 @@ public:
 	// This is only useful with 8-bit fonts.
 	// If <newEncoding> is not nullptr, it will be used in place of the encoding in the Type 1C font.
 	// If <ascii> is true the eexec section will be hex-encoded, otherwise it will be left as binary data.  If <psName> is non-nullptr, it will be used as the PostScript font name.
-	void convertToType1(const char* psName, const char** newEncoding, bool ascii, FoFiOutputFunc outputFunc, void* outputStream);
+	void convertToType1(const std::string& psName0, const VEC_STR& newEncoding, bool ascii, FoFiOutputFunc outputFunc, void* outputStream);
 
 	// Convert to a Type 0 CIDFont, suitable for embedding in a PostScript file.
 	// <psName> will be used as the PostScript font name.
@@ -195,7 +193,7 @@ public:
 	// (1) if <codeMap> is non-nullptr, then it is the CID-to-GID mapping
 	// (2) if <codeMap> is nullptr and this is a CID CFF font, then the font's internal CID-to-GID mapping is used
 	// (3) is <codeMap> is nullptr and this is an 8-bit CFF font, then the identity CID-to-GID mapping is used
-	void convertToCIDType0(const char* psName, int* codeMap, int nCodes, FoFiOutputFunc outputFunc, void* outputStream);
+	void convertToCIDType0(const std::string& psName, int* codeMap, int nCodes, FoFiOutputFunc outputFunc, void* outputStream);
 
 	// Convert to a Type 0 (but non-CID) composite font, suitable for embedding in a PostScript file.
 	// <psName> will be used as the PostScript font name.
@@ -203,7 +201,7 @@ public:
 	// (1) if <codeMap> is non-nullptr, then it is the CID-to-GID mapping
 	// (2) if <codeMap> is nullptr and this is a CID CFF font, then the font's internal CID-to-GID mapping is used
 	// (3) is <codeMap> is nullptr and this is an 8-bit CFF font, then the identity CID-to-GID mapping is used
-	void convertToType0(const char* psName, int* codeMap, int nCodes, FoFiOutputFunc outputFunc, void* outputStream);
+	void convertToType0(const std::string& psName, int* codeMap, int nCodes, FoFiOutputFunc outputFunc, void* outputStream);
 
 	// Write an OpenType file, encapsulating the CFF font.
 	// <widths> provides the glyph widths (in design units) for <nWidths> glyphs.
@@ -235,7 +233,7 @@ private:
 	char*    getString(int sid, char* buf, bool* ok);
 
 	std::string        name           = "";      //
-	char**             encoding       = nullptr; //
+	VEC_STR            encoding       = {};      //
 	Type1CIndex        nameIdx        = {};      //
 	Type1CIndex        topDictIdx     = {};      //
 	Type1CIndex        stringIdx      = {};      //

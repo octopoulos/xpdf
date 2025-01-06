@@ -15,7 +15,6 @@
 #include "gmem.h"
 #include "gmempp.h"
 #include "GString.h" // Round2
-#include "GHash.h"
 #include "FoFiType1C.h"
 #include "FoFiTrueType.h"
 
@@ -27,8 +26,7 @@
 //
 // character name = glyph name = name for a particular glyph within a font
 //
-// glyph index = GID = position (within some internal table in the font)
-//               where the instructions to draw a particular glyph are stored
+// glyph index = GID = position (within some internal table in the font) where the instructions to draw a particular glyph are stored
 //
 // Type 1 fonts
 // ------------
@@ -36,12 +34,9 @@
 // Type 1 fonts contain:
 //
 // Encoding: array of glyph names, maps char codes to glyph names
-//
 //           Encoding[charCode] = charName
 //
-// CharStrings: dictionary of instructions, keyed by character names,
-//              maps character name to glyph data
-//
+// CharStrings: dictionary of instructions, keyed by character names, maps character name to glyph data
 //              CharStrings[charName] = glyphData
 //
 // TrueType fonts
@@ -50,11 +45,9 @@
 // TrueType fonts contain:
 //
 // 'cmap' table: mapping from character code to glyph index; there may be multiple cmaps in a TrueType font
-//
 //               cmap[charCode] = gid
 //
 // 'post' table: mapping from glyph index to glyph name
-//
 //               post[gid] = glyphName
 //
 // Type 42 fonts
@@ -63,11 +56,9 @@
 // Type 42 fonts contain:
 //
 // Encoding: array of glyph names, maps char codes to glyph names
-//
 //           Encoding[charCode] = charName
 //
 // CharStrings: dictionary of glyph indexes, keyed by character names, maps character name to glyph index
-//
 //              CharStrings[charName] = gid
 //
 
@@ -175,26 +166,28 @@ static int cmpTrueTypeTableTag(const void* p1, const void* p2)
 
 struct T42Table
 {
-	const char* tag;      // 4-byte tag
-	bool        required; // required by the TrueType spec?
+	const char tag[5];   // 4-byte tag
+	bool       required; // required by the TrueType spec?
 };
 
 // TrueType tables to be embedded in Type 42 fonts.
 // NB: the table names must be in alphabetical order here.
 #define nT42Tables 11
+// clang-format off
 static T42Table t42Tables[nT42Tables] = {
-	{"cvt ",  true },
-	{ "fpgm", true },
-	{ "glyf", true },
-	{ "head", true },
-	{ "hhea", true },
-	{ "hmtx", true },
-	{ "loca", true },
-	{ "maxp", true },
-	{ "prep", true },
-	{ "vhea", false},
-	{ "vmtx", false}
+	{ "cvt ", true  },
+	{ "fpgm", true  },
+	{ "glyf", true  },
+	{ "head", true  },
+	{ "hhea", true  },
+	{ "hmtx", true  },
+	{ "loca", true  },
+	{ "maxp", true  },
+	{ "prep", true  },
+	{ "vhea", false },
+	{ "vmtx", false },
 };
+// clang-format on
 #define t42HeadTable 3
 #define t42LocaTable 6
 #define t42GlyfTable 2
@@ -203,9 +196,8 @@ static T42Table t42Tables[nT42Tables] = {
 
 //------------------------------------------------------------------------
 
-// Glyph names in some arbitrary standard order that Apple uses for
-// their TrueType fonts.
-static const char* macGlyphNames[258] = {
+// Glyph names in some arbitrary standard order that Apple uses for their TrueType fonts.
+static std::string macGlyphNames[258] = {
 	".notdef", "null", "CR", "space",
 	"exclam", "quotedbl", "numbersign", "dollar",
 	"percent", "ampersand", "quotesingle", "parenleft",
@@ -319,7 +311,6 @@ FoFiTrueType::~FoFiTrueType()
 {
 	gfree(tables);
 	gfree(cmaps);
-	if (nameToGID) delete nameToGID;
 }
 
 int FoFiTrueType::getNumCmaps()
@@ -452,11 +443,9 @@ int FoFiTrueType::mapCodeToGID(int i, int c)
 	return gid;
 }
 
-int FoFiTrueType::mapNameToGID(const char* name)
+int FoFiTrueType::mapNameToGID(const std::string& name)
 {
-	if (!nameToGID)
-		return 0;
-	return nameToGID->lookupInt(name);
+	return FindDefault(nameToGID, name, 0);
 }
 
 bool FoFiTrueType::getCFFBlock(char** start, int* length)
@@ -653,7 +642,7 @@ bool FoFiTrueType::checkForTrickyCJK()
 	return false;
 }
 
-void FoFiTrueType::convertToType42(const char* psName, char** encoding, int* codeToGID, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::convertToType42(const std::string& psName, const VEC_STR& encoding, int* codeToGID, FoFiOutputFunc outputFunc, void* outputStream)
 {
 	if (openTypeCFF) return;
 
@@ -665,7 +654,7 @@ void FoFiTrueType::convertToType42(const char* psName, char** encoding, int* cod
 	// begin the font dictionary
 	(*outputFunc)(outputStream, "10 dict begin\n", 14);
 	(*outputFunc)(outputStream, "/FontName /", 11);
-	(*outputFunc)(outputStream, psName, (int)strlen(psName));
+	(*outputFunc)(outputStream, psName.c_str(), TO_INT(psName.size()));
 	(*outputFunc)(outputStream, " def\n", 5);
 	(*outputFunc)(outputStream, "/FontType 42 def\n", 17);
 	(*outputFunc)(outputStream, "/FontMatrix [1 0 0 1 0 0] def\n", 30);
@@ -683,7 +672,7 @@ void FoFiTrueType::convertToType42(const char* psName, char** encoding, int* cod
 	(*outputFunc)(outputStream, "FontName currentdict end definefont pop\n", 40);
 }
 
-void FoFiTrueType::convertToType1(const char* psName, const char** newEncoding, bool ascii, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::convertToType1(const std::string& psName, const VEC_STR& newEncoding, bool ascii, FoFiOutputFunc outputFunc, void* outputStream)
 {
 	char*       start;
 	int         length;
@@ -695,7 +684,7 @@ void FoFiTrueType::convertToType1(const char* psName, const char** newEncoding, 
 	delete ff;
 }
 
-void FoFiTrueType::convertToCIDType2(const char* psName, int* cidMap, int nCIDs, bool needVerticalMetrics, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::convertToCIDType2(const std::string& psName, int* cidMap, int nCIDs, bool needVerticalMetrics, FoFiOutputFunc outputFunc, void* outputStream)
 {
 	int cid, maxUsedGlyph;
 
@@ -711,7 +700,7 @@ void FoFiTrueType::convertToCIDType2(const char* psName, int* cidMap, int nCIDs,
 	// begin the font dictionary
 	(*outputFunc)(outputStream, "20 dict begin\n", 14);
 	(*outputFunc)(outputStream, "/CIDFontName /", 14);
-	(*outputFunc)(outputStream, psName, strlen(psName));
+	(*outputFunc)(outputStream, psName.c_str(), TO_INT(psName.size()));
 	(*outputFunc)(outputStream, " def\n", 5);
 	(*outputFunc)(outputStream, "/CIDFontType 2 def\n", 19);
 	(*outputFunc)(outputStream, "/FontType 42 def\n", 17);
@@ -813,7 +802,7 @@ void FoFiTrueType::convertToCIDType2(const char* psName, int* cidMap, int nCIDs,
 	(*outputFunc)(outputStream, "CIDFontName currentdict end /CIDFont defineresource pop\n", 56);
 }
 
-void FoFiTrueType::convertToCIDType0(const char* psName, int* cidMap, int nCIDs, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::convertToCIDType0(const std::string& psName, int* cidMap, int nCIDs, FoFiOutputFunc outputFunc, void* outputStream)
 {
 	char*       start;
 	int         length;
@@ -827,7 +816,7 @@ void FoFiTrueType::convertToCIDType0(const char* psName, int* cidMap, int nCIDs,
 	delete ff;
 }
 
-void FoFiTrueType::convertToType0(const char* psName, int* cidMap, int nCIDs, bool needVerticalMetrics, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::convertToType0(const std::string& psName, int* cidMap, int nCIDs, bool needVerticalMetrics, FoFiOutputFunc outputFunc, void* outputStream)
 {
 	int maxUsedGlyph, n;
 
@@ -863,7 +852,7 @@ void FoFiTrueType::convertToType0(const char* psName, int* cidMap, int nCIDs, bo
 	{
 		(*outputFunc)(outputStream, "10 dict begin\n", 14);
 		(*outputFunc)(outputStream, "/FontName /", 11);
-		(*outputFunc)(outputStream, psName, (int)strlen(psName));
+		(*outputFunc)(outputStream, psName.c_str(), TO_INT(psName.size()));
 		auto buf = fmt::format("_{:02x} def\n", i >> 8);
 		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		(*outputFunc)(outputStream, "/FontType 42 def\n", 17);
@@ -872,7 +861,7 @@ void FoFiTrueType::convertToType0(const char* psName, int* cidMap, int nCIDs, bo
 		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 		(*outputFunc)(outputStream, "/PaintType 0 def\n", 17);
 		(*outputFunc)(outputStream, "/sfnts ", 7);
-		(*outputFunc)(outputStream, psName, (int)strlen(psName));
+		(*outputFunc)(outputStream, psName.c_str(), TO_INT(psName.size()));
 		(*outputFunc)(outputStream, "_sfnts def\n", 11);
 		(*outputFunc)(outputStream, "/Encoding 256 array\n", 20);
 		for (int j = 0; j < 256 && i + j < n; ++j)
@@ -895,7 +884,7 @@ void FoFiTrueType::convertToType0(const char* psName, int* cidMap, int nCIDs, bo
 	// write the Type 0 parent font
 	(*outputFunc)(outputStream, "16 dict begin\n", 14);
 	(*outputFunc)(outputStream, "/FontName /", 11);
-	(*outputFunc)(outputStream, psName, (int)strlen(psName));
+	(*outputFunc)(outputStream, psName.c_str(), TO_INT(psName.size()));
 	(*outputFunc)(outputStream, " def\n", 5);
 	(*outputFunc)(outputStream, "/FontType 0 def\n", 16);
 	(*outputFunc)(outputStream, "/FontMatrix [1 0 0 1 0 0] def\n", 30);
@@ -911,7 +900,7 @@ void FoFiTrueType::convertToType0(const char* psName, int* cidMap, int nCIDs, bo
 	for (int i = 0; i < n; i += 256)
 	{
 		(*outputFunc)(outputStream, "/", 1);
-		(*outputFunc)(outputStream, psName, (int)strlen(psName));
+		(*outputFunc)(outputStream, psName.c_str(), TO_INT(psName.size()));
 		const auto buf = fmt::format("_{:02x} findfont\n", i >> 8);
 		(*outputFunc)(outputStream, buf.c_str(), buf.size());
 	}
@@ -919,7 +908,7 @@ void FoFiTrueType::convertToType0(const char* psName, int* cidMap, int nCIDs, bo
 	(*outputFunc)(outputStream, "FontName currentdict end definefont pop\n", 40);
 }
 
-void FoFiTrueType::convertToType0(const char* psName, int* cidMap, int nCIDs, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::convertToType0(const std::string& psName, int* cidMap, int nCIDs, FoFiOutputFunc outputFunc, void* outputStream)
 {
 	char*       start;
 	int         length;
@@ -1211,7 +1200,7 @@ bool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char*
 	// construct the new name table
 	if (name)
 	{
-		n          = (int)strlen(name);
+		n          = TO_INT(strlen(name));
 		newNameLen = (6 + 4 * 12 + 2 * (3 * n + 7) + 3) & ~3;
 		newNameTab = (char*)gmalloc(newNameLen);
 		memset(newNameTab, 0, newNameLen);
@@ -1679,20 +1668,20 @@ bool FoFiTrueType::writeTTF(FoFiOutputFunc outputFunc, void* outputStream, char*
 	return true;
 }
 
-void FoFiTrueType::cvtEncoding(char** encoding, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::cvtEncoding(const VEC_STR& encoding, FoFiOutputFunc outputFunc, void* outputStream)
 {
-	const char* name;
+	std::string name;
 
 	(*outputFunc)(outputStream, "/Encoding 256 array\n", 20);
-	if (encoding)
+	if (encoding.size())
 	{
 		for (int i = 0; i < 256; ++i)
 		{
-			if (!(name = encoding[i]))
+			if ((name = encoding[i]).empty())
 				name = ".notdef";
 			const auto buf = fmt::format("dup {} /", i);
 			(*outputFunc)(outputStream, buf.c_str(), buf.size());
-			(*outputFunc)(outputStream, name, (int)strlen(name));
+			(*outputFunc)(outputStream, name.c_str(), TO_INT(name.size()));
 			(*outputFunc)(outputStream, " put\n", 5);
 		}
 	}
@@ -1707,12 +1696,8 @@ void FoFiTrueType::cvtEncoding(char** encoding, FoFiOutputFunc outputFunc, void*
 	(*outputFunc)(outputStream, "readonly def\n", 13);
 }
 
-void FoFiTrueType::cvtCharStrings(char** encoding, int* codeToGID, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiTrueType::cvtCharStrings(const VEC_STR& encoding, int* codeToGID, FoFiOutputFunc outputFunc, void* outputStream)
 {
-	char* name;
-	char  buf2[16];
-	int   i, k;
-
 	// always define '.notdef'
 	(*outputFunc)(outputStream, "/CharStrings 256 dict dup begin\n", 32);
 	(*outputFunc)(outputStream, "/.notdef 0 def\n", 15);
@@ -1720,32 +1705,24 @@ void FoFiTrueType::cvtCharStrings(char** encoding, int* codeToGID, FoFiOutputFun
 	// map char name to glyph index:
 	// 1. use encoding to map name to char code
 	// 2. use codeToGID to map char code to glyph index
-	// N.B. We do this in reverse order because font subsets can have
-	//      weird encodings that use the same character name twice, and
-	//      the first definition is probably the one we want.
-	k = 0; // make gcc happy
-	for (i = 255; i >= 0; --i)
+	// N.B. We do this in reverse order because font subsets can have weird encodings that use the same character name twice,
+	//      and the first definition is probably the one we want.
+	for (int i = 255; i >= 0; --i)
 	{
-		if (encoding)
-		{
+		std::string name;
+		if (encoding.size())
 			name = encoding[i];
-		}
 		else
-		{
-			snprintf(buf2, sizeof(buf2), "c%02x", i);
-			name = buf2;
-		}
-		if (name && strcmp(name, ".notdef"))
-		{
-			k = codeToGID[i];
-			// note: Distiller (maybe Adobe's PS interpreter in general)
-			// doesn't like TrueType fonts that have CharStrings entries
-			// which point to nonexistent glyphs, hence the (k < nGlyphs)
-			// test
-			if (k > 0 && k < nGlyphs)
+			name = fmt::format("c{:02x}", i);
+
+		if (name.size() && name != ".notdef")
+		{			
+			// note: Distiller (maybe Adobe's PS interpreter in general) doesn't like TrueType fonts that have CharStrings entries which point to nonexistent glyphs,
+			// hence the (k < nGlyphs) test
+			if (const int k = codeToGID[i]; k > 0 && k < nGlyphs)
 			{
 				(*outputFunc)(outputStream, "/", 1);
-				(*outputFunc)(outputStream, name, (int)strlen(name));
+				(*outputFunc)(outputStream, name.c_str(), TO_INT(name.size()));
 				const auto buf = fmt::format(" {} def\n", k);
 				(*outputFunc)(outputStream, buf.c_str(), buf.size());
 			}
@@ -1805,21 +1782,14 @@ void FoFiTrueType::cvtSfnts(FoFiOutputFunc outputFunc, void* outputStream, std::
 		headData[51] = 1;
 	}
 
-	// read the original 'loca' table, pad entries out to 4 bytes, and
-	// sort it into proper order -- some (non-compliant) fonts have
-	// out-of-order loca tables; in order to correctly handle the case
-	// where (compliant) fonts have empty entries in the middle of the
-	// table, cmpTrueTypeLocaOffset uses offset as its primary sort key,
-	// and idx as its secondary key (ensuring that adjacent entries with
-	// the same pos value remain in the same order)
+	// read the original 'loca' table, pad entries out to 4 bytes, and sort it into proper order
+	// -- some (non-compliant) fonts have out-of-order loca tables;
+	// in order to correctly handle the case where (compliant) fonts have empty entries in the middle of the table, cmpTrueTypeLocaOffset uses offset as its primary sort key,
+	// and idx as its secondary key (ensuring that adjacent entries with the same pos value remain in the same order)
 	//
-	// NB: a glyph description containing 12 zero bytes should be a
-	// valid empty glyph (from my reading of the TrueType spec), but
-	// Acrobat chokes on this (which is an issue when an Xpdf-generated
-	// PS file is converted back to PDF - with Ghostscript or
-	// Distiller), so we drop any glyph descriptions of 12 or fewer
-	// bytes -- an empty glyph description generates an empty glyph with
-	// no errors
+	// NB: a glyph description containing 12 zero bytes should be a valid empty glyph (from my reading of the TrueType spec), but Acrobat chokes on this
+	// (which is an issue when an Xpdf-generated PS file is converted back to PDF - with Ghostscript or Distiller), so we drop any glyph descriptions of 12 or fewer bytes
+	// -- an empty glyph description generates an empty glyph with no errors
 	locaTable    = (TrueTypeLoca*)gmallocn(nGlyphs + 1, sizeof(TrueTypeLoca));
 	i            = seekTable("loca");
 	pos          = tables[i].offset;
@@ -1968,8 +1938,7 @@ void FoFiTrueType::cvtSfnts(FoFiOutputFunc outputFunc, void* outputStream, std::
 		}
 		else if (t42Tables[i].required)
 		{
-			//~ error(-1, "Embedded TrueType font is missing a required table ('%s')",
-			//~       t42Tables[i].tag);
+			//~ error(-1, "Embedded TrueType font is missing a required table ('%s')", t42Tables[i].tag);
 			length   = 0;
 			checksum = 0;
 		}
@@ -2162,26 +2131,22 @@ void FoFiTrueType::parse(int fontNum, bool allowHeadlessCFF)
 	{
 		offset = 0;
 		topTag = getU32BE(0, &parsedOk);
-		if (!parsedOk)
-			return;
+		if (!parsedOk) return;
 		if (topTag == ttcfTag)
 			parseTTC(fontNum, &pos);
 		else
 			pos = 0;
 	}
-	if (!parsedOk)
-		return;
+	if (!parsedOk) return;
 
 	// check the sfnt version
 	ver = getU32BE(offset + pos, &parsedOk);
-	if (!parsedOk)
-		return;
+	if (!parsedOk) return;
 	openTypeCFF = ver == 0x4f54544f; // 'OTTO'
 
 	// read the table directory
 	nTables = getU16BE(offset + pos + 4, &parsedOk);
-	if (!parsedOk)
-		return;
+	if (!parsedOk) return;
 	tables = (TrueTypeTable*)gmallocn(nTables, sizeof(TrueTypeTable));
 	pos += 12;
 	j = 0;
@@ -2199,8 +2164,7 @@ void FoFiTrueType::parse(int fontNum, bool allowHeadlessCFF)
 		pos += 16;
 	}
 	nTables = j;
-	if (!parsedOk)
-		return;
+	if (!parsedOk) return;
 
 	// check for the head table; allow for a head-less OpenType CFF font
 	headlessCFF = false;
@@ -2232,8 +2196,7 @@ void FoFiTrueType::parse(int fontNum, bool allowHeadlessCFF)
 		pos    = tables[i].offset + 2;
 		nCmaps = getU16BE(pos, &parsedOk);
 		pos += 2;
-		if (!parsedOk)
-			return;
+		if (!parsedOk) return;
 		cmaps = (TrueTypeCmap*)gmallocn(nCmaps, sizeof(TrueTypeCmap));
 		k     = 0;
 		for (j = 0; j < nCmaps; ++j)
@@ -2253,15 +2216,13 @@ void FoFiTrueType::parse(int fontNum, bool allowHeadlessCFF)
 			++k;
 		}
 		nCmaps = k;
-		if (!parsedOk)
-			return;
+		if (!parsedOk) return;
 	}
 
 	// get the number of glyphs from the maxp table
 	i       = seekTable("maxp");
 	nGlyphs = getU16BE(tables[i].offset + 4, &parsedOk);
-	if (!parsedOk)
-		return;
+	if (!parsedOk) return;
 
 	// get the bbox and loca table format from the head table
 	i       = seekTable("head");
@@ -2270,8 +2231,7 @@ void FoFiTrueType::parse(int fontNum, bool allowHeadlessCFF)
 	bbox[2] = getS16BE(tables[i].offset + 40, &parsedOk);
 	bbox[3] = getS16BE(tables[i].offset + 42, &parsedOk);
 	locaFmt = getS16BE(tables[i].offset + 50, &parsedOk);
-	if (!parsedOk)
-		return;
+	if (!parsedOk) return;
 
 	// make sure the loca table is sane (correct length)
 	// NB: out-of-bounds entries are handled in writeTTF()
@@ -2285,8 +2245,7 @@ void FoFiTrueType::parse(int fontNum, bool allowHeadlessCFF)
 		}
 		if (tables[i].len < (nGlyphs + 1) * (locaFmt ? 4 : 2))
 			nGlyphs = tables[i].len / (locaFmt ? 4 : 2) - 1;
-		if (!parsedOk)
-			return;
+		if (!parsedOk) return;
 	}
 
 	// read the post table
@@ -2300,8 +2259,7 @@ void FoFiTrueType::parseTTC(int fontNum, int* pos)
 
 	isTTC  = true;
 	nFonts = getU32BE(8, &parsedOk);
-	if (!parsedOk)
-		return;
+	if (!parsedOk) return;
 	if (fontNum < 0 || fontNum >= nFonts)
 	{
 		parsedOk = false;
@@ -2319,22 +2277,19 @@ void FoFiTrueType::parseDfont(int fontNum, int* offset, int* startPos)
 
 	resDataOffset = getU32BE(0, &parsedOk);
 	resMapOffset  = getU32BE(4, &parsedOk);
-	if (!parsedOk)
-		return;
+	if (!parsedOk) return;
 
 	resTypeListOffset = getU16BE(resMapOffset + 24, &parsedOk);
 	// resNameListOffset = getU16BE(resMapOffset + 26, &parsedOk);
 	nTypes            = getU16BE(resMapOffset + 28, &parsedOk) + 1;
-	if (!parsedOk)
-		return;
+	if (!parsedOk) return;
 
 	pos = 0; // make gcc happy
 	for (i = 0; i < nTypes; ++i)
 	{
 		pos     = resMapOffset + resTypeListOffset + 2 + 8 * i;
 		typeTag = getU32BE(pos, &parsedOk);
-		if (!parsedOk)
-			return;
+		if (!parsedOk) return;
 		if (typeTag == 0x73666e74)
 		{ // 'sfnt'
 			break;
@@ -2347,8 +2302,7 @@ void FoFiTrueType::parseDfont(int fontNum, int* offset, int* startPos)
 	}
 	nFonts        = getU16BE(pos + 4, &parsedOk) + 1;
 	refListOffset = getU16BE(pos + 6, &parsedOk);
-	if (!parsedOk)
-		return;
+	if (!parsedOk) return;
 	if (fontNum < 0 || fontNum >= nFonts)
 	{
 		parsedOk = false;
@@ -2372,18 +2326,16 @@ void FoFiTrueType::readPostTable()
 	if ((i = seekTable("post")) < 0) return;
 	tablePos = tables[i].offset;
 	postFmt  = getU32BE(tablePos, &ok);
-	if (!ok) goto err;
+	if (!ok) return;
 	if (postFmt == 0x00010000)
 	{
-		nameToGID = new GHash(true);
 		for (int i = 0; i < 258; ++i)
-			nameToGID->add(std::string(macGlyphNames[i]), i);
+			nameToGID.emplace(macGlyphNames[i], i);
 	}
 	else if (postFmt == 0x00020000)
 	{
-		nameToGID = new GHash(true);
-		n         = getU16BE(tablePos + 32, &ok);
-		if (!ok) goto err;
+		n = getU16BE(tablePos + 32, &ok);
+		if (!ok) return;
 		stringIdx = 0;
 		stringPos = tablePos + 34 + 2 * n;
 		for (int i = 0; i < n && i < nGlyphs; ++i)
@@ -2392,8 +2344,7 @@ void FoFiTrueType::readPostTable()
 			int  j  = getU16BE(tablePos + 34 + 2 * i, &ok);
 			if (j < 258)
 			{
-				nameToGID->removeInt(macGlyphNames[j]);
-				nameToGID->add(std::string(macGlyphNames[j]), i);
+				nameToGID.emplace(macGlyphNames[j], i);
 			}
 			else
 			{
@@ -2405,11 +2356,9 @@ void FoFiTrueType::readPostTable()
 					if (!ok) continue;
 				}
 				m = getU8(stringPos, &ok);
-				if (!ok || !checkRegion(stringPos + 1, m))
-					continue;
+				if (!ok || !checkRegion(stringPos + 1, m)) continue;
 				auto name = std::string((char*)&file[stringPos + 1], m);
-				nameToGID->removeInt(name);
-				nameToGID->add(name, i);
+				nameToGID.emplace(std::move(name), i);
 				++stringIdx;
 				stringPos += 1 + m;
 			}
@@ -2417,27 +2366,18 @@ void FoFiTrueType::readPostTable()
 	}
 	else if (postFmt == 0x00028000)
 	{
-		nameToGID = new GHash(true);
 		for (int i = 0; i < nGlyphs; ++i)
 		{
 			const int j = getU8(tablePos + 32 + i, &ok);
 			if (!ok) continue;
 			if (j < 258)
 			{
-				nameToGID->removeInt(macGlyphNames[j]);
-				nameToGID->add(std::string(macGlyphNames[j]), i);
+				nameToGID.emplace(macGlyphNames[j], i);
 			}
 		}
 	}
 
 	return;
-
-err:
-	if (nameToGID)
-	{
-		delete nameToGID;
-		nameToGID = nullptr;
-	}
 }
 
 int FoFiTrueType::seekTable(const char* tag)

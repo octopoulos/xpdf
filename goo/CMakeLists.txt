@@ -25,7 +25,6 @@ include_directories(
 add_library(goo_objs OBJECT
 	FixedPoint.cc
 	gfile.cc
-	GHash.cc
 	GList.cc
 	gmem.cc
 	gmempp.cc

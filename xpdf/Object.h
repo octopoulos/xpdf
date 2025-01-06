@@ -228,7 +228,7 @@ public:
 
 	std::string getString() { return *string; }
 
-	char* getName() { return name; }
+	char* getName() { assert(name != nullptr); return name; }
 
 	Array* getArray() { return array; }
 

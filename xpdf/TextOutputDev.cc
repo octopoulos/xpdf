@@ -715,10 +715,8 @@ TextFontInfo::TextFontInfo(GfxState* state)
 		ascent  = gfxFont->getAscent();
 		descent = gfxFont->getDescent();
 		// "odd" ascent/descent values cause trouble more often than not
-		// (in theory these could be legitimate values for oddly designed
-		// fonts -- but they are more often due to buggy PDF generators)
-		// (values that are too small are a different issue -- those seem
-		// to be more commonly legitimate)
+		// (in theory these could be legitimate values for oddly designed fonts -- but they are more often due to buggy PDF generators)
+		// (values that are too small are a different issue -- those seem to be more commonly legitimate)
 		if (ascent > 1) ascent = 0.75;
 		if (descent < -0.5) descent = -0.25;
 	}
@@ -729,16 +727,15 @@ TextFontInfo::TextFontInfo(GfxState* state)
 		ascent     = 0.75;
 		descent    = -0.25;
 	}
-	fontName = gfxFont->getName();
+	fontName = gfxFont ? gfxFont->getName() : "";
 	flags    = gfxFont ? gfxFont->getFlags() : 0;
 	mWidth   = 0;
 	if (gfxFont && !gfxFont->isCIDFont())
 	{
-		char* name;
-		int   code;
-		for (code = 0; code < 256; ++code)
+		for (int code = 0; code < 256; ++code)
 		{
-			if ((name = ((Gfx8BitFont*)gfxFont)->getCharName(code)) && name[0] == 'm' && name[1] == '\0')
+			std::string_view name = ((Gfx8BitFont*)gfxFont)->getCharName(code);
+			if (name.size() && name[0] == 'm' && name[1] == '\0')
 			{
 				mWidth = ((Gfx8BitFont*)gfxFont)->getWidth((uint8_t)code);
 				break;
@@ -1259,7 +1256,6 @@ void TextPage::clear()
 void TextPage::updateFont(GfxState* state)
 {
 	double* fm;
-	char*   name;
 	int     code, mCode, letterCode, anyCode;
 	double  w;
 	double  m[4], m2[4];
@@ -1292,13 +1288,15 @@ void TextPage::updateFont(GfxState* state)
 		mCode = letterCode = anyCode = -1;
 		for (code = 0; code < 256; ++code)
 		{
-			name = ((Gfx8BitFont*)gfxFont)->getCharName(code);
-			if (name && name[0] == 'm' && name[1] == '\0')
-				mCode = code;
-			if (letterCode < 0 && name && ((name[0] >= 'A' && name[0] <= 'Z') || (name[0] >= 'a' && name[0] <= 'z')) && name[1] == '\0')
-				letterCode = code;
-			if (anyCode < 0 && name && ((Gfx8BitFont*)gfxFont)->getWidth((uint8_t)code) > 0)
-				anyCode = code;
+			if (std::string_view name = ((Gfx8BitFont*)gfxFont)->getCharName(code); name.size())
+			{
+				if (name[0] == 'm' && name[1] == '\0')
+					mCode = code;
+				if (letterCode < 0 && ((name[0] >= 'A' && name[0] <= 'Z') || (name[0] >= 'a' && name[0] <= 'z')) && name[1] == '\0')
+					letterCode = code;
+				if (anyCode < 0 && ((Gfx8BitFont*)gfxFont)->getWidth((uint8_t)code) > 0)
+					anyCode = code;
+			}
 		}
 		if (mCode >= 0 && (w = ((Gfx8BitFont*)gfxFont)->getWidth((uint8_t)mCode)) > 0)
 		{

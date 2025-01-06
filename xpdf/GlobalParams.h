@@ -22,8 +22,6 @@
 #endif
 
 class GList;
-class GHash;
-class NameToCharCode;
 class CharCodeToUnicode;
 class CharCodeToUnicodeCache;
 class UnicodeMapCache;
@@ -255,11 +253,9 @@ public:
 	void parseLine(char* buf, const std::string& fileName, int line);
 
 	//----- accessors
-
-	CharCode getMacRomanCharCode(char* charName);
-
+	CharCode              getMacRomanCharCode(const std::string& charName);
 	std::string           getBaseDir();
-	Unicode               mapNameToUnicode(const char* charName);
+	Unicode               mapNameToUnicode(const std::string& charName);
 	UnicodeMap*           getResidentUnicodeMap(const std::string& encodingName);
 	FILE*                 getUnicodeMapFile(const std::string& encodingName);
 	FILE*                 findCMapFile(const std::string& collection, const std::string& cMapName);
@@ -474,14 +470,14 @@ private:
 	UnicodeMap* getUnicodeMap2(const std::string& encodingName);
 
 	//----- static tables
-	NameToCharCode* macRomanReverseMap = nullptr; // mapping from char name to MacRomanEncoding index
+	UMAP_STR_INT macRomanReverseMap = {}; // mapping from char name to MacRomanEncoding index
 
 	//----- meta settings
 	std::string  baseDir        = ""; // base directory - for plugins, etc.
 	UMAP_STR_STR configFileVars = {}; // variables for use in the config file [GString]
 
 	//----- user-modifiable settings
-	NameToCharCode*                   nameToUnicode                 = nullptr;             // mapping from char name to Unicode
+	UMAP_STR_INT                      nameToUnicode                 = {};                  // mapping from char name to Unicode
 	UMAP_STR_STR                      cidToUnicodes                 = {};                  // files for mappings from char collections to Unicode, indexed by collection name [GString]
 	UMAP_STR_STR                      unicodeToUnicodes             = {};                  // files for Unicode-to-Unicode mappings, indexed by font name pattern [GString]
 	UMAP<std::string, UnicodeMap>     residentUnicodeMaps           = {};                  // mappings from Unicode to char codes, indexed by encoding name [UnicodeMap]
@@ -591,10 +587,10 @@ private:
 	std::string                       debugLogFile                  = "";                  // path for debug log file
 
 	// cache
-	CharCodeToUnicodeCache* cidToUnicodeCache     = nullptr;//
-	CharCodeToUnicodeCache* unicodeToUnicodeCache = nullptr;//
-	UnicodeMapCache*        unicodeMapCache       = nullptr;//
-	CMapCache*              cMapCache             = nullptr;//
+	CharCodeToUnicodeCache* cidToUnicodeCache     = nullptr; //
+	CharCodeToUnicodeCache* unicodeToUnicodeCache = nullptr; //
+	UnicodeMapCache*        unicodeMapCache       = nullptr; //
+	CMapCache*              cMapCache             = nullptr; //
 
 #if MULTITHREADED
 	GMutex mutex;

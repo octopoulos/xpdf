@@ -18,7 +18,6 @@
 #include "GfxFont.h"     // GfxFontType
 #include "PSOutputDev.h" // PSFontFileLocation
 
-class GHash;
 class PDFDoc;
 class XRef;
 class Function;
@@ -302,7 +301,7 @@ public:
 	void writePSFmt(fmt::format_string<T...> fmt, T&&... args);
 
 	void writePSString(std::string_view sv);
-	void writePSName(const char* s);
+	void writePSName(const std::string& s);
 
 private:
 	void            init(PSOutputFunc outputFuncA, void* outputStreamA, PSFileType fileTypeA, PDFDoc* docA, int firstPageA, int lastPageA, PSOutMode modeA, int imgLLXA, int imgLLYA, int imgURXA, int imgURYA, bool manualCtrlA, bool honorUserUnitA);

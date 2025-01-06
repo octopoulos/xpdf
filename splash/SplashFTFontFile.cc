@@ -20,11 +20,11 @@
 // SplashFTFontFile
 //------------------------------------------------------------------------
 
-SplashFontFile* SplashFTFontFile::loadType1Font(SplashFTFontEngine* engineA, SplashFontFileID* idA, SplashFontType fontTypeA, LOAD_FONT_ARGS_DEFS(A), const char** encA)
+SplashFontFile* SplashFTFontFile::loadType1Font(SplashFTFontEngine* engineA, SplashFontFileID* idA, SplashFontType fontTypeA, LOAD_FONT_ARGS_DEFS(A), const VEC_STR& encA)
 {
 	FT_Face     faceA;
 	int*        codeToGIDA;
-	const char* name;
+	std::string name;
 
 #	if LOAD_FONTS_FROM_MEM
 	if (FT_New_Memory_Face(engineA->lib, (FT_Byte*)fontBufA.c_str(), static_cast<FT_Long>(fontBufA.size()), 0, &faceA))
@@ -39,8 +39,8 @@ SplashFontFile* SplashFTFontFile::loadType1Font(SplashFTFontEngine* engineA, Spl
 	for (int i = 0; i < 256; ++i)
 	{
 		codeToGIDA[i] = 0;
-		if ((name = encA[i]))
-			codeToGIDA[i] = (int)FT_Get_Name_Index(faceA, (char*)name);
+		if ((name = encA[i]).size())
+			codeToGIDA[i] = (int)FT_Get_Name_Index(faceA, name.c_str());
 	}
 
 	return new SplashFTFontFile(engineA, idA, fontTypeA, LOAD_FONT_ARGS_CALLS(A), faceA, codeToGIDA, 256);

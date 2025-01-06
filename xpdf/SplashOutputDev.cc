@@ -1126,9 +1126,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 	double*            textMat;
 	double             m11, m12, m21, m22, fontSize, oblique;
 	double             fsx, fsy, w, fontScaleMin, fontScaleAvg, fontScale;
-	uint16_t           ww;
 	SplashCoord        mat[4];
-	char *             name, *start;
 	Unicode            uBuf[8];
 	int                substIdx, n, code, cmap, cmapPlatform, cmapEncoding, length, i;
 
@@ -1231,10 +1229,8 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 			fileName = fontLoc->path;
 #endif
 			fontNum = fontLoc->fontNum;
-			if (fontLoc->substIdx >= 0)
-				id->setSubstIdx(fontLoc->substIdx);
-			if (fontLoc->oblique != 0)
-				id->setOblique(fontLoc->oblique);
+			if (fontLoc->substIdx >= 0) id->setSubstIdx(fontLoc->substIdx);
+			if (fontLoc->oblique != 0) id->setOblique(fontLoc->oblique);
 		}
 
 		// load the font file
@@ -1245,10 +1241,10 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 #if LOAD_FONTS_FROM_MEM
 			          fontBuf,
 #else
-			          fileName.c_str(),
+			          fileName,
 			          fileName == tmpFileName,
 #endif
-			          (const char**)((Gfx8BitFont*)gfxFont)->getEncoding())))
+			          ((Gfx8BitFont*)gfxFont)->getEncoding())))
 			{
 				error(errSyntaxError, -1, "1/Couldn't create a font for '{}'", gfxFont->getName());
 				delete fontLoc;
@@ -1259,7 +1255,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 #if LOAD_FONTS_FROM_MEM
 			if ((ffT1C = FoFiType1C::make(fontBuf.c_str(), fontBuf.size())))
 #else
-			if ((ffT1C = FoFiType1C::load(fileName.c_str())))
+			if ((ffT1C = FoFiType1C::load(fileName)))
 #endif
 			{
 				codeToGID = ((Gfx8BitFont*)gfxFont)->getCodeToGIDMap(ffT1C);
@@ -1274,11 +1270,11 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 #if LOAD_FONTS_FROM_MEM
 			          fontBuf,
 #else
-			          fileName.c_str(),
+			          fileName,
 			          fileName == tmpFileName,
 #endif
 			          codeToGID,
-			          (const char**)((Gfx8BitFont*)gfxFont)->getEncoding())))
+			          ((Gfx8BitFont*)gfxFont)->getEncoding())))
 			{
 				error(errSyntaxError, -1, "2/Couldn't create a font for '{}'", gfxFont->getName().size() ? gfxFont->getName().c_str() : "(unnamed)");
 				delete fontLoc;
@@ -1290,9 +1286,10 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 #if LOAD_FONTS_FROM_MEM
 			if ((ff = FoFiTrueType::make(fontBuf.c_str(), fontBuf.size(), fontNum, true)))
 #else
-			if ((ff = FoFiTrueType::load(fileName.c_str(), fontNum, true)))
+			if ((ff = FoFiTrueType::load(fileName, fontNum, true)))
 #endif
 			{
+				char* start;
 				if (ff->getCFFBlock(&start, &length) && (ffT1C = FoFiType1C::make(start, length)))
 				{
 					codeToGID = ((Gfx8BitFont*)gfxFont)->getCodeToGIDMap(ffT1C);
@@ -1305,11 +1302,11 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 #if LOAD_FONTS_FROM_MEM
 			          fontBuf,
 #else
-			          fileName.c_str(),
+			          fileName,
 			          fileName == tmpFileName,
 #endif
 			          codeToGID,
-			          (const char**)((Gfx8BitFont*)gfxFont)->getEncoding())))
+			          ((Gfx8BitFont*)gfxFont)->getEncoding())))
 			{
 				error(errSyntaxError, -1, "3/Couldn't create a font for '{}'", gfxFont->getName().size() ? gfxFont->getName().c_str() : "(unnamed)");
 				delete fontLoc;
@@ -1321,7 +1318,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 #if LOAD_FONTS_FROM_MEM
 			if ((ff = FoFiTrueType::make(fontBuf.c_str(), fontBuf.size(), fontNum)))
 #else
-			if ((ff = FoFiTrueType::load(fileName.c_str(), fontNum)))
+			if ((ff = FoFiTrueType::load(fileName, fontNum)))
 #endif
 			{
 				codeToGID = ((Gfx8BitFont*)gfxFont)->getCodeToGIDMap(ff);
@@ -1346,7 +1343,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 #if LOAD_FONTS_FROM_MEM
 			          fontBuf,
 #else
-			          fileName.c_str(),
+			          fileName,
 			          fileName == tmpFileName,
 #endif
 			          fontNum, codeToGID, n,
@@ -1375,7 +1372,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 #if LOAD_FONTS_FROM_MEM
 			          fontBuf,
 #else
-			          fileName.c_str(),
+			          fileName,
 			          fileName == tmpFileName,
 #endif
 			          codeToGID, n)))
@@ -1406,7 +1403,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 					if ((ff = FoFiTrueType::make(fontBuf.c_str(), fontBuf.size(), fontNum)))
 					{
 #else
-					if ((ff = FoFiTrueType::load(fileName.c_str(), fontNum)))
+					if ((ff = FoFiTrueType::load(fileName, fontNum)))
 					{
 #endif
 						// look for a Unicode cmap
@@ -1444,7 +1441,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 #if LOAD_FONTS_FROM_MEM
 			          fontBuf,
 #else
-			          fileName.c_str(),
+			          fileName,
 			          fileName == tmpFileName,
 #endif
 			          codeToGID, n)))
@@ -1476,7 +1473,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 					if ((ff = FoFiTrueType::make(fontBuf.c_str(), fontBuf.size(), fontNum)))
 					{
 #else
-					if ((ff = FoFiTrueType::load(fileName.c_str(), fontNum)))
+					if ((ff = FoFiTrueType::load(fileName, fontNum)))
 					{
 #endif
 						// look for a Unicode cmap
@@ -1514,7 +1511,7 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 #if LOAD_FONTS_FROM_MEM
 			          fontBuf,
 #else
-			          fileName.c_str(),
+			          fileName,
 			          fileName == tmpFileName,
 #endif
 			          fontNum, codeToGID, n,
@@ -1547,9 +1544,8 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 	m21 *= fontSize;
 	m22 *= fontSize;
 
-	// for substituted fonts: adjust the font matrix -- compare the
-	// widths of letters and digits (A-Z, a-z, 0-9) in the original font
-	// and the substituted font
+	// for substituted fonts: adjust the font matrix
+	// -- compare the widths of letters and digits (A-Z, a-z, 0-9) in the original font and the substituted font
 	substIdx = ((SplashOutFontFileID*)fontFile->getID())->getSubstIdx();
 	if (substIdx >= 0 && substIdx < 12)
 	{
@@ -1558,24 +1554,25 @@ void SplashOutputDev::doUpdateFont(GfxState* state)
 		n            = 0;
 		for (code = 0; code < 256; ++code)
 		{
-			if ((name = ((Gfx8BitFont*)gfxFont)->getCharName(code)) && name[0] && !name[1] && ((name[0] >= 'A' && name[0] <= 'Z') || (name[0] >= 'a' && name[0] <= 'z') || (name[0] >= '0' && name[0] <= '9')))
+			const std::string& name = ((Gfx8BitFont*)gfxFont)->getCharName(code);
+			if (name.size() && name[0] && !name[1] && ((name[0] >= 'A' && name[0] <= 'Z') || (name[0] >= 'a' && name[0] <= 'z') || (name[0] >= '0' && name[0] <= '9')))
 			{
 				w = ((Gfx8BitFont*)gfxFont)->getWidth((uint8_t)code);
-				if (builtinFontSubst[substIdx]->widths->getWidth(name, &ww) && w > 0.01 && ww > 10)
+				if (w > 0.01)
 				{
-					w /= ww * 0.001;
-					if (w < fontScaleMin)
-						fontScaleMin = w;
-					fontScaleAvg += w;
-					++n;
+					if (const int ww = FindDefault(builtinFontSubst[substIdx]->widths, name, 0); ww > 10)
+					{
+						w /= ww * 0.001;
+						if (w < fontScaleMin) fontScaleMin = w;
+						fontScaleAvg += w;
+						++n;
+					}
 				}
 			}
 		}
-		// if real font is narrower than substituted font, reduce the font
-		// size accordingly -- this currently uses a scale factor halfway
-		// between the minimum and average computed scale factors, which
-		// is a bit of a kludge, but seems to produce mostly decent
-		// results
+		// if real font is narrower than substituted font, reduce the font size accordingly
+		// -- this currently uses a scale factor halfway between the minimum and average computed scale factors,
+		// which is a bit of a kludge, but seems to produce mostly decent results
 		if (n)
 		{
 			fontScaleAvg /= n;
@@ -4272,7 +4269,7 @@ SplashFont* SplashOutputDev::getFont(const std::string& name, SplashCoord* textM
 			for (i = 0; i < 256; ++i)
 			{
 				codeToGID[i] = 0;
-				if (winAnsiEncoding[i] && (u = globalParams->mapNameToUnicode(winAnsiEncoding[i])))
+				if (winAnsiEncoding[i].size() && (u = globalParams->mapNameToUnicode(winAnsiEncoding[i])))
 					codeToGID[i] = ff->mapCodeToGID(cmap, u);
 			}
 			delete ff;

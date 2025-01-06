@@ -16,7 +16,6 @@
 #include "gmem.h"
 #include "gmempp.h"
 #include "GList.h"
-#include "GHash.h"
 #include "Error.h"
 #include "Object.h"
 #include "Dict.h"
@@ -36,8 +35,8 @@
 
 struct Base14FontMapEntry
 {
-	const char* altName;
-	const char* base14Name;
+	std::string altName;
+	std::string base14Name;
 };
 
 // clang-format off
@@ -114,7 +113,7 @@ static Base14FontMapEntry base14FontMap[] = {
 
 // index: {fixed:0, sans-serif:4, serif:8} + bold*2 + italic
 // NB: must be in same order as psSubstFonts in PSOutputDev.cc
-static const char* base14SubstFonts[14] = {
+static const VEC_STR base14SubstFonts = {
 	"Courier",
 	"Courier-Oblique",
 	"Courier-Bold",
@@ -930,13 +929,10 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
     : GfxFont(tagA, idA, nameA, typeA, embFontIDA)
 {
 	BuiltinFont*       builtinFont;
-	const char**       baseEnc;
 	int                len;
 	FoFiType1*         ffT1;
 	FoFiType1C*        ffT1C;
 	int                code, code2;
-	char*              charName;
-	bool               missing, hex;
 	Unicode            toUnicode[256];
 	CharCodeToUnicode *utu, *ctu2;
 	Unicode            uBuf[8];
@@ -946,6 +942,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 	Object             obj1, obj2, obj3;
 	int                n, i, a, b, m;
 
+	enc.resize(256, "");
 	ctu = nullptr;
 
 	// do font name substitution for various aliases of the Base 14 font names
@@ -982,7 +979,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 	{
 		for (i = 0; i < nBuiltinFonts; ++i)
 		{
-			if (!strcmp(base14->base14Name, builtinFonts[i].name))
+			if (base14->base14Name == builtinFonts[i].name)
 			{
 				builtinFont = &builtinFonts[i];
 				break;
@@ -1075,9 +1072,10 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 	// and then add a list of differences (if any) from FontDict.Encoding.Differences.
 
 	// check FontDict for base encoding
+	const VEC_STR* baseEnc = nullptr;
+
 	hasEncoding         = false;
 	usesMacRomanEnc     = false;
-	baseEnc             = nullptr;
 	baseEncFromFontFile = false;
 	fontDict->lookup("Encoding", &obj1);
 	if (obj1.isDict())
@@ -1087,17 +1085,17 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 		{
 			hasEncoding     = true;
 			usesMacRomanEnc = true;
-			baseEnc         = macRomanEncoding;
+			baseEnc         = &macRomanEncoding;
 		}
 		else if (obj2.isName("MacExpertEncoding"))
 		{
 			hasEncoding = true;
-			baseEnc     = macExpertEncoding;
+			baseEnc     = &macExpertEncoding;
 		}
 		else if (obj2.isName("WinAnsiEncoding"))
 		{
 			hasEncoding = true;
-			baseEnc     = winAnsiEncoding;
+			baseEnc     = &winAnsiEncoding;
 		}
 		obj2.free();
 	}
@@ -1105,17 +1103,17 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 	{
 		hasEncoding     = true;
 		usesMacRomanEnc = true;
-		baseEnc         = macRomanEncoding;
+		baseEnc         = &macRomanEncoding;
 	}
 	else if (obj1.isName("MacExpertEncoding"))
 	{
 		hasEncoding = true;
-		baseEnc     = macExpertEncoding;
+		baseEnc     = &macExpertEncoding;
 	}
 	else if (obj1.isName("WinAnsiEncoding"))
 	{
 		hasEncoding = true;
-		baseEnc     = winAnsiEncoding;
+		baseEnc     = &winAnsiEncoding;
 	}
 
 	// check embedded font file for base encoding
@@ -1131,7 +1129,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 				embFontName = ffT1->getName();
 				if (!baseEnc)
 				{
-					baseEnc             = (const char**)ffT1->getEncoding();
+					baseEnc             = &ffT1->getEncoding();
 					baseEncFromFontFile = true;
 				}
 			}
@@ -1147,7 +1145,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 				embFontName = ffT1C->getName();
 				if (!baseEnc)
 				{
-					baseEnc             = (const char**)ffT1C->getEncoding();
+					baseEnc             = &ffT1C->getEncoding();
 					baseEncFromFontFile = true;
 				}
 			}
@@ -1160,26 +1158,21 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 	{
 		if (builtinFont && embFontID.num < 0)
 		{
-			baseEnc     = builtinFont->defaultBaseEnc;
+			baseEnc     = &builtinFont->defaultBaseEnc;
 			hasEncoding = true;
 		}
 		else if (type == fontTrueType)
 		{
-			baseEnc = winAnsiEncoding;
+			baseEnc = &winAnsiEncoding;
 		}
 		else
 		{
-			baseEnc = standardEncoding;
+			baseEnc = &standardEncoding;
 		}
 	}
 
 	// copy the base encoding
-	for (int i = 0; i < 256; ++i)
-	{
-		enc[i] = (char*)baseEnc[i];
-		if ((encFree[i] = (char)baseEncFromFontFile) && enc[i])
-			enc[i] = copyString(baseEnc[i]);
-	}
+	if (baseEnc) enc = *baseEnc;
 
 	// some Type 1C font files have empty encodings, which can break the T1C->T1 conversion
 	// (since the 'seac' operator depends on having the accents in the encoding),
@@ -1188,10 +1181,9 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 	{
 		for (int i = 0; i < 256; ++i)
 		{
-			if (!enc[i] && standardEncoding[i])
+			if (enc[i].empty() && standardEncoding[i].size())
 			{
-				enc[i]     = (char*)standardEncoding[i];
-				encFree[i] = false;
+				enc[i] = standardEncoding[i];
 			}
 		}
 	}
@@ -1215,10 +1207,7 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 				{
 					if (code >= 0 && code < 256)
 					{
-						if (encFree[code])
-							gfree(enc[code]);
-						enc[code]     = copyString(obj3.getName());
-						encFree[code] = true;
+						enc[code] = copyString(obj3.getName());
 					}
 					++code;
 				}
@@ -1238,15 +1227,17 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 	//----- build the mapping to Unicode -----
 
 	// pass 1: use the name-to-Unicode mapping table
-	missing = hex = false;
+	std::string charName;
+	bool        missing = false;
+	bool        hex     = false;
 	for (code = 0; code < 256; ++code)
 	{
-		if ((charName = enc[code]))
+		if ((charName = enc[code]).size())
 		{
-			if (!(toUnicode[code] = globalParams->mapNameToUnicode(charName)) && strcmp(charName, ".notdef"))
+			if (!(toUnicode[code] = globalParams->mapNameToUnicode(charName)) && charName != ".notdef")
 			{
 				// if it wasn't in the name-to-Unicode table, check for a name that looks like 'Axx' or 'xx', where 'A' is any letter and 'xx' is two hex digits
-				if ((strlen(charName) == 3 && isalpha(charName[0] & 0xff) && isxdigit(charName[1] & 0xff) && isxdigit(charName[2] & 0xff) && ((charName[1] >= 'a' && charName[1] <= 'f') || (charName[1] >= 'A' && charName[1] <= 'F') || (charName[2] >= 'a' && charName[2] <= 'f') || (charName[2] >= 'A' && charName[2] <= 'F'))) || (strlen(charName) == 2 && isxdigit(charName[0] & 0xff) && isxdigit(charName[1] & 0xff) && ((charName[0] >= 'a' && charName[0] <= 'f') || (charName[0] >= 'A' && charName[0] <= 'F') || (charName[1] >= 'a' && charName[1] <= 'f') || (charName[1] >= 'A' && charName[1] <= 'F'))))
+				if ((charName.size() == 3 && isalpha(charName[0] & 0xff) && isxdigit(charName[1] & 0xff) && isxdigit(charName[2] & 0xff) && ((charName[1] >= 'a' && charName[1] <= 'f') || (charName[1] >= 'A' && charName[1] <= 'F') || (charName[2] >= 'a' && charName[2] <= 'f') || (charName[2] >= 'A' && charName[2] <= 'F'))) || (charName.size() == 2 && isxdigit(charName[0] & 0xff) && isxdigit(charName[1] & 0xff) && ((charName[0] >= 'a' && charName[0] <= 'f') || (charName[0] >= 'A' && charName[0] <= 'F') || (charName[1] >= 'a' && charName[1] <= 'f') || (charName[1] >= 'A' && charName[1] <= 'F'))))
 					hex = true;
 				missing = true;
 			}
@@ -1270,22 +1261,22 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 	{
 		for (code = 0; code < 256; ++code)
 		{
-			if ((charName = enc[code]) && !toUnicode[code] && strcmp(charName, ".notdef"))
+			if ((charName = enc[code]).size() && !toUnicode[code] && charName != ".notdef")
 			{
-				n     = (int)strlen(charName);
-				code2 = -1;
+				const int n = TO_INT(charName.size());
+				code2       = -1;
 				if (hex && n == 3 && isalpha(charName[0] & 0xff) && isxdigit(charName[1] & 0xff) && isxdigit(charName[2] & 0xff))
-					sscanf(charName + 1, "%x", &code2);
+					sscanf(charName.c_str() + 1, "%x", &code2);
 				else if (hex && n == 2 && isxdigit(charName[0] & 0xff) && isxdigit(charName[1] & 0xff))
-					sscanf(charName, "%x", &code2);
+					sscanf(charName.c_str(), "%x", &code2);
 				else if (!hex && n >= 2 && n <= 4 && isdigit(charName[0] & 0xff) && isdigit(charName[1] & 0xff))
-					code2 = atoi(charName);
+					code2 = atoi(charName.c_str());
 				else if (n >= 3 && n <= 5 && isdigit(charName[1] & 0xff) && isdigit(charName[2] & 0xff))
-					code2 = atoi(charName + 1);
+					code2 = atoi(charName.c_str() + 1);
 				else if (n >= 4 && n <= 6 && isdigit(charName[2] & 0xff) && isdigit(charName[3] & 0xff))
-					code2 = atoi(charName + 2);
+					code2 = atoi(charName.c_str() + 2);
 				else if (n >= 7 && charName[0] == 'u' && charName[1] == 'n' && charName[2] == 'i' && isxdigit(charName[3] & 0xff) && isxdigit(charName[4] & 0xff) && isxdigit(charName[5] & 0xff) && isxdigit(charName[6] & 0xff))
-					sscanf(charName + 3, "%x", &code2);
+					sscanf(charName.c_str() + 3, "%x", &code2);
 				if (code2 >= 0 && code2 <= 0xffff)
 				{
 					toUnicode[code]      = (Unicode)code2;
@@ -1373,10 +1364,10 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 	else if (builtinFont)
 	{
 		// this is a kludge for broken PDF files that encode char 32 as .notdef
-		if (builtinFont->widths->getWidth("space", &w))
-			widths[32] = 0.001 * w;
+		if (const int ww = FindDefault(builtinFont->widths, "space", 0))
+			widths[32] = 0.001 * ww;
 		for (code = 0; code < 256; ++code)
-			if (enc[code] && builtinFont->widths->getWidth(enc[code], &w))
+			if (enc[code].size() && (w = FindDefault(builtinFont->widths, enc[code], 0)))
 				widths[code] = 0.001 * w;
 
 		// couldn't find widths -- use defaults
@@ -1398,10 +1389,10 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 			i += 1;
 		builtinFont = builtinFontSubst[i];
 		// this is a kludge for broken PDF files that encode char 32 as .notdef
-		if (builtinFont->widths->getWidth("space", &w))
-			widths[32] = 0.001 * w;
+		if (const int ww = FindDefault(builtinFont->widths, "space", 0))
+			widths[32] = 0.001 * ww;
 		for (code = 0; code < 256; ++code)
-			if (enc[code] && builtinFont->widths->getWidth(enc[code], &w))
+			if (enc[code].size() && (w = FindDefault(builtinFont->widths, enc[code], 0)))
 				widths[code] = 0.001 * w;
 	}
 	obj1.free();
@@ -1411,14 +1402,9 @@ Gfx8BitFont::Gfx8BitFont(XRef* xref, std::string_view tagA, Ref idA, std::string
 
 Gfx8BitFont::~Gfx8BitFont()
 {
-	for (int i = 0; i < 256; ++i)
-		if (encFree[i] && enc[i])
-			gfree(enc[i]);
 	ctu->decRefCnt();
-	if (charProcs.isDict())
-		charProcs.free();
-	if (resources.isDict())
-		resources.free();
+	if (charProcs.isDict()) charProcs.free();
+	if (resources.isDict()) resources.free();
 }
 
 int Gfx8BitFont::getNextChar(const char* s, int len, CharCode* code, Unicode* u, int uSize, int* uLen, double* dx, double* dy, double* ox, double* oy)
@@ -1439,15 +1425,13 @@ CharCodeToUnicode* Gfx8BitFont::getToUnicode()
 
 int* Gfx8BitFont::getCodeToGIDMap(FoFiTrueType* ff)
 {
-	int*    map;
 	int     cmapPlatform, cmapEncoding;
 	int     unicodeCmap, macRomanCmap, macUnicodeCmap, msSymbolCmap, cmap;
 	bool    nonsymbolic, useMacRoman, useUnicode;
-	char*   charName;
 	Unicode u;
 	int     code, n;
 
-	map = (int*)gmallocn(256, sizeof(int));
+	int* map = (int*)gmallocn(256, sizeof(int));
 	for (int i = 0; i < 256; ++i)
 		map[i] = 0;
 
@@ -1507,11 +1491,12 @@ int* Gfx8BitFont::getCodeToGIDMap(FoFiTrueType* ff)
 
 	// reverse map the char names through MacRomanEncoding, then map the char codes through the cmap;
 	// fall back on Unicode if that doesn't work
+	std::string charName;
 	if (useMacRoman)
 	{
 		for (int i = 0; i < 256; ++i)
 		{
-			if ((charName = enc[i]))
+			if ((charName = enc[i]).size())
 			{
 				if ((code = globalParams->getMacRomanCharCode(charName)))
 					map[i] = ff->mapCodeToGID(cmap, code);
@@ -1533,7 +1518,7 @@ int* Gfx8BitFont::getCodeToGIDMap(FoFiTrueType* ff)
 	else if (useUnicode)
 	{
 		for (int i = 0; i < 256; ++i)
-			if (((charName = enc[i]) && (u = globalParams->mapNameToUnicode(charName))) || (n = ctu->mapToUnicode((CharCode)i, &u, 1)))
+			if (((charName = enc[i]).size() && (u = globalParams->mapNameToUnicode(charName))) || (n = ctu->mapToUnicode((CharCode)i, &u, 1)))
 				map[i] = ff->mapCodeToGID(cmap, u);
 			else
 				map[i] = -1;
@@ -1549,7 +1534,7 @@ int* Gfx8BitFont::getCodeToGIDMap(FoFiTrueType* ff)
 
 	// try the TrueType 'post' table to handle any unmapped characters
 	for (int i = 0; i < 256; ++i)
-		if (map[i] <= 0 && (charName = enc[i]))
+		if (map[i] <= 0 && (charName = enc[i]).size())
 			map[i] = ff->mapNameToGID(charName);
 
 	return map;
@@ -1557,24 +1542,19 @@ int* Gfx8BitFont::getCodeToGIDMap(FoFiTrueType* ff)
 
 int* Gfx8BitFont::getCodeToGIDMap(FoFiType1C* ff)
 {
-	GHash* nameToGID;
-
 	int* map = (int*)gmallocn(256, sizeof(int));
 	for (int i = 0; i < 256; ++i)
 		map[i] = 0;
 
-	nameToGID = ff->getNameToGIDMap();
+	UMAP_STR_INT nameToGID = ff->getNameToGIDMap();
 	for (int i = 0; i < 256; ++i)
 	{
-		if (!enc[i])
-			continue;
-		const int gid = nameToGID->lookupInt(enc[i]);
-		if (gid < 0 || gid >= 65536)
-			continue;
+		if (enc[i].empty() || enc[i].front() == ':') continue;
+		const int gid = FindDefault(nameToGID, enc[i], -1);
+		if (gid < 0 || gid >= 65536) continue;
 		map[i] = gid;
 	}
 
-	delete nameToGID;
 	return map;
 }
 
@@ -1585,8 +1565,8 @@ Dict* Gfx8BitFont::getCharProcs()
 
 Object* Gfx8BitFont::getCharProc(int code, Object* proc)
 {
-	if (enc[code] && charProcs.isDict())
-		charProcs.dictLookup(enc[code], proc);
+	if (enc[code].size() && charProcs.isDict())
+		charProcs.dictLookup(enc[code].c_str(), proc);
 	else
 		proc->initNull();
 	return proc;
@@ -1594,8 +1574,8 @@ Object* Gfx8BitFont::getCharProc(int code, Object* proc)
 
 Object* Gfx8BitFont::getCharProcNF(int code, Object* proc)
 {
-	if (enc[code] && charProcs.isDict())
-		charProcs.dictLookupNF(enc[code], proc);
+	if (enc[code].size() && charProcs.isDict())
+		charProcs.dictLookupNF(enc[code].c_str(), proc);
 	else
 		proc->initNull();
 	return proc;

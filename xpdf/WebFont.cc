@@ -9,7 +9,6 @@
 #include <aconf.h>
 #include "gmem.h"
 #include "gmempp.h"
-#include "GHash.h"
 #include "FoFiTrueType.h"
 #include "FoFiType1C.h"
 #include "CharCodeToUnicode.h"

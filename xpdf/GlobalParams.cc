@@ -24,11 +24,9 @@
 #include "gmem.h"
 #include "gmempp.h"
 #include "GList.h"
-#include "GHash.h"
 #include "gfile.h"
 #include "FoFiIdentifier.h"
 #include "Error.h"
-#include "NameToCharCode.h"
 #include "CharCodeToUnicode.h"
 #include "UnicodeRemapping.h"
 #include "UnicodeMap.h"
@@ -572,13 +570,12 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 	tlsWin32ErrorInfo = TlsAlloc();
 #endif
 
-	initBuiltinFontTables();
-
 	// scan the encoding in reverse because we want the lowest-numbered index for each char name ('space' is encoded twice)
-	macRomanReverseMap = new NameToCharCode();
 	for (int i = 255; i >= 0; --i)
-		if (macRomanEncoding[i])
-			macRomanReverseMap->add(macRomanEncoding[i], (CharCode)i);
+	{
+		if (const auto& text = macRomanEncoding[i]; text.size() && text.front() != ':')
+			macRomanReverseMap.emplace(text, i);
+	}
 
 #ifdef _WIN32
 	// baseDir will be set by a call to setBaseDir
@@ -587,7 +584,6 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 	baseDir = appendToPath(getHomeDir(), ".xpdf");
 #endif
 	setDataDirVar();
-	nameToUnicode    = new NameToCharCode();
 	unicodeRemapping = new UnicodeRemapping();
 	sysFonts         = new SysFontList();
 #if HAVE_PAPER_H
@@ -636,8 +632,8 @@ GlobalParams::GlobalParams(const char* cfgFileName)
 	cMapCache             = new CMapCache();
 
 	// set up the initial nameToUnicode table
-	for (int i = 0; nameToUnicodeTab[i].name; ++i)
-		nameToUnicode->add(nameToUnicodeTab[i].name, nameToUnicodeTab[i].u);
+	for (const auto& item : nameToUnicodeTab)
+		nameToUnicode.emplace(item.name, item.value);
 
 	// set up the residentUnicodeMaps table
 	// clang-format off
@@ -1364,7 +1360,7 @@ void GlobalParams::parseNameToUnicode(const VEC_STR& tokens, const std::string& 
 		if (tok1 && tok2)
 		{
 			sscanf(tok1, "%x", &u);
-			nameToUnicode->add(tok2, u);
+			nameToUnicode.emplace(std::string { tok2 }, u);
 		}
 		else
 		{
@@ -2089,10 +2085,6 @@ void GlobalParams::parseFloat(const char* cmdName, std::atomic<double>* val, con
 
 GlobalParams::~GlobalParams()
 {
-	freeBuiltinFontTables();
-
-	delete macRomanReverseMap;
-	delete nameToUnicode;
 	delete unicodeRemapping;
 	delete sysFonts;
 	delete cidToUnicodeCache;
@@ -2346,10 +2338,10 @@ void GlobalParams::setupBaseFonts(const char* dir)
 // accessors
 //------------------------------------------------------------------------
 
-CharCode GlobalParams::getMacRomanCharCode(char* charName)
+CharCode GlobalParams::getMacRomanCharCode(const std::string& charName)
 {
 	// no need to lock - macRomanReverseMap is constant
-	return macRomanReverseMap->lookup(charName);
+	return FindDefault(macRomanReverseMap, charName, 0);
 }
 
 std::string GlobalParams::getBaseDir()
@@ -2357,10 +2349,10 @@ std::string GlobalParams::getBaseDir()
 	return baseDir;
 }
 
-Unicode GlobalParams::mapNameToUnicode(const char* charName)
+Unicode GlobalParams::mapNameToUnicode(const std::string& charName)
 {
 	// no need to lock - nameToUnicode is constant
-	return nameToUnicode->lookup(charName);
+	return FindDefault(nameToUnicode, charName, 0);
 }
 
 UnicodeMap* GlobalParams::getResidentUnicodeMap(const std::string& encodingName)

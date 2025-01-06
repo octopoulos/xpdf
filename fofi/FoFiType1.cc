@@ -46,11 +46,6 @@ FoFiType1::FoFiType1(char* fileA, int lenA, bool freeFileDataA)
 
 FoFiType1::~FoFiType1()
 {
-	if (encoding && encoding != (char**)fofiType1StandardEncoding)
-	{
-		for (int i = 0; i < 256; ++i) gfree(encoding[i]);
-		gfree(encoding);
-	}
 }
 
 std::string_view FoFiType1::getName()
@@ -59,7 +54,7 @@ std::string_view FoFiType1::getName()
 	return name;
 }
 
-char** FoFiType1::getEncoding()
+const VEC_STR& FoFiType1::getEncoding()
 {
 	if (!parsed) parse();
 	return encoding;
@@ -72,9 +67,8 @@ void FoFiType1::getFontMatrix(double* mat)
 		mat[i] = fontMatrix[i];
 }
 
-void FoFiType1::writeEncoded(const char** newEncoding, FoFiOutputFunc outputFunc, void* outputStream)
+void FoFiType1::writeEncoded(VEC_STR& newEncoding, FoFiOutputFunc outputFunc, void* outputStream)
 {
-	char  buf[512];
 	char *line, *line2, *p;
 
 	// copy everything up to the encoding
@@ -93,10 +87,10 @@ void FoFiType1::writeEncoded(const char** newEncoding, FoFiOutputFunc outputFunc
 	(*outputFunc)(outputStream, "0 1 255 {1 index exch /.notdef put} for\n", 40);
 	for (int i = 0; i < 256; ++i)
 	{
-		if (newEncoding[i])
+		if (const auto& newEnc = newEncoding[i]; newEnc.size() && newEnc.front() != ':')
 		{
-			snprintf(buf, sizeof(buf), "dup %d /%s put\n", i, newEncoding[i]);
-			(*outputFunc)(outputStream, buf, (int)strlen(buf));
+			const auto buf = fmt::format("dup {} /{} put\n", i, newEnc);
+			(*outputFunc)(outputStream, buf.c_str(), TO_INT(buf.size()));
 		}
 	}
 	(*outputFunc)(outputStream, "readonly def\n", 13);
@@ -175,7 +169,7 @@ void FoFiType1::parse()
 	int   n, code, base, i;
 
 	bool gotMatrix = false;
-	for (i = 1, line = (char*)file; i <= 100 && line && (name.empty() || !encoding || !gotMatrix); ++i)
+	for (i = 1, line = (char*)file; i <= 100 && line && (name.empty() || encoding.empty() || !gotMatrix); ++i)
 	{
 		// get font name
 		if (name.empty() && line + 9 <= (char*)file + len && !strncmp(line, "/FontName", 9))
@@ -186,20 +180,18 @@ void FoFiType1::parse()
 			strncpy(buf, line, n);
 			buf[n] = '\0';
 			if ((p = strchr(buf + 9, '/')) && (p = strtok(p + 1, " \t\n\r")))
-				name = copyString(p);
+				name = p;
 			line = getNextLine(line);
 
 			// get encoding
 		}
-		else if (!encoding && line + 30 <= (char*)file + len && !strncmp(line, "/Encoding StandardEncoding def", 30))
+		else if (encoding.empty() && line + 30 <= (char*)file + len && !strncmp(line, "/Encoding StandardEncoding def", 30))
 		{
-			encoding = (char**)fofiType1StandardEncoding;
+			encoding = fofiType1StandardEncoding;
 		}
-		else if (!encoding && line + 19 <= (char*)file + len && !strncmp(line, "/Encoding 256 array", 19))
+		else if (encoding.empty() && line + 19 <= (char*)file + len && !strncmp(line, "/Encoding 256 array", 19))
 		{
-			encoding = (char**)gmallocn(256, sizeof(char*));
-			for (int j = 0; j < 256; ++j)
-				encoding[j] = nullptr;
+			encoding.resize(256, "");
 			int j;
 			for (j = 0, line = getNextLine(line); j < 300 && line && (line1 = getNextLine(line)); ++j, line = line1)
 			{
@@ -235,8 +227,7 @@ void FoFiType1::parse()
 							code = code * base + (*p - '0');
 						for (; *p == ' ' || *p == '\t'; ++p)
 							;
-						if (*p != '/')
-							break;
+						if (*p != '/') break;
 						++p;
 						for (p2 = p; *p2 && *p2 != ' ' && *p2 != '\t'; ++p2)
 							;
@@ -244,18 +235,15 @@ void FoFiType1::parse()
 						{
 							const char c = *p2;
 							*p2          = '\0';
-							gfree(encoding[code]);
-							encoding[code] = copyString(p);
+							encoding[code] = p;
 							*p2            = c;
 						}
 						for (p = p2; *p == ' ' || *p == '\t'; ++p)
 							;
-						if (strncmp(p, "put", 3))
-							break;
+						if (strncmp(p, "put", 3)) break;
 						for (p += 3; *p == ' ' || *p == '\t'; ++p)
 							;
-						if (strncmp(p, "dup", 3))
-							break;
+						if (strncmp(p, "dup", 3)) break;
 						p += 3;
 					}
 				}

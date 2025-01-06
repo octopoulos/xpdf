@@ -8,10 +8,10 @@
 
 #pragma once
 
-extern const char *macRomanEncoding[];
-extern const char *macExpertEncoding[];
-extern const char *winAnsiEncoding[];
-extern const char *standardEncoding[];
-extern const char *expertEncoding[];
-extern const char *symbolEncoding[];
-extern const char *zapfDingbatsEncoding[];
+extern const VEC_STR macRomanEncoding;
+extern const VEC_STR macExpertEncoding;
+extern const VEC_STR winAnsiEncoding;
+extern const VEC_STR standardEncoding;
+extern const VEC_STR expertEncoding;
+extern const VEC_STR symbolEncoding;
+extern const VEC_STR zapfDingbatsEncoding;

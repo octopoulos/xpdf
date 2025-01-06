@@ -288,9 +288,7 @@ Object* ObjectStream::getObject(int objIdx, int objNum, Object* obj)
 
 XRef::XRef(BaseStream* strA, bool repair)
 {
-	int64_t     pos;
-	Object      obj;
-	XRefPosSet* posSet;
+	ok = true;
 
 	for (int i = 0; i < objStrCacheSize; ++i)
 	{
@@ -325,7 +323,7 @@ XRef::XRef(BaseStream* strA, bool repair)
 	else
 	{
 		// read the trailer
-		pos = getStartXref();
+		int64_t pos = getStartXref();
 		if (pos == 0)
 		{
 			errCode = errDamaged;
@@ -334,14 +332,15 @@ XRef::XRef(BaseStream* strA, bool repair)
 		}
 
 		// read the xref table
-		posSet = new XRefPosSet();
-		while (readXRef(&pos, posSet, false))
-			;
-		xrefTablePosLen = posSet->getLength();
-		xrefTablePos    = (int64_t*)gmallocn(xrefTablePosLen, sizeof(int64_t));
-		for (int i = 0; i < xrefTablePosLen; ++i)
-			xrefTablePos[i] = posSet->get(i);
-		delete posSet;
+		{
+			XRefPosSet posSet;
+			while (readXRef(&pos, &posSet, false))
+				;
+			xrefTablePosLen = posSet.getLength();
+			xrefTablePos    = (int64_t*)gmallocn(xrefTablePosLen, sizeof(int64_t));
+			for (int i = 0; i < xrefTablePosLen; ++i)
+				xrefTablePos[i] = posSet.get(i);
+		}
 		if (!ok)
 		{
 			errCode = errDamaged;
@@ -350,6 +349,7 @@ XRef::XRef(BaseStream* strA, bool repair)
 	}
 
 	// get the root dictionary (catalog) object
+	Object obj;
 	trailerDict.dictLookupNF("Root", &obj);
 	if (obj.isRef())
 	{
@@ -367,8 +367,7 @@ XRef::XRef(BaseStream* strA, bool repair)
 		}
 	}
 
-	// now set the trailer dictionary's xref pointer so we can fetch
-	// indirect objects from it
+	// now set the trailer dictionary's xref pointer so we can fetch indirect objects from it
 	trailerDict.getDict()->setXRef(this);
 }
 

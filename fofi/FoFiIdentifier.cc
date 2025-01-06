@@ -426,30 +426,30 @@ void Indentify2(StreamReader* reader)
 
 FoFiIdentifierType FoFiIdentifier::identifyStream(int (*getChar)(void* data), void* data)
 {
-	fprintf(stderr, "IS 1; ");
+	//fprintf(stderr, "IS 1; ");
 	//StreamReader* reader;
-	fprintf(stderr, "IS 2; ");
+	//fprintf(stderr, "IS 2; ");
 	StreamReader reader(getChar, data);
 	//if (!(reader = StreamReader::make(getChar, data)))
 	//	return fofiIdError;
-	fprintf(stderr, "IS 3; ");
-	fprintf(stderr, "IS 3a: %p %p %p; ", &reader, getChar, data);
-	fprintf(stderr, "IS 3b: %d; ", reader.getId());
-	Indentify(&reader);
-	Indentify2(&reader);
+	//fprintf(stderr, "IS 3; ");
+	//fprintf(stderr, "IS 3a: %p %p %p; ", &reader, getChar, data);
+	//fprintf(stderr, "IS 3b: %d; ", reader.getId());
+	//Indentify(&reader);
+	//Indentify2(&reader);
 	FoFiIdentifierType type = identify(&reader);
-	Indentify(&reader);
-	fprintf(stderr, "IS 4: %d; ", reader.getId());
-	fprintf(stderr, "IS 4a: %d; ", TO_INT(type));
+	//Indentify(&reader);
+	//fprintf(stderr, "IS 4: %d; ", reader.getId());
+	//fprintf(stderr, "IS 4a: %d; ", TO_INT(type));
 	//delete reader;
-	fprintf(stderr, "IS 5; ");
+	//fprintf(stderr, "IS 5; ");
 	return type;
 }
 
 static FoFiIdentifierType identify(Reader* reader)
 {
 	// std::lock_guard<std::mutex> lock(access_mutex);
-	fprintf(stderr, "reader3=%d; ", reader->getId());
+	//fprintf(stderr, "reader3=%d; ", reader->getId());
 
 	//----- PFA
 	if (reader->cmp(0, "%!PS-AdobeFont-1") || reader->cmp(0, "%!FontType1"))

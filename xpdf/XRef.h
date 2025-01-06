@@ -133,7 +133,7 @@ private:
 	int            last                           = -1;       // last used index in <entries>
 	int            rootNum                        = 0;        //
 	int            rootGen                        = 0;        // catalog dict
-	bool           ok                             = false;    // true if xref table is valid
+	bool           ok                             = true;     // true if xref table is valid
 	int            errCode                        = 0;        // error code (if <ok> is false)
 	bool           repaired                       = false;    // set if the xref table was constructed by the repair code
 	Object         trailerDict                    = {};       // trailer dictionary

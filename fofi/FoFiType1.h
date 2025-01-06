@@ -30,13 +30,13 @@ public:
 	std::string_view getName();
 
 	// Return the encoding, as an array of 256 names (any of which may be nullptr).
-	char** getEncoding();
+	const VEC_STR& getEncoding();
 
 	// Return the font matrix as an array of six numbers.
 	void getFontMatrix(double* mat);
 
 	// Write a version of the Type 1 font file with a new encoding.
-	void writeEncoded(const char** newEncoding, FoFiOutputFunc outputFunc, void* outputStream);
+	void writeEncoded(VEC_STR& newEncoding, FoFiOutputFunc outputFunc, void* outputStream);
 
 private:
 	FoFiType1(char* fileA, int lenA, bool freeFileDataA);
@@ -45,8 +45,8 @@ private:
 	void  parse();
 	void  undoPFB();
 
-	std::string name          = "";      //
-	char**      encoding      = nullptr; //
-	double      fontMatrix[6] = {};      //
-	bool        parsed        = false;   //
+	std::string name          = "";    //
+	VEC_STR     encoding      = {};    //
+	double      fontMatrix[6] = {};    //
+	bool        parsed        = false; //
 };

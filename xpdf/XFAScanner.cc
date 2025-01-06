@@ -7,7 +7,6 @@
 //========================================================================
 
 #include <aconf.h>
-#include "GHash.h"
 #include "Object.h"
 #include "Error.h"
 #include "Zoox.h"
@@ -113,7 +112,11 @@ XFAScanner* XFAScanner::load(Object* xfaObj)
 			dataElem = datasets->findFirstChildElement("xfa:data");
 		ZxElement* tmpl = xml->getRoot()->findFirstChildElement("template");
 		if (tmpl)
-			scanner->scanNode(tmpl, nullptr, nullptr, nullptr, nullptr, nullptr, dataElem, formValues);
+		{
+			UMAP_STR_INT nameIdx;
+			UMAP_STR_INT fullNameIdx;
+			scanner->scanNode(tmpl, nullptr, nullptr, nameIdx, fullNameIdx, nullptr, dataElem, formValues);
+		}
 	}
 
 	delete xml;
@@ -183,7 +186,7 @@ UMAP_STR_STR XFAScanner::scanFormValues(ZxElement* xmlRoot)
 
 void XFAScanner::scanFormNode(ZxElement* elem, const std::string& fullName, UMAP_STR_STR& formValues)
 {
-	GHash* fullNameIdx = new GHash();
+	UMAP_STR_INT fullNameIdx;
 	for (ZxNode* node = elem->getFirstChild(); node; node = node->getNextChild())
 	{
 		if (node->isElement("value"))
@@ -210,9 +213,9 @@ void XFAScanner::scanFormNode(ZxElement* elem, const std::string& fullName, UMAP
 					childFullName = fmt::format("{}.{}", fullName, nodeName);
 				else
 					childFullName = nodeName;
-				int idx = fullNameIdx->lookupInt(nodeName);
+				const int idx = FindDefault(fullNameIdx, nodeName, 0);
 				childFullName += fmt::format("[{}]", idx);
-				fullNameIdx->replace(nodeName, idx + 1);
+				fullNameIdx.emplace(nodeName, idx + 1);
 				scanFormNode((ZxElement*)node, childFullName, formValues);
 			}
 			else if (node->isElement("subform"))
@@ -221,23 +224,12 @@ void XFAScanner::scanFormNode(ZxElement* elem, const std::string& fullName, UMAP
 			}
 		}
 	}
-	delete fullNameIdx;
 }
 
-void XFAScanner::scanNode(ZxElement* elem, const std::string& parentName, const std::string& parentFullName, GHash* nameIdx, GHash* fullNameIdx, const std::string& exclGroupName, ZxElement* dataElem, UMAP_STR_STR& formValues)
+void XFAScanner::scanNode(ZxElement* elem, const std::string& parentName, const std::string& parentFullName, UMAP_STR_INT& nameIdx, UMAP_STR_INT& fullNameIdx, const std::string& exclGroupName, ZxElement* dataElem, UMAP_STR_STR& formValues)
 {
-	const auto nodeName = getNodeName(elem);
-	GHash*     childNameIdx;
-	if (!nameIdx || nodeName.size())
-		childNameIdx = new GHash();
-	else
-		childNameIdx = nameIdx;
+	const auto nodeName     = getNodeName(elem);
 	const auto nodeFullName = getNodeFullName(elem);
-	GHash*     childFullNameIdx;
-	if (!fullNameIdx || (nodeFullName.size() && !elem->isElement("area")))
-		childFullNameIdx = new GHash();
-	else
-		childFullNameIdx = fullNameIdx;
 
 	std::string childName;
 	if (nodeName.size())
@@ -246,8 +238,8 @@ void XFAScanner::scanNode(ZxElement* elem, const std::string& parentName, const 
 			childName = fmt::format("{}.{}", parentName, nodeName);
 		else
 			childName = nodeName;
-		int idx = nameIdx->lookupInt(nodeName);
-		nameIdx->replace(nodeName, idx + 1);
+		const int idx = FindDefault(nameIdx, nodeName, 0);
+		nameIdx.emplace(nodeName, idx + 1);
 		if (nodeIsBindGlobal(elem))
 			childName += fmt::format("[0]");
 		else
@@ -264,8 +256,8 @@ void XFAScanner::scanNode(ZxElement* elem, const std::string& parentName, const 
 			childFullName = fmt::format("{}.{}", parentFullName, nodeFullName);
 		else
 			childFullName = nodeFullName;
-		int idx = fullNameIdx->lookupInt(nodeFullName);
-		fullNameIdx->replace(nodeFullName, idx + 1);
+		const int idx = FindDefault(fullNameIdx, nodeFullName, 0);
+		fullNameIdx.emplace(nodeFullName, idx + 1);
 		childFullName += fmt::format("[{}]", idx);
 	}
 	else
@@ -280,18 +272,17 @@ void XFAScanner::scanNode(ZxElement* elem, const std::string& parentName, const 
 	}
 	else
 	{
+		UMAP_STR_INT childNameIdx;
+		UMAP_STR_INT childFullNameIdx;
+
 		std::string childExclGroupName;
 		if (elem->isElement("exclGroup"))
 			childExclGroupName = childName;
+
 		for (ZxNode* child = elem->getFirstChild(); child; child = child->getNextChild())
 			if (child->isElement())
-				scanNode((ZxElement*)child, childName, childFullName, childNameIdx, childFullNameIdx, childExclGroupName, dataElem, formValues);
+				scanNode((ZxElement*)child, childName, childFullName, nodeName.size() ? childNameIdx : nameIdx, (nodeFullName.size() && !elem->isElement("area")) ? childFullNameIdx : fullNameIdx, childExclGroupName, dataElem, formValues);
 	}
-
-	if (childNameIdx != nameIdx)
-		delete childNameIdx;
-	if (childFullNameIdx != fullNameIdx)
-		delete childFullNameIdx;
 }
 
 void XFAScanner::scanField(ZxElement* elem, const std::string& name, const std::string& fullName, const std::string& exclGroupName, ZxElement* dataElem, UMAP_STR_STR& formValues)

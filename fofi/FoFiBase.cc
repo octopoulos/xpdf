@@ -19,9 +19,10 @@
 
 FoFiBase::FoFiBase(const char* fileA, size_t lenA, bool freeFileDataA)
 {
-	fileData = file = (uint8_t*)fileA;
-	len             = lenA;
-	freeFileData    = freeFileDataA;
+	fileData     = (uint8_t*)fileA;
+	file         = (uint8_t*)fileA;
+	len          = lenA;
+	freeFileData = freeFileDataA;
 }
 
 FoFiBase::~FoFiBase()
@@ -29,10 +30,10 @@ FoFiBase::~FoFiBase()
 	if (freeFileData) gfree(fileData);
 }
 
-char* FoFiBase::readFile(const char* fileName, int* fileLen)
+char* FoFiBase::readFile(std::string_view fileName, int* fileLen)
 {
 	FILE* f;
-	if (!(f = fopen(fileName, "rb"))) return nullptr;
+	if (!(f = fopen(fileName.data(), "rb"))) return nullptr;
 	fseek(f, 0, SEEK_END);
 	int n = (int)ftell(f);
 	if (n < 0)
@@ -84,8 +85,7 @@ int FoFiBase::getS16BE(int pos, bool* ok)
 	}
 	int x = file[pos];
 	x = (x << 8) + file[pos + 1];
-	if (x & 0x8000)
-		x |= ~0xffff;
+	if (x & 0x8000) x |= ~0xffff;
 	return x;
 }
 
@@ -112,8 +112,7 @@ int FoFiBase::getS32BE(int pos, bool* ok)
 	x = (x << 8) + file[pos + 1];
 	x = (x << 8) + file[pos + 2];
 	x = (x << 8) + file[pos + 3];
-	if (x & 0x80000000)
-		x |= ~0xffffffff;
+	if (x & 0x80000000) x |= ~0xffffffff;
 	return x;
 }
 

@@ -138,8 +138,10 @@ int main(int argc, char* argv[])
 	}
 	else
 	{
-		paperColor[0] = paperColor[1] = paperColor[2] = 0xff;
-		splashOut                                     = new SplashOutputDev(splashModeRGB8, 1, false, paperColor);
+		paperColor[0] = 0xff;
+		paperColor[1] = 0xff;
+		paperColor[2] = 0xff;
+		splashOut     = new SplashOutputDev(splashModeRGB8, 1, false, paperColor);
 	}
 	if (pngAlpha) splashOut->setNoComposite(true);
 	splashOut->startDoc(doc->getXRef());

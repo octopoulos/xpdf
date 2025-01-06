@@ -11,7 +11,6 @@
 #include <aconf.h>
 #include "FoFiBase.h"
 
-class GHash;
 struct TrueTypeTable;
 struct TrueTypeCmap;
 
@@ -59,7 +58,7 @@ public:
 
 	// Returns the GID corresponding to <name> according to the post table.
 	// Returns 0 if there is no mapping for <name> or if the font does not have a post table.
-	int mapNameToGID(const char* name);
+	int mapNameToGID(const std::string& name);
 
 	// Return the mapping from CIDs to GIDs, and return the number of CIDs in *<nCIDs>.
 	// This is only useful for CID fonts.
@@ -90,7 +89,7 @@ public:
 	// If <encoding> is nullptr, the encoding is unknown or undefined.
 	// The <codeToGID> array specifies the mapping from char codes to GIDs.
 	// (Not useful for OpenType CFF fonts.)
-	void convertToType42(const char* psName, char** encoding, int* codeToGID, FoFiOutputFunc outputFunc, void* outputStream);
+	void convertToType42(const std::string& psName, const VEC_STR& encoding, int* codeToGID, FoFiOutputFunc outputFunc, void* outputStream);
 
 	// Convert to a Type 1 font, suitable for embedding in a PostScript file.
 	// This is only useful with 8-bit fonts.
@@ -98,28 +97,28 @@ public:
 	// If <ascii> is true the eexec section will be hex-encoded, otherwise it will be left as binary data.
 	// If <psName> is non-nullptr, it will be used as the PostScript font name.
 	// (Only useful for OpenType CFF fonts.)
-	void convertToType1(const char* psName, const char** newEncoding, bool ascii, FoFiOutputFunc outputFunc, void* outputStream);
+	void convertToType1(const std::string& psName, const VEC_STR& newEncoding, bool ascii, FoFiOutputFunc outputFunc, void* outputStream);
 
 	// Convert to a Type 2 CIDFont, suitable for embedding in a
 	// PostScript file.  <psName> will be used as the PostScript font
 	// name (so we don't need to depend on the 'name' table in the
 	// font).  The <cidMap> array maps CIDs to GIDs; it has <nCIDs>
 	// entries.  (Not useful for OpenType CFF fonts.)
-	void convertToCIDType2(const char* psName, int* cidMap, int nCIDs, bool needVerticalMetrics, FoFiOutputFunc outputFunc, void* outputStream);
+	void convertToCIDType2(const std::string& psName, int* cidMap, int nCIDs, bool needVerticalMetrics, FoFiOutputFunc outputFunc, void* outputStream);
 
 	// Convert to a Type 0 CIDFont, suitable for embedding in a PostScript file.
 	// <psName> will be used as the PostScript font name.
 	// (Only useful for OpenType CFF fonts.)
-	void convertToCIDType0(const char* psName, int* cidMap, int nCIDs, FoFiOutputFunc outputFunc, void* outputStream);
+	void convertToCIDType0(const std::string& psName, int* cidMap, int nCIDs, FoFiOutputFunc outputFunc, void* outputStream);
 
 	// Convert to a Type 0 (but non-CID) composite font, suitable for embedding in a PostScript file.
 	// <psName> will be used as the PostScript font name (so we don't need to depend on the 'name' table in the font).
 	// The <cidMap> array maps CIDs to GIDs; it has <nCIDs> entries.  (Not useful for OpenType CFF fonts.)
-	void convertToType0(const char* psName, int* cidMap, int nCIDs, bool needVerticalMetrics, FoFiOutputFunc outputFunc, void* outputStream);
+	void convertToType0(const std::string& psName, int* cidMap, int nCIDs, bool needVerticalMetrics, FoFiOutputFunc outputFunc, void* outputStream);
 
 	// Convert to a Type 0 (but non-CID) composite font, suitable for embedding in a PostScript file.
 	// <psName> will be used as the PostScript font name.  (Only useful for OpenType CFF fonts.)
-	void convertToType0(const char* psName, int* cidMap, int nCIDs, FoFiOutputFunc outputFunc, void* outputStream);
+	void convertToType0(const std::string& psName, int* cidMap, int nCIDs, FoFiOutputFunc outputFunc, void* outputStream);
 
 	// Write a clean TTF file, filling in missing tables and correcting various other errors.
 	// If <name> is non-nullptr, the font is renamed to <name>.
@@ -137,8 +136,8 @@ public:
 
 private:
 	FoFiTrueType(const char* fileA, int lenA, bool freeFileDataA, int fontNum, bool isDfont, bool allowHeadlessCFF);
-	void     cvtEncoding(char** encoding, FoFiOutputFunc outputFunc, void* outputStream);
-	void     cvtCharStrings(char** encoding, int* codeToGID, FoFiOutputFunc outputFunc, void* outputStream);
+	void     cvtEncoding(const VEC_STR& encoding, FoFiOutputFunc outputFunc, void* outputStream);
+	void     cvtCharStrings(const VEC_STR& encoding, int* codeToGID, FoFiOutputFunc outputFunc, void* outputStream);
 	void     cvtSfnts(FoFiOutputFunc outputFunc, void* outputStream, std::string_view name, bool needVerticalMetrics, int* maxUsedGlyph);
 	void     dumpString(uint8_t* s, int length, FoFiOutputFunc outputFunc, void* outputStream);
 	uint32_t computeTableChecksum(uint8_t* data, int length);
@@ -155,7 +154,7 @@ private:
 	int            nGlyphs     = 0;       //
 	int            locaFmt     = 0;       //
 	int            bbox[4]     = {};      //
-	GHash*         nameToGID   = nullptr; //
+	UMAP_STR_INT   nameToGID   = {};      //
 	bool           openTypeCFF = false;   //
 	bool           headlessCFF = false;   //
 	bool           isDfont     = false;   //

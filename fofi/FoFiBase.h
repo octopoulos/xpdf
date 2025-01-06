@@ -25,7 +25,7 @@ public:
 
 protected:
 	FoFiBase(const char* fileA, size_t lenA, bool freeFileDataA);
-	static char* readFile(const char* fileName, int* fileLen);
+	static char* readFile(std::string_view fileName, int* fileLen);
 
 	// S = signed / U = unsigned
 	// 8/16/32/Var = word length, in bytes

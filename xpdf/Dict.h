@@ -60,9 +60,8 @@ public:
 	Object* getVal(int i, Object* obj);
 	Object* getValNF(int i, Object* obj);
 
-	// Set the xref pointer.  This is only used in one special case: the
-	// trailer dictionary, which is read before the xref table is
-	// parsed.
+	// Set the xref pointer.
+	// This is only used in one special case: the trailer dictionary, which is read before the xref table is parsed.
 	void setXRef(XRef* xrefA) { xref = xrefA; }
 
 private:

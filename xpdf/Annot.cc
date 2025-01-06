@@ -1034,9 +1034,7 @@ void Annot::drawText(const std::string& text, const std::string& da, int quaddin
 {
 	std::string tok;
 	VEC_STR     daToks;
-	const char* charName;
 	double      dx, dy, fontSize, fontSize2, x, y, w;
-	uint16_t    charWidth;
 	int         tfPos, tmPos, i, j, c;
 
 	// check for a Unicode string
@@ -1132,11 +1130,11 @@ void Annot::drawText(const std::string& text, const std::string& da, int quaddin
 	// compute string width
 	//~ this assumes we're substituting Helvetica/WinAnsiEncoding for everything
 	w = 0;
-	for (i = 0; i < text2.size(); ++i)
+	for (int i = 0; i < text2.size(); ++i)
 	{
-		charName = winAnsiEncoding[text.at(i) & 0xff];
-		if (charName && builtinFonts[4].widths->getWidth(charName, &charWidth))
-			w += charWidth;
+		const auto& charName = winAnsiEncoding[text.at(i) & 0xff];
+		if (const int ww = FindDefault(builtinFonts[4].widths, charName, 0))
+			w += ww;
 		else
 			w += 0.5;
 	}
@@ -1146,11 +1144,9 @@ void Annot::drawText(const std::string& text, const std::string& da, int quaddin
 	{
 		fontSize  = dy - 2 * margin;
 		fontSize2 = (dx - 2 * margin) / w;
-		if (fontSize2 < fontSize)
-			fontSize = fontSize2;
+		if (fontSize2 < fontSize) fontSize = fontSize2;
 		fontSize = floor(fontSize);
-		if (tfPos >= 0)
-			daToks[tfPos + 1] = fmt::format("{:.4f}", fontSize);
+		if (tfPos >= 0) daToks[tfPos + 1] = fmt::format("{:.4f}", fontSize);
 	}
 
 	// compute text start position

@@ -75,17 +75,17 @@ SplashFTFontEngine::~SplashFTFontEngine()
 	FT_Done_FreeType(lib);
 }
 
-SplashFontFile* SplashFTFontEngine::loadType1Font(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), const char** enc)
+SplashFontFile* SplashFTFontEngine::loadType1Font(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), const VEC_STR& enc)
 {
 	return SplashFTFontFile::loadType1Font(this, idA, splashFontType1, LOAD_FONT_ARGS_CALLS(), enc);
 }
 
-SplashFontFile* SplashFTFontEngine::loadType1CFont(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), const char** enc)
+SplashFontFile* SplashFTFontEngine::loadType1CFont(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), const VEC_STR& enc)
 {
 	return SplashFTFontFile::loadType1Font(this, idA, splashFontType1C, LOAD_FONT_ARGS_CALLS(), enc);
 }
 
-SplashFontFile* SplashFTFontEngine::loadOpenTypeT1CFont(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), const char** enc)
+SplashFontFile* SplashFTFontEngine::loadOpenTypeT1CFont(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), const VEC_STR& enc)
 {
 	FoFiTrueType*   ff;
 	SplashFontFile* ret;

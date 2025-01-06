@@ -46,7 +46,6 @@ add_library(xpdf_objs OBJECT
 	AcroForm.cc
 	Annot.cc
 	Array.cc
-	BuiltinFont.cc
 	BuiltinFontTables.cc
 	Catalog.cc
 	CharCodeToUnicode.cc
@@ -66,7 +65,6 @@ add_library(xpdf_objs OBJECT
 	JPXStream.cc
 	Lexer.cc
 	Link.cc
-	NameToCharCode.cc
 	Object.cc
 	OptionalContent.cc
 	Outline.cc

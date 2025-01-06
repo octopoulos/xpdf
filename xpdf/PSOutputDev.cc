@@ -15,7 +15,6 @@
 #include "gmempp.h"
 #include "GString.h" // Round4, Round6
 #include "GList.h"
-#include "GHash.h"
 #include "config.h"
 #include "GlobalParams.h"
 #include "Object.h"
@@ -2076,7 +2075,6 @@ void PSOutputDev::setupFont(GfxFont* font, Dict* parentResDict)
 	bool        subst;
 	char        buf[16];
 	UnicodeMap* uMap;
-	char*       charName;
 	double      xs, ys;
 	int         code;
 	double      w1, w2;
@@ -2188,9 +2186,10 @@ void PSOutputDev::setupFont(GfxFont* font, Dict* parentResDict)
 		// scale substituted 8-bit fonts
 		if (fontLoc->locType == gfxFontLocResident && fontLoc->substIdx >= 0)
 		{
+			std::string charName;
 			subst = true;
 			for (code = 0; code < 256; ++code)
-				if ((charName = ((Gfx8BitFont*)font)->getCharName(code)) && charName[0] == 'm' && charName[1] == '\0')
+				if ((charName = ((Gfx8BitFont*)font)->getCharName(code)).size() && charName[0] == 'm' && charName[1] == '\0')
 					break;
 			if (code < 256)
 				w1 = ((Gfx8BitFont*)font)->getWidth((uint8_t)code);
@@ -2239,6 +2238,7 @@ void PSOutputDev::setupFont(GfxFont* font, Dict* parentResDict)
 			writePS((char*)((i == 0) ? "[ " : "  "));
 			for (j = 0; j < 8; ++j)
 			{
+				std::string charName;
 				if (font->getType() == fontTrueType && !subst && !((Gfx8BitFont*)font)->getHasEncoding())
 				{
 					snprintf(buf, sizeof(buf), "c%02x", i + j);
@@ -2249,12 +2249,10 @@ void PSOutputDev::setupFont(GfxFont* font, Dict* parentResDict)
 					charName = ((Gfx8BitFont*)font)->getCharName(i + j);
 				}
 				writePS("/");
-				writePSName(charName ? charName : (char*)".notdef");
-				// the empty name is legal in PDF and PostScript, but PostScript
-				// uses a double-slash (//...) for "immediately evaluated names",
+				writePSName(charName.size() ? charName : ".notdef");
+				// the empty name is legal in PDF and PostScript, but PostScript uses a double-slash (//...) for "immediately evaluated names",
 				// so we need to add a space character here
-				if (charName && !charName[0])
-					writePS(" ");
+				if (charName == "") writePS(" ");
 			}
 			writePS((i == 256 - 8) ? (char*)"]\n" : (char*)"\n");
 		}
@@ -2485,7 +2483,7 @@ sPSFontFileInfo PSOutputDev::setupEmbeddedType1CFont(GfxFont* font, Ref* id)
 	{
 		if ((ffT1C = FoFiType1C::make(fontBuf, fontLen)))
 		{
-			ffT1C->convertToType1(psName.c_str(), nullptr, true, outputFunc, outputStream);
+			ffT1C->convertToType1(psName.c_str(), {}, true, outputFunc, outputStream);
 			delete ffT1C;
 		}
 		gfree(fontBuf);
@@ -2526,7 +2524,7 @@ sPSFontFileInfo PSOutputDev::setupEmbeddedOpenTypeT1CFont(GfxFont* font, Ref* id
 		if ((ffTT = FoFiTrueType::make(fontBuf, fontLen, 0, true)))
 		{
 			if (ffTT->isOpenTypeCFF())
-				ffTT->convertToType1(psName.c_str(), nullptr, true, outputFunc, outputStream);
+				ffTT->convertToType1(psName.c_str(), {}, true, outputFunc, outputStream);
 			delete ffTT;
 		}
 		gfree(fontBuf);
@@ -2569,7 +2567,7 @@ sPSFontFileInfo PSOutputDev::setupExternalOpenTypeT1CFont(GfxFont* font, const s
 	if ((ffTT = FoFiTrueType::load(fileName.c_str(), 0, true)))
 	{
 		if (ffTT->isOpenTypeCFF())
-			ffTT->convertToType1(psName.c_str(), nullptr, true, outputFunc, outputStream);
+			ffTT->convertToType1(psName.c_str(), {}, true, outputFunc, outputStream);
 		delete ffTT;
 	}
 
@@ -2618,7 +2616,7 @@ sPSFontFileInfo PSOutputDev::setupEmbeddedTrueTypeFont(GfxFont* font, Ref* id)
 	embFontList += "\n";
 
 	// convert it to a Type 42 font
-	ffTT->convertToType42(psName.c_str(), ((Gfx8BitFont*)font)->getHasEncoding() ? ((Gfx8BitFont*)font)->getEncoding() : (char**)nullptr, codeToGID, outputFunc, outputStream);
+	ffTT->convertToType42(psName.c_str(), ((Gfx8BitFont*)font)->getHasEncoding() ? ((Gfx8BitFont*)font)->getEncoding() : VEC_STR {}, codeToGID, outputFunc, outputStream);
 	delete ffTT;
 	gfree(fontBuf);
 
@@ -2661,7 +2659,7 @@ sPSFontFileInfo PSOutputDev::setupExternalTrueTypeFont(GfxFont* font, const std:
 	embFontList += "\n";
 
 	// convert it to a Type 42 font
-	ffTT->convertToType42(psName.c_str(), ((Gfx8BitFont*)font)->getHasEncoding() ? ((Gfx8BitFont*)font)->getEncoding() : (char**)nullptr, codeToGID, outputFunc, outputStream);
+	ffTT->convertToType42(psName.c_str(), ((Gfx8BitFont*)font)->getHasEncoding() ? ((Gfx8BitFont*)font)->getEncoding() : VEC_STR {}, codeToGID, outputFunc, outputStream);
 	delete ffTT;
 
 	// ending comment
@@ -8357,12 +8355,12 @@ void PSOutputDev::writePSString(std::string_view sv)
 	writePSChar(')');
 }
 
-void PSOutputDev::writePSName(const char* s)
+void PSOutputDev::writePSName(const std::string& s)
 {
 	const char* p;
 	char        c;
 
-	p = s;
+	p = s.c_str();
 	while ((c = *p++))
 		if (c <= (char)0x20 || c >= (char)0x7f || c == '(' || c == ')' || c == '<' || c == '>' || c == '[' || c == ']' || c == '{' || c == '}' || c == '/' || c == '%')
 			writePSFmt("#{:02x}", c & 0xff);

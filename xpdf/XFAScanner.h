@@ -10,7 +10,6 @@
 
 #include <aconf.h>
 
-class GHash;
 class ZxElement;
 
 //------------------------------------------------------------------------
@@ -127,7 +126,7 @@ private:
 	static std::string   readXFAStreams(Object* xfaObj);
 	UMAP_STR_STR         scanFormValues(ZxElement* xmlRoot);
 	void                 scanFormNode(ZxElement* elem, const std::string& fullName, UMAP_STR_STR& formValues);
-	void                 scanNode(ZxElement* elem, const std::string& parentName, const std::string& parentFullName, GHash* nameIdx, GHash* fullNameIdx, const std::string& exclGroupName, ZxElement* xmlRoot, UMAP_STR_STR& formValues);
+	void                 scanNode(ZxElement* elem, const std::string& parentName, const std::string& parentFullName, UMAP_STR_INT& nameIdx, UMAP_STR_INT& fullNameIdx, const std::string& exclGroupName, ZxElement* xmlRoot, UMAP_STR_STR& formValues);
 	void                 scanField(ZxElement* elem, const std::string& name, const std::string& fullName, const std::string& exclGroupName, ZxElement* xmlRoot, UMAP_STR_STR& formValues);
 	std::string          getFieldValue(ZxElement* elem, const std::string& name, const std::string& fullName, const std::string& exclGroupName, ZxElement* xmlRoot, UMAP_STR_STR& formValues);
 	std::string          getDatasetsValue(const char* partName, ZxElement* elem);
@@ -140,6 +139,5 @@ private:
 	bool                 nodeIsBindGlobal(ZxElement* elem);
 	bool                 nodeIsBindNone(ZxElement* elem);
 
-	// GHash* fields; // [XFAField]
 	UMAP<std::string, XFAField> fields = {}; //
 };

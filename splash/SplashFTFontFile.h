@@ -25,7 +25,7 @@ class SplashFTFontEngine;
 class SplashFTFontFile : public SplashFontFile
 {
 public:
-	static SplashFontFile* loadType1Font(SplashFTFontEngine* engineA, SplashFontFileID* idA, SplashFontType fontTypeA, LOAD_FONT_ARGS_DEFS(A), const char** encA);
+	static SplashFontFile* loadType1Font(SplashFTFontEngine* engineA, SplashFontFileID* idA, SplashFontType fontTypeA, LOAD_FONT_ARGS_DEFS(A), const VEC_STR& encA);
 	static SplashFontFile* loadCIDFont(SplashFTFontEngine* engineA, SplashFontFileID* idA, SplashFontType fontTypeA, LOAD_FONT_ARGS_DEFS(A), int* codeToGIDA, int codeToGIDLenA);
 	static SplashFontFile* loadTrueTypeFont(SplashFTFontEngine* engineA, SplashFontFileID* idA, SplashFontType fontTypeA, LOAD_FONT_ARGS_DEFS(A), int fontNum, int* codeToGIDA, int codeToGIDLenA);
 

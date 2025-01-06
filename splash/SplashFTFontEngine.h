@@ -29,9 +29,9 @@ public:
 	~SplashFTFontEngine();
 
 	// Load fonts.
-	SplashFontFile* loadType1Font(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), const char** enc);
-	SplashFontFile* loadType1CFont(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), const char** enc);
-	SplashFontFile* loadOpenTypeT1CFont(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), const char** enc);
+	SplashFontFile* loadType1Font(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), const VEC_STR& enc);
+	SplashFontFile* loadType1CFont(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), const VEC_STR& enc);
+	SplashFontFile* loadOpenTypeT1CFont(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), const VEC_STR& enc);
 	SplashFontFile* loadCIDFont(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), int* codeToGID, int codeToGIDLen);
 	SplashFontFile* loadOpenTypeCFFFont(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), int* codeToGID, int codeToGIDLen);
 	SplashFontFile* loadTrueTypeFont(SplashFontFileID* idA, LOAD_FONT_ARGS_DEFS(), int fontNum, int* codeToGID, int codeToGIDLen);

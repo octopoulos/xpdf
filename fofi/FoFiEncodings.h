@@ -14,14 +14,14 @@
 // Type 1 and 1C font data
 //------------------------------------------------------------------------
 
-extern const char* fofiType1StandardEncoding[256];
-extern const char* fofiType1ExpertEncoding[256];
+extern const VEC_STR fofiType1StandardEncoding;
+extern const VEC_STR fofiType1ExpertEncoding;
 
 //------------------------------------------------------------------------
 // Type 1C font data
 //------------------------------------------------------------------------
 
-extern const char* fofiType1CStdStrings[391];
-extern uint16_t    fofiType1CISOAdobeCharset[229];
-extern uint16_t    fofiType1CExpertCharset[166];
-extern uint16_t    fofiType1CExpertSubsetCharset[87];
+extern const VEC_STR fofiType1CStdStrings;
+extern uint16_t      fofiType1CISOAdobeCharset[229];
+extern uint16_t      fofiType1CExpertCharset[166];
+extern uint16_t      fofiType1CExpertSubsetCharset[87];

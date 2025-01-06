@@ -21,7 +21,6 @@ class FoFiTrueType;
 class FoFiType1C;
 struct GfxFontCIDWidths;
 class GfxFontDictEntry;
-class GHash;
 class GList;
 
 //------------------------------------------------------------------------
@@ -242,13 +241,13 @@ public:
 	virtual int getNextChar(const char* s, int len, CharCode* code, Unicode* u, int uSize, int* uLen, double* dx, double* dy, double* ox, double* oy);
 
 	// Return the encoding.
-	char** getEncoding() { return enc; }
+	const VEC_STR& getEncoding() { return enc; }
 
 	// Return the Unicode map.
 	CharCodeToUnicode* getToUnicode();
 
 	// Return the character name associated with <code>.
-	char* getCharName(int code) { return enc[code]; }
+	std::string getCharName(int code) { return enc[code]; }
 
 	// Returns true if the PDF font specified an encoding.
 	bool getHasEncoding() { return hasEncoding; }
@@ -281,8 +280,7 @@ public:
 
 private:
 	Base14FontMapEntry* base14               = nullptr; // for Base-14 fonts only; nullptr otherwise
-	char*               enc[256]             = {};      // char code --> char name
-	char                encFree[256]         = {};      // boolean for each char name: if set, the string is malloc'ed
+	VEC_STR             enc                  = {};      // char code --> char name
 	CharCodeToUnicode*  ctu                  = nullptr; // char code --> Unicode
 	bool                hasEncoding          = false;   //
 	bool                usesMacRomanEnc      = false;   //
@@ -392,8 +390,7 @@ private:
 	static int  hashFontObject(Object* obj);
 	static void hashFontObject1(Object* obj, FNVHash* h);
 
-	XRef*                               xref        = nullptr; //
-	GHash*                              fonts2      = nullptr; // hash table of fonts, mapping from tag to GfxFontDictEntry; this may contain duplicates, i.e., two tags that map to the same font
-	GList*                              uniqueFonts = nullptr; // list of all unique font objects (no dups) that have been loaded
-	UMAP<std::string, GfxFontDictEntry> fonts       = {};      //
+	XRef*                      xref        = nullptr; //
+	UMAP_STR<GfxFontDictEntry> fonts       = {};      // hash table of fonts, mapping from tag to GfxFontDictEntry; this may contain duplicates, i.e., two tags that map to the same font
+	GList*                     uniqueFonts = nullptr; // list of all unique font objects (no dups) that have been loaded
 };
